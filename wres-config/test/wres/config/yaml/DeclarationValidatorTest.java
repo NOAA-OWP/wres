@@ -36,6 +36,9 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.EventDetectionBuilder;
+import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -67,10 +70,12 @@ import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Variable;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.Geometry;
@@ -2645,6 +2650,100 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testExplicitPoolsAndEventDetectionProducesErrorAndWarnings()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+        TimePools validDatePools = TimePoolsBuilder.builder()
+                                                   .period( java.time.Duration.ofHours( 1 ) )
+                                                   .build();
+        Set<TimeWindow> timePools = Set.of( MessageFactory.getTimeWindow() );
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( new TimeInterval( Instant.MIN, Instant.MAX ) )
+                                              .validDatePools( validDatePools )
+                                              .referenceDatePools( validDatePools )
+                                              .leadTimePools( validDatePools )
+                                              .eventDetection( eventDetection )
+                                              .timePools( timePools )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside valid date "
+                                                                        + "pools, which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside explicit "
+                                                                        + "time pools, which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside lead time "
+                                                                        + "pools",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside reference date "
+                                                                        + "pools",
+                                                                        StatusLevel.WARN ) ) );
+    }
+
+    @Test
+    void testFeatureGroupAndEventDetectionProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .featureGroups( featureGroups )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared alongside feature groups, "
+                                                       + "which is not currently supported",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testFeatureServiceGroupWithPoolingAndEventDetectionProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+
+        FeatureServiceGroup group = new FeatureServiceGroup( "a", "b", true );
+        FeatureService featureService = new FeatureService( URI.create( "http://foo.bar" ), Set.of( group ) );
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .featureService( featureService )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared alongside feature groups, "
+                                                       + "which is not currently supported",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86
@@ -2684,7 +2783,7 @@ class DeclarationValidatorTest
                                             .left( this.defaultDataset )
                                             .right( this.defaultDataset )
                                             .leadTimePools( leadTimePools )
-                                            .timeWindows( timeWindows )
+                                            .timePools( timeWindows )
                                             .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );

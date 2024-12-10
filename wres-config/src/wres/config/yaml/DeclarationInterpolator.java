@@ -943,14 +943,14 @@ public class DeclarationInterpolator
 
         // Reference date pools?
         if ( ( Objects.nonNull( builder.referenceDatePools() )
-               || DeclarationInterpolator.hasExplicitReferenceDatePools( builder.timeWindows() ) )
+               || DeclarationInterpolator.hasExplicitReferenceDatePools( builder.timePools() ) )
              && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS );
         }
         // Valid date pools?
         else if ( ( Objects.nonNull( builder.validDatePools() )
-                    || DeclarationInterpolator.hasExplicitValidDatePools( builder.timeWindows() ) )
+                    || DeclarationInterpolator.hasExplicitValidDatePools( builder.timePools() ) )
                   && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS );
@@ -1246,7 +1246,7 @@ public class DeclarationInterpolator
      */
     private static void interpolateTimeWindows( EvaluationDeclarationBuilder builder )
     {
-        Set<TimeWindow> timeWindows = builder.timeWindows();
+        Set<TimeWindow> timeWindows = builder.timePools();
         Set<TimeWindow> adjustedTimeWindows = new HashSet<>();
 
         // Set the earliest and latest lead durations
@@ -1303,7 +1303,7 @@ public class DeclarationInterpolator
             adjustedTimeWindows.add( nextAdjusted );
         }
 
-        builder.timeWindows( adjustedTimeWindows );
+        builder.timePools( adjustedTimeWindows );
     }
 
     /**

@@ -87,6 +87,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -438,11 +439,12 @@ public class PoolFactory
         // Get the desired timescale
         TimeScaleOuter desiredTimeScale = innerProject.getDesiredTimeScale();
 
-        // Get the time windows and sort them
-        Set<TimeWindowOuter> timeWindows = DeclarationUtilities.getTimeWindows( declaration )
-                                                               .stream()
-                                                               .map( TimeWindowOuter::of )
-                                                               .collect( Collectors.toCollection( TreeSet::new ) );
+        // Get the declared time windows and sort them
+        Set<TimeWindowOuter> timeWindows = this.getTimeWindows( declaration,
+                                                                innerProject )
+                                               .stream()
+                                               .map( TimeWindowOuter::of )
+                                               .collect( Collectors.toCollection( TreeSet::new ) );
 
         return featureGroups.stream()
                             .flatMap( nextGroup -> this.getPoolRequests( evaluation,
@@ -452,6 +454,55 @@ public class PoolFactory
                                                                          timeWindows )
                                                        .stream() )
                             .toList();
+    }
+
+    /**
+     * Generates the time windows for evaluation, including both the declared time windows from a pool sequence or
+     * explicit list of time pools and those associated with event detection.
+     *
+     * @param declaration the declaration
+     * @param project the project
+     * @return the time windows
+     */
+
+    private Set<TimeWindow> getTimeWindows( EvaluationDeclaration declaration,
+                                            Project project )
+    {
+        // Declared time windows
+        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
+
+        // Time windows associated with event detection
+        if ( Objects.nonNull( declaration.eventDetection() ) )
+        {
+            Set<TimeWindow> events = this.doEventDetection( project );
+
+            // Add the lead time and reference date constraints to each event, if defined
+            if ( !timeWindows.isEmpty() )
+            {
+                Set<TimeWindow> adjustedEvents = new HashSet<>();
+                for ( TimeWindow next : events )
+                {
+                    for ( TimeWindow adjust : timeWindows )
+                    {
+                        TimeWindow adjusted = next.toBuilder()
+                                                  .setEarliestReferenceTime( adjust.getEarliestReferenceTime() )
+                                                  .setLatestReferenceTime( adjust.getLatestReferenceTime() )
+                                                  .setEarliestLeadDuration( adjust.getEarliestLeadDuration() )
+                                                  .setLatestLeadDuration( adjust.getLatestLeadDuration() )
+                                                  .build();
+                        adjustedEvents.add( adjusted );
+                    }
+
+                    timeWindows = Collections.unmodifiableSet( adjustedEvents );
+                }
+            }
+            else
+            {
+                timeWindows = events;
+            }
+        }
+
+        return timeWindows;
     }
 
     /**
@@ -1064,6 +1115,21 @@ public class PoolFactory
                         .get();
 
         return this.getComposedSuppliers( poolRequests, rawSuppliers );
+    }
+
+    /**
+     * Performs event detection on one or more declared time-series datasets.
+     * @param project the project whose time-series data should be used
+     * @return the detected events
+     */
+    private Set<TimeWindow> doEventDetection( Project project )
+    {
+        LOGGER.debug( "Performing event detection." );
+
+
+
+        // Unbounded time window, placeholder
+        return Set.of( wres.statistics.MessageFactory.getTimeWindow() );
     }
 
     /**

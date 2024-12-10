@@ -1654,12 +1654,12 @@ class DeclarationInterpolatorTest
                                             .leadTimes( new LeadTimeInterval( Duration.ofHours( 1 ),
                                                                               Duration.ofHours( 100 ) ) )
                                             .validDates( new TimeInterval( validOne, validTwo ) )
-                                            .timeWindows( timeWindows )
+                                            .timePools( timeWindows )
                                             .build();
 
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration, false );
 
-        Set<TimeWindow> actual = interpolated.timeWindows();
+        Set<TimeWindow> actual = interpolated.timePools();
 
         TimeWindow expectedOne = TimeWindow.newBuilder()
                                            .setEarliestValidTime( MessageFactory.getTimestamp( validWindowOne ) )

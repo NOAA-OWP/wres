@@ -2353,7 +2353,7 @@ class DeclarationFactoryTest
 
         Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
 
-        assertEquals( expected, actual.timeWindows() );
+        assertEquals( expected, actual.timePools() );
     }
 
     @Test
@@ -2394,7 +2394,7 @@ class DeclarationFactoryTest
 
         Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
 
-        assertEquals( expected, actual.timeWindows() );
+        assertEquals( expected, actual.timePools() );
     }
 
     @Test

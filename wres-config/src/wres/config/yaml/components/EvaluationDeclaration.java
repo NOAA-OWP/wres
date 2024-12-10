@@ -50,6 +50,7 @@ import wres.statistics.generated.TimeWindow;
  * @param spatialMask a spatial mask
  * @param unit the measurement unit
  * @param unitAliases aliases for measurement units
+ * @param timePools explicit time pools
  * @param referenceDates reference dates
  * @param referenceDatePools reference date pools
  * @param validDates valid dates
@@ -92,7 +93,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "unit" ) String unit,
                                      @JsonProperty( "unit_aliases" ) Set<UnitAlias> unitAliases,
                                      @JsonDeserialize( using = TimeWindowDeserializer.class )
-                                     @JsonProperty( "time_pools" ) Set<TimeWindow> timeWindows,
+                                     @JsonProperty( "time_pools" ) Set<TimeWindow> timePools,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
                                      @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
                                      @JsonProperty( "valid_dates" ) TimeInterval validDates,
@@ -156,6 +157,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param spatialMask a spatial mask
      * @param unit the measurement unit
      * @param unitAliases aliases for measurement units
+     * @param timePools explicit time pools
      * @param referenceDates reference dates
      * @param referenceDatePools reference date pools
      * @param validDates valid dates
@@ -202,9 +204,9 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             unitAliases = this.emptyOrUnmodifiableSet( unitAliases, "unit aliases" );
         }
 
-        if ( Objects.isNull( timeWindows ) )
+        if ( Objects.isNull( timePools ) )
         {
-            timeWindows = this.emptyOrUnmodifiableSet( timeWindows, "time pools" );
+            timePools = this.emptyOrUnmodifiableSet( timePools, "time pools" );
         }
 
         if ( Objects.isNull( rescaleLenience ) )

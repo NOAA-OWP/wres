@@ -363,6 +363,9 @@ public class DeclarationValidator
         // Check that the time pools are valid
         List<EvaluationStatusEvent> pools = DeclarationValidator.timePoolsAreValid( declaration );
         events.addAll( pools );
+        // Check that the event detection is valid
+        List<EvaluationStatusEvent> eventDetection = DeclarationValidator.eventDetectionIsValid( declaration );
+        events.addAll( eventDetection );
         // Check that the feature declaration is valid
         List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
         events.addAll( features );
@@ -2209,7 +2212,7 @@ public class DeclarationValidator
             generated.add( "'lead_time_pools'" );
         }
 
-        if ( !declaration.timeWindows()
+        if ( !declaration.timePools()
                          .isEmpty()
              && !generated.isEmpty() )
         {
@@ -2226,6 +2229,105 @@ public class DeclarationValidator
                                                              + "your declaration." )
                                            .build();
             events.add( warning );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that any event detection is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> eventDetectionIsValid( EvaluationDeclaration declaration )
+    {
+        if ( Objects.isNull( declaration.eventDetection() ) )
+        {
+            LOGGER.debug( "No event detection declaration to validate." );
+
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Error when also declaring valid date pools
+        if ( Objects.nonNull( declaration.validDatePools() ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Event detection was declared alongside valid date pools, "
+                                                             + "which is not allowed because event detection "
+                                                             + "also generates valid date pools. Please remove the "
+                                                             + "declaration of either 'event_detection' or "
+                                                             + "'valid_date_pools' and try again." )
+                                           .build();
+            events.add( error );
+        }
+
+        // Error when also declaring explicit time pools
+        if ( !declaration.timePools()
+                         .isEmpty() )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Event detection was declared alongside explicit time "
+                                                             + "pools, which is not allowed because event detection "
+                                                             + "also generates time pools. Please remove the "
+                                                             + "declaration of either 'event_detection' or "
+                                                             + "'time_pools' and try again." )
+                                           .build();
+            events.add( error );
+        }
+
+        // Error when declaring feature groups or a feature service with pooling across features within a group
+        if ( DeclarationUtilities.hasFeatureGroups( declaration ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Event detection was declared alongside feature groups, "
+                                                             + "which is not currently supported. Please remove the "
+                                                             + "declaration of 'feature_groups' or a 'feature_service' "
+                                                             + "with a 'group' whose features will be pooled together "
+                                                             + "(i.e., 'pool: true'), as applicable, and try again. "
+                                                             + "Alternatively, please remove 'event_detection'. Hint: "
+                                                             + "summary statistics are supported alongside event "
+                                                             + "detection if your goal is to compute statistics across "
+                                                             + "events for multiple geographic features." )
+                                           .build();
+            events.add( error );
+        }
+
+        // Warning when declaring other types of explicit pool
+        if ( Objects.nonNull( declaration.leadTimePools() ) )
+        {
+            EvaluationStatusEvent warn
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Event detection was declared alongside lead time pools, "
+                                                             + "which is allowed, but may not be intended. A separate "
+                                                             + "pool will be generated for each combination of event "
+                                                             + "and lead time pool. If this is not intended, please "
+                                                             + "remove either 'event_detection' or 'lead_time_pools' "
+                                                             + "and try again." )
+                                           .build();
+            events.add( warn );
+        }
+        if ( Objects.nonNull( declaration.referenceDatePools() ) )
+        {
+            EvaluationStatusEvent warn
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Event detection was declared alongside reference date "
+                                                             + "pools, which is allowed, but may not be intended. A "
+                                                             + "separate pool will be generated for each combination "
+                                                             + "of event and reference date pool. If this is not "
+                                                             + "intended, please remove either 'event_detection' or "
+                                                             + "'reference_date_pools' and try again." )
+                                           .build();
+            events.add( warn );
         }
 
         return Collections.unmodifiableList( events );

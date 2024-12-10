@@ -111,8 +111,9 @@ public class DeclarationUtilities
                                                                                          + "declaration.";
 
     /**
-     * Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation.
-     * Returns at least one {@link TimeWindow}.
+     * Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation. Only
+     * returns the time windows that can be inferred from the declaration alone and not from any ingested data sources,
+     * notably those associated with event detection.
      *
      * @param declaration the declaration, cannot be null
      * @return a set of one or more time windows for evaluation
@@ -134,60 +135,12 @@ public class DeclarationUtilities
              || Objects.nonNull( referenceDatesPools )
              || Objects.nonNull( validDatesPools ) )
         {
-            // All dimensions
-            if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( validDatesPools )
-                 && Objects.nonNull( leadDurationPools ) )
-            {
-                LOGGER.debug( "Building time windows for reference dates and valid dates and lead durations." );
-
-                timeWindows = DeclarationUtilities.getReferenceDatesValidDatesAndLeadDurationTimeWindows( declaration );
-            }
-            // Reference dates and valid dates
-            else if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( validDatesPools ) )
-            {
-                LOGGER.debug( "Building time windows for reference dates and valid dates." );
-
-                timeWindows = DeclarationUtilities.getReferenceDatesAndValidDatesTimeWindows( declaration );
-            }
-            // Reference dates and lead durations
-            else if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( leadDurationPools ) )
-            {
-                LOGGER.debug( "Building time windows for reference dates and lead durations." );
-
-                timeWindows = DeclarationUtilities.getReferenceDatesAndLeadDurationTimeWindows( declaration );
-            }
-            // Valid dates and lead durations
-            else if ( Objects.nonNull( validDatesPools ) && Objects.nonNull( leadDurationPools ) )
-            {
-                LOGGER.debug( "Building time windows for valid dates and lead durations." );
-
-                timeWindows = DeclarationUtilities.getValidDatesAndLeadDurationTimeWindows( declaration );
-            }
-            // Reference dates
-            else if ( Objects.nonNull( referenceDatesPools ) )
-            {
-                LOGGER.debug( "Building time windows for reference dates." );
-
-                timeWindows = DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
-            }
-            // Lead durations
-            else if ( Objects.nonNull( leadDurationPools ) )
-            {
-                LOGGER.debug( "Building time windows for lead durations." );
-
-                timeWindows = DeclarationUtilities.getLeadDurationTimeWindows( declaration );
-            }
-            // Valid dates
-            else
-            {
-                LOGGER.debug( "Building time windows for valid dates." );
-
-                timeWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
-            }
+            timeWindows = DeclarationUtilities.getTimeWindowsFromPoolSequence( declaration );
         }
-        // One big pool if no explicitly declared time windows
-        else if ( declaration.timeWindows()
-                             .isEmpty() )
+        // One big pool if no explicitly declared time windows and no event detection
+        else if ( declaration.timePools()
+                             .isEmpty()
+                  && Objects.isNull( declaration.eventDetection() ) )
         {
             LOGGER.debug( "Building one big time window." );
 
@@ -198,10 +151,10 @@ public class DeclarationUtilities
         Set<TimeWindow> finalWindows = new HashSet<>( timeWindows );
 
         LOGGER.debug( "Added {} explicitly declared time pools to the overall group of time pools.",
-                      declaration.timeWindows()
+                      declaration.timePools()
                                  .size() );
 
-        finalWindows.addAll( declaration.timeWindows() );
+        finalWindows.addAll( declaration.timePools() );
 
         return Collections.unmodifiableSet( finalWindows );
     }
@@ -1497,6 +1450,78 @@ public class DeclarationUtilities
             line = split[0];
         }
         return line;
+    }
+
+    /**
+     * Generates time windows from an explicit pool sequence.
+     *
+     * @param declaration the declaration
+     * @return the time windows
+     */
+    private static Set<TimeWindow> getTimeWindowsFromPoolSequence( EvaluationDeclaration declaration )
+    {
+        TimePools leadDurationPools = declaration.leadTimePools();
+        TimePools referenceDatesPools = declaration.referenceDatePools();
+        TimePools validDatesPools = declaration.validDatePools();
+
+        Set<TimeWindow> timeWindows;
+
+        // All dimensions
+        if ( Objects.nonNull( referenceDatesPools )
+             && Objects.nonNull( validDatesPools )
+             && Objects.nonNull( leadDurationPools ) )
+        {
+            LOGGER.debug( "Building time windows for reference dates and valid dates and lead durations." );
+
+            timeWindows = DeclarationUtilities.getReferenceDatesValidDatesAndLeadDurationTimeWindows( declaration );
+        }
+        // Reference dates and valid dates
+        else if ( Objects.nonNull( referenceDatesPools )
+                  && Objects.nonNull( validDatesPools ) )
+        {
+            LOGGER.debug( "Building time windows for reference dates and valid dates." );
+
+            timeWindows = DeclarationUtilities.getReferenceDatesAndValidDatesTimeWindows( declaration );
+        }
+        // Reference dates and lead durations
+        else if ( Objects.nonNull( referenceDatesPools )
+                  && Objects.nonNull( leadDurationPools ) )
+        {
+            LOGGER.debug( "Building time windows for reference dates and lead durations." );
+
+            timeWindows = DeclarationUtilities.getReferenceDatesAndLeadDurationTimeWindows( declaration );
+        }
+        // Valid dates and lead durations
+        else if ( Objects.nonNull( validDatesPools )
+                  && Objects.nonNull( leadDurationPools ) )
+        {
+            LOGGER.debug( "Building time windows for valid dates and lead durations." );
+
+            timeWindows = DeclarationUtilities.getValidDatesAndLeadDurationTimeWindows( declaration );
+        }
+        // Reference dates
+        else if ( Objects.nonNull( referenceDatesPools ) )
+        {
+            LOGGER.debug( "Building time windows for reference dates." );
+
+            timeWindows = DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
+        }
+        // Lead durations
+        else if ( Objects.nonNull( leadDurationPools ) )
+        {
+            LOGGER.debug( "Building time windows for lead durations." );
+
+            timeWindows = DeclarationUtilities.getLeadDurationTimeWindows( declaration );
+        }
+        // Valid dates
+        else
+        {
+            LOGGER.debug( "Building time windows for valid dates." );
+
+            timeWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
+        }
+
+        return timeWindows;
     }
 
     /**
