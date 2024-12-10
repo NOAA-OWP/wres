@@ -49,7 +49,7 @@ services:
       networks:
         wres_net:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20241126-b735d54-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20241018-74b8415"
         restart: always
         volumes:
          # For the job data
@@ -66,7 +66,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20241113-6f1b17d-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20241018-74b8415"
         restart: always
         depends_on:
             broker:
@@ -102,7 +102,7 @@ services:
          - "5671:5671"
          - "15671:15671"
          - "15691:15691"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20241126-b735d54-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20241018-74b8415"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -130,7 +130,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20241126-b735d54-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20241018-74b8415"
         restart: always
         depends_on:
             broker:
@@ -180,7 +180,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20241126-b735d54-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20241018-74b8415"
         restart: always
         volumes:
          # For heap-dump files
@@ -206,7 +206,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20241126-2da40a3-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20241018-74b8415"
         restart: always
         volumes:
          # To write graphics outputs
@@ -228,7 +228,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-writing:20241126-2da40a3-dev"
+        image: "${DOCKER_REGISTRY}/wres/wres-writing:20241018-74b8415"
         restart: always
         volumes:
          # To write numeric outputs
