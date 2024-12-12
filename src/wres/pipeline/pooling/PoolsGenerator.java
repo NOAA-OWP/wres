@@ -763,9 +763,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             // Log any de-duplication that was achieved
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug(
-                        "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to {} "
-                        + "using the union of time windows across all pools, which is {}.",
+                LOGGER.debug( "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to "
+                              + "{} using the union of time windows across all pools, which is {}.",
                         this.getPoolRequests().size(),
                         DatasetOrientation.LEFT,
                         timeWindows.size(),

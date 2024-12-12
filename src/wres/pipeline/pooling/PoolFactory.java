@@ -151,6 +151,27 @@ public class PoolFactory
                     .maximumSize( 10 )
                     .build();
 
+    /** Upscaler for single-valued time-series with a left-ish orientation. */
+    private final TimeSeriesUpscaler<Double> leftSingleValuedUpscaler;
+
+    /** Upscaler for single-valued time-series with a right-ish orientation. */
+    private final TimeSeriesUpscaler<Double> rightSingleValuedUpscaler;
+
+    /** Upscaler for single-valued time-series with a baseline orientation. */
+    private final TimeSeriesUpscaler<Double> baselineSingleValuedUpscaler;
+
+    /** Upscaler for single-valued time-series with a covariate orientation. */
+    private final TimeSeriesUpscaler<Double> covariateSingleValuedUpscaler;
+
+    /** Upscaler for ensemble time-series with a right-ish orientation. */
+    private final TimeSeriesUpscaler<Ensemble> rightEnsembleUpscaler;
+
+    /** Upscaler for ensemble time-series with a baseline orientation. */
+    private final TimeSeriesUpscaler<Ensemble> baselineEnsembleUpscaler;
+
+    /** Generator for event detection. */
+    private final EventsGenerator eventsGenerator;
+
     /**
      * Creates an instance from a {@link Project}.
      *
@@ -293,7 +314,8 @@ public class PoolFactory
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
             // requests associated with the feature group (as required)
             RetrieverFactory<Double, Ensemble, Ensemble> cachingFactory = retrieverFactory;
-            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
+            if ( innerProject.hasProbabilityThresholds()
+                 || innerProject.hasGeneratedBaseline() )
             {
                 LOGGER.debug( BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND
                               + GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP,
@@ -407,12 +429,14 @@ public class PoolFactory
      * Generates the {@link PoolRequest} in order to drive pool creation.
      *
      * @param evaluation the evaluation description
+     * @param eventRetriever an optional retriever factory for event detection, required when event detection is used
      * @return the pool requests
      * @throws NullPointerException if any input is null
      * @throws PoolCreationException if the pool could not be created for any other reason
      */
 
-    public List<PoolRequest> getPoolRequests( Evaluation evaluation )
+    public List<PoolRequest> getPoolRequests( Evaluation evaluation,
+                                              RetrieverFactory<Double, Double, Double> eventRetriever )
     {
         Objects.requireNonNull( evaluation );
 
@@ -440,18 +464,17 @@ public class PoolFactory
         TimeScaleOuter desiredTimeScale = innerProject.getDesiredTimeScale();
 
         // Get the declared time windows and sort them
-        Set<TimeWindowOuter> timeWindows = this.getTimeWindows( declaration,
-                                                                innerProject )
-                                               .stream()
-                                               .map( TimeWindowOuter::of )
-                                               .collect( Collectors.toCollection( TreeSet::new ) );
+        Map<FeatureGroup, Set<TimeWindowOuter>> timeWindows = this.getTimeWindows( declaration,
+                                                                                   innerProject,
+                                                                                   featureGroups,
+                                                                                   eventRetriever );
 
         return featureGroups.stream()
                             .flatMap( nextGroup -> this.getPoolRequests( evaluation,
                                                                          declaration,
                                                                          nextGroup,
                                                                          desiredTimeScale,
-                                                                         timeWindows )
+                                                                         timeWindows.get( nextGroup ) )
                                                        .stream() )
                             .toList();
     }
@@ -462,47 +485,63 @@ public class PoolFactory
      *
      * @param declaration the declaration
      * @param project the project
+     * @param featureGroups the feature groups
+     * @param eventRetriever the retriever for event detection, when required
      * @return the time windows
      */
 
-    private Set<TimeWindow> getTimeWindows( EvaluationDeclaration declaration,
-                                            Project project )
+    private Map<FeatureGroup, Set<TimeWindowOuter>> getTimeWindows( EvaluationDeclaration declaration,
+                                                                    Project project,
+                                                                    Set<FeatureGroup> featureGroups,
+                                                                    RetrieverFactory<Double, Double, Double> eventRetriever )
     {
         // Declared time windows
         Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
 
-        // Time windows associated with event detection
-        if ( Objects.nonNull( declaration.eventDetection() ) )
+        // Time windows without event detection
+        if ( Objects.isNull( declaration.eventDetection() ) )
         {
-            Set<TimeWindow> events = this.doEventDetection( project );
+            Set<TimeWindowOuter> timeWindowsWrapped = timeWindows.stream()
+                                                                 .map( TimeWindowOuter::of )
+                                                                 .collect( Collectors.toCollection( TreeSet::new ) );
+            return featureGroups.stream()
+                                .collect( Collectors.toMap( Function.identity(),
+                                                            g -> timeWindowsWrapped ) );
+        }
+
+        // Time windows based on event detection
+        Map<FeatureGroup, Set<TimeWindowOuter>> featurefulWindows = new HashMap<>();
+        for ( FeatureGroup nextGroup : featureGroups )
+        {
+            Set<TimeWindowOuter> events = this.getEventsGenerator()
+                                              .doEventDetection( project, nextGroup, eventRetriever );
 
             // Add the lead time and reference date constraints to each event, if defined
             if ( !timeWindows.isEmpty() )
             {
-                Set<TimeWindow> adjustedEvents = new HashSet<>();
-                for ( TimeWindow next : events )
+                Set<TimeWindowOuter> adjustedEvents = new HashSet<>();
+                for ( TimeWindowOuter next : events )
                 {
                     for ( TimeWindow adjust : timeWindows )
                     {
-                        TimeWindow adjusted = next.toBuilder()
+                        TimeWindow adjusted = next.getTimeWindow()
+                                                  .toBuilder()
                                                   .setEarliestReferenceTime( adjust.getEarliestReferenceTime() )
                                                   .setLatestReferenceTime( adjust.getLatestReferenceTime() )
                                                   .setEarliestLeadDuration( adjust.getEarliestLeadDuration() )
                                                   .setLatestLeadDuration( adjust.getLatestLeadDuration() )
                                                   .build();
-                        adjustedEvents.add( adjusted );
+                        adjustedEvents.add( TimeWindowOuter.of( adjusted ) );
                     }
-
-                    timeWindows = Collections.unmodifiableSet( adjustedEvents );
                 }
+
+                events = Collections.unmodifiableSet( adjustedEvents );
             }
-            else
-            {
-                timeWindows = events;
-            }
+
+            featurefulWindows.put( nextGroup, events );
         }
 
-        return timeWindows;
+        return Collections.unmodifiableMap( featurefulWindows );
     }
 
     /**
@@ -553,27 +592,14 @@ public class PoolFactory
         TimeSeriesCrossPairer<Pair<Double, Double>, Pair<Double, Double>> crossPairer =
                 this.getCrossPairerOrNull( declaration );
 
-        // Lenient upscaling?
-        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
-        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
-        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
-
-        // Create a default upscaler for each side
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
-                                                                                 this.getUnitMapper()
-                                                                                     .getUnitAliases() );
-
-        TimeSeriesUpscaler<Double> rightUpscaler = TimeSeriesOfDoubleUpscaler.of( rightLenient,
-                                                                                  this.getUnitMapper()
-                                                                                      .getUnitAliases() );
-
-        TimeSeriesUpscaler<Double> baselineUpscaler = TimeSeriesOfDoubleUpscaler.of( baselineLenient,
-                                                                                     this.getUnitMapper()
-                                                                                         .getUnitAliases() );
+        TimeSeriesUpscaler<Double> leftUpscaler = this.getLeftSingleValuedUpscaler();
+        TimeSeriesUpscaler<Double> rightUpscaler = this.getRightSingleValuedUpscaler();
+        TimeSeriesUpscaler<Double> baselineUpscaler = this.getBaselineSingleValuedUpscaler();
+        TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
 
         Set<Covariate<Double>> covariates = this.getCovariates( declaration,
-                                                                leftUpscaler, this.getProject()
-                                                                                  .getDesiredTimeScale() );
+                                                                covariateUpscaler, this.getProject()
+                                                                                       .getDesiredTimeScale() );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<Feature>, BaselineGenerator<Double>> baselineGenerator = null;
@@ -766,27 +792,14 @@ public class PoolFactory
         TimeSeriesCrossPairer<Pair<Double, Ensemble>, Pair<Double, Ensemble>> crossPairer =
                 this.getCrossPairerOrNull( declaration );
 
-        // Lenient upscaling?
-        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
-        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
-        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
-
-        // Create a default upscaler for each side
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
-                                                                                 this.getUnitMapper()
-                                                                                     .getUnitAliases() );
-
-        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( rightLenient,
-                                                                                      this.getUnitMapper()
-                                                                                          .getUnitAliases() );
-
-        TimeSeriesUpscaler<Ensemble> baselineUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
-                                                                                         this.getUnitMapper()
-                                                                                             .getUnitAliases() );
+        TimeSeriesUpscaler<Double> leftUpscaler = this.getLeftSingleValuedUpscaler();
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = this.getRightEnsembleUpscaler();
+        TimeSeriesUpscaler<Ensemble> baselineUpscaler = this.getBaselineEnsembleUpscaler();
+        TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
 
         Set<Covariate<Double>> covariates = this.getCovariates( declaration,
-                                                                leftUpscaler, this.getProject()
-                                                                                  .getDesiredTimeScale() );
+                                                                covariateUpscaler, this.getProject()
+                                                                                       .getDesiredTimeScale() );
 
         // Left transformer, which is a composition of several transformations
         Map<GeometryTuple, Offset> offsets = project.getOffsets();
@@ -962,27 +975,14 @@ public class PoolFactory
         TimeSeriesCrossPairer<Pair<Double, Ensemble>, Pair<Double, Ensemble>> crossPairer =
                 this.getCrossPairerOrNull( declaration );
 
-        // Lenient upscaling?
-        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
-        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
-        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
-
-        // Create a default upscaler for each side
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
-                                                                                 this.getUnitMapper()
-                                                                                     .getUnitAliases() );
-
-        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( rightLenient,
-                                                                                      this.getUnitMapper()
-                                                                                          .getUnitAliases() );
-
-        TimeSeriesUpscaler<Ensemble> baselineUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
-                                                                                         this.getUnitMapper()
-                                                                                             .getUnitAliases() );
+        TimeSeriesUpscaler<Double> leftUpscaler = this.getLeftSingleValuedUpscaler();
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = this.getRightEnsembleUpscaler();
+        TimeSeriesUpscaler<Ensemble> baselineUpscaler = this.getBaselineEnsembleUpscaler();
+        TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
 
         Set<Covariate<Double>> covariates = this.getCovariates( declaration,
-                                                                leftUpscaler, this.getProject()
-                                                                                  .getDesiredTimeScale() );
+                                                                covariateUpscaler, this.getProject()
+                                                                                       .getDesiredTimeScale() );
 
         // Left transformer, which is a composition of several transformations
         Map<GeometryTuple, Offset> offsets = project.getOffsets();
@@ -1115,21 +1115,6 @@ public class PoolFactory
                         .get();
 
         return this.getComposedSuppliers( poolRequests, rawSuppliers );
-    }
-
-    /**
-     * Performs event detection on one or more declared time-series datasets.
-     * @param project the project whose time-series data should be used
-     * @return the detected events
-     */
-    private Set<TimeWindow> doEventDetection( Project project )
-    {
-        LOGGER.debug( "Performing event detection." );
-
-
-
-        // Unbounded time window, placeholder
-        return Set.of( wres.statistics.MessageFactory.getTimeWindow() );
     }
 
     /**
@@ -2640,12 +2625,74 @@ public class PoolFactory
     }
 
     /**
+     * @return the upscaler for single-valued time-series with a left orientation
+     */
+
+    private TimeSeriesUpscaler<Double> getLeftSingleValuedUpscaler()
+    {
+        return this.leftSingleValuedUpscaler;
+    }
+
+    /**
+     * @return the upscaler for single-valued time-series with a right orientation
+     */
+
+    private TimeSeriesUpscaler<Double> getRightSingleValuedUpscaler()
+    {
+        return this.rightSingleValuedUpscaler;
+    }
+
+    /**
+     * @return the upscaler for single-valued time-series with a baseline orientation
+     */
+
+    private TimeSeriesUpscaler<Double> getBaselineSingleValuedUpscaler()
+    {
+        return this.baselineSingleValuedUpscaler;
+    }
+
+    /**
+     * @return the upscaler for single-valued time-series with a covariate orientation
+     */
+
+    private TimeSeriesUpscaler<Double> getCovariateSingleValuedUpscaler()
+    {
+        return this.covariateSingleValuedUpscaler;
+    }
+
+    /**
+     * @return the upscaler for ensemble time-series with a right orientation
+     */
+
+    private TimeSeriesUpscaler<Ensemble> getRightEnsembleUpscaler()
+    {
+        return this.rightEnsembleUpscaler;
+    }
+
+    /**
+     * @return the upscaler for ensemble time-series with a baseline orientation
+     */
+
+    private TimeSeriesUpscaler<Ensemble> getBaselineEnsembleUpscaler()
+    {
+        return this.baselineEnsembleUpscaler;
+    }
+
+    /**
      * @return the pool identifier generator.
      */
 
     private AtomicLong getPoolIdGenerator()
     {
         return this.poolId;
+    }
+
+    /**
+     * @return the events generator
+     */
+    private EventsGenerator getEventsGenerator()
+    {
+        return this.eventsGenerator;
     }
 
     /**
@@ -2865,5 +2912,37 @@ public class PoolFactory
 
         this.unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                          declaration.unitAliases() );
+
+        // Lenient upscaling?
+        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
+        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
+        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
+        boolean covariateLenience = project.isUpscalingLenient( DatasetOrientation.COVARIATE );
+
+        // Create a default upscaler for each side
+        this.leftSingleValuedUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
+                                                                       this.getUnitMapper()
+                                                                           .getUnitAliases() );
+        this.rightSingleValuedUpscaler = TimeSeriesOfDoubleUpscaler.of( rightLenient,
+                                                                        this.getUnitMapper()
+                                                                            .getUnitAliases() );
+        this.baselineSingleValuedUpscaler = TimeSeriesOfDoubleUpscaler.of( baselineLenient,
+                                                                           this.getUnitMapper()
+                                                                               .getUnitAliases() );
+        this.covariateSingleValuedUpscaler = TimeSeriesOfDoubleUpscaler.of( covariateLenience,
+                                                                            this.getUnitMapper()
+                                                                                .getUnitAliases() );
+        this.rightEnsembleUpscaler = TimeSeriesOfEnsembleUpscaler.of( rightLenient,
+                                                                      this.getUnitMapper()
+                                                                          .getUnitAliases() );
+        this.baselineEnsembleUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
+                                                                         this.getUnitMapper()
+                                                                             .getUnitAliases() );
+        this.eventsGenerator = new EventsGenerator( this.getLeftSingleValuedUpscaler(),
+                                                    this.getRightSingleValuedUpscaler(),
+                                                    this.getBaselineSingleValuedUpscaler(),
+                                                    this.getCovariateSingleValuedUpscaler(),
+                                                    this.getUnitMapper()
+                                                        .getDesiredMeasurementUnitName() );
     }
 }

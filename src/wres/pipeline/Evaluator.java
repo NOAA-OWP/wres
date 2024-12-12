@@ -654,6 +654,11 @@ public class Evaluator
             // Re-assign the declaration augmented by the ingested data
             declarationWithFeaturesAndThresholds = project.getDeclaration();
 
+            // Update the evaluation details with the newly created project
+            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                        .project( project )
+                                                        .build();
+
             LOGGER.debug( "Finished ingest of time-series data." );
 
             // Set the project hash for identification
@@ -706,7 +711,9 @@ public class Evaluator
             evaluationMessager.start();
 
             PoolFactory poolFactory = PoolFactory.of( project );
-            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
+            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory,
+                                                                                  evaluationDescription,
+                                                                                  evaluationDetails );
 
             int poolCount = poolRequests.size();
             monitor.setPoolCount( poolCount );
@@ -748,11 +755,10 @@ public class Evaluator
                                                                              clearThresholdValues );
             }
 
-            // Set the project and evaluation, metrics and thresholds and summary statistics
+            // Set the project and evaluation messager, metrics and thresholds and summary statistics
             evaluationDetails =
                     EvaluationDetailsBuilder.builder( evaluationDetails )
-                                            .project( project )
-                                            .evaluation( evaluationMessager )
+                                            .evaluationMessager( evaluationMessager )
                                             .declaration( declarationWithFeaturesAndThresholds )
                                             .metricsAndThresholds( metricsAndThresholds )
                                             .summaryStatistics( summaryStatsCalculators )

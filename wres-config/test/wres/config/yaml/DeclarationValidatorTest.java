@@ -26,6 +26,7 @@ import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CovariateDatasetBuilder;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
@@ -2740,6 +2741,103 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "Event detection was declared alongside feature groups, "
                                                        + "which is not currently supported",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testCovariatesWithDetectAndNoEventDetectionProducesError()
+    {
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.defaultDataset )
+                                                            .purposes( Set.of( CovariatePurpose.FILTER,
+                                                                               CovariatePurpose.DETECT ) )
+                                                            .build();
+        List<CovariateDataset> covariates = List.of( covariate );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Please declare 'event_detection' or remove the "
+                                                       + "'covariates'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithMissingBaselineProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.BASELINE ) )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared with a baseline",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithMissingCovariateProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.COVARIATES ) )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared with a covariate",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithForecastDataSourcesProducesErrors()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED,
+                                                                                EventDetectionDataset.PREDICTED,
+                                                                                EventDetectionDataset.BASELINE ) )
+                                                             .build();
+
+        Dataset dataset = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.SINGLE_VALUED_FORECASTS )
+                                        .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( dataset )
+                                              .right( dataset )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( dataset )
+                                                                               .build() )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "data sources used for event detection contained "
+                                                       + "forecast data, which is not allowed: [OBSERVED, "
+                                                       + "PREDICTED, BASELINE]",
                                                        StatusLevel.ERROR ) );
     }
 

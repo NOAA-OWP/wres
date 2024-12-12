@@ -31,12 +31,14 @@ import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
@@ -428,6 +430,11 @@ public class DeclarationValidator
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
+
+        // Event detection does not use forecast data
+        List<EvaluationStatusEvent> eventDetection =
+                DeclarationValidator.eventDetectionDoesNotUseForecastData( declaration );
+        events.addAll( eventDetection );
 
         // No need to check any sources because this is a post-ingest validation
 
@@ -2243,12 +2250,33 @@ public class DeclarationValidator
     {
         if ( Objects.isNull( declaration.eventDetection() ) )
         {
-            LOGGER.debug( "No event detection declaration to validate." );
+            List<EvaluationStatusEvent> events = new ArrayList<>();
 
-            return List.of();
+            // Error when a covariate dataset is declared with the purpose of event detection, but no event detection is
+            // declared
+            if ( declaration.covariates()
+                            .stream()
+                            .anyMatch( n -> n.purposes()
+                                             .contains( CovariatePurpose.DETECT ) ) )
+            {
+                EvaluationStatusEvent error
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The evaluation declared one or more 'covariates' "
+                                                                 + "whose 'purpose' is to 'detect' events, but event "
+                                                                 + "detection was not declared. Please declare "
+                                                                 + "'event_detection' or remove the 'covariates' whose "
+                                                                 + "'purpose' is to 'detect' and " + TRY_AGAIN )
+                                               .build();
+                events.add( error );
+            }
+
+            return Collections.unmodifiableList( events );
         }
 
-        List<EvaluationStatusEvent> events = new ArrayList<>();
+        // No forecast data for event detection
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationValidator.eventDetectionDoesNotUseForecastData( declaration ) );
 
         // Error when also declaring valid date pools
         if ( Objects.nonNull( declaration.validDatePools() ) )
@@ -2300,6 +2328,47 @@ public class DeclarationValidator
             events.add( error );
         }
 
+        // Error when a baseline dataset is declared for event detection that does not exist
+        if ( declaration.eventDetection()
+                        .datasets()
+                        .contains( EventDetectionDataset.BASELINE )
+             && !DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Event detection was declared with a baseline data "
+                                                             + "source, but no baseline dataset was declared. Please "
+                                                             + "declare a 'baseline' dataset or remove the 'baseline' "
+                                                             + "from the 'dataset' used for 'event_detection' and try "
+                                                             + AGAIN )
+                                           .build();
+            events.add( error );
+        }
+
+        // Error when a covariate dataset is declared for event detection that does not exist
+        if ( declaration.eventDetection()
+                        .datasets()
+                        .contains( EventDetectionDataset.COVARIATES )
+             && declaration.covariates()
+                           .stream()
+                           .noneMatch( n -> n.purposes()
+                                             .contains( CovariatePurpose.DETECT ) ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Event detection was declared with a covariate data "
+                                                             + "source, but no covariate dataset was declared for "
+                                                             + "event detection. Please declare one or more "
+                                                             + "'covariates' with a 'purpose' of 'detect' or "
+                                                             + "remove the 'covariates' from the 'dataset' declared "
+                                                             + "for 'event_detection' and try "
+                                                             + AGAIN )
+                                           .build();
+            events.add( error );
+        }
+
         // Warning when declaring other types of explicit pool
         if ( Objects.nonNull( declaration.leadTimePools() ) )
         {
@@ -2331,6 +2400,101 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the time-series datasets used for event detection are not forecasts.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> eventDetectionDoesNotUseForecastData( EvaluationDeclaration declaration )
+    {
+        if ( Objects.isNull( declaration.eventDetection() ) )
+        {
+            LOGGER.debug( "No need to validate event detection for non-forecast datasets as event detection was not "
+                          + "declared." );
+
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Set<EventDetectionDataset> datasets = declaration.eventDetection()
+                                                         .datasets();
+
+        Set<EventDetectionDataset> failed =
+                datasets.stream()
+                        .filter( n -> DeclarationValidator.isEventDetectionDatasetForecastType( declaration, n ) )
+                        .collect( Collectors.toCollection( TreeSet::new ) );
+
+        if ( !failed.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The declaration requested event detection, but the "
+                                                             + "following data sources used for event detection "
+                                                             + "contained forecast data, which is not allowed: "
+                                                             + failed
+                                                             + ". Please remove 'event_detection' or declare only "
+                                                             + "non-forecast datasets for event detection and try "
+                                                             + AGAIN )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Determines whether the nominated dataset is a forecast type.
+     * @param declaration the declaration
+     * @param dataset the dataset to test
+     * @return whether the dataset is a forecast type
+     */
+
+    private static boolean isEventDetectionDatasetForecastType( EvaluationDeclaration declaration,
+                                                                EventDetectionDataset dataset )
+    {
+        switch ( dataset )
+        {
+            case OBSERVED ->
+            {
+                if ( DeclarationUtilities.isForecast( declaration.left() ) )
+                {
+                    return true;
+                }
+            }
+            case PREDICTED ->
+            {
+                if ( DeclarationUtilities.isForecast( declaration.right() ) )
+                {
+                    return true;
+                }
+            }
+            case BASELINE ->
+            {
+                if ( DeclarationUtilities.hasBaseline( declaration )
+                     && DeclarationUtilities.isForecast( declaration.baseline()
+                                                                    .dataset() ) )
+                {
+                    return true;
+                }
+            }
+            case COVARIATES ->
+            {
+                if ( declaration.covariates()
+                                .stream()
+                                .anyMatch( n -> n.purposes()
+                                                 .contains( CovariatePurpose.DETECT )
+                                                && DeclarationUtilities.isForecast( n.dataset() ) ) )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

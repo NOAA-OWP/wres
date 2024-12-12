@@ -106,7 +106,7 @@ class PoolFactoryTest
                .thenReturn( CFS );
 
         PoolFactory poolFactory = PoolFactory.of( project );
-        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
+        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription, null );
 
         Assertions.assertEquals( 18, actual.size() );
     }
@@ -166,7 +166,7 @@ class PoolFactoryTest
 
         PoolFactory poolFactory = PoolFactory.of( project );
 
-        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
+        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription, null );
 
         Assertions.assertEquals( 48, actual.size() );
 

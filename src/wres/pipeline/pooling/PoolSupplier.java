@@ -837,7 +837,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @param mainPairs the main pairs indexed by feature tuple
      * @param basePairs the baseline pairs, optional, indexed by feature tuple
      * @param desiredTimeScale the desired timescale, optional
-     * @param statusMessages and evaluation status messages
+     * @param statusMessages any evaluation status messages
      * @return the pool of pairs
      */
 

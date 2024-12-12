@@ -146,7 +146,7 @@ class PoolsGeneratorTest
         PoolFactory poolFactory = PoolFactory.of( project );
 
         PoolParameters poolParameters = new PoolParameters.Builder().build();
-        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
 
         // Create the actual output
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> actual =
@@ -243,7 +243,7 @@ class PoolsGeneratorTest
 
         PoolFactory poolFactory = PoolFactory.of( project );
 
-        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
 
         // Create the actual output
         PoolParameters poolParameters = new PoolParameters.Builder().build();

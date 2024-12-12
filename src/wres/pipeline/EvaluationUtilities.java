@@ -52,6 +52,7 @@ import wres.events.EvaluationMessager;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
+import wres.statistics.generated.Evaluation;
 import wres.writing.csv.pairs.EnsemblePairsWriter;
 import wres.metrics.BoxplotSummaryStatisticFunction;
 import wres.metrics.DiagramSummaryStatisticFunction;
@@ -75,7 +76,6 @@ import wres.pipeline.statistics.StatisticsProcessor;
 import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
@@ -120,12 +120,12 @@ class EvaluationUtilities
     private static final String SUMMARY_STATISTICS_ACROSS_FEATURES = "ALL FEATURES";
 
     /** Re-used string. */
-    private static final String PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY =
-            "Performing retrieval with an in-memory retriever factory.";
+    private static final String CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY =
+            "Created an in-memory retriever factory.";
 
     /** Re-used string. */
-    private static final String PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
-            "Performing retrieval with a retriever factory backed by a persistent store.";
+    private static final String CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
+            "Created a retriever factory backed by a persistent store.";
 
     /** Maximum number of time windows to log. */
     private static final int MAXIMUM_TIME_WINDOWS_TO_LOG = 1000;
@@ -191,11 +191,11 @@ class EvaluationUtilities
 
         // Main dataset
         EvaluationUtilities.createAndPublishSummaryStatistics( evaluationDetails.summaryStatistics(),
-                                                               evaluationDetails.evaluation() );
+                                                               evaluationDetails.evaluationMessager() );
 
         // Baseline
         EvaluationUtilities.createAndPublishSummaryStatistics( evaluationDetails.summaryStatisticsForBaseline(),
-                                                               evaluationDetails.evaluation() );
+                                                               evaluationDetails.evaluationMessager() );
     }
 
     /**
@@ -520,15 +520,26 @@ class EvaluationUtilities
     /**
      * Creates the pool requests from the project.
      *
-     * @param evaluationDescription the evaluation description
      * @param poolFactory the pool factory
+     * @param evaluation the evaluation description
+     * @param evaluationDetails the evaluation details
      * @return the pool requests
      */
 
     static List<PoolRequest> getPoolRequests( PoolFactory poolFactory,
-                                              Evaluation evaluationDescription )
+                                              Evaluation evaluation,
+                                              EvaluationDetails evaluationDetails )
     {
-        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
+        RetrieverFactory<Double, Double, Double> retriever = null;
+
+        // Event detection supports single-valued datasets only
+        if ( Objects.nonNull( evaluationDetails.declaration()
+                                               .eventDetection() ) )
+        {
+            retriever = EvaluationUtilities.getSingleValuedRetrieverFactory( evaluationDetails );
+        }
+
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluation, retriever );
 
         // Log some information about the pools
         if ( LOGGER.isInfoEnabled() )
@@ -627,18 +638,18 @@ class EvaluationUtilities
 
     /**
      * Forcibly stops an evaluation messager on encountering an error, if already created.
-     * @param evaluation the evaluation messager
+     * @param evaluationMessager the evaluation messager
      * @param error the error
      * @param evaluationId the evaluation identifier
      */
-    static void forceStop( EvaluationMessager evaluation, Exception error, String evaluationId )
+    static void forceStop( EvaluationMessager evaluationMessager, Exception error, String evaluationId )
     {
-        if ( Objects.nonNull( evaluation ) )
+        if ( Objects.nonNull( evaluationMessager ) )
         {
             // Stop forcibly
             LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
 
-            evaluation.stop( error );
+            evaluationMessager.stop( error );
         }
     }
 
@@ -745,6 +756,33 @@ class EvaluationUtilities
                                                .map( ThresholdOuter::getValues )
                                                .collect( Collectors.toSet() ) )
                                    .anyMatch( c -> c.size() > 1 );
+    }
+
+    /**
+     * Returns a {@link RetrieverFactory} for single-valued datasets.
+     * @param details the evaluation details
+     * @return the retriever factory
+     */
+    static RetrieverFactory<Double, Double, Double> getSingleValuedRetrieverFactory( EvaluationDetails details )
+    {
+        // Create a retriever factory to support retrieval for this project
+        RetrieverFactory<Double, Double, Double> retrieverFactory;
+        if ( details.hasInMemoryStore() )
+        {
+            LOGGER.debug( CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY );
+            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( details.project(),
+                                                                        details.timeSeriesStore() );
+        }
+        else
+        {
+            LOGGER.debug( CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+            retrieverFactory = SingleValuedRetrieverFactory.of( details.project(),
+                                                                details.databaseServices()
+                                                                       .database(),
+                                                                details.caches() );
+        }
+
+        return retrieverFactory;
     }
 
     /**
@@ -878,21 +916,8 @@ class EvaluationUtilities
                                                                                      executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double, Double> retrieverFactory;
-        if ( evaluationDetails.hasInMemoryStore() )
-        {
-            LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
-            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
-                                                                        evaluationDetails.timeSeriesStore() );
-        }
-        else
-        {
-            LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
-            retrieverFactory = SingleValuedRetrieverFactory.of( project,
-                                                                evaluationDetails.databaseServices()
-                                                                                 .database(),
-                                                                evaluationDetails.caches() );
-        }
+        RetrieverFactory<Double, Double, Double> retrieverFactory =
+                EvaluationUtilities.getSingleValuedRetrieverFactory( evaluationDetails );
 
         // Create the pool suppliers for all pools in this evaluation
         PoolFactory poolFactory = poolDetails.poolFactory();
@@ -952,7 +977,7 @@ class EvaluationUtilities
                             .setSamplingUncertaintyExecutor( executors.samplingUncertaintyExecutor() )
                             .setPoolRequest( poolRequest )
                             .setPoolSupplier( poolSupplier )
-                            .setEvaluation( evaluationDetails.evaluation() )
+                            .setEvaluation( evaluationDetails.evaluationMessager() )
                             .setMonitor( evaluationDetails.monitor() )
                             .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
@@ -1021,26 +1046,27 @@ class EvaluationUtilities
                 List<GeneratedBaselines> supported = Arrays.stream( GeneratedBaselines.values() )
                                                            .filter( GeneratedBaselines::isEnsemble )
                                                            .toList();
-                throw new DeclarationException( "Discovered an evaluation with ensemble forecasts and a generated "
-                                                + "'baseline' with a 'method' of '"
-                                                + method
-                                                + "'. However, this 'method' produces single-valued forecasts, which "
-                                                + "is not allowed. Please declare a baseline that contains ensemble "
-                                                + "forecasts and try again. The following 'method' options support "
-                                                + "ensemble forecasts: "
-                                                + supported );
+                throw new DeclarationException(
+                        "Discovered an evaluation with ensemble forecasts and a generated "
+                        + "'baseline' with a 'method' of '"
+                        + method
+                        + "'. However, this 'method' produces single-valued forecasts, which "
+                        + "is not allowed. Please declare a baseline that contains ensemble "
+                        + "forecasts and try again. The following 'method' options support "
+                        + "ensemble forecasts: "
+                        + supported );
             }
 
             RetrieverFactory<Double, Ensemble, Double> retrieverFactory;
             if ( evaluationDetails.hasInMemoryStore() )
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
+                LOGGER.debug( CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY );
                 retrieverFactory = EnsembleSingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
                                                                                     evaluationDetails.timeSeriesStore() );
             }
             else
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+                LOGGER.debug( CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
                 retrieverFactory = EnsembleSingleValuedRetrieverFactory.of( project,
                                                                             evaluationDetails.databaseServices()
                                                                                              .database(),
@@ -1057,13 +1083,13 @@ class EvaluationUtilities
             RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory;
             if ( evaluationDetails.hasInMemoryStore() )
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
+                LOGGER.debug( CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY );
                 retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.project(),
                                                                         evaluationDetails.timeSeriesStore() );
             }
             else
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+                LOGGER.debug( CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
                 retrieverFactory = EnsembleRetrieverFactory.of( project,
                                                                 evaluationDetails.databaseServices()
                                                                                  .database(),
@@ -1136,7 +1162,7 @@ class EvaluationUtilities
                             .setSamplingUncertaintyExecutor( executors.samplingUncertaintyExecutor() )
                             .setPoolRequest( poolRequest )
                             .setPoolSupplier( poolSupplier )
-                            .setEvaluation( evaluationDetails.evaluation() )
+                            .setEvaluation( evaluationDetails.evaluationMessager() )
                             .setMonitor( evaluationDetails.monitor() )
                             .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
