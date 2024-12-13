@@ -17,6 +17,7 @@ import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.EventDetectionMethod;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
@@ -25,6 +26,8 @@ import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries;
+import wres.eventdetection.EventDetector;
+import wres.eventdetection.EventDetectorFactory;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.TimeScale;
@@ -353,8 +356,11 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                       + "metadata: {}.", timeSeries.getEvents()
                                                    .size(), timeSeries.getMetadata() );
 
+        // Get an event detector
+        EventDetector eventDetector = EventDetectorFactory.getEventDetector( EventDetectionMethod.DEFAULT );
+
         // Unbounded time window, placeholder
-        return Set.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() ) );
+        return eventDetector.detect( timeSeries, details.detection() );
     }
 
     /**

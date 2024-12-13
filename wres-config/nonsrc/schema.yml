@@ -279,7 +279,7 @@ definitions:
           - "$ref": "#/definitions/EnsembleFilter"
           - type: array
             items:
-               oneOf:
+              oneOf:
                 - type: integer
                 - type: string
                   minLength: 1
@@ -589,6 +589,8 @@ definitions:
               "$ref": "#/definitions/DatasetEnum"
             uniqueItems: true
             minItems: 1
+      method:
+        - "$ref": "#/definitions/EventDetectionMethodEnum"
     required:
       - dataset
 
@@ -1067,7 +1069,7 @@ definitions:
     required:
       - alias
       - unit
-          
+
   Quantiles:
     title: Quantile statistics.
     description: Quantile statistics for a variable.
@@ -1093,7 +1095,7 @@ definitions:
         type: integer
         minimum: 2
     required:
-      - name       
+      - name
 
   Thresholds:
     title: An ordinary set of thresholds.
@@ -1803,3 +1805,12 @@ definitions:
       - observations
       - simulations
       - analyses
+
+  EventDetectionMethodEnum:
+    title: The method for event detection.
+    description: "Use this to select the method for detecting events in 
+    time-series."
+    type: string
+    enum:
+      - regina-ogden
+      - default

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionBuilder;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.EventDetectionMethod;
 
 /**
  * Custom deserializer for a {@link EventDetection}.
@@ -33,6 +34,8 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
         JsonNode node = reader.readTree( jp );
 
         Set<EventDetectionDataset> datasets = Set.of();
+
+        EventDetectionMethod method = null;
 
         // Single string
         if ( node.isTextual() )
@@ -61,8 +64,15 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
             }
         }
 
+        if ( node.has( "method" ) )
+        {
+            JsonNode methodNode = node.get( "method" );
+            method = reader.readValue( methodNode, EventDetectionMethod.class );
+        }
+
         return EventDetectionBuilder.builder()
                                     .datasets( datasets )
+                                    .method( method )
                                     .build();
     }
 

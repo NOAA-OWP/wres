@@ -15,7 +15,8 @@ import wres.config.yaml.deserializers.EventDetectionDeserializer;
  */
 @RecordBuilder
 @JsonDeserialize( using = EventDetectionDeserializer.class )
-public record EventDetection( @JsonProperty( "dataset" ) Set<EventDetectionDataset> datasets )
+public record EventDetection( @JsonProperty( "dataset" ) Set<EventDetectionDataset> datasets,
+                              @JsonProperty( "method ") EventDetectionMethod method )
 {
     /**
      * Creates an instance.
@@ -28,6 +29,11 @@ public record EventDetection( @JsonProperty( "dataset" ) Set<EventDetectionDatas
         if ( datasets.isEmpty() )
         {
             throw new IllegalArgumentException( "Declare at least one dataset for event detection." );
+        }
+
+        if( Objects.isNull( method ) )
+        {
+            method = EventDetectionMethod.DEFAULT;
         }
     }
 }

@@ -48,6 +48,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionBuilder;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.EventDetectionMethod;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
@@ -2422,19 +2423,21 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithEventDetectionUsingExplicitDataset() throws IOException
+    void testDeserializeWithEventDetectionUsingExplicitDatasetAndMethod() throws IOException
     {
         String yaml = """
                 observed: some_file.csv
                 predicted: another_file.csv
                 event_detection:
                   dataset: observed
+                  method: regina-ogden
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         EventDetection eventDetection = EventDetectionBuilder.builder()
                                                              .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .method( EventDetectionMethod.REGINA_OGDEN )
                                                              .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
