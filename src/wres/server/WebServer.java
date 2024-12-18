@@ -1,29 +1,25 @@
 package wres.server;
 
-import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.handler.ShutdownHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Runs the core application as a long-running instance or web server that accepts evaluation requests
@@ -42,25 +38,6 @@ public class WebServer
      * number of calls to a core WRES process.
      */
     private static final int MAX_SERVER_THREADS = 20;
-
-
-    /**
-     * Ensure that the X-Frame-Options header element is included in the response.
-     * If not already set, then it will be set to DENY. If it is already set when this
-     * is called, then it will be left unchanged (there is no check for DENY).
-     */
-    private static final HttpChannel.Listener HTTP_CHANNEL_LISTENER = new HttpChannel.Listener()
-    {
-        @Override
-        public void onResponseBegin( Request request )
-        {
-            if ( request.getResponse().getHeader( "X-Frame-Options" ) == null )
-            {
-                request.getResponse().addHeader( "X-Frame-Options", "DENY" );
-            }
-        }
-    };
-
 
     /**
      * Get the port that is passed in from args, if not present then use default port
@@ -104,8 +81,23 @@ public class WebServer
         dynamicHolder.setServlet( servlet );
 
         // Static handler:
-        ResourceHandler resourceHandler = new ResourceHandler();
-        Resource resource = Resource.newClassPathResource( "html" );
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            public boolean handle( Request request,
+                                   Response response,
+                                   Callback callback )
+                    throws Exception
+            {
+                response.getHeaders()
+                        .add( "X-Frame-Options", "DENY" );
+                response.getHeaders()
+                        .add( "strict-transport-security", "max-age=31536000; includeSubDomains; preload;" );
+                return super.handle( request, response, callback );
+            }
+        };
+        ResourceFactory resourceFactory = ResourceFactory.root();
+        Resource resource = resourceFactory.newClassLoaderResource( "html", false );
         resourceHandler.setBaseResource( resource );
 
         // Have to chain/wrap the handler this way to get both static/dynamic:
@@ -156,13 +148,12 @@ public class WebServer
             // by other processes running locally, e.g. a shim or a UI.
             serverConnector.setHost( "127.0.0.1" );
             serverConnector.setPort( port );
-            serverConnector.addBean( HTTP_CHANNEL_LISTENER );
-            serverConnector.setAcceptedSendBufferSize( 0 );
+            serverConnector.setAcceptedSendBufferSize( -1 );
             ServerConnector[] serverConnectors = { serverConnector };
             jettyServer.setConnectors( serverConnectors );
 
             jettyServer.start();
-            jettyServer.dump( System.err );  // NOSONAR
+            jettyServer.dump( System.err ); // NOSONAR
             String helpMessage =
                     String.format( "Server started. Visit localhost:%d/evaluation for usage instructions", port );
             LOGGER.info( helpMessage );
@@ -182,3 +173,5 @@ public class WebServer
         }
     }
 }
+
+
