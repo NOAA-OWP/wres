@@ -2689,6 +2689,12 @@ class DeclarationValidatorTest
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "Event detection was declared alongside reference date "
                                                                         + "pools",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "it is strongly recommended that you instead declare the 'window_size'",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "it is strongly recommended that you instead declare the 'half_life'",
                                                                         StatusLevel.WARN ) ) );
     }
 

@@ -1,6 +1,7 @@
 package wres.config.yaml.deserializers;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -16,6 +17,7 @@ import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionBuilder;
 import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.EventDetectionMethod;
+import wres.config.yaml.components.EventDetectionParametersBuilder;
 
 /**
  * Custom deserializer for a {@link EventDetection}.
@@ -24,6 +26,10 @@ import wres.config.yaml.components.EventDetectionMethod;
  */
 public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
 {
+
+    /** Duration unit name. */
+    private static final String DURATION_UNIT = "duration_unit";
+
     @Override
     public EventDetection deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
@@ -70,10 +76,48 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
             method = reader.readValue( methodNode, EventDetectionMethod.class );
         }
 
+        EventDetectionParametersBuilder parameters = EventDetectionParametersBuilder.builder();
+
+        if ( node.has( "parameters" ) )
+        {
+            JsonNode parametersNode = node.get( "parameters" );
+            if ( parametersNode.has( "window_size" ) )
+            {
+                Duration windowSize = DurationDeserializer.getDuration( reader,
+                                                                        parametersNode,
+                                                                        "window_size",
+                                                                        DURATION_UNIT );
+                parameters.windowSize( windowSize );
+            }
+            if ( parametersNode.has( "start_radius" ) )
+            {
+                Duration windowSize = DurationDeserializer.getDuration( reader,
+                                                                        parametersNode,
+                                                                        "start_radius",
+                                                                        DURATION_UNIT );
+                parameters.windowSize( windowSize );
+            }
+            if ( parametersNode.has( "half_life" ) )
+            {
+                Duration windowSize = DurationDeserializer.getDuration( reader,
+                                                                        parametersNode,
+                                                                        "half_life",
+                                                                        DURATION_UNIT );
+                parameters.windowSize( windowSize );
+            }
+            if ( parametersNode.has( "minimum_event_duration" ) )
+            {
+                Duration windowSize = DurationDeserializer.getDuration( reader,
+                                                                        parametersNode,
+                                                                        "minimum_event_duration",
+                                                                        DURATION_UNIT );
+                parameters.windowSize( windowSize );
+            }
+        }
         return EventDetectionBuilder.builder()
                                     .datasets( datasets )
                                     .method( method )
+                                    .parameters( parameters.build() )
                                     .build();
     }
-
 }

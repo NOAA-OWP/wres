@@ -591,8 +591,35 @@ definitions:
             minItems: 1
       method:
         - "$ref": "#/definitions/EventDetectionMethodEnum"
+      parameters:
+        anyOf:
+          - "$ref": "#/definitions/EventDetectionParametersReginaOgden"
     required:
       - dataset
+
+  EventDetectionParametersReginaOgden:
+    title: Time-series event detection parameters for the Regina-Ogden method
+    description: "Event detection parameters for the Regina-Ogden event 
+    detection method."
+    type: object
+    additionalProperties: false
+    properties:
+      window_size:
+        type: integer
+        minimum: 1
+      minimum_event_duration:
+        type: integer
+        minimum: 0
+      half_life:
+        type: integer
+        minimum: 1
+      start_radius:
+        type: integer
+        minimum: 0
+      duration_unit:
+        "$ref": "#/definitions/DurationEnum"
+    required:
+      - duration_unit
 
   CrossPair:
     title: Cross-pairing of time-series for consistency

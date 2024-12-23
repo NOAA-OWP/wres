@@ -660,6 +660,7 @@ project(':wres-eventdetection') {
         implementation project(':wres-datamodel') 
         api project(':wres-statistics')
         implementation 'org.slf4j:slf4j-api:2.0.13'
+        implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.11') {
             // Not used at runtime, bloat

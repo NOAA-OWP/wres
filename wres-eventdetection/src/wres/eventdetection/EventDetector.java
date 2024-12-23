@@ -2,7 +2,6 @@ package wres.eventdetection;
 
 import java.util.Set;
 
-import wres.config.yaml.components.EventDetection;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -19,11 +18,10 @@ public interface EventDetector
      * Performs event detection.
      *
      * @param timeSeries the time-series data
-     * @param parameters the event detection parameters
      * @return the detected events
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if the input is null
      * @throws EventDetectionException if the event detection fails for any other reason
      */
-    Set<TimeWindowOuter> detect( TimeSeries<Double> timeSeries, EventDetection parameters );
+    Set<TimeWindowOuter> detect( TimeSeries<Double> timeSeries );
 
 }

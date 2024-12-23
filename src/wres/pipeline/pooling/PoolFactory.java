@@ -78,6 +78,8 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.baselines.PersistenceGenerator;
+import wres.eventdetection.EventDetector;
+import wres.eventdetection.EventDetectorFactory;
 import wres.io.project.Project;
 import wres.io.retrieving.CachingSupplier;
 import wres.io.retrieving.RetrieverFactory;
@@ -2938,11 +2940,30 @@ public class PoolFactory
         this.baselineEnsembleUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
                                                                          this.getUnitMapper()
                                                                              .getUnitAliases() );
-        this.eventsGenerator = new EventsGenerator( this.getLeftSingleValuedUpscaler(),
-                                                    this.getRightSingleValuedUpscaler(),
-                                                    this.getBaselineSingleValuedUpscaler(),
-                                                    this.getCovariateSingleValuedUpscaler(),
-                                                    this.getUnitMapper()
-                                                        .getDesiredMeasurementUnitName() );
+
+        if ( Objects.nonNull( this.project.getDeclaration()
+                                          .eventDetection() ) )
+        {
+            EventDetector eventDetector = EventDetectorFactory.getEventDetector( this.getProject()
+                                                                                     .getDeclaration()
+                                                                                     .eventDetection()
+                                                                                     .method(),
+                                                                                 this.getProject()
+                                                                                     .getDeclaration()
+                                                                                     .eventDetection()
+                                                                                     .parameters() );
+
+            this.eventsGenerator = new EventsGenerator( this.getLeftSingleValuedUpscaler(),
+                                                        this.getRightSingleValuedUpscaler(),
+                                                        this.getBaselineSingleValuedUpscaler(),
+                                                        this.getCovariateSingleValuedUpscaler(),
+                                                        this.getUnitMapper()
+                                                            .getDesiredMeasurementUnitName(),
+                                                        eventDetector );
+        }
+        else
+        {
+            this.eventsGenerator = null;
+        }
     }
 }

@@ -49,6 +49,8 @@ import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionBuilder;
 import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.EventDetectionMethod;
+import wres.config.yaml.components.EventDetectionParameters;
+import wres.config.yaml.components.EventDetectionParametersBuilder;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
@@ -2423,7 +2425,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithEventDetectionUsingExplicitDatasetAndMethod() throws IOException
+    void testDeserializeWithEventDetectionUsingExplicitDatasetAndMethodWithParameters() throws IOException
     {
         String yaml = """
                 observed: some_file.csv
@@ -2431,13 +2433,21 @@ class DeclarationFactoryTest
                 event_detection:
                   dataset: observed
                   method: regina-ogden
+                  parameters:
+                    window_size: 1
+                    duration_unit: hours
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .windowSize( java.time.Duration.ofHours( 1 ) )
+                                               .build();
         EventDetection eventDetection = EventDetectionBuilder.builder()
                                                              .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
                                                              .method( EventDetectionMethod.REGINA_OGDEN )
+                                                             .parameters( parameters )
                                                              .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()

@@ -2399,6 +2399,60 @@ public class DeclarationValidator
             events.add( warn );
         }
 
+        // Check parameters
+        List<EvaluationStatusEvent> parameters = DeclarationValidator.eventDetectionParametersAreValid( declaration );
+        events.addAll( parameters );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that any event detection parameters are valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> eventDetectionParametersAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Parameters undefined for which estimates/defaults are speculative: warn
+        if ( Objects.isNull( declaration.eventDetection()
+                                        .parameters() )
+             || Objects.isNull( declaration.eventDetection()
+                                           .parameters()
+                                           .windowSize() ) )
+        {
+            EvaluationStatusEvent warn
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Event detection was declared, but the window size "
+                                                             + "parameter was undefined. An attempt will be made to "
+                                                             + "choose a reasonable default by inspecting the "
+                                                             + "time-series data, but it is strongly recommended that "
+                                                             + "you instead declare the 'window_size' explicitly as "
+                                                             + "the default value may not be appropriate." )
+                                           .build();
+            events.add( warn );
+        }
+        if ( Objects.isNull( declaration.eventDetection()
+                                        .parameters() )
+             || Objects.isNull( declaration.eventDetection()
+                                           .parameters()
+                                           .halfLife() ) )
+        {
+            EvaluationStatusEvent warn
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Event detection was declared, but the half-life "
+                                                             + "parameter was undefined. An attempt will be made to "
+                                                             + "choose a reasonable default by inspecting the "
+                                                             + "time-series data, but it is strongly recommended that "
+                                                             + "you instead declare the 'half_life' explicitly as the "
+                                                             + "default value may not be appropriate." )
+                                           .build();
+            events.add( warn );
+        }
+
         return Collections.unmodifiableList( events );
     }
 

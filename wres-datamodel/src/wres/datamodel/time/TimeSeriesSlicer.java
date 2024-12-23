@@ -1738,8 +1738,9 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Snips the input series to the prescribed time window. Only snips lead durations with respect to reference times 
-     * with the type {@link ReferenceTimeType#T0}.
+     * Snips the input series to the prescribed time window using a right-closed interval for each time dimension,
+     * i.e., the upper bound is included, the lower bound is excluded. Only snips lead durations with respect to
+     * reference times with the type {@link ReferenceTimeType#T0}.
      *
      * @param <T> the time-series event value type
      * @param toSnip the time-series to snip
@@ -1764,18 +1765,19 @@ public final class TimeSeriesSlicer
                                                              snipTo.getLatestValidTime() );
             TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
 
-            LOGGER.debug( "Snipping paired time-series {} to the time window of {}.",
+            LOGGER.debug( "Snipping time-series {} to the time window of {}.",
                           toSnip.hashCode(),
                           partialSnip );
 
             returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );
 
             // For all other reference time types, filter the datetimes only
-            if ( toSnip.getReferenceTimes().containsKey( ReferenceTimeType.T0 )
+            if ( toSnip.getReferenceTimes()
+                       .containsKey( ReferenceTimeType.T0 )
                  && !snipTo.bothLeadDurationsAreUnbounded() )
             {
-                LOGGER.debug( "Additionally snipping paired time-series {} to lead durations ({},{}] for the reference "
-                              + "time type of {}.",
+                LOGGER.debug( "Additionally snipping time-series {} to lead durations ({},{}] for the reference time "
+                              + "type of {}.",
                               toSnip.hashCode(),
                               snipTo.getEarliestLeadDuration(),
                               snipTo.getLatestLeadDuration(),
