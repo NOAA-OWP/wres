@@ -2,14 +2,18 @@ package wres.eventdetection;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
@@ -186,7 +190,7 @@ public class ReginaOgdenEventDetector implements EventDetector
                 {
                     builder.halfLife( builder.windowSize()
                                              .dividedBy( 10 ) );
-                    LOGGER.warn( "When performing event detection with the Regina-Ogden method, the half life was "
+                    LOGGER.warn( "When performing event detection with the Regina-Ogden method, the half-life was "
                                  + "undefined. However, the window size was defined. The default half life is {}, "
                                  + "which is one tenth of the window size. This default may not be appropriate and it "
                                  + "is strongly recommended that you set the half life explicitly using the "
@@ -197,10 +201,10 @@ public class ReginaOgdenEventDetector implements EventDetector
                 {
                     builder.halfLife( averageTimestep.multipliedBy( 10 ) );
                     LOGGER.warn( "When performing event detection with the Regina-Ogden method, the half life was "
-                                 + "undefined. The default half life is {}, which is ten times the average time-step "
+                                 + "undefined. The default half life is {}, which is ten times the modal time-step "
                                  + "associated with the time-series used for event detection. This default may not be "
-                                 + "appropriate and it is strongly recommended that you set the half life explicitly using "
-                                 + "the 'half_life' parameter.",
+                                 + "appropriate and it is strongly recommended that you set the half life explicitly "
+                                 + "using the 'half_life' parameter.",
                                  builder.halfLife() );
                 }
             }
@@ -223,10 +227,11 @@ public class ReginaOgdenEventDetector implements EventDetector
                 {
                     builder.windowSize( averageTimestep.multipliedBy( 100 ) );
                     LOGGER.warn( "When performing event detection with the Regina-Ogden method, the window wize for "
-                                 + "smoothing and detecting trends was undefined. The default window size is {}, which is "
-                                 + "one hundred times the average time-step associated with the time-series used for event "
-                                 + "detection. This default may not be appropriate and it is strongly recommended that you "
-                                 + "set the window size explicitly using the 'window_size' parameter.",
+                                 + "smoothing and detecting trends was undefined. The default window size is {}, which "
+                                 + "is one hundred times the modal time-step associated with the time-series used for "
+                                 + "event detection. This default may not be appropriate and it is strongly "
+                                 + "recommended that you set the window size explicitly using the 'window_size' "
+                                 + "parameter.",
                                  builder.windowSize() );
                 }
             }
@@ -362,7 +367,7 @@ public class ReginaOgdenEventDetector implements EventDetector
     }
 
     /**
-     * Smoothes a time-series with an exponential moving average.
+     * Creates an exponential moving average of a time-series, handling missing values.
      *
      * @param timeSeries the time-series
      * @param halfLife the half life
@@ -403,7 +408,7 @@ public class ReginaOgdenEventDetector implements EventDetector
 
             double alpha = 1.0 - Math.exp( -Math.log( 2 ) / halfLifeMillis * timestepMillis );
 
-            // Handle NaN
+            // Current value is missing
             if ( Double.isNaN( currentValue.getValue() ) )
             {
                 // First event, then insert NaN
@@ -422,13 +427,23 @@ public class ReginaOgdenEventDetector implements EventDetector
                 // Decay the weight
                 weight = weight * ( 1.0 - alpha );
             }
+            // Current value is present
             else
             {
-                double smoothedValue = alpha * currentValue.getValue()
-                                       + ( 1.0 - alpha ) * lastValue * weight;
-                lastValue = smoothedValue;
-                Event<Double> smoothedEvent = Event.of( currentValue.getTime(), smoothedValue );
-                smoothed.add( smoothedEvent );
+                // Last value is missing
+                if ( Double.isNaN( lastValue ) )
+                {
+                    lastValue = currentValue.getValue();
+                }
+                // Current and last value are both present
+                else
+                {
+                    double smoothedValue = alpha * currentValue.getValue()
+                                           + ( 1.0 - alpha ) * lastValue * weight;
+                    lastValue = smoothedValue;
+                    Event<Double> smoothedEvent = Event.of( currentValue.getTime(), smoothedValue );
+                    smoothed.add( smoothedEvent );
+                }
                 weight = weight * ( 1.0 - alpha ) + alpha;
             }
 
@@ -454,29 +469,38 @@ public class ReginaOgdenEventDetector implements EventDetector
     }
 
     /**
-     * Calculates the average time-step in the series.
+     * Calculates the modal time-step in the series.
      *
      * @param timeSeries the time-series to inspect
      */
 
     private Duration getAverageTimestep( TimeSeries<Double> timeSeries )
     {
-        // Sum the durations between times
+
+        List<Duration> durations = new ArrayList<>();
         Instant lastTime = null;
-        Duration sum = Duration.ZERO;
         for ( Event<Double> next : timeSeries.getEvents() )
         {
             Instant nextTime = next.getTime();
             if ( Objects.nonNull( lastTime ) )
             {
                 Duration between = Duration.between( lastTime, nextTime );
-                sum = sum.plus( between );
+                durations.add( between );
             }
             lastTime = nextTime;
         }
 
-        return sum.dividedBy( timeSeries.getEvents()
-                                        .size() );
+        return durations.stream()
+                        .collect( Collectors.groupingBy( Function.identity(),
+                                                         Collectors.counting() ) )
+                        .entrySet()
+                        .stream()
+                        .max( Map.Entry.comparingByValue() )
+                        .map( Map.Entry::getKey )
+                        .orElseThrow( () -> new EventDetectionException( "Insufficient data to calculate the modal "
+                                                                         + "timestep for event detection. The "
+                                                                         + "time-series had the following metadata: "
+                                                                         + timeSeries.getMetadata() ) );
     }
 
     /**

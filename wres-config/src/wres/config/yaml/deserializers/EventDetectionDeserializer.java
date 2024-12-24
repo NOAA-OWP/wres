@@ -91,27 +91,27 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
             }
             if ( parametersNode.has( "start_radius" ) )
             {
-                Duration windowSize = DurationDeserializer.getDuration( reader,
-                                                                        parametersNode,
-                                                                        "start_radius",
-                                                                        DURATION_UNIT );
-                parameters.windowSize( windowSize );
+                Duration startRadius = DurationDeserializer.getDuration( reader,
+                                                                         parametersNode,
+                                                                         "start_radius",
+                                                                         DURATION_UNIT );
+                parameters.startRadius( startRadius );
             }
             if ( parametersNode.has( "half_life" ) )
             {
-                Duration windowSize = DurationDeserializer.getDuration( reader,
-                                                                        parametersNode,
-                                                                        "half_life",
-                                                                        DURATION_UNIT );
-                parameters.windowSize( windowSize );
+                Duration halfLife = DurationDeserializer.getDuration( reader,
+                                                                      parametersNode,
+                                                                      "half_life",
+                                                                      DURATION_UNIT );
+                parameters.halfLife( halfLife );
             }
             if ( parametersNode.has( "minimum_event_duration" ) )
             {
-                Duration windowSize = DurationDeserializer.getDuration( reader,
-                                                                        parametersNode,
-                                                                        "minimum_event_duration",
-                                                                        DURATION_UNIT );
-                parameters.windowSize( windowSize );
+                Duration minimumEventDuration = DurationDeserializer.getDuration( reader,
+                                                                                  parametersNode,
+                                                                                  "minimum_event_duration",
+                                                                                  DURATION_UNIT );
+                parameters.minimumEventDuration( minimumEventDuration );
             }
         }
         return EventDetectionBuilder.builder()

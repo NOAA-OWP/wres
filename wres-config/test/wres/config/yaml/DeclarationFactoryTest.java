@@ -2435,6 +2435,9 @@ class DeclarationFactoryTest
                   method: regina-ogden
                   parameters:
                     window_size: 1
+                    start_radius: 2
+                    half_life: 3
+                    minimum_event_duration: 4
                     duration_unit: hours
                   """;
 
@@ -2443,6 +2446,9 @@ class DeclarationFactoryTest
         EventDetectionParameters parameters =
                 EventDetectionParametersBuilder.builder()
                                                .windowSize( java.time.Duration.ofHours( 1 ) )
+                                               .startRadius( java.time.Duration.ofHours( 2 ) )
+                                               .halfLife( java.time.Duration.ofHours( 3 ) )
+                                               .minimumEventDuration( java.time.Duration.ofHours( 4 ) )
                                                .build();
         EventDetection eventDetection = EventDetectionBuilder.builder()
                                                              .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
