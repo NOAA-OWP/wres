@@ -2365,7 +2365,8 @@ public class ChartFactory
         Objects.requireNonNull( metricName );
 
         // Pooling window case
-        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS || graphicShape == GraphicShape.VALID_DATE_POOLS )
+        if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS
+             || graphicShape == GraphicShape.VALID_DATE_POOLS )
         {
             return ChartType.POOLING_WINDOW;
         }

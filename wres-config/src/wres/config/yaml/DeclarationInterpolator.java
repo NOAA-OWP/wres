@@ -950,6 +950,7 @@ public class DeclarationInterpolator
         }
         // Valid date pools?
         else if ( ( Objects.nonNull( builder.validDatePools() )
+                    || Objects.nonNull( builder.eventDetection() )
                     || DeclarationInterpolator.hasExplicitValidDatePools( builder.timePools() ) )
                   && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
