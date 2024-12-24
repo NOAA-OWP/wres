@@ -127,7 +127,72 @@ class ReginaOgdenEventDetectorTest
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInner ) );
 
-        // Assert that one event is detected
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDetectWithTrendAndThreeEvents()
+    {
+        TimeSeries<Double> testSeries = this.createTestSeries( false );
+
+        // Duplicate the series three times
+        Instant start = testSeries.getEvents()
+                                  .first()
+                                  .getTime();
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<Double>().setMetadata( testSeries.getMetadata() );
+        for ( int i = 0; i < 3; i++ )
+        {
+            for ( Event<Double> nextEvent : testSeries.getEvents() )
+            {
+                Event<Double> adjusted = Event.of( start, nextEvent.getValue() );
+                builder.addEvent( adjusted );
+                start = start.plus( Duration.ofHours( 1 ) );
+            }
+        }
+
+        testSeries = builder.build();
+
+        EventDetectionParameters parameters = EventDetectionParametersBuilder.builder()
+                                                                             .windowSize( Duration.ofDays( 7 ) )
+                                                                             .minimumEventDuration( Duration.ZERO )
+                                                                             .halfLife( Duration.ofHours( 6 ) )
+                                                                             .build();
+
+        ReginaOgdenEventDetector detector = ReginaOgdenEventDetector.of( parameters );
+
+        Set<TimeWindowOuter> actual = detector.detect( testSeries );
+
+        Instant startOne = Instant.parse( "2018-01-22T02:00:00Z" );
+        Instant endOne = Instant.parse( "2018-01-29T00:00:00Z" );
+
+        TimeWindow expectedInnerOne = MessageFactory.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
+                                                 .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
+                                                 .build();
+
+        Instant startTwo = Instant.parse( "2018-03-04T18:00:00Z" );
+        Instant endTwo = Instant.parse( "2018-03-11T16:00:00Z" );
+
+        TimeWindow expectedInnerTwo = MessageFactory.getTimeWindow()
+                                                    .toBuilder()
+                                                    .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
+                                                    .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
+                                                    .build();
+
+        Instant startThree = Instant.parse( "2018-04-15T10:00:00Z" );
+        Instant endThree = Instant.parse( "2018-04-22T08:00:00Z" );
+
+        TimeWindow expectedInnerThree = MessageFactory.getTimeWindow()
+                                                    .toBuilder()
+                                                    .setEarliestValidTime( MessageFactory.getTimestamp( startThree ) )
+                                                    .setLatestValidTime( MessageFactory.getTimestamp( endThree ) )
+                                                    .build();
+
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInnerOne),
+                                                TimeWindowOuter.of( expectedInnerTwo ),
+                                                TimeWindowOuter.of( expectedInnerThree ) );
+
         assertEquals( expected, actual );
     }
 
@@ -158,7 +223,6 @@ class ReginaOgdenEventDetectorTest
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInner ) );
 
-        // Assert that one event is detected
         assertEquals( expected, actual );
     }
 
