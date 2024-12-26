@@ -61,6 +61,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
@@ -421,10 +422,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Time windows
-        Set<TimeWindowOuter> timeWindows = DeclarationUtilities.getTimeWindows( this.getDeclaration() )
-                                                               .stream()
-                                                               .map( TimeWindowOuter::of )
-                                                               .collect( Collectors.toSet() );
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( this.getDeclaration() );
 
         // Find the thresholds-by-metric for which blobs should be created
 

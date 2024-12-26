@@ -26,6 +26,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -185,7 +186,7 @@ public class RetrieverUtilities
                                      .setLatestLeadDuration( upper )
                                      .build();
 
-        return TimeSeriesSlicer.adjustTimeWindowForTimeScale( TimeWindowOuter.of( inner ),
+        return TimeWindowSlicer.adjustTimeWindowForTimeScale( TimeWindowOuter.of( inner ),
                                                               timeScale );
     }
 

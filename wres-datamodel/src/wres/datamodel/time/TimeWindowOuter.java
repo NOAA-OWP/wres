@@ -2,9 +2,7 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -102,80 +100,6 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
         TimeWindowOuter newInstance = new TimeWindowOuter( timeWindow );
         TIME_WINDOW_CACHE.put( timeWindow, newInstance );
         return newInstance;
-    }
-
-    /**
-     * Returns a {@link TimeWindowOuter} that represents the union of the inputs, specifically where the
-     * {@link #getEarliestReferenceTime()} and {@link #getLatestReferenceTime()} are the earliest and latest instances, 
-     * respectively, and likewise for the {@link #getEarliestValidTime()} and {@link #getLatestValidTime()}, and the 
-     * {@link #getEarliestLeadDuration()} and {@link #getLatestLeadDuration()}.
-     * 
-     * @param input the input windows
-     * @return the union of the inputs with respect to dates and lead times
-     * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the input is empty
-     * @throws NullPointerException if any input is null
-     */
-
-    public static TimeWindowOuter unionOf( Set<TimeWindowOuter> input )
-    {
-        Objects.requireNonNull( input, "Cannot determine the union of time windows for a null input." );
-
-        if ( input.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot determine the union of time windows for empty input." );
-        }
-
-        if ( new HashSet<>( input ).contains( null ) )
-        {
-            throw new IllegalArgumentException( "Cannot determine the union of time windows for input that contains "
-                                                + "one or more null time windows." );
-        }
-
-        // Check and set time parameters
-        TimeWindowOuter first = input.iterator().next();
-        Instant earliestR = first.getEarliestReferenceTime();
-        Instant latestR = first.getLatestReferenceTime();
-        Instant earliestV = first.getEarliestValidTime();
-        Instant latestV = first.getLatestValidTime();
-        Duration earliestL = first.getEarliestLeadDuration();
-        Duration latestL = first.getLatestLeadDuration();
-
-        for ( TimeWindowOuter next : input )
-        {
-            if ( earliestR.isAfter( next.getEarliestReferenceTime() ) )
-            {
-                earliestR = next.getEarliestReferenceTime();
-            }
-            if ( latestR.isBefore( next.getLatestReferenceTime() ) )
-            {
-                latestR = next.getLatestReferenceTime();
-            }
-            if ( earliestL.compareTo( next.getEarliestLeadDuration() ) > 0 )
-            {
-                earliestL = next.getEarliestLeadDuration();
-            }
-            if ( latestL.compareTo( next.getLatestLeadDuration() ) < 0 )
-            {
-                latestL = next.getLatestLeadDuration();
-            }
-            if ( earliestV.isAfter( next.getEarliestValidTime() ) )
-            {
-                earliestV = next.getEarliestValidTime();
-            }
-            if ( latestV.isBefore( next.getLatestValidTime() ) )
-            {
-                latestV = next.getLatestValidTime();
-            }
-        }
-
-        TimeWindow unionWindow = wres.statistics.MessageFactory.getTimeWindow( earliestR,
-                                                                               latestR,
-                                                                               earliestV,
-                                                                               latestV,
-                                                                               earliestL,
-                                                                               latestL );
-        return TimeWindowOuter.of( unionWindow );
     }
 
     @Override

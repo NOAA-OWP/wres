@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
@@ -27,6 +26,8 @@ import wres.config.yaml.components.TimePools;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -35,7 +36,6 @@ import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link EvaluationUtilities}.
@@ -188,13 +188,13 @@ class EvaluationUtilitiesTest
                                             .setLeftThresholdValue( 23.0 )
                                             .build();
 
-        TimeWindow big = DeclarationUtilities.getOneBigTimeWindow( evaluation );
+        TimeWindowOuter big = TimeWindowSlicer.getOneBigTimeWindow( evaluation );
 
         Statistics statistics =
                 Statistics.newBuilder()
                           .setPool( Pool.newBuilder()
                                         .setEventThreshold( eventThreshold )
-                                        .setTimeWindow( big ) )
+                                        .setTimeWindow( big.getTimeWindow() ) )
                           .build();
 
         assertTrue( calculators.values().stream()

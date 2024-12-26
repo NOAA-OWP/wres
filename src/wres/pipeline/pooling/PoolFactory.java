@@ -48,6 +48,7 @@ import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.Values;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.MissingValues;
@@ -498,17 +499,14 @@ public class PoolFactory
                                                                     RetrieverFactory<Double, Double, Double> eventRetriever )
     {
         // Declared time windows
-        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
 
         // Time windows without event detection
         if ( Objects.isNull( declaration.eventDetection() ) )
         {
-            Set<TimeWindowOuter> timeWindowsWrapped = timeWindows.stream()
-                                                                 .map( TimeWindowOuter::of )
-                                                                 .collect( Collectors.toCollection( TreeSet::new ) );
             return featureGroups.stream()
                                 .collect( Collectors.toMap( Function.identity(),
-                                                            g -> timeWindowsWrapped ) );
+                                                            g -> timeWindows ) );
         }
 
         // Time windows based on event detection
@@ -524,14 +522,18 @@ public class PoolFactory
                 Set<TimeWindowOuter> adjustedEvents = new HashSet<>();
                 for ( TimeWindowOuter next : events )
                 {
-                    for ( TimeWindow adjust : timeWindows )
+                    for ( TimeWindowOuter adjust : timeWindows )
                     {
                         TimeWindow adjusted = next.getTimeWindow()
                                                   .toBuilder()
-                                                  .setEarliestReferenceTime( adjust.getEarliestReferenceTime() )
-                                                  .setLatestReferenceTime( adjust.getLatestReferenceTime() )
-                                                  .setEarliestLeadDuration( adjust.getEarliestLeadDuration() )
-                                                  .setLatestLeadDuration( adjust.getLatestLeadDuration() )
+                                                  .setEarliestReferenceTime( adjust.getTimeWindow()
+                                                                                   .getEarliestReferenceTime() )
+                                                  .setLatestReferenceTime( adjust.getTimeWindow()
+                                                                                 .getLatestReferenceTime() )
+                                                  .setEarliestLeadDuration( adjust.getTimeWindow()
+                                                                                  .getEarliestLeadDuration() )
+                                                  .setLatestLeadDuration( adjust.getTimeWindow()
+                                                                                .getLatestLeadDuration() )
                                                   .build();
                         adjustedEvents.add( TimeWindowOuter.of( adjusted ) );
                     }

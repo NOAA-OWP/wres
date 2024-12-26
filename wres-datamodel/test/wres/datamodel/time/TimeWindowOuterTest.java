@@ -8,8 +8,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -25,7 +23,6 @@ import wres.statistics.generated.TimeWindow;
  */
 public final class TimeWindowOuterTest
 {
-    private static final Instant SEVENTH_TIME = Instant.parse( "2017-12-31T11:59:59Z" );
     private static final Instant SIXTH_TIME = Instant.parse( "2015-12-31T11:59:59Z" );
     private static final Instant FIFTH_TIME = Instant.parse( "2010-12-31T11:59:59Z" );
     private static final Instant FOURTH_TIME = Instant.parse( "2009-12-31T11:59:59Z" );
@@ -431,101 +428,6 @@ public final class TimeWindowOuterTest
         TimeWindowOuter unbounded = TimeWindowOuter.of( innerUnbounded );
 
         assertTrue( unbounded.bothLeadDurationsAreUnbounded() );
-    }
-
-    /**
-     * Tests the {@link TimeWindowOuter#unionOf(Set)}.
-     */
-
-    @Test
-    public void testUnionOf()
-    {
-        TimeWindow firstInner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                              SEVENTH_TIME,
-                                                                              Duration.ofHours( 5 ),
-                                                                              Duration.ofHours( 25 ) );
-        TimeWindowOuter first = TimeWindowOuter.of( firstInner );
-        TimeWindow secondInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                               SIXTH_TIME,
-                                                                               Duration.ofHours( -5 ),
-                                                                               Duration.ofHours( 20 ) );
-        TimeWindowOuter second = TimeWindowOuter.of( secondInner );
-        TimeWindow expectedInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                                 SEVENTH_TIME,
-                                                                                 Duration.ofHours( -5 ),
-                                                                                 Duration.ofHours( 25 ) );
-        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
-        Set<TimeWindowOuter> union = new HashSet<>();
-        union.add( first );
-        union.add( second );
-
-        TimeWindowOuter actual = TimeWindowOuter.unionOf( union );
-
-        assertEquals( expected, actual );
-
-        TimeWindow thirdInner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                              SEVENTH_TIME,
-                                                                              FIRST_TIME,
-                                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                                              Duration.ofHours( 5 ),
-                                                                              Duration.ofHours( 21 ) );
-        TimeWindowOuter third = TimeWindowOuter.of( thirdInner );
-        TimeWindow fourthInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                               SIXTH_TIME,
-                                                                               Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                                               SEVENTH_TIME,
-                                                                               Duration.ZERO,
-                                                                               Duration.ofHours( 20 ) );
-        TimeWindowOuter fourth = TimeWindowOuter.of( fourthInner );
-        TimeWindow fifthInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                              SEVENTH_TIME,
-                                                                              Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                                              Duration.ZERO,
-                                                                              Duration.ofHours( 21 ) );
-        TimeWindowOuter expectedTwo = TimeWindowOuter.of( fifthInner );
-        Set<TimeWindowOuter> unionTwo = new HashSet<>();
-        unionTwo.add( third );
-        unionTwo.add( fourth );
-
-        TimeWindowOuter actualTwo = TimeWindowOuter.unionOf( unionTwo );
-
-        assertEquals( expectedTwo, actualTwo );
-    }
-
-    @Test
-    public void testUnionWithThrowsExceptionOnEmptyInput()
-    {
-        Set<TimeWindowOuter> emptySet = Set.of();
-        IllegalArgumentException thrown =
-                assertThrows( IllegalArgumentException.class,
-                              () -> TimeWindowOuter.unionOf( emptySet ) );
-
-        assertEquals( "Cannot determine the union of time windows for empty input.", thrown.getMessage() );
-    }
-
-    @Test
-    public void testUnionWithThrowsExceptionOnInputWithNull()
-    {
-
-        Set<TimeWindowOuter> nullInput = new HashSet<>();
-        nullInput.add( null );
-
-        IllegalArgumentException thrown =
-                assertThrows( IllegalArgumentException.class,
-                              () -> TimeWindowOuter.unionOf( nullInput ) );
-
-        assertEquals( "Cannot determine the union of time windows for input that contains one or more "
-                      + "null time windows.",
-                      thrown.getMessage() );
-    }
-
-    @Test
-    public void testUnionWithThrowsExceptionOnNullInput()
-    {
-        NullPointerException thrown = assertThrows( NullPointerException.class, () -> TimeWindowOuter.unionOf( null ) );
-
-        assertEquals( "Cannot determine the union of time windows for a null input.", thrown.getMessage() );
     }
 
 }

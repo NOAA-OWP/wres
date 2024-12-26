@@ -38,9 +38,9 @@ import wres.datamodel.time.Event;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.DataProvider;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
 import wres.io.database.DataScripter;
@@ -524,7 +524,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             // Subtract any non-instantaneous desired timescale period from the lower bound of the lead duration and
             // valid time
-            filter = TimeSeriesSlicer.adjustTimeWindowForTimeScale( filter, this.desiredTimeScale );
+            filter = TimeWindowSlicer.adjustTimeWindowForTimeScale( filter, this.desiredTimeScale );
 
             // Forecasts?
             if ( this.isForecast() )

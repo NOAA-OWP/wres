@@ -36,6 +36,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.bootstrap.BootstrapUtilities;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
@@ -1416,18 +1417,18 @@ class EvaluationUtilities
      * @param separateMetricsForBaseline whether to generate a filter for baseline pools with separate metrics
      * @return the filters
      */
-    private static List<Predicate<Statistics>> getTimeWindowFilters( Set<TimeWindow> timeWindows,
+    private static List<Predicate<Statistics>> getTimeWindowFilters( Set<TimeWindowOuter> timeWindows,
                                                                      boolean separateMetricsForBaseline )
     {
         List<Predicate<Statistics>> filters = new ArrayList<>();
 
-        for ( TimeWindow timeWindow : timeWindows )
+        for ( TimeWindowOuter timeWindow : timeWindows )
         {
             // Filter for main pools
             Predicate<Statistics> nextMainFilter = statistics -> statistics.hasPool()
                                                                  && statistics.getPool()
                                                                               .getTimeWindow()
-                                                                              .equals( timeWindow );
+                                                                              .equals( timeWindow.getTimeWindow() );
             filters.add( nextMainFilter );
 
             // Separate metrics for baseline?
@@ -1437,7 +1438,7 @@ class EvaluationUtilities
                                                                      && statistics.hasBaselinePool()
                                                                      && statistics.getBaselinePool()
                                                                                   .getTimeWindow()
-                                                                                  .equals( timeWindow );
+                                                                                  .equals( timeWindow.getTimeWindow() );
                 filters.add( nextBaseFilter );
             }
         }
@@ -1610,7 +1611,7 @@ class EvaluationUtilities
                                                            .separateMetrics();
 
         // Get the time window and threshold filters
-        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
         Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
         List<TimeWindowAndThresholdFilterAdapter> timeWindowAndThresholdFilters =
                 EvaluationUtilities.getTimeWindowAndThresholdFilters( timeWindows,
@@ -2053,7 +2054,7 @@ class EvaluationUtilities
      * @param clearThresholdValues is true to clear event threshold values, false otherwise
      * @return the filters
      */
-    private static List<TimeWindowAndThresholdFilterAdapter> getTimeWindowAndThresholdFilters( Set<TimeWindow> timeWindows,
+    private static List<TimeWindowAndThresholdFilterAdapter> getTimeWindowAndThresholdFilters( Set<TimeWindowOuter> timeWindows,
                                                                                                Set<wres.config.yaml.components.Threshold> thresholds,
                                                                                                boolean separateMetricsForBaseline,
                                                                                                boolean clearThresholdValues )
