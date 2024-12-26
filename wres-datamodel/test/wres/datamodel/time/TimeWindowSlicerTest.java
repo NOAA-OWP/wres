@@ -181,6 +181,103 @@ class TimeWindowSlicerTest
     }
 
     @Test
+    void testIntersectionOnValidTimeOnly()
+    {
+        TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                       Instant.parse( INSTANT_TWO ) );
+        TimeWindow two = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                       Instant.parse( INSTANT_THREE ) );
+        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                         Instant.parse( INSTANT_THREE ) );
+        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ELEVEN ),
+                                                        Instant.parse( INSTANT_TEN ) );
+        Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
+                                             TimeWindowOuter.of( two ) );
+        Set<TimeWindowOuter> second = Set.of( TimeWindowOuter.of( three ),
+                                              TimeWindowOuter.of( four ) );
+
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.intersection( first, second );
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( one ),
+                                                TimeWindowOuter.of( two ),
+                                                TimeWindowOuter.of( three ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testIntersectionOnReferenceTimeOnly()
+    {
+        TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                       Instant.parse( INSTANT_TWO ),
+                                                       Instant.MIN,
+                                                       Instant.MAX );
+        TimeWindow two = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                       Instant.parse( INSTANT_THREE ),
+                                                       Instant.MIN,
+                                                       Instant.MAX );
+        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                         Instant.parse( INSTANT_THREE ),
+                                                         Instant.MIN,
+                                                         Instant.MAX );
+        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ELEVEN ),
+                                                        Instant.parse( INSTANT_TEN ),
+                                                        Instant.MIN,
+                                                        Instant.MAX );
+        Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
+                                             TimeWindowOuter.of( two ) );
+        Set<TimeWindowOuter> second = Set.of( TimeWindowOuter.of( three ),
+                                              TimeWindowOuter.of( four ) );
+
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.intersection( first, second );
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( one ),
+                                                TimeWindowOuter.of( two ),
+                                                TimeWindowOuter.of( three ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testIntersectionOnLeadDurationValidTimeAndReferenceTime()
+    {
+        TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                       Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                       Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                       Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                       Duration.ofHours( 1 ),
+                                                       Duration.ofHours( 2 ) );
+        TimeWindow two = MessageFactory.getTimeWindow( Instant.parse( "1933-01-01T00:00:00Z" ),
+                                                       Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                       Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                       Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                       Duration.ofHours( 1 ),
+                                                       Duration.ofHours( 2 ) );
+        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-04T00:00:00Z" ),
+                                                         Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1935-01-03T00:00:00Z" ),
+                                                         Duration.ofHours( 2 ),
+                                                         Duration.ofHours( 5 ) );
+        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                        Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                        Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                        Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                        Duration.ofHours( 3 ),
+                                                        Duration.ofHours( 4 ) );
+
+        Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
+                                             TimeWindowOuter.of( two ) );
+        Set<TimeWindowOuter> second = Set.of( TimeWindowOuter.of( three ),
+                                              TimeWindowOuter.of( four ) );
+
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.intersection( first, second );
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( one ),
+                                                TimeWindowOuter.of( two ),
+                                                TimeWindowOuter.of( three ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testAdjustByTimeScalePeriodWhenTimeScaleIsInstantaneous()
     {
         TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
