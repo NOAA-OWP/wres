@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
@@ -238,7 +240,7 @@ public class TimeWindowSlicer
      * @throws NullPointerException if any required input is null
      */
 
-    public static Set<TimeWindowOuter> getTimeWindows( EvaluationDeclaration declaration )
+    public static SortedSet<TimeWindowOuter> getTimeWindows( EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
 
@@ -266,7 +268,7 @@ public class TimeWindowSlicer
         }
 
         // Add the explicitly declared time windows
-        Set<TimeWindowOuter> finalWindows = new HashSet<>( timeWindows );
+        SortedSet<TimeWindowOuter> finalWindows = new TreeSet<>( timeWindows );
 
         TimeWindowSlicer.LOGGER.debug( "Added {} explicitly declared time pools to the overall group of time pools.",
                                        declaration.timePools()
@@ -277,7 +279,7 @@ public class TimeWindowSlicer
                                         .map( TimeWindowOuter::of )
                                         .collect( Collectors.toSet() ) );
 
-        return Collections.unmodifiableSet( finalWindows );
+        return Collections.unmodifiableSortedSet( finalWindows );
     }
 
     /**

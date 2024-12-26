@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
@@ -47,8 +46,6 @@ import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.LeadTimeInterval;
-import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParameters;
@@ -61,13 +58,8 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
-import wres.config.yaml.components.TimeInterval;
-import wres.config.yaml.components.TimeIntervalBuilder;
-import wres.config.yaml.components.TimePools;
-import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
-import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -76,7 +68,6 @@ import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link DeclarationUtilitiesTest}.
