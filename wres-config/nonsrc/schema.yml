@@ -590,7 +590,7 @@ definitions:
             uniqueItems: true
             minItems: 1
       method:
-        - "$ref": "#/definitions/EventDetectionMethodEnum"
+        "$ref": "#/definitions/EventDetectionMethodEnum"
       parameters:
         anyOf:
           - "$ref": "#/definitions/EventDetectionParametersReginaOgden"
@@ -618,8 +618,8 @@ definitions:
         minimum: 0
       duration_unit:
         "$ref": "#/definitions/DurationEnum"
-    required:
-      - duration_unit
+      combination:
+        "$ref": "#/definitions/EventDetectionCombinationEnum"
 
   CrossPair:
     title: Cross-pairing of time-series for consistency
@@ -1841,3 +1841,12 @@ definitions:
     enum:
       - regina-ogden
       - default
+
+  EventDetectionCombinationEnum:
+    title: The method for combining events across data sources.
+    description: "Identifies the method for combining events across different 
+      time-series data sources, such as observed and predicted."
+    type: string
+    enum:
+      - union
+      - intersection

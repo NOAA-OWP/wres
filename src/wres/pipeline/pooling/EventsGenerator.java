@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,6 +17,7 @@ import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -25,6 +27,8 @@ import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindowSlicer;
+import wres.eventdetection.EventDetectionException;
 import wres.eventdetection.EventDetector;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
@@ -48,6 +52,11 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                         String measurementUnit,
                         EventDetector eventDetector )
 {
+    /** Repeated message. */
+    private static final String DETECTED_EVENTS_IN_THE_DATASET = "Detected {} events in the {} dataset.";
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( EventsGenerator.class );
 
     /**
      * Construct and validate.
@@ -69,9 +78,6 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         Objects.requireNonNull( eventDetector );
     }
 
-    /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( EventsGenerator.class );
-
     /**
      * Performs event detection for one or more declared time-series datasets.
      * @param project the project whose time-series data should be used
@@ -87,6 +93,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
 
         EvaluationDeclaration declaration = project.getDeclaration();
         EventDetection detection = declaration.eventDetection();
+        Set<EventDetectionDataset> datasets = detection.datasets();
+        EventDetectionCombination combination = detection.parameters()
+                                                         .combination();
         Set<TimeWindowOuter> events = new HashSet<>();
         TimeScaleOuter desiredTimeScale = project.getDesiredTimeScale();
 
@@ -169,7 +178,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                + "covariate feature name "
                                                                                + "orientation." );
                         }
-                        events.addAll( innerEvents );
+
+                        this.combineEvents( events, innerEvents, combination, filtered.size() );
                     }
                 }
                 case OBSERVED ->
@@ -186,7 +196,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.leftUpscaler(),
                                                        this.measurementUnit() );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    events.addAll( innerEvents );
+                    this.combineEvents( events, innerEvents, combination, datasets.size() );
                 }
                 case PREDICTED ->
                 {
@@ -202,7 +212,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.rightUpscaler(),
                                                        this.measurementUnit() );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    events.addAll( innerEvents );
+                    this.combineEvents( events, innerEvents, combination, datasets.size() );
                 }
                 case BASELINE ->
                 {
@@ -218,12 +228,14 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.baselineUpscaler(),
                                                        this.measurementUnit() );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    events.addAll( innerEvents );
+                    this.combineEvents( events, innerEvents, combination, datasets.size() );
                 }
             }
         }
 
-        LOGGER.debug( "Completed event detection, which generated {} events: {}.", events.size(), events );
+        LOGGER.info( "Detected {} events across all dataset when forming their {}.",
+                     events.size(),
+                     combination );
 
         return Collections.unmodifiableSet( events );
     }
@@ -249,7 +261,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             Objects.requireNonNull( details.covariateName() );
         }
 
-        Set<TimeWindowOuter> events = new HashSet<>();
+        Set<TimeWindowOuter> events = new TreeSet<>();
         TimeWindowOuter unbounded = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
         FeatureGroup featureGroup = details.featureGroup();
         Function<FeatureTuple, Feature> featureGetter = details.featureGetter();
@@ -268,6 +280,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                                this.leftUpscaler() )
                                                                             .stream() )
                                                          .collect( Collectors.toSet() );
+                LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
+                             innerEvents.size(),
+                             EventDetectionDataset.OBSERVED );
                 events.addAll( innerEvents );
             }
             case PREDICTED ->
@@ -281,6 +296,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                                this.rightUpscaler() )
                                                                             .stream() )
                                                          .collect( Collectors.toSet() );
+                LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
+                             innerEvents.size(),
+                             EventDetectionDataset.PREDICTED );
                 events.addAll( innerEvents );
             }
             case BASELINE ->
@@ -294,6 +312,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                                this.baselineUpscaler() )
                                                                             .stream() )
                                                          .collect( Collectors.toSet() );
+                LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
+                             innerEvents.size(),
+                             EventDetectionDataset.BASELINE );
                 events.addAll( innerEvents );
             }
             case COVARIATES ->
@@ -310,11 +331,51 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                     this.covariateUpscaler() )
                                                  .stream() )
                               .collect( Collectors.toSet() );
+                LOGGER.info( "Detected {} events in the {} dataset with variable name, '{}'.",
+                             innerEvents.size(),
+                             EventDetectionDataset.COVARIATES,
+                             details.covariateName() );
                 events.addAll( innerEvents );
             }
         }
 
         return Collections.unmodifiableSet( events );
+    }
+
+    /**
+     * Combines detected events using the prescribed {@link EventDetectionCombination} strategy, modifying the existing
+     * set of events in place.
+     *
+     * @param events the existing events
+     * @param newEvents the new events
+     * @param combination the combination strategy
+     * @param datasetCount the number of datasets, which is used to assist in interpreting the strategy
+     */
+
+    private void combineEvents( Set<TimeWindowOuter> events,
+                                Set<TimeWindowOuter> newEvents,
+                                EventDetectionCombination combination,
+                                int datasetCount )
+    {
+        if ( combination == EventDetectionCombination.UNION
+             || datasetCount == 1 )
+        {
+            LOGGER.debug( "Combining detected events using the {}.", EventDetectionCombination.UNION );
+            events.addAll( newEvents );
+        }
+        else if ( combination == EventDetectionCombination.INTERSECTION )
+        {
+            LOGGER.debug( "Combining detected events using the {}.", EventDetectionCombination.INTERSECTION );
+            Set<TimeWindowOuter> intersection = TimeWindowSlicer.intersection( events, newEvents );
+            events.clear();
+            events.addAll( intersection );
+        }
+        else
+        {
+            throw new EventDetectionException( "Unrecognized method for combining detected events: "
+                                               + combination
+                                               + "." );
+        }
     }
 
     /**

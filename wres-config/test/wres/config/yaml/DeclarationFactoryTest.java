@@ -47,6 +47,7 @@ import wres.config.yaml.components.EnsembleFilterBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionBuilder;
+import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.EventDetectionMethod;
 import wres.config.yaml.components.EventDetectionParameters;
@@ -2438,6 +2439,7 @@ class DeclarationFactoryTest
                     start_radius: 2
                     half_life: 3
                     minimum_event_duration: 4
+                    combination: intersection
                     duration_unit: hours
                   """;
 
@@ -2449,6 +2451,7 @@ class DeclarationFactoryTest
                                                .startRadius( java.time.Duration.ofHours( 2 ) )
                                                .halfLife( java.time.Duration.ofHours( 3 ) )
                                                .minimumEventDuration( java.time.Duration.ofHours( 4 ) )
+                                               .combination( EventDetectionCombination.INTERSECTION )
                                                .build();
         EventDetection eventDetection = EventDetectionBuilder.builder()
                                                              .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
