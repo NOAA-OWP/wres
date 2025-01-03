@@ -93,12 +93,12 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
 
         EvaluationDeclaration declaration = project.getDeclaration();
         EventDetection detection = declaration.eventDetection();
-        Set<EventDetectionDataset> datasets = detection.datasets();
         EventDetectionCombination combination = detection.parameters()
                                                          .combination();
         Set<TimeWindowOuter> events = new HashSet<>();
         TimeScaleOuter desiredTimeScale = project.getDesiredTimeScale();
 
+        boolean detectionAttempted = false; // Only attempt to combine events when detection has been attempted
         for ( EventDetectionDataset dataset : detection.datasets() )
         {
             switch ( dataset )
@@ -115,16 +115,13 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                     for ( CovariateDataset next : filtered )
                     {
                         Set<TimeWindowOuter> innerEvents = Set.of();
+
                         // Get the desired timescale appropriate for the covariate dataset
                         TimeScaleOuter covariateTimeScale =
                                 this.getAdjustedTimeScale( desiredTimeScale, next.rescaleFunction() );
 
                         switch ( next.featureNameOrientation() )
                         {
-                            // Doesn't work - need a separate doEventDet... method for covariates that
-                            // includes covariate name OR a more flexible method that takes a feature
-                            // getter function separately from the dataset orientation for retrieval
-
                             case LEFT ->
                             {
                                 EventDetectionDetails details =
@@ -179,7 +176,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                + "orientation." );
                         }
 
-                        this.combineEvents( events, innerEvents, combination, filtered.size() );
+                        this.combineEvents( detectionAttempted, events, innerEvents, combination );
+                        detectionAttempted = true;
                     }
                 }
                 case OBSERVED ->
@@ -196,7 +194,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.leftUpscaler(),
                                                        this.measurementUnit() );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( events, innerEvents, combination, datasets.size() );
+                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
+                    detectionAttempted = true;
                 }
                 case PREDICTED ->
                 {
@@ -212,7 +211,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.rightUpscaler(),
                                                        this.measurementUnit() );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( events, innerEvents, combination, datasets.size() );
+                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
+                    detectionAttempted = true;
                 }
                 case BASELINE ->
                 {
@@ -228,7 +228,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.baselineUpscaler(),
                                                        this.measurementUnit() );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( events, innerEvents, combination, datasets.size() );
+                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
+                    detectionAttempted = true;
                 }
             }
         }
@@ -346,19 +347,26 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
      * Combines detected events using the prescribed {@link EventDetectionCombination} strategy, modifying the existing
      * set of events in place.
      *
+     * @param combine is true to attempt combination, false otherwise
      * @param events the existing events
      * @param newEvents the new events
      * @param combination the combination strategy
-     * @param datasetCount the number of datasets, which is used to assist in interpreting the strategy
      */
 
-    private void combineEvents( Set<TimeWindowOuter> events,
+    private void combineEvents( boolean combine,
+                                Set<TimeWindowOuter> events,
                                 Set<TimeWindowOuter> newEvents,
-                                EventDetectionCombination combination,
-                                int datasetCount )
+                                EventDetectionCombination combination )
     {
-        if ( combination == EventDetectionCombination.UNION
-             || datasetCount == 1 )
+        // First dataset, so add the events to the existing events only
+        if ( !combine )
+        {
+            LOGGER.debug( "Skipping event combination as event detection has not yet been attempted, but adding "
+                          + "events to the set of existing events." );
+            events.addAll( newEvents );
+        }
+        // Union requested, else a covariate dataset and this is the first covariate discovered
+        else if ( combination == EventDetectionCombination.UNION )
         {
             LOGGER.debug( "Combining detected events using the {}.", EventDetectionCombination.UNION );
             events.addAll( newEvents );
@@ -375,6 +383,16 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             throw new EventDetectionException( "Unrecognized method for combining detected events: "
                                                + combination
                                                + "." );
+        }
+
+        if ( combine
+             && LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Upon combining events with the {}, identified {} joint events from a total of {} "
+                          + "marginal events.",
+                          combination,
+                          events.size(),
+                          events.size() + newEvents.size() );
         }
     }
 
@@ -434,7 +452,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
     private TimeScaleOuter getAdjustedTimeScale( TimeScaleOuter desiredTimeScale,
                                                  TimeScale.TimeScaleFunction function )
     {
-        if ( Objects.isNull( function ) )
+        if ( Objects.isNull( function )
+             || Objects.isNull( desiredTimeScale ) )
         {
             return desiredTimeScale;
         }

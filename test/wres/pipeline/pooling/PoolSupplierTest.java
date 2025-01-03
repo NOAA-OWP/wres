@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -226,12 +225,12 @@ class PoolSupplierTest
         TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Observations: 25510317T00_FAKE2_observations.xml
-        TimeSeriesMetadata metadata =
+        TimeSeriesMetadata metadataInner =
                 getBoilerplateMetadataWithTimeScale( FEATURE,
                                                      TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                                         TimeScaleFunction.MEAN ) );
         this.observations =
-                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                new TimeSeries.Builder<Double>().setMetadata( metadataInner )
                                                 .addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
                                                 .addEvent( Event.of( T2551_03_17T01_00_00Z, 317.0 ) )
                                                 .addEvent( Event.of( T2551_03_17T02_00_00Z, 331.0 ) )
@@ -320,7 +319,7 @@ class PoolSupplierTest
                                                 .build();
 
         this.observationsOne =
-                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                new TimeSeries.Builder<Double>().setMetadata( metadataInner )
                                                 .addEvent( Event.of( T2551_03_17T13_00_00Z, 401.0 ) )
                                                 .addEvent( Event.of( T2551_03_17T14_00_00Z, 409.0 ) )
                                                 .addEvent( Event.of( T2551_03_17T15_00_00Z, 419.0 ) )
@@ -339,7 +338,7 @@ class PoolSupplierTest
                                                 .build();
 
         this.observationsTwo =
-                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                new TimeSeries.Builder<Double>().setMetadata( metadataInner )
                                                 .addEvent( Event.of( T2551_03_18T04_00_00Z, 491.0 ) )
                                                 .addEvent( Event.of( T2551_03_18T05_00_00Z, 499.0 ) )
                                                 .addEvent( Event.of( T2551_03_18T06_00_00Z, 503.0 ) )
@@ -747,7 +746,7 @@ class PoolSupplierTest
         PoolMetadata poolOneMetadataBaseline = PoolMetadata.of( poolOneMetadata.getEvaluation(), baselinePool );
 
         List<TimeSeries<Double>> climData = obsSupplier.get()
-                                                       .collect( Collectors.toList() );
+                                                       .toList();
 
         Supplier<Climatology> climatology = () -> Climatology.of( climData );
 
@@ -975,56 +974,48 @@ class PoolSupplierTest
                 wres.statistics.MessageFactory.getGeometry( featureName ) );
 
         TimeSeriesMetadata obsMeta = this.observations.getMetadata();
-        TimeSeries<Double> observationsTwo = new TimeSeries.Builder<Double>().addEvents( this.observations.getEvents() )
-                                                                             .setMetadata( new TimeSeriesMetadata.Builder().setReferenceTimes(
-                                                                                                                                   obsMeta.getReferenceTimes() )
-                                                                                                                           .setTimeScale(
-                                                                                                                                   obsMeta.getTimeScale() )
-                                                                                                                           .setUnit(
-                                                                                                                                   obsMeta.getUnit() )
-                                                                                                                           .setVariableName(
-                                                                                                                                   obsMeta.getVariableName() )
-                                                                                                                           .setFeature(
-                                                                                                                                   feature )
-                                                                                                                           .build() )
-                                                                             .build();
+        TimeSeries<Double> observationsTwoInner =
+                new TimeSeries.Builder<Double>().addEvents( this.observations.getEvents() )
+                                                .setMetadata( new TimeSeriesMetadata.Builder()
+                                                                      .setReferenceTimes( obsMeta.getReferenceTimes() )
+                                                                      .setTimeScale( obsMeta.getTimeScale() )
+                                                                      .setUnit( obsMeta.getUnit() )
+                                                                      .setVariableName( obsMeta.getVariableName() )
+                                                                      .setFeature( feature )
+                                                                      .build() )
+                                                .build();
 
-        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations, observationsTwo ) );
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations, observationsTwoInner ) );
         Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
         // Create the duplicate forecast series for a different feature
         TimeSeriesMetadata forcThreeMeta = this.forecastThree.getMetadata();
-        TimeSeries<Double> forecastFive = new TimeSeries.Builder<Double>().addEvents( this.forecastThree.getEvents() )
-                                                                          .setMetadata( new TimeSeriesMetadata.Builder().setReferenceTimes(
-                                                                                                                                forcThreeMeta.getReferenceTimes() )
-                                                                                                                        .setTimeScale(
-                                                                                                                                forcThreeMeta.getTimeScale() )
-                                                                                                                        .setUnit(
-                                                                                                                                forcThreeMeta.getUnit() )
-                                                                                                                        .setVariableName(
-                                                                                                                                forcThreeMeta.getVariableName() )
-                                                                                                                        .setFeature(
-                                                                                                                                feature )
-                                                                                                                        .build() )
-                                                                          .build();
+        TimeSeries<Double> forecastFiveInner =
+                new TimeSeries.Builder<Double>().addEvents( this.forecastThree.getEvents() )
+                                                .setMetadata( new TimeSeriesMetadata.Builder()
+                                                                      .setReferenceTimes( forcThreeMeta.getReferenceTimes() )
+                                                                      .setTimeScale( forcThreeMeta.getTimeScale() )
+                                                                      .setUnit( forcThreeMeta.getUnit() )
+                                                                      .setVariableName( forcThreeMeta.getVariableName() )
+                                                                      .setFeature( feature )
+                                                                      .build() )
+                                                .build();
 
         TimeSeriesMetadata forcFourMeta = this.forecastFour.getMetadata();
-        TimeSeries<Double> forecastSix = new TimeSeries.Builder<Double>().addEvents( this.forecastFour.getEvents() )
-                                                                         .setMetadata( new TimeSeriesMetadata.Builder().setReferenceTimes(
-                                                                                                                               forcFourMeta.getReferenceTimes() )
-                                                                                                                       .setTimeScale(
-                                                                                                                               forcFourMeta.getTimeScale() )
-                                                                                                                       .setUnit(
-                                                                                                                               forcFourMeta.getUnit() )
-                                                                                                                       .setVariableName(
-                                                                                                                               forcFourMeta.getVariableName() )
-                                                                                                                       .setFeature(
-                                                                                                                               feature )
-                                                                                                                       .build() )
-                                                                         .build();
+        TimeSeries<Double> forecastSixInner =
+                new TimeSeries.Builder<Double>().addEvents( this.forecastFour.getEvents() )
+                                                .setMetadata( new TimeSeriesMetadata.Builder()
+                                                                      .setReferenceTimes( forcFourMeta.getReferenceTimes() )
+                                                                      .setTimeScale( forcFourMeta.getTimeScale() )
+                                                                      .setUnit( forcFourMeta.getUnit() )
+                                                                      .setVariableName( forcFourMeta.getVariableName() )
+                                                                      .setFeature( feature )
+                                                                      .build() )
+                                                .build();
 
         Mockito.when( this.forecastRetriever.get() )
-               .thenReturn( Stream.of( this.forecastThree, this.forecastFour, forecastFive, forecastSix ) );
+               .thenReturn( Stream.of( this.forecastThree, this.forecastFour, forecastFiveInner, forecastSixInner ) );
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplier = CachingRetriever.of( this.forecastRetriever );
 
@@ -1224,7 +1215,7 @@ class PoolSupplierTest
                                                         poolOneWindow,
                                                         this.desiredTimeScale );
 
-        TimeSeriesCrossPairer<Pair<Double, Double>,Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
+        TimeSeriesCrossPairer<Pair<Double, Double>, Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
         CrossPair crossPair = new CrossPair( CrossPairMethod.EXACT, CrossPairScope.ACROSS_FEATURES );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
@@ -1321,7 +1312,7 @@ class PoolSupplierTest
 
         Function<Set<Feature>, BaselineGenerator<Double>> featuredBaselineGenerator = in -> baselineGenerator;
 
-        TimeSeriesCrossPairer<Pair<Double, Double>,Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
+        TimeSeriesCrossPairer<Pair<Double, Double>, Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
         CrossPair crossPair = new CrossPair( CrossPairMethod.EXACT, null );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
