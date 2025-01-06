@@ -19,6 +19,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.TimeWindowAggregation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
@@ -238,7 +239,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                      events.size(),
                      combination );
 
-        return Collections.unmodifiableSet( events );
+        return this.aggregateEvents( events, detection.parameters()
+                                                      .aggregation() );
     }
 
     /**
@@ -394,6 +396,41 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                           events.size(),
                           events.size() + newEvents.size() );
         }
+    }
+
+    /**
+     * Returns the aggregate of intersecting events.
+     *
+     * @param events the events
+     * @param method the method
+     * @return the aggregate of intersecting events
+     */
+
+    private Set<TimeWindowOuter> aggregateEvents( Set<TimeWindowOuter> events, TimeWindowAggregation method )
+    {
+        // Short-circuit
+        if ( Objects.isNull( method ) )
+        {
+            return events;
+        }
+
+        Set<TimeWindowOuter> aggregated = new HashSet<>();
+        for ( TimeWindowOuter nextOuter : events )
+        {
+            Set<TimeWindowOuter> intersected = new HashSet<>();
+            for ( TimeWindowOuter nextInner : events )
+            {
+                if ( TimeWindowSlicer.intersects( nextOuter, nextInner ) )
+                {
+                    intersected.add( nextOuter );
+                    intersected.add( nextInner );
+                }
+            }
+            TimeWindowOuter aggregate = TimeWindowSlicer.aggregate( intersected, method );
+            aggregated.add( aggregate );
+        }
+
+        return Collections.unmodifiableSet( aggregated );
     }
 
     /**

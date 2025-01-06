@@ -37,6 +37,7 @@ import wres.config.yaml.components.EventDetectionParameters;
 import wres.config.yaml.components.EventDetectionParametersBuilder;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -292,6 +293,91 @@ class EventsGeneratorTest
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
                                                 TimeWindowOuter.of( expectedTwo ),
                                                 TimeWindowOuter.of( expectedThree ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testEventDetectionWithIntersectionGeneratesOneAggregateEventFromSixMarginalEvents()
+    {
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        EventDetectionParameters parameters = EventDetectionParametersBuilder.builder()
+                                                                             .windowSize( Duration.ofHours( 6 ) )
+                                                                             .minimumEventDuration( Duration.ZERO )
+                                                                             .halfLife( Duration.ofHours( 2 ) )
+                                                                             .combination( EventDetectionCombination.INTERSECTION )
+                                                                             .aggregation( TimeWindowAggregation.MAXIMUM )
+                                                                             .build();
+        EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
+                                                                        parameters );
+        String measurementUnit = "foo";
+        EventsGenerator generator = new EventsGenerator( upscaler,
+                                                         upscaler,
+                                                         upscaler,
+                                                         upscaler,
+                                                         measurementUnit,
+                                                         detector );
+
+        TimeSeries<Double> timeSeriesOne = this.getTestTimeSeriesWithOffset( Duration.ZERO );
+
+        // Shift the series by one hour, which will eliminate the first event upon intersection, leaving two in total
+        // of the four events detected across the two series
+        TimeSeries<Double> timeSeriesTwo = this.getTestTimeSeriesWithOffset( Duration.ofHours( 1 ) );
+
+        // Shift the baseline by one hour, which will eliminate the first event upon intersection, retaining three
+        // of the six events detected across three series
+        TimeSeries<Double> timeSeriesThree = this.getTestTimeSeriesWithOffset( Duration.ofHours( -1 ) );
+
+        // Mock a retriever factory
+        Mockito.when( this.leftRetriever.get() )
+               .thenReturn( Stream.of( timeSeriesOne ) );
+        Mockito.when( this.rightRetriever.get() )
+               .thenReturn( Stream.of( timeSeriesTwo ) );
+        Mockito.when( this.baselineRetriever.get() )
+               .thenReturn( Stream.of( timeSeriesThree ) );
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+               .thenReturn( this.leftRetriever );
+        Mockito.when( this.retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )
+               .thenReturn( this.rightRetriever );
+        Mockito.when( this.retrieverFactory.getBaselineRetriever( Mockito.anySet(), Mockito.any() ) )
+               .thenReturn( this.baselineRetriever );
+
+        // Mock the sufficient elements of a project with three separate datasets for event detection
+        EventDetection eventDeclaration = EventDetectionBuilder.builder()
+                                                               .method( EventDetectionMethod.REGINA_OGDEN )
+                                                               .parameters( parameters )
+                                                               .datasets( Set.of( EventDetectionDataset.OBSERVED,
+                                                                                  EventDetectionDataset.PREDICTED,
+                                                                                  EventDetectionDataset.BASELINE ) )
+                                                               .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .eventDetection( eventDeclaration )
+                                                                        .build();
+
+        Geometry geometry = MessageFactory.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureGroup groupOne = FeatureGroup.of( geoGroup );
+
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( groupOne ) );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+
+        Set<TimeWindowOuter> actual = generator.doEventDetection( project, groupOne, this.retrieverFactory );
+
+        Instant startOne = Instant.parse( "2079-12-03T07:00:00Z" );
+        Instant endOne = Instant.parse( "2079-12-03T11:00:00Z" );
+
+        TimeWindow expectedOne = MessageFactory.getTimeWindow()
+                                               .toBuilder()
+                                               .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
+                                               .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
+                                               .build();
+
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ) );
 
         assertEquals( expected, actual );
     }

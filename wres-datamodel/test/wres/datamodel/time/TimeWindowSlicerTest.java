@@ -19,6 +19,7 @@ import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.TimeWindowAggregation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeScale;
@@ -1411,6 +1412,54 @@ class TimeWindowSlicerTest
                       actualTimeWindows );
     }
 
+    @Test
+    void testAggregateTimeWindowsWithMaximum()
+    {
+        Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();
+        TimeWindowOuter actual = TimeWindowSlicer.aggregate( timeWindows, TimeWindowAggregation.MAXIMUM );
+        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2088-08-08T23:00:00Z" ),
+                                                                 Instant.parse( "2110-08-09T16:00:00Z" ),
+                                                                 Instant.parse( "2080-08-08T07:00:00Z" ),
+                                                                 Instant.parse( "2102-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 13 ),
+                                                                 Duration.ofHours( 39 ) );
+        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testAggregateTimeWindowsWithMinimum()
+    {
+        Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();
+        TimeWindowOuter actual = TimeWindowSlicer.aggregate( timeWindows, TimeWindowAggregation.MINIMUM );
+        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2099-08-08T23:00:00Z" ),
+                                                                 Instant.parse( "2106-08-09T16:00:00Z" ),
+                                                                 Instant.parse( "2099-08-08T07:00:00Z" ),
+                                                                 Instant.parse( "2100-08-08T13:00:00Z" ),
+                                                                 Duration.ofHours( 20 ),
+                                                                 Duration.ofHours( 27 ) );
+        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testAggregateTimeWindowsWithAverage()
+    {
+        Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();
+        TimeWindowOuter actual = TimeWindowSlicer.aggregate( timeWindows, TimeWindowAggregation.AVERAGE );
+        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2092-08-08T15:00:00Z" ),
+                                                                 Instant.parse( "2108-12-09T00:00:00Z" ),
+                                                                 Instant.parse( "2090-04-08T09:00:00Z" ),
+                                                                 Instant.parse( "2101-08-08T17:40:00Z" ),
+                                                                 Duration.ofMinutes( 17 * 60 + 20 ),
+                                                                 Duration.ofMinutes( 31 * 60 + 40 ) );
+        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
+
+        assertEquals( expected, actual );
+    }
+
     /**
      * Tests the {@link TimeWindowSlicer#getTimeWindows(EvaluationDeclaration)} for an expected exception when
      * <code>lead_times</code> are required but missing.
@@ -1629,4 +1678,33 @@ class TimeWindowSlicerTest
                       thrown.getMessage() );
     }
 
+    /**
+     * @return time windows for aggregation testing
+     */
+
+    private Set<TimeWindowOuter> getTimeWindowsForAggregationTesting()
+    {
+        Set<TimeWindow> timeWindows = new HashSet<>( 3 );
+        timeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2099-08-08T23:00:00Z" ),
+                                                       Instant.parse( "2109-08-09T16:00:00Z" ),
+                                                       Instant.parse( "2090-08-07T13:00:00Z" ),
+                                                       Instant.parse( "2100-08-08T13:00:00Z" ),
+                                                       Duration.ofHours( 19 ),
+                                                       Duration.ofHours( 27 ) ) );
+        timeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2088-08-08T23:00:00Z" ),
+                                                       Instant.parse( "2110-08-09T16:00:00Z" ),
+                                                       Instant.parse( "2080-08-08T07:00:00Z" ),
+                                                       Instant.parse( "2101-08-08T20:00:00Z" ),
+                                                       Duration.ofHours( 13 ),
+                                                       Duration.ofHours( 29 ) ) );
+        timeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2089-08-08T23:00:00Z" ),
+                                                       Instant.parse( "2106-08-09T16:00:00Z" ),
+                                                       Instant.parse( "2099-08-08T07:00:00Z" ),
+                                                       Instant.parse( "2102-08-08T20:00:00Z" ),
+                                                       Duration.ofHours( 20 ),
+                                                       Duration.ofHours( 39 ) ) );
+        return timeWindows.stream()
+                          .map( TimeWindowOuter::of )
+                          .collect( Collectors.toUnmodifiableSet() );
+    }
 }

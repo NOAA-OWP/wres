@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
@@ -119,7 +121,7 @@ public class TimeWindowSlicer
      * @param first the first set
      * @param second the second set
      * @return the intersection of the two sets
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if any input is null
      */
     public static Set<TimeWindowOuter> intersection( Set<TimeWindowOuter> first,
                                                      Set<TimeWindowOuter> second )
@@ -128,7 +130,8 @@ public class TimeWindowSlicer
         Objects.requireNonNull( second );
 
         // Short circuit
-        if ( first.isEmpty() || second.isEmpty() )
+        if ( first.isEmpty()
+             || second.isEmpty() )
         {
             LOGGER.debug( "One or both of the sets to intersect was empty." );
 
@@ -150,6 +153,192 @@ public class TimeWindowSlicer
         }
 
         return Collections.unmodifiableSet( intersected );
+    }
+
+    /**
+     * @param first the first time window
+     * @param second the second time window
+     * @return true if the two windows intersect in all defined time dimensions, false otherwise
+     */
+    public static boolean intersects( TimeWindowOuter first, TimeWindowOuter second )
+    {
+        if ( first.equals( second ) )
+        {
+            return true;
+        }
+
+        boolean leadIntersects = first.bothLeadDurationsAreUnbounded()
+                                 || second.bothLeadDurationsAreUnbounded()
+                                 // Start of first window is within second window
+                                 || ( first.getEarliestLeadDuration()
+                                           .compareTo( second.getEarliestLeadDuration() ) >= 0
+                                      && first.getEarliestLeadDuration()
+                                              .compareTo( second.getLatestLeadDuration() ) <= 0 )
+                                 || // Start of second window is within first window
+                                 ( second.getEarliestLeadDuration()
+                                         .compareTo( first.getEarliestLeadDuration() ) >= 0
+                                   && second.getEarliestLeadDuration()
+                                            .compareTo( first.getLatestLeadDuration() ) <= 0 )
+                                 || // End of first window is within second window
+                                 ( first.getLatestLeadDuration()
+                                        .compareTo( second.getEarliestLeadDuration() ) >= 0
+                                   && first.getLatestLeadDuration()
+                                           .compareTo( second.getLatestLeadDuration() ) <= 0 )
+                                 || // End of second window is within first window
+                                 ( second.getLatestLeadDuration()
+                                         .compareTo( first.getEarliestLeadDuration() ) >= 0
+                                   && second.getLatestLeadDuration()
+                                            .compareTo( first.getLatestLeadDuration() ) <= 0 );
+
+        boolean validIntersects = TimeWindowSlicer.intersects( first.getEarliestValidTime(),
+                                                               first.getLatestValidTime(),
+                                                               second.getEarliestValidTime(),
+                                                               second.getLatestValidTime() );
+
+        boolean referenceIntersects = TimeWindowSlicer.intersects( first.getEarliestReferenceTime(),
+                                                                   first.getLatestReferenceTime(),
+                                                                   second.getEarliestReferenceTime(),
+                                                                   second.getLatestReferenceTime() );
+
+        return leadIntersects
+               && validIntersects
+               && referenceIntersects;
+    }
+
+    /**
+     * Aggregates the supplied time windows using a prescribed method. Averaging is approximate.
+     *
+     * @param timeWindows the time windows
+     * @param method the aggregation method.
+     * @return the aggregated time windows
+     * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the method is unsupported
+     */
+
+    public static TimeWindowOuter aggregate( Set<TimeWindowOuter> timeWindows,
+                                             TimeWindowAggregation method )
+    {
+        Objects.requireNonNull( timeWindows );
+        Objects.requireNonNull( method );
+
+        Set<Instant> validStarts = new HashSet<>();
+        Set<Instant> validEnds = new HashSet<>();
+        Set<Instant> referenceStarts = new HashSet<>();
+        Set<Instant> referenceEnds = new HashSet<>();
+        Set<Duration> leadStarts = new HashSet<>();
+        Set<Duration> leadEnds = new HashSet<>();
+
+        for ( TimeWindowOuter next : timeWindows )
+        {
+            validStarts.add( next.getEarliestValidTime() );
+            validEnds.add( next.getLatestValidTime() );
+            referenceStarts.add( next.getEarliestReferenceTime() );
+            referenceEnds.add( next.getLatestReferenceTime() );
+            leadStarts.add( next.getEarliestLeadDuration() );
+            leadEnds.add( next.getLatestLeadDuration() );
+        }
+
+        if ( method == TimeWindowAggregation.MINIMUM )
+        {
+            Instant validStart = validStarts.stream()
+                                            .max( Instant::compareTo )
+                                            .orElse( Instant.MIN );
+            Instant validEnd = validEnds.stream()
+                                        .min( Instant::compareTo )
+                                        .orElse( Instant.MAX );
+            Instant referenceStart = referenceStarts.stream()
+                                                    .max( Instant::compareTo )
+                                                    .orElse( Instant.MIN );
+            Instant referenceEnd = referenceEnds.stream()
+                                                .min( Instant::compareTo )
+                                                .orElse( Instant.MAX );
+            Duration leadStart = leadStarts.stream()
+                                           .max( Duration::compareTo )
+                                           .orElse( TimeWindowOuter.DURATION_MIN );
+            Duration leadEnd = leadEnds.stream()
+                                       .min( Duration::compareTo )
+                                       .orElse( TimeWindowOuter.DURATION_MAX );
+
+            if ( validEnd.isBefore( validStart ) )
+            {
+                validEnd = validStart;
+            }
+
+            if ( referenceEnd.isBefore( referenceStart ) )
+            {
+                referenceEnd = referenceStart;
+            }
+
+            if ( leadEnd.compareTo( leadStart ) < 0 )
+            {
+                leadEnd = leadStart;
+            }
+
+            TimeWindow window = MessageFactory.getTimeWindow( referenceStart,
+                                                              referenceEnd,
+                                                              validStart,
+                                                              validEnd,
+                                                              leadStart,
+                                                              leadEnd );
+            return TimeWindowOuter.of( window );
+        }
+        else if ( method == TimeWindowAggregation.MAXIMUM )
+        {
+            Instant validStart = validStarts.stream()
+                                            .min( Instant::compareTo )
+                                            .orElse( Instant.MIN );
+            Instant validEnd = validEnds.stream()
+                                        .max( Instant::compareTo )
+                                        .orElse( Instant.MAX );
+            Instant referenceStart = referenceStarts.stream()
+                                                    .min( Instant::compareTo )
+                                                    .orElse( Instant.MIN );
+            Instant referenceEnd = referenceEnds.stream()
+                                                .max( Instant::compareTo )
+                                                .orElse( Instant.MAX );
+            Duration leadStart = leadStarts.stream()
+                                           .min( Duration::compareTo )
+                                           .orElse( TimeWindowOuter.DURATION_MIN );
+            Duration leadEnd = leadEnds.stream()
+                                       .max( Duration::compareTo )
+                                       .orElse( TimeWindowOuter.DURATION_MAX );
+            TimeWindow window = MessageFactory.getTimeWindow( referenceStart,
+                                                              referenceEnd,
+                                                              validStart,
+                                                              validEnd,
+                                                              leadStart,
+                                                              leadEnd );
+            return TimeWindowOuter.of( window );
+        }
+        else if ( method == TimeWindowAggregation.AVERAGE )
+        {
+            Instant validStart = TimeWindowSlicer.getAverage( validStarts, Instant.MIN );
+            Instant validEnd = TimeWindowSlicer.getAverage( validEnds, Instant.MAX );
+            Instant referenceStart = TimeWindowSlicer.getAverage( referenceStarts, Instant.MIN );
+            Instant referenceEnd = TimeWindowSlicer.getAverage( referenceEnds, Instant.MAX );
+
+            OptionalDouble leadStartMillis = leadStarts.stream()
+                                                       .mapToLong( Duration::toMillis )
+                                                       .average();
+            Duration leadStart = leadStartMillis.isPresent() ?
+                    Duration.ofMillis( ( long ) leadStartMillis.getAsDouble() ) :
+                    TimeWindowOuter.DURATION_MIN;
+            OptionalDouble leadEndMillis = leadEnds.stream()
+                                                   .mapToLong( Duration::toMillis )
+                                                   .average();
+            Duration leadEnd = leadEndMillis.isPresent() ?
+                    Duration.ofMillis( ( long ) leadEndMillis.getAsDouble() ) :
+                    TimeWindowOuter.DURATION_MAX;
+            TimeWindow window = MessageFactory.getTimeWindow( referenceStart,
+                                                              referenceEnd,
+                                                              validStart,
+                                                              validEnd,
+                                                              leadStart,
+                                                              leadEnd );
+            return TimeWindowOuter.of( window );
+        }
+
+        throw new IllegalArgumentException( "The time window aggregation method is unsupported: " + method );
     }
 
     /**
@@ -891,56 +1080,6 @@ public class TimeWindowSlicer
     }
 
     /**
-     * @param first the first time window
-     * @param second the second time window
-     * @return true if the two windows intersect in all defined time dimensions, false otherwise
-     */
-    private static boolean intersects( TimeWindowOuter first, TimeWindowOuter second )
-    {
-        if ( first.equals( second ) )
-        {
-            return true;
-        }
-
-        boolean leadIntersects = first.bothLeadDurationsAreUnbounded()
-                                 || second.bothLeadDurationsAreUnbounded()
-                                 // Start of first window is within second window
-                                 || ( first.getEarliestLeadDuration()
-                                           .compareTo( second.getEarliestLeadDuration() ) >= 0
-                                      && first.getEarliestLeadDuration()
-                                              .compareTo( second.getLatestLeadDuration() ) <= 0 )
-                                 || // Start of second window is within first window
-                                 ( second.getEarliestLeadDuration()
-                                         .compareTo( first.getEarliestLeadDuration() ) >= 0
-                                   && second.getEarliestLeadDuration()
-                                            .compareTo( first.getLatestLeadDuration() ) <= 0 )
-                                 || // End of first window is within second window
-                                 ( first.getLatestLeadDuration()
-                                        .compareTo( second.getEarliestLeadDuration() ) >= 0
-                                   && first.getLatestLeadDuration()
-                                           .compareTo( second.getLatestLeadDuration() ) <= 0 )
-                                 || // End of second window is within first window
-                                 ( second.getLatestLeadDuration()
-                                         .compareTo( first.getEarliestLeadDuration() ) >= 0
-                                   && second.getLatestLeadDuration()
-                                            .compareTo( first.getLatestLeadDuration() ) <= 0 );
-
-        boolean validIntersects = TimeWindowSlicer.intersects( first.getEarliestValidTime(),
-                                                               first.getLatestValidTime(),
-                                                               second.getEarliestValidTime(),
-                                                               second.getLatestValidTime() );
-
-        boolean referenceIntersects = TimeWindowSlicer.intersects( first.getEarliestReferenceTime(),
-                                                                   first.getLatestReferenceTime(),
-                                                                   second.getEarliestReferenceTime(),
-                                                                   second.getLatestReferenceTime() );
-
-        return leadIntersects
-               && validIntersects
-               && referenceIntersects;
-    }
-
-    /**
      * @param firstLower the lower bound of the first window
      * @param firstUpper the upper bound of the first window
      * @param secondLower the lower bound of the second window
@@ -964,6 +1103,25 @@ public class TimeWindowSlicer
                 || // End of second window is within first window
                 ( secondUpper.compareTo( firstLower ) >= 0
                   && secondUpper.compareTo( firstUpper ) <= 0 );
+    }
+
+    /**
+     * Calculates the average instant to millisecond precision, returning the
+     * specified default if unavailable.
+     *
+     * @param instants the instants
+     * @param defaultInstant the default instant
+     * @return the average or default
+     */
+    private static Instant getAverage( Set<Instant> instants,
+                                       Instant defaultInstant )
+    {
+        OptionalDouble averageMillis = instants.stream()
+                                               .mapToLong( Instant::toEpochMilli )
+                                               .average();
+        return averageMillis.isPresent() ?
+                Instant.ofEpochMilli( ( long ) averageMillis.getAsDouble() ) :
+                defaultInstant;
     }
 
     /**

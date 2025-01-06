@@ -38,8 +38,12 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.EventDetectionBuilder;
+import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.EventDetectionParameters;
+import wres.config.yaml.components.EventDetectionParametersBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -2848,6 +2852,34 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEventDetectionWithInconsistentParametersProducesError()
+    {
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .combination( EventDetectionCombination.UNION )
+                                               .aggregation( TimeWindowAggregation.AVERAGE )
+                                               .build();
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .parameters( parameters )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "An explicit 'aggregation' method is only valid when "
+                                                       + "the 'operation' is 'intersection'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86
@@ -2965,7 +2997,7 @@ class DeclarationValidatorTest
                   unit: hours
                 feature_service:
                   uri: https://foo/api/location/v3.0/metadata
-                  """;
+                """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
@@ -3002,7 +3034,7 @@ class DeclarationValidatorTest
                   - mean absolute error
                   - box plot of errors by observed value
                   - reliability diagram
-                  """;
+                """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
@@ -3135,7 +3167,7 @@ class DeclarationValidatorTest
                     </right>
                   </inputs>
                 </project>
-                  """;
+                """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 

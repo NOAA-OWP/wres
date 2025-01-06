@@ -286,48 +286,57 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
 
         this.timeWindow = timeWindow;
 
-        if ( !this.getTimeWindow().hasEarliestReferenceTime() )
+        if ( !this.getTimeWindow()
+                  .hasEarliestReferenceTime() )
         {
             throw new NullPointerException( "The earliest reference time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasLatestReferenceTime() )
+        if ( !this.getTimeWindow()
+                  .hasLatestReferenceTime() )
         {
             throw new NullPointerException( "The latest reference time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasEarliestValidTime() )
+        if ( !this.getTimeWindow()
+                  .hasEarliestValidTime() )
         {
             throw new NullPointerException( "The earliest valid time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasLatestValidTime() )
+        if ( !this.getTimeWindow()
+                  .hasLatestValidTime() )
         {
             throw new NullPointerException( "The latest valid time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasEarliestLeadDuration() )
+        if ( !this.getTimeWindow()
+                  .hasEarliestLeadDuration() )
         {
             throw new NullPointerException( "The earliest lead duration cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasLatestLeadDuration() )
+        if ( !this.getTimeWindow()
+                  .hasLatestLeadDuration() )
         {
             throw new NullPointerException( "The latest lead duration cannot be null." );
         }
 
         // Correct time ordering
-        if ( this.getLatestReferenceTime().isBefore( this.getEarliestReferenceTime() ) )
+        if ( this.getLatestReferenceTime()
+                 .isBefore( this.getEarliestReferenceTime() ) )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest reference time is "
                                                 + "before its earliest reference time." );
         }
-        if ( this.getLatestValidTime().isBefore( this.getEarliestValidTime() ) )
+        if ( this.getLatestValidTime()
+                 .isBefore( this.getEarliestValidTime() ) )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest valid time is "
                                                 + "before its earliest valid time." );
         }
-        if ( this.getLatestLeadDuration().compareTo( this.getEarliestLeadDuration() ) < 0 )
+        if ( this.getLatestLeadDuration()
+                 .compareTo( this.getEarliestLeadDuration() ) < 0 )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest lead duration is "
                                                 + "before its earliest lead duration." );

@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 
 import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.EventDetectionBuilder;
 import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
@@ -92,13 +93,13 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
     }
 
     /**
-     * Deserializes the event detection paameters.
+     * Deserializes the event detection parameters.
      * @param node the node
      * @param reader the reader
      * @return the parameters
      * @throws IOException if the parameters could not be deserialized for any reason
      */
-    public EventDetectionParameters deserializeParameters( JsonNode node, ObjectReader reader ) throws IOException
+    private EventDetectionParameters deserializeParameters( JsonNode node, ObjectReader reader ) throws IOException
     {
         EventDetectionParametersBuilder parameters = EventDetectionParametersBuilder.builder();
 
@@ -144,13 +145,48 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
             if ( parametersNode.has( "combination" ) )
             {
                 JsonNode combinationNode = parametersNode.get( "combination" );
-                EventDetectionCombination combination = reader.readValue( combinationNode,
-                                                                          EventDetectionCombination.class );
-                parameters.combination( combination );
+                this.deserializeCombinationParameters( combinationNode,
+                                                       reader,
+                                                       parameters );
             }
         }
 
         return parameters.build();
+    }
+
+    /**
+     * Deserializes the event combination parameters.
+     * @param combinationNode the combination node
+     * @param reader the reader
+     * @throws IOException if the parameters could not be deserialized for any reason
+     */
+    private void deserializeCombinationParameters( JsonNode combinationNode,
+                                                   ObjectReader reader,
+                                                   EventDetectionParametersBuilder parameters ) throws IOException
+    {
+        if ( combinationNode.isTextual() )
+        {
+            EventDetectionCombination operation = reader.readValue( combinationNode,
+                                                                    EventDetectionCombination.class );
+            parameters.combination( operation );
+        }
+        else
+        {
+            if ( combinationNode.has( "operation" ) )
+            {
+                JsonNode operationNode = combinationNode.get( "operation" );
+                EventDetectionCombination operation = reader.readValue( operationNode,
+                                                                        EventDetectionCombination.class );
+                parameters.combination( operation );
+            }
+            if ( combinationNode.has( "aggregation" ) )
+            {
+                JsonNode aggregationNode = combinationNode.get( "aggregation" );
+                TimeWindowAggregation aggregation = reader.readValue( aggregationNode,
+                                                                      TimeWindowAggregation.class );
+                parameters.aggregation( aggregation );
+            }
+        }
     }
 
     /**

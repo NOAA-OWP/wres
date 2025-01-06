@@ -38,7 +38,9 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.EventDetectionParameters;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
@@ -2452,6 +2454,36 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
         }
+        if ( Objects.nonNull( declaration.eventDetection()
+                                         .parameters() ) )
+        {
+            EventDetectionParameters parameters = declaration.eventDetection()
+                                                             .parameters();
+
+            if ( parameters.combination() != EventDetectionCombination.INTERSECTION
+                 && Objects.nonNull( parameters.aggregation() ) )
+            {
+                EvaluationStatusEvent warn
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "Event detection was declared with an 'operation' of '"
+                                                                 + parameters.combination()
+                                                                             .toString()
+                                                                             .toLowerCase()
+                                                                 + "' and an aggregation method of '"
+                                                                 + parameters.aggregation()
+                                                                             .toString()
+                                                                             .toLowerCase()
+                                                                 + "', which is not valid. Please remove the "
+                                                                 + "'aggregation' method, declare an 'aggregation' "
+                                                                 + "method of 'none' or change the 'operation' to "
+                                                                 + "'intersection'. An explicit 'aggregation' method "
+                                                                 + "is only valid when the 'operation' is "
+                                                                 + "'intersection'." )
+                                               .build();
+                events.add( warn );
+            }
+        }
 
         return Collections.unmodifiableList( events );
     }
@@ -2505,11 +2537,15 @@ public class DeclarationValidator
      * @param declaration the declaration
      * @param dataset the dataset to test
      * @return whether the dataset is a forecast type
+     * @throws NullPointerException if the left or right dataset is missing
      */
 
     private static boolean isEventDetectionDatasetForecastType( EvaluationDeclaration declaration,
                                                                 EventDetectionDataset dataset )
     {
+        Objects.requireNonNull( declaration.left() );
+        Objects.requireNonNull( declaration.right() );
+
         switch ( dataset )
         {
             case OBSERVED ->
