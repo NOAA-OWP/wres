@@ -146,9 +146,9 @@ public class ReginaOgdenEventDetector implements EventDetector
         if ( Objects.isNull( builder.minimumEventDuration() )
              && Objects.nonNull( builder.halfLife() ) )
         {
-            LOGGER.warn( "When setting the event detection parameters, discovered that the half-life was defined and "
-                         + "the minimum event duration was undefined. Setting the minimum event duration to the "
-                         + "half-life of {}.", builder.halfLife() );
+            LOGGER.debug( "When setting the event detection parameters, discovered that the half-life was defined and "
+                          + "the minimum event duration was undefined. Setting the minimum event duration to the "
+                          + "half-life of {}.", builder.halfLife() );
             builder.minimumEventDuration( builder.halfLife() );
         }
 
@@ -190,22 +190,22 @@ public class ReginaOgdenEventDetector implements EventDetector
                 {
                     builder.halfLife( builder.windowSize()
                                              .dividedBy( 20 ) );
-                    LOGGER.warn( "When performing event detection with the Regina-Ogden method, the half-life was "
-                                 + "undefined. However, the window size was defined. The default half life is {}, "
-                                 + "which is one twentieth of the window size. This default may not be appropriate and "
-                                 + "it is strongly recommended that you set the half life explicitly using the "
-                                 + "'half_life' parameter.",
-                                 builder.halfLife() );
+                    LOGGER.debug( "When performing event detection with the Regina-Ogden method, the half-life was "
+                                  + "undefined. However, the window size was defined. The default half life is {}, "
+                                  + "which is one twentieth of the window size. This default may not be appropriate and "
+                                  + "it is strongly recommended that you set the half life explicitly using the "
+                                  + "'half_life' parameter.",
+                                  builder.halfLife() );
                 }
                 else
                 {
                     builder.halfLife( averageTimestep.multipliedBy( 20 ) );
-                    LOGGER.warn( "When performing event detection with the Regina-Ogden method, the half life was "
-                                 + "undefined. The default half life is {}, which is twenty times the modal time-step "
-                                 + "associated with the time-series used for event detection. This default may not be "
-                                 + "appropriate and it is strongly recommended that you set the half life explicitly "
-                                 + "using the 'half_life' parameter.",
-                                 builder.halfLife() );
+                    LOGGER.debug( "When performing event detection with the Regina-Ogden method, the half life was "
+                                  + "undefined. The default half life is {}, which is twenty times the modal time-step "
+                                  + "associated with the time-series used for event detection. This default may not be "
+                                  + "appropriate and it is strongly recommended that you set the half life explicitly "
+                                  + "using the 'half_life' parameter.",
+                                  builder.halfLife() );
                 }
             }
 
@@ -216,23 +216,23 @@ public class ReginaOgdenEventDetector implements EventDetector
                 {
                     builder.windowSize( parameters.halfLife()
                                                   .multipliedBy( 20 ) );
-                    LOGGER.warn( "When performing event detection with the Regina-Ogden method, the window size for "
-                                 + "smoothing and detecting trends was undefined. However, the half life was defined. "
-                                 + "The default window size is {}, which is twenty times the half-life. This default "
-                                 + "may not be appropriate and it is strongly recommended that you set the window size "
-                                 + "explicitly using the 'window_size' parameter.",
-                                 builder.windowSize() );
+                    LOGGER.debug( "When performing event detection with the Regina-Ogden method, the window size for "
+                                  + "smoothing and detecting trends was undefined. However, the half life was defined. "
+                                  + "The default window size is {}, which is twenty times the half-life. This default "
+                                  + "may not be appropriate and it is strongly recommended that you set the window size "
+                                  + "explicitly using the 'window_size' parameter.",
+                                  builder.windowSize() );
                 }
                 else
                 {
                     builder.windowSize( averageTimestep.multipliedBy( 200 ) );
-                    LOGGER.warn( "When performing event detection with the Regina-Ogden method, the window size for "
-                                 + "smoothing and detecting trends was undefined. The default window size is {}, which "
-                                 + "is two hundred times the modal time-step associated with the time-series used for "
-                                 + "event detection. This default may not be appropriate and it is strongly "
-                                 + "recommended that you set the window size explicitly using the 'window_size' "
-                                 + "parameter.",
-                                 builder.windowSize() );
+                    LOGGER.debug( "When performing event detection with the Regina-Ogden method, the window size for "
+                                  + "smoothing and detecting trends was undefined. The default window size is {}, which "
+                                  + "is two hundred times the modal time-step associated with the time-series used for "
+                                  + "event detection. This default may not be appropriate and it is strongly "
+                                  + "recommended that you set the window size explicitly using the 'window_size' "
+                                  + "parameter.",
+                                  builder.windowSize() );
                 }
             }
         }
@@ -808,10 +808,10 @@ public class ReginaOgdenEventDetector implements EventDetector
 
         if ( !Objects.equals( parameters.halfLife(), parameters.minimumEventDuration() ) )
         {
-            LOGGER.warn( "When performing event detection with the Regina-Ogden method, discovered a half-life "
-                         + "of {} and a minimum event duration of {}. In general, the minimum event duration should "
-                         + "match the half-life to reduce the number of false positives caused by measurement "
-                         + "variability.", parameters.halfLife(), parameters.minimumEventDuration() );
+            LOGGER.debug( "When performing event detection with the Regina-Ogden method, discovered a half-life "
+                          + "of {} and a minimum event duration of {}. In general, the minimum event duration should "
+                          + "match the half-life to reduce the number of false positives caused by measurement "
+                          + "variability.", parameters.halfLife(), parameters.minimumEventDuration() );
         }
 
         if ( Objects.nonNull( parameters.minimumEventDuration() )

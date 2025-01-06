@@ -542,80 +542,7 @@ class EvaluationUtilities
 
         List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluation, retriever );
 
-        // Log some information about the pools
-        if ( LOGGER.isInfoEnabled() )
-        {
-            Set<FeatureGroup> features = new TreeSet<>();
-            Set<TimeWindowOuter> timeWindows = new TreeSet<>();
-
-            for ( PoolRequest nextRequest : poolRequests )
-            {
-                FeatureGroup nextFeature = nextRequest.getMetadata()
-                                                      .getFeatureGroup();
-                features.add( nextFeature );
-                TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
-                                                            .getTimeWindow();
-                timeWindows.add( nextTimeWindow );
-            }
-
-            int timeWindowCount = timeWindows.size();
-            int featureCount = features.size();
-
-            // Avoid massive log statements: #129995
-            String extraTime = "";
-            String extraSpace = "";
-            if ( timeWindowCount > MAXIMUM_TIME_WINDOWS_TO_LOG )
-            {
-                extraTime = "first " + MAXIMUM_TIME_WINDOWS_TO_LOG + " ";
-                timeWindows = timeWindows.stream()
-                                         .limit( MAXIMUM_TIME_WINDOWS_TO_LOG )
-                                         .collect( Collectors.toCollection( TreeSet::new ) );
-            }
-            if ( featureCount > MAXIMUM_FEATURES_TO_LOG )
-            {
-                extraSpace = "first " + MAXIMUM_FEATURES_TO_LOG + " ";
-                features = features.stream()
-                                   .limit( MAXIMUM_FEATURES_TO_LOG )
-                                   .collect( Collectors.toCollection( TreeSet::new ) );
-            }
-
-            LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
-                         + "The {}feature groups are: {}. The {}time windows are: {}.",
-                         poolRequests.size(),
-                         featureCount,
-                         timeWindowCount,
-                         extraSpace,
-                         PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
-                         extraTime,
-                         PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
-        }
-
-        // Log some detailed information about the pools, if required
-        if ( LOGGER.isTraceEnabled() )
-        {
-            for ( PoolRequest nextRequest : poolRequests )
-            {
-                if ( nextRequest.hasBaseline() )
-                {
-                    LOGGER.trace( "Pool request {}/{} is: {}.",
-                                  nextRequest.getMetadata()
-                                             .getPool()
-                                             .getPoolId(),
-                                  nextRequest.getMetadataForBaseline()
-                                             .getPool()
-                                             .getPoolId(),
-                                  nextRequest );
-                }
-                else
-                {
-                    LOGGER.trace( "Pool request {} is: {}.",
-                                  nextRequest.getMetadata()
-                                             .getPool()
-                                             .getPoolId(),
-                                  nextRequest );
-                }
-            }
-        }
+        EvaluationUtilities.logPoolDetails( evaluationDetails, poolRequests );
 
         return poolRequests;
     }
@@ -2100,6 +2027,118 @@ class EvaluationUtilities
                       filters.size() );
 
         return Collections.unmodifiableList( filters );
+    }
+    
+    /**
+     * Log some information about the pools
+     * @param evaluationDetails the evaluation details
+     * @param poolRequests the pool requests
+     */
+
+    private static void logPoolDetails( EvaluationDetails evaluationDetails,
+                                        List<PoolRequest> poolRequests )
+    {
+        // Log some information about the pools
+        if ( LOGGER.isInfoEnabled() )
+        {
+            Set<FeatureGroup> features = new TreeSet<>();
+            Set<TimeWindowOuter> timeWindows = new TreeSet<>();
+
+            for ( PoolRequest nextRequest : poolRequests )
+            {
+                FeatureGroup nextFeature = nextRequest.getMetadata()
+                                                      .getFeatureGroup();
+                features.add( nextFeature );
+                TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
+                                                            .getTimeWindow();
+                timeWindows.add( nextTimeWindow );
+            }
+
+            int timeWindowCount = timeWindows.size();
+            int featureCount = features.size();
+
+            // Avoid massive log statements: #129995
+            String extraTime = "";
+            String extraSpace = "";
+            if ( timeWindowCount > MAXIMUM_TIME_WINDOWS_TO_LOG )
+            {
+                extraTime = "first " + MAXIMUM_TIME_WINDOWS_TO_LOG + " ";
+                timeWindows = timeWindows.stream()
+                                         .limit( MAXIMUM_TIME_WINDOWS_TO_LOG )
+                                         .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+            if ( featureCount > MAXIMUM_FEATURES_TO_LOG )
+            {
+                extraSpace = "first " + MAXIMUM_FEATURES_TO_LOG + " ";
+                features = features.stream()
+                                   .limit( MAXIMUM_FEATURES_TO_LOG )
+                                   .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+
+            if ( Objects.nonNull( evaluationDetails.declaration()
+                                                   .eventDetection() )
+                 && featureCount > 1 )
+            {
+                LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
+                             + "The {}feature groups are: {}. The time windows are based on event detection and "
+                             + "vary by feature group.",
+                             poolRequests.size(),
+                             featureCount,
+                             timeWindowCount,
+                             extraSpace,
+                             PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ) );
+            }
+            else
+            {
+                LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
+                             + "The {}feature groups are: {}. The {}time windows are: {}.",
+                             poolRequests.size(),
+                             featureCount,
+                             timeWindowCount,
+                             extraSpace,
+                             PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
+                             extraTime,
+                             PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
+            }
+        }
+
+        // Log extra details if needed
+        EvaluationUtilities.logPoolDetailsExtra( poolRequests );
+    }
+
+    /**
+     * Log some detailed information about the pools
+     * @param poolRequests the pool requests
+     */
+
+    private static void logPoolDetailsExtra( List<PoolRequest> poolRequests )
+    {
+        // Log some detailed information about the pools, if required
+        if ( LOGGER.isTraceEnabled() )
+        {
+            for ( PoolRequest nextRequest : poolRequests )
+            {
+                if ( nextRequest.hasBaseline() )
+                {
+                    LOGGER.trace( "Pool request {}/{} is: {}.",
+                                  nextRequest.getMetadata()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest.getMetadataForBaseline()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest );
+                }
+                else
+                {
+                    LOGGER.trace( "Pool request {} is: {}.",
+                                  nextRequest.getMetadata()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest );
+                }
+            }
+        }
     }
 
     /**

@@ -54,7 +54,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                         EventDetector eventDetector )
 {
     /** Repeated message. */
-    private static final String DETECTED_EVENTS_IN_THE_DATASET = "Detected {} events in the {} dataset.";
+    private static final String DETECTED_EVENTS_IN_THE_DATASET = "Detected {} events in the {} dataset at feature "
+                                                                 + "group {}.";
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EventsGenerator.class );
@@ -90,7 +91,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                            FeatureGroup featureGroup,
                                            RetrieverFactory<Double, Double, Double> eventRetriever )
     {
-        LOGGER.debug( "Performing event detection." );
+        LOGGER.info( "Performing event detection at feature group {}...", featureGroup.getName() );
 
         EvaluationDeclaration declaration = project.getDeclaration();
         EventDetection detection = declaration.eventDetection();
@@ -235,12 +236,15 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
         }
 
-        LOGGER.info( "Detected {} events across all dataset when forming their {}.",
+        LOGGER.info( "Detected {} events across all dataset for feature group {} when forming their {}.",
                      events.size(),
+                     featureGroup.getName(),
                      combination );
 
-        return this.aggregateEvents( events, detection.parameters()
-                                                      .aggregation() );
+        return this.aggregateEvents( events,
+                                     detection.parameters()
+                                              .aggregation(),
+                                     featureGroup );
     }
 
     /**
@@ -285,7 +289,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                          .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
                              innerEvents.size(),
-                             EventDetectionDataset.OBSERVED );
+                             EventDetectionDataset.OBSERVED,
+                             featureGroup.getName() );
                 events.addAll( innerEvents );
             }
             case PREDICTED ->
@@ -301,7 +306,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                          .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
                              innerEvents.size(),
-                             EventDetectionDataset.PREDICTED );
+                             EventDetectionDataset.PREDICTED,
+                             featureGroup.getName()  );
                 events.addAll( innerEvents );
             }
             case BASELINE ->
@@ -317,7 +323,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                          .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
                              innerEvents.size(),
-                             EventDetectionDataset.BASELINE );
+                             EventDetectionDataset.BASELINE,
+                             featureGroup.getName() );
                 events.addAll( innerEvents );
             }
             case COVARIATES ->
@@ -334,9 +341,10 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                     this.covariateUpscaler() )
                                                  .stream() )
                               .collect( Collectors.toSet() );
-                LOGGER.info( "Detected {} events in the {} dataset with variable name, '{}'.",
+                LOGGER.info( "Detected {} events in the {} dataset at feature group {} with variable name, '{}'.",
                              innerEvents.size(),
                              EventDetectionDataset.COVARIATES,
+                             featureGroup.getName(),
                              details.covariateName() );
                 events.addAll( innerEvents );
             }
@@ -403,10 +411,13 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
      *
      * @param events the events
      * @param method the method
+     * @param featureGroup the feature group
      * @return the aggregate of intersecting events
      */
 
-    private Set<TimeWindowOuter> aggregateEvents( Set<TimeWindowOuter> events, TimeWindowAggregation method )
+    private Set<TimeWindowOuter> aggregateEvents( Set<TimeWindowOuter> events,
+                                                  TimeWindowAggregation method,
+                                                  FeatureGroup featureGroup )
     {
         // Short-circuit
         if ( Objects.isNull( method ) )
@@ -429,6 +440,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             TimeWindowOuter aggregate = TimeWindowSlicer.aggregate( intersected, method );
             aggregated.add( aggregate );
         }
+
+        LOGGER.info( "Following aggregation of the detected events at feature group {}, produced {} aggregated events "
+                     + "from the {} detected events.", featureGroup.getName(), aggregated.size(), events.size() );
 
         return Collections.unmodifiableSet( aggregated );
     }
