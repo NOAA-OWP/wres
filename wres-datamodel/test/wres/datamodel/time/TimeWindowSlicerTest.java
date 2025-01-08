@@ -8,8 +8,11 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -276,6 +279,71 @@ class TimeWindowSlicerTest
                                                 TimeWindowOuter.of( three ) );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testIntersects()
+    {
+        // Lead duration only
+        TimeWindow one = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
+                                                       Duration.ofHours( 3 ) );
+        TimeWindow two = MessageFactory.getTimeWindow( Duration.ofHours( 3 ),
+                                                       Duration.ofHours( 5 ) );
+
+        // Valid time only
+        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                         Instant.parse( INSTANT_TWO ) );
+        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                        Instant.parse( INSTANT_THREE ) );
+
+        // Reference time only
+        TimeWindow five = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                        Instant.parse( INSTANT_TWO ),
+                                                        Instant.MIN,
+                                                        Instant.MAX );
+        TimeWindow six = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                       Instant.parse( INSTANT_THREE ),
+                                                       Instant.MIN,
+                                                       Instant.MAX );
+
+        // All dimensions
+        TimeWindow seven = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                         Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                         Duration.ofHours( 1 ),
+                                                         Duration.ofHours( 2 ) );
+        TimeWindow eight = MessageFactory.getTimeWindow( Instant.parse( "1933-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                         Duration.ofHours( 1 ),
+                                                         Duration.ofHours( 2 ) );
+
+        // No intersection
+        TimeWindow nine = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                        Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                        Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                        Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                        Duration.ofHours( 1 ),
+                                                        Duration.ofHours( 2 ) );
+        TimeWindow ten = MessageFactory.getTimeWindow( Instant.parse( "2033-01-01T00:00:00Z" ),
+                                                       Instant.parse( "2034-01-02T00:00:00Z" ),
+                                                       Instant.parse( "2034-01-01T00:00:00Z" ),
+                                                       Instant.parse( "2035-01-02T00:00:00Z" ),
+                                                       Duration.ofHours( 3 ),
+                                                       Duration.ofHours( 4 ) );
+
+        assertAll( () -> assertTrue( TimeWindowSlicer.intersects( TimeWindowOuter.of( one ),
+                                                                  TimeWindowOuter.of( two ) ) ),
+                   () -> assertTrue( TimeWindowSlicer.intersects( TimeWindowOuter.of( three ),
+                                                                  TimeWindowOuter.of( four ) ) ),
+                   () -> assertTrue( TimeWindowSlicer.intersects( TimeWindowOuter.of( five ),
+                                                                  TimeWindowOuter.of( six ) ) ),
+                   () -> assertTrue( TimeWindowSlicer.intersects( TimeWindowOuter.of( seven ),
+                                                                  TimeWindowOuter.of( eight ) ) ),
+                   () -> assertFalse( TimeWindowSlicer.intersects( TimeWindowOuter.of( nine ),
+                                                                   TimeWindowOuter.of( ten ) ) ) );
     }
 
     @Test
