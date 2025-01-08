@@ -431,7 +431,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             Set<TimeWindowOuter> intersected = new HashSet<>();
             for ( TimeWindowOuter nextInner : events )
             {
-                if ( TimeWindowSlicer.intersects( nextOuter, nextInner ) )
+                if ( !Objects.equals( nextOuter, nextInner )
+                     && TimeWindowSlicer.intersects( nextOuter, nextInner ) )
                 {
                     intersected.add( nextOuter );
                     intersected.add( nextInner );

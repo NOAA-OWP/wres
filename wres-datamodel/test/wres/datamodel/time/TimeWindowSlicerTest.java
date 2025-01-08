@@ -209,6 +209,72 @@ class TimeWindowSlicerTest
     }
 
     @Test
+    void testIntersectionOnValidTimeOnlyWithOddNumberOfEvents()
+    {
+        Instant s1 = Instant.parse( "2023-02-03T07:12:00Z" );
+        Instant e1 = Instant.parse( "2023-03-09T04:48:00Z" );
+        Instant s2 = Instant.parse( "2023-05-13T13:00:00Z" );
+        Instant e2 = Instant.parse( "2023-06-18T10:36:00Z" );
+        Instant s3 = Instant.parse( "2023-10-10T13:00:00Z" );
+        Instant e3 = Instant.parse( "2023-11-15T09:36:00Z" );
+        Instant s4 = Instant.parse( "2023-08-21T13:00:00Z" );
+        Instant e4 = Instant.parse( "2023-09-26T10:36:00Z" );
+        Instant s5 = Instant.parse( "2023-07-02T13:00:00Z" );
+        Instant e5 = Instant.parse( "2023-08-07T10:36:00Z" );
+        Instant s6 = Instant.parse( "2023-03-24T14:24:00Z" );
+        Instant e6 = Instant.parse( "2023-04-29T10:36:00Z" );
+
+        Instant ns1 = Instant.parse( "2023-01-16T12:00:00Z" );
+        Instant ne1 = Instant.parse( "2023-02-06T16:48:00Z" );
+        Instant ns2 = Instant.parse( "2023-03-04T16:48:00Z" );
+        Instant ne2 = Instant.parse( "2023-03-30T05:48:00Z" );
+        Instant ns3 = Instant.parse( "2023-04-23T17:48:00Z" );
+        Instant ne3 = Instant.parse( "2023-05-19T05:48:00Z" );
+        Instant ns4 = Instant.parse( "2023-06-12T17:48:00Z" );
+        Instant ne4 = Instant.parse( "2023-07-08T05:48:00Z" );
+        Instant ns5 = Instant.parse( "2023-08-01T17:48:00Z" );
+        Instant ne5 = Instant.parse( "2023-08-27T05:48:00Z" );
+        Instant ns6 = Instant.parse( "2023-09-20T17:48:00Z" );
+        Instant ne6 = Instant.parse( "2023-10-16T05:48:00Z" );
+        Instant ns7 = Instant.parse( "2023-11-09T16:48:00Z" );
+        Instant ne7 = Instant.parse( "2023-12-05T04:48:00Z" );
+
+        TimeWindow one = MessageFactory.getTimeWindow( s1, e1 );
+        TimeWindow two = MessageFactory.getTimeWindow( s2, e2 );
+        TimeWindow three = MessageFactory.getTimeWindow( s3, e3 );
+        TimeWindow four = MessageFactory.getTimeWindow( s4, e4 );
+        TimeWindow five = MessageFactory.getTimeWindow( s5, e5 );
+        TimeWindow six = MessageFactory.getTimeWindow( s6, e6 );
+
+        Set<TimeWindowOuter> left = Set.of( TimeWindowOuter.of( one ),
+                                            TimeWindowOuter.of( two ),
+                                            TimeWindowOuter.of( three ),
+                                            TimeWindowOuter.of( four ),
+                                            TimeWindowOuter.of( five ),
+                                            TimeWindowOuter.of( six ) );
+
+        TimeWindow oneRight = MessageFactory.getTimeWindow( ns1, ne1 );
+        TimeWindow twoRight = MessageFactory.getTimeWindow( ns2, ne2 );
+        TimeWindow threeRight = MessageFactory.getTimeWindow( ns3, ne3 );
+        TimeWindow fourRight = MessageFactory.getTimeWindow( ns4, ne4 );
+        TimeWindow fiveRight = MessageFactory.getTimeWindow( ns5, ne5 );
+        TimeWindow sixRight = MessageFactory.getTimeWindow( ns6, ne6 );
+        TimeWindow sevenRight = MessageFactory.getTimeWindow( ns7, ne7 );
+
+        Set<TimeWindowOuter> right = Set.of( TimeWindowOuter.of( oneRight ),
+                                             TimeWindowOuter.of( twoRight ),
+                                             TimeWindowOuter.of( threeRight ),
+                                             TimeWindowOuter.of( fourRight ),
+                                             TimeWindowOuter.of( fiveRight ),
+                                             TimeWindowOuter.of( sixRight ),
+                                             TimeWindowOuter.of( sevenRight ) );
+
+        Set<TimeWindowOuter> intersection = TimeWindowSlicer.intersection( left, right );
+
+        assertEquals( 13, intersection.size() );
+    }
+
+    @Test
     void testIntersectionOnReferenceTimeOnly()
     {
         TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),

@@ -45,22 +45,26 @@ class TimingErrorHelper
         for ( Event<Pair<Double,Double>> nextPair : timeSeries.getEvents() )
         {
             // New peak left
-            if ( Double.compare( nextPair.getValue().getLeft(), peakLeftValue ) > 0 )
+            if ( Double.compare( nextPair.getValue()
+                                         .getLeft(), peakLeftValue ) > 0 )
             {
-                peakLeftValue = nextPair.getValue().getLeft();
+                peakLeftValue = nextPair.getValue()
+                                        .getLeft();
                 peakLeftTime = nextPair.getTime();
 
                 // Reset left ties
                 tiesLeft.clear();
             }
             // New tie left
-            else if ( Double.compare( nextPair.getValue().getLeft(), peakLeftValue ) == 0 )
+            else if ( Double.compare( nextPair.getValue()
+                                              .getLeft(), peakLeftValue ) == 0 )
             {
                 tiesLeft.add( nextPair.getTime() );
             }
 
             // New peak right
-            if ( Double.compare( nextPair.getValue().getRight(), peakRightValue ) > 0 )
+            if ( Double.compare( nextPair.getValue()
+                                         .getRight(), peakRightValue ) > 0 )
             {
                 peakRightValue = nextPair.getValue().getRight();
                 peakRightTime = nextPair.getTime();
@@ -68,7 +72,8 @@ class TimingErrorHelper
                 // Reset tight ties
                 tiesRight.clear();
             }
-            else if ( Double.compare( nextPair.getValue().getRight(), peakRightValue ) == 0 )
+            else if ( Double.compare( nextPair.getValue()
+                                              .getRight(), peakRightValue ) == 0 )
             {
                 tiesRight.add( nextPair.getTime() );
             }

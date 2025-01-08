@@ -93,7 +93,8 @@ public class TimeToPeakError extends TimingError
         for ( TimeSeries<Pair<Double, Double>> next : pool.get() )
         {
             // Some events?
-            if ( !next.getEvents().isEmpty() )
+            if ( !next.getEvents()
+                      .isEmpty() )
             {
                 Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRandomNumberGenerator() );
 
