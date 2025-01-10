@@ -2631,7 +2631,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>( duplication );
         // Time-series metrics require single-valued forecasts
         List<EvaluationStatusEvent> singleValued =
-                DeclarationValidator.checkSingleValuedForecastsForTimeSeriesMetrics( declaration );
+                DeclarationValidator.checkSingleValuedDataForTimeSeriesMetrics( declaration );
         events.addAll( singleValued );
         // Baseline defined for metrics that require one
         List<EvaluationStatusEvent> baselinePresent =
@@ -3464,11 +3464,11 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that single-valued forecasts are present when declaring time-series metrics.
+     * Checks that single-valued datasets are present when declaring time-series metrics.
      * @param declaration the evaluation declaration
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> checkSingleValuedForecastsForTimeSeriesMetrics( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> checkSingleValuedDataForTimeSeriesMetrics( EvaluationDeclaration declaration )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -3479,7 +3479,7 @@ public class DeclarationValidator
              && Objects.nonNull( declaration.right()
                                             .type() )
              && declaration.right()
-                           .type() != DataType.SINGLE_VALUED_FORECASTS
+                           .type() == DataType.ENSEMBLE_FORECASTS
              && !metrics.isEmpty() )
 
         {
@@ -3490,11 +3490,11 @@ public class DeclarationValidator
                                                              + "dataset is "
                                                              + declaration.right()
                                                                           .type()
-                                                             + ", but the following metrics require single-valued "
-                                                             + "forecasts: "
+                                                             + ", but the following metrics are not currently "
+                                                             + "supported for this data 'type': "
                                                              + metrics
-                                                             + ". Please remove these metrics or correct the data "
-                                                             + "'type' to 'single valued forecasts'." )
+                                                             + ". Please remove these metrics or change the data "
+                                                             + "'type'." )
                                            .build();
             events.add( event );
         }

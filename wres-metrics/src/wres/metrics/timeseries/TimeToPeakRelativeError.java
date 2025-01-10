@@ -107,13 +107,14 @@ public class TimeToPeakRelativeError extends TimingError
         for ( TimeSeries<Pair<Double, Double>> next : pool.get() )
         {
             // Some events?
-            if ( !next.getEvents().isEmpty() )
+            if ( !next.getEvents()
+                      .isEmpty() )
             {
-                // Get the first reference time
-                Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
-                Map.Entry<ReferenceTimeType, Instant> firstEntry = referenceTimes.entrySet().iterator().next();
-                Instant referenceTime = firstEntry.getValue();
-                ReferenceTimeType referenceTimeType = firstEntry.getKey();
+                // Get the reference time
+                Map.Entry<ReferenceTimeType, Instant> referenceTimeAndType =
+                        TimingErrorHelper.getReferenceTimeForTimingError( next );
+                Instant referenceTime = referenceTimeAndType.getValue();
+                ReferenceTimeType referenceTimeType = referenceTimeAndType.getKey();
 
                 if ( LOGGER.isTraceEnabled() )
                 {

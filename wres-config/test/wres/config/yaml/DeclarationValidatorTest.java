@@ -1199,8 +1199,8 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertTrue( DeclarationValidatorTest.contains( events, " the following metrics require single-valued "
-                                                               + "forecasts",
+        assertTrue( DeclarationValidatorTest.contains( events, " the following metrics are not currently "
+                                                               + "supported for this data 'type'",
                                                        StatusLevel.ERROR ) );
     }
 
