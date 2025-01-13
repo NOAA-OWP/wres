@@ -33,10 +33,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * period, in hours, between the basis time and the time at which the maximum value is recorded in the left side of the 
  * paired input. Thus, for forecast time-series, the output is properly interpreted as the duration per hour of forecast 
  * lead time until the observed peak occurred.</p>
- * 
+ *
  * <p>For multiple peaks with the same value, the peak with the latest {@link Instant} is chosen. A negative 
  * {@link Duration} indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
- * 
+ *
  * @author James Brown
  */
 public class TimeToPeakRelativeError extends TimingError
@@ -49,12 +49,16 @@ public class TimeToPeakRelativeError extends TimingError
     public static final DurationDiagramMetric METRIC = DurationDiagramMetric.newBuilder()
                                                                             .setName( MetricName.TIME_TO_PEAK_RELATIVE_ERROR )
                                                                             .setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( Long.MIN_VALUE ) )
+                                                                                                                     .setSeconds(
+                                                                                                                             Long.MIN_VALUE ) )
                                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( Long.MAX_VALUE )
-                                                                                                                     .setNanos( 999_999_999 ) )
+                                                                                                                     .setSeconds(
+                                                                                                                             Long.MAX_VALUE )
+                                                                                                                     .setNanos(
+                                                                                                                             999_999_999 ) )
                                                                             .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( 0 ) )
+                                                                                                                     .setSeconds(
+                                                                                                                             0 ) )
                                                                             .build();
 
     /**
@@ -71,7 +75,7 @@ public class TimeToPeakRelativeError extends TimingError
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -82,7 +86,7 @@ public class TimeToPeakRelativeError extends TimingError
 
     /**
      * Returns an instance with a prescribed random number generator for resolving ties.
-     * 
+     *
      * @param rng the random number generator for resolving ties
      * @return an instance
      */
@@ -115,6 +119,10 @@ public class TimeToPeakRelativeError extends TimingError
                         TimingErrorHelper.getReferenceTimeForTimingError( next );
                 Instant referenceTime = referenceTimeAndType.getValue();
                 ReferenceTimeType referenceTimeType = referenceTimeAndType.getKey();
+
+                // Set the reference time type
+                builder.setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf(
+                        referenceTimeType.name() ) );
 
                 if ( LOGGER.isTraceEnabled() )
                 {
@@ -159,11 +167,12 @@ public class TimeToPeakRelativeError extends TimingError
 
                     PairOfInstantAndDuration pair = PairOfInstantAndDuration.newBuilder()
                                                                             .setTime( Timestamp.newBuilder()
-                                                                                               .setSeconds( referenceTime.getEpochSecond() )
+                                                                                               .setSeconds(
+                                                                                                       referenceTime.getEpochSecond() )
                                                                                                .setNanos( referenceTime.getNano() ) )
                                                                             .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                                      .setSeconds( seconds.longValue() ) )
-                                                                            .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) )
+                                                                                                                      .setSeconds(
+                                                                                                                              seconds.longValue() ) )
                                                                             .build();
 
                     builder.addStatistics( pair );
@@ -191,7 +200,7 @@ public class TimeToPeakRelativeError extends TimingError
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param rng the random number generator for resolving ties
      */
 

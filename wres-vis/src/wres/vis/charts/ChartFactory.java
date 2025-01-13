@@ -93,6 +93,7 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.SummaryStatistic;
 import wres.vis.data.ChartDataFactory;
 
@@ -534,7 +535,7 @@ public class ChartFactory
                          + rangeTitle;
         }
 
-        String domainTitle = "FORECAST ISSUE TIME [UTC]";
+        String domainTitle = this.getDurationDiagramDomainTitle( example );
 
         JFreeChart chart = org.jfree.chart.ChartFactory.createTimeSeriesChart( title,
                                                                                domainTitle,
@@ -2504,6 +2505,20 @@ public class ChartFactory
         }
 
         return qualifier;
+    }
+
+    /**
+     * @param example an example dataset
+     * @return the duration diagram domain axis title
+     */
+
+    private String getDurationDiagramDomainTitle( DurationDiagramStatisticOuter example )
+    {
+        ReferenceTime.ReferenceTimeType type = example.getStatistic()
+                                                      .getReferenceTimeType();
+        return type.toString()
+                   .replace( "_", " " )
+               + " [UTC]";
     }
 
     /**

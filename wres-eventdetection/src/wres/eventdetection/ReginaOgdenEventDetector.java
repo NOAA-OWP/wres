@@ -211,7 +211,7 @@ public class ReginaOgdenEventDetector implements EventDetector
 
             if ( Objects.isNull( builder.windowSize() ) )
             {
-                // Check original halflife, not current estimate
+                // Check original window size, not current estimate
                 if ( Objects.nonNull( parameters.halfLife() ) )
                 {
                     builder.windowSize( parameters.halfLife()

@@ -1501,8 +1501,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             MetricConstants namedMetric = MetricConstants.valueOf( metric.getName()
                                                                          .name() );
             this.append( joiner, namedMetric.toString(), false );
-            ReferenceTimeType referenceTimeType = ReferenceTimeType.valueOf( next.getReferenceTimeType()
-                                                                                 .name() );
+            ReferenceTimeType referenceTimeType = ReferenceTimeType.valueOf( diagram.getReferenceTimeType()
+                                                                                    .name() );
             this.append( joiner, referenceTimeType.toString(), false );
 
             // Name qualifier
@@ -1510,8 +1510,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
             // Units
             this.append( joiner, epochString, false );
-            Instant time = Instant.ofEpochSecond( next.getTime().getSeconds(), next.getTime()
-                                                                                   .getNanos() );
+            Instant time = Instant.ofEpochSecond( next.getTime()
+                                                      .getSeconds(), next.getTime()
+                                                                         .getNanos() );
 
             BigDecimal nanoAdd = BigDecimal.valueOf( time.getNano(), 9 );
             BigDecimal epochDurationInUserUnits = BigDecimal.valueOf( time.getEpochSecond() )

@@ -107,6 +107,9 @@ public class TimeToPeakError extends TimingError
                 Instant referenceTime = referenceTimeAndType.getValue();
                 ReferenceTimeType referenceTimeType = referenceTimeAndType.getKey();
 
+                // Set the reference time type
+                builder.setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) );
+
                 if ( LOGGER.isTraceEnabled() )
                 {
                     LOGGER.trace( "Using reference time {} with type {} for instance of {} with input hash {}.",
@@ -124,7 +127,6 @@ public class TimeToPeakError extends TimingError
                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                           .setSeconds( error.getSeconds() )
                                                                                           .setNanos( error.getNano() ) )
-                                                .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) )
                                                 .build();
 
                 builder.addStatistics( pair );

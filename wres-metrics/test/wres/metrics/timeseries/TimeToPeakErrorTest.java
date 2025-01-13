@@ -61,7 +61,6 @@ public final class TimeToPeakErrorTest
                                                                                   .setNanos( firstInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -21600 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
@@ -70,13 +69,13 @@ public final class TimeToPeakErrorTest
                                                                                   .setNanos( secondInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( 43200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expected = DurationDiagramStatistic.newBuilder()
                                                                     .setMetric( TimeToPeakError.METRIC )
                                                                     .addStatistics( one )
                                                                     .addStatistics( two )
+                                                                    .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                     .build();
 
 

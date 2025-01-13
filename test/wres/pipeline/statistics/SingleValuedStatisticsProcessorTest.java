@@ -381,12 +381,12 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                   .setNanos( FIRST_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -21600 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedFirst = DurationDiagramStatistic.newBuilder()
                                                                          .setMetric( TimeToPeakError.METRIC )
                                                                          .addStatistics( one )
+                                                                         .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                          .build();
 
         PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
@@ -396,12 +396,12 @@ public final class SingleValuedStatisticsProcessorTest
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds(
                                                                                                                  43200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedSecond = DurationDiagramStatistic.newBuilder()
                                                                           .setMetric( TimeToPeakError.METRIC )
                                                                           .addStatistics( two )
+                                                                          .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                           .build();
 
         List<DurationDiagramStatisticOuter> expected = new ArrayList<>();
@@ -508,11 +508,11 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                   .setNanos( FIRST_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -21600 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedFirst = DurationDiagramStatistic.newBuilder()
                                                                          .setMetric( TimeToPeakError.METRIC )
+                                                                         .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                          .addStatistics( one )
                                                                          .build();
 
@@ -523,12 +523,12 @@ public final class SingleValuedStatisticsProcessorTest
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds(
                                                                                                                  43200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expectedSecond = DurationDiagramStatistic.newBuilder()
                                                                           .setMetric( TimeToPeakError.METRIC )
                                                                           .addStatistics( two )
+                                                                          .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                           .build();
 
         expected.add( DurationDiagramStatisticOuter.of( expectedFirst,

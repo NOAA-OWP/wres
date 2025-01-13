@@ -19,7 +19,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricTestDataFactory;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
-import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.statistics.generated.ReferenceTime;
 
 /**
  * Tests the {@link TimeToPeakRelativeError}.
@@ -58,7 +58,6 @@ public final class TimeToPeakRelativeErrorTest
                                                                                   .setNanos( firstInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( -1200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
@@ -67,13 +66,13 @@ public final class TimeToPeakRelativeErrorTest
                                                                                   .setNanos( secondInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
                                                                                                          .setSeconds( 7200 ) )
-                                                               .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
         DurationDiagramStatistic expected = DurationDiagramStatistic.newBuilder()
                                                                     .setMetric( TimeToPeakRelativeError.METRIC )
                                                                     .addStatistics( one )
                                                                     .addStatistics( two )
+                                                                    .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
                                                                     .build();
 
         assertEquals( expected, actual.getStatistic() );
