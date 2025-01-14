@@ -31,6 +31,7 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
@@ -81,6 +82,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -95,6 +97,7 @@ import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.SummaryStatistic;
+import wres.statistics.generated.TimeWindow;
 import wres.vis.data.ChartDataFactory;
 
 /**
@@ -227,9 +230,15 @@ public class ChartFactory
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        // Find the metadata for the first element, which is sufficient here
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        // Use the metadata from the first element, plus the aggregate time window
         DurationScoreStatisticOuter example = statistics.get( 0 );
-        PoolMetadata metadata = example.getPoolMetadata();
+        PoolMetadata metadata = PoolMetadata.of( example.getPoolMetadata(), aggregateTimeWindow );
 
         MetricConstants metricName = example.getMetricName();
 
@@ -312,7 +321,7 @@ public class ChartFactory
     {
         ConcurrentMap<Object, JFreeChart> results = new ConcurrentSkipListMap<>();
 
-        // Find the metadata for the first element, which is sufficient here
+        // Use the metadata from the first element
         DiagramStatisticOuter first = statistics.get( 0 );
         PoolMetadata metadata = first.getPoolMetadata();
         MetricConstants metricName = first.getMetricName();
@@ -492,9 +501,15 @@ public class ChartFactory
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        // Find the metadata for the first element, which is sufficient here
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        // Use the metadata from the first element, plus the aggregate time window
         DurationDiagramStatisticOuter example = statistics.get( 0 );
-        PoolMetadata metadata = example.getPoolMetadata();
+        PoolMetadata metadata = PoolMetadata.of( example.getPoolMetadata(), aggregateTimeWindow );
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
 
@@ -583,11 +598,17 @@ public class ChartFactory
     public JFreeChart getBoxplotChart( List<BoxplotStatisticOuter> statistics,
                                        ChronoUnit durationUnits )
     {
-        // Find the metadata for the first element, which is sufficient here
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        // Use the metadata from the first element, plus the aggregate time window
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = first.getPoolMetadata();
+        PoolMetadata metadata = PoolMetadata.of( first.getPoolMetadata(), aggregateTimeWindow );
         BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
@@ -789,11 +810,17 @@ public class ChartFactory
         Objects.requireNonNull( valueUnits );
         Objects.requireNonNull( durationUnits );
 
-        // Find the metadata for the first element, which is sufficient here
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        // Use the metadata from the first element, plus the aggregate time window
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = first.getPoolMetadata();
+        PoolMetadata metadata = PoolMetadata.of( first.getPoolMetadata(), aggregateTimeWindow );
         BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
@@ -876,9 +903,15 @@ public class ChartFactory
                                                           GraphicShape graphicShape,
                                                           ChronoUnit durationUnits )
     {
-        // Find the metadata for the first element, which is sufficient here
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        // Use the metadata from the first element, plus the aggregate time window
         DoubleScoreComponentOuter example = statistics.get( 0 );
-        PoolMetadata metadata = example.getPoolMetadata();
+        PoolMetadata metadata = PoolMetadata.of( example.getPoolMetadata(), aggregateTimeWindow );
         String metricUnits = example.getStatistic()
                                     .getMetric()
                                     .getUnits();
@@ -2153,7 +2186,8 @@ public class ChartFactory
 
         // No time window for pooling window plots unless they are diagrams and hence one diagram per time window
         if ( chartType == ChartType.POOLING_WINDOW
-             && ( statisticType == StatisticType.DOUBLE_SCORE || statisticType == StatisticType.DURATION_SCORE ) )
+             && ( statisticType == StatisticType.DOUBLE_SCORE
+                  || statisticType == StatisticType.DURATION_SCORE ) )
         {
             return "";
         }
@@ -2519,6 +2553,76 @@ public class ChartFactory
         return type.toString()
                    .replace( "_", " " )
                + " [UTC]";
+    }
+
+    /**
+     * Returns the common time window boundaries, which is different from the {@link TimeWindowSlicer#union(Set)}.
+     * @param timeWindows the time windows
+     * @return the common boundaries
+     */
+    private TimeWindowOuter getAggregateTimeWindow( Set<TimeWindowOuter> timeWindows )
+    {
+        // Start with the unbounded window
+        TimeWindow.Builder builder = MessageFactory.getTimeWindow()
+                                                   .toBuilder();
+
+        SortedSet<Instant> earliestReference =
+                timeWindows.stream()
+                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
+                                                                  .getEarliestReferenceTime() ) )
+                           .collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<Instant> latestReference =
+                timeWindows.stream()
+                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
+                                                                  .getLatestReferenceTime() ) )
+                           .collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<Instant> earliestValid =
+                timeWindows.stream()
+                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
+                                                                  .getEarliestValidTime() ) )
+                           .collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<Instant> latestValid =
+                timeWindows.stream()
+                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
+                                                                  .getLatestValidTime() ) )
+                           .collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<Duration> earliestLead =
+                timeWindows.stream()
+                           .map( s -> MessageFactory.getDuration( s.getTimeWindow()
+                                                                   .getEarliestLeadDuration() ) )
+                           .collect( Collectors.toCollection( TreeSet::new ) );
+        SortedSet<Duration> latestLead =
+                timeWindows.stream()
+                           .map( s -> MessageFactory.getDuration( s.getTimeWindow()
+                                                                   .getLatestLeadDuration() ) )
+                           .collect( Collectors.toCollection( TreeSet::new ) );
+
+        if ( earliestReference.size() == 1 )
+        {
+            builder.setEarliestReferenceTime( MessageFactory.getTimestamp( earliestReference.first() ) );
+        }
+        if ( latestReference.size() == 1 )
+        {
+            builder.setLatestReferenceTime( MessageFactory.getTimestamp( latestReference.first() ) );
+        }
+        if ( earliestValid.size() == 1 )
+        {
+            builder.setEarliestValidTime( MessageFactory.getTimestamp( earliestValid.first() ) );
+        }
+        if ( latestValid.size() == 1 )
+        {
+            builder.setLatestValidTime( MessageFactory.getTimestamp( latestValid.first() ) );
+        }
+        if ( earliestLead.size() == 1 )
+        {
+            builder.setEarliestLeadDuration( MessageFactory.getDuration( earliestLead.first() ) );
+        }
+        if ( latestLead.size() == 1 )
+        {
+            builder.setLatestLeadDuration( MessageFactory.getDuration( latestLead.first() ) );
+        }
+
+        return TimeWindowOuter.of( builder.build() );
     }
 
     /**
