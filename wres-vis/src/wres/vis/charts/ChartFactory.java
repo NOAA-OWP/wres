@@ -230,15 +230,9 @@ public class ChartFactory
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        Set<TimeWindowOuter> timeWindows = statistics.stream()
-                                                     .map( n -> n.getPoolMetadata()
-                                                                 .getTimeWindow() )
-                                                     .collect( Collectors.toSet() );
-        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
-
         // Use the metadata from the first element, plus the aggregate time window
         DurationScoreStatisticOuter example = statistics.get( 0 );
-        PoolMetadata metadata = PoolMetadata.of( example.getPoolMetadata(), aggregateTimeWindow );
+        PoolMetadata metadata = example.getPoolMetadata();
 
         MetricConstants metricName = example.getMetricName();
 
@@ -255,7 +249,14 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
                                                                     ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
@@ -375,6 +376,8 @@ public class ChartFactory
             SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
             ChartTitleParameters parameters = new ChartTitleParameters( union,
+                                                                        // Same as aggregate metadata
+                                                                        union.getTimeWindow(),
                                                                         Pair.of( metricName, null ),
                                                                         durationUnits,
                                                                         chartType,
@@ -501,15 +504,9 @@ public class ChartFactory
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        Set<TimeWindowOuter> timeWindows = statistics.stream()
-                                                     .map( n -> n.getPoolMetadata()
-                                                                 .getTimeWindow() )
-                                                     .collect( Collectors.toSet() );
-        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
-
         // Use the metadata from the first element, plus the aggregate time window
         DurationDiagramStatisticOuter example = statistics.get( 0 );
-        PoolMetadata metadata = PoolMetadata.of( example.getPoolMetadata(), aggregateTimeWindow );
+        PoolMetadata metadata = example.getPoolMetadata();
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
 
@@ -526,7 +523,13 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
                                                                     chartType,
@@ -598,17 +601,11 @@ public class ChartFactory
     public JFreeChart getBoxplotChart( List<BoxplotStatisticOuter> statistics,
                                        ChronoUnit durationUnits )
     {
-        Set<TimeWindowOuter> timeWindows = statistics.stream()
-                                                     .map( n -> n.getPoolMetadata()
-                                                                 .getTimeWindow() )
-                                                     .collect( Collectors.toSet() );
-        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
-
         // Use the metadata from the first element, plus the aggregate time window
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = PoolMetadata.of( first.getPoolMetadata(), aggregateTimeWindow );
+        PoolMetadata metadata = first.getPoolMetadata();
         BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
@@ -648,7 +645,14 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
                                                                     chartType,
@@ -810,17 +814,11 @@ public class ChartFactory
         Objects.requireNonNull( valueUnits );
         Objects.requireNonNull( durationUnits );
 
-        Set<TimeWindowOuter> timeWindows = statistics.stream()
-                                                     .map( n -> n.getPoolMetadata()
-                                                                 .getTimeWindow() )
-                                                     .collect( Collectors.toSet() );
-        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
-
         // Use the metadata from the first element, plus the aggregate time window
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = PoolMetadata.of( first.getPoolMetadata(), aggregateTimeWindow );
+        PoolMetadata metadata = first.getPoolMetadata();
         BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
@@ -839,7 +837,13 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
                                                                     chartType,
@@ -903,15 +907,9 @@ public class ChartFactory
                                                           GraphicShape graphicShape,
                                                           ChronoUnit durationUnits )
     {
-        Set<TimeWindowOuter> timeWindows = statistics.stream()
-                                                     .map( n -> n.getPoolMetadata()
-                                                                 .getTimeWindow() )
-                                                     .collect( Collectors.toSet() );
-        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
-
         // Use the metadata from the first element, plus the aggregate time window
         DoubleScoreComponentOuter example = statistics.get( 0 );
-        PoolMetadata metadata = PoolMetadata.of( example.getPoolMetadata(), aggregateTimeWindow );
+        PoolMetadata metadata = example.getPoolMetadata();
         String metricUnits = example.getStatistic()
                                     .getMetric()
                                     .getUnits();
@@ -943,7 +941,13 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
+        Set<TimeWindowOuter> timeWindows = statistics.stream()
+                                                     .map( n -> n.getPoolMetadata()
+                                                                 .getTimeWindow() )
+                                                     .collect( Collectors.toSet() );
+        TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    aggregateTimeWindow,
                                                                     Pair.of( metricName, metricComponentName ),
                                                                     durationUnits,
                                                                     chartType,
@@ -1674,7 +1678,7 @@ public class ChartFactory
         ChronoUnit durationUnits = parameters.durationUnits();
 
         name += this.getTimeScaleForTitle( metadata, durationUnits );
-        name += this.getTimeWindowForTitle( metadata, chartType, statisticType, durationUnits );
+        name += this.getTimeWindowForTitle( parameters.timeWindow(), chartType, statisticType, durationUnits );
         name += this.getThresholdForTitle( metadata, chartType, statisticType );
         name += this.getCovariatesForTitle( metadata );
         name += this.getQuantilesQualifier( metricName,
@@ -2169,7 +2173,7 @@ public class ChartFactory
     /**
      * Uncovers the time window for the plot title.
      *
-     * @param metadata the sample metadata
+     * @param timeWindow the time window
      * @param chartType the chart type
      * @param statisticType the type of statistic
      * @param durationUnits the duration units
@@ -2177,12 +2181,12 @@ public class ChartFactory
      * @throws NullPointerException if the metadata is null
      */
 
-    private String getTimeWindowForTitle( PoolMetadata metadata,
+    private String getTimeWindowForTitle( TimeWindowOuter timeWindow,
                                           ChartType chartType,
                                           StatisticType statisticType,
                                           ChronoUnit durationUnits )
     {
-        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( timeWindow );
 
         // No time window for pooling window plots unless they are diagrams and hence one diagram per time window
         if ( chartType == ChartType.POOLING_WINDOW
@@ -2191,8 +2195,6 @@ public class ChartFactory
         {
             return "";
         }
-
-        TimeWindowOuter timeWindow = metadata.getTimeWindow();
 
         String timeWindowString = "";
 
@@ -2302,7 +2304,8 @@ public class ChartFactory
             legendTitle = "Name: ";
         }
         // Lead-threshold
-        else if ( chartType == ChartType.LEAD_THRESHOLD || chartType == ChartType.TIMING_ERROR_SUMMARY_STATISTICS )
+        else if ( chartType == ChartType.LEAD_THRESHOLD
+                  || chartType == ChartType.TIMING_ERROR_SUMMARY_STATISTICS )
         {
             legendTitle = "Threshold [" + thresholdUnits + "]:";
         }
@@ -2362,19 +2365,21 @@ public class ChartFactory
              || metricName.isInGroup( StatisticType.DURATION_SCORE ) )
         {
             // Lead durations where required
-            if ( !earliest.equals( TimeWindowOuter.DURATION_MIN ) || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+            if ( !earliest.equals( TimeWindowOuter.DURATION_MIN )
+                 || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
             {
                 legendTitle = legendTitle + "Lead time window [" + leadUnits + "], ";
             }
 
-            // Valid times where required
+            // Valid times when required
             if ( graphicShape != GraphicShape.VALID_DATE_POOLS
-                 && ( !earliestValidTime.equals( Instant.MIN ) || !latestValidTime.equals( Instant.MAX ) ) )
+                 && ( !earliestValidTime.equals( Instant.MIN )
+                      || !latestValidTime.equals( Instant.MAX ) ) )
             {
                 legendTitle = legendTitle + "Valid time window [UTC], ";
             }
 
-            // Reference times where required
+            // Reference times when required
             if ( graphicShape != GraphicShape.ISSUED_DATE_POOLS
                  && ( !earliestReferenceTime.equals( Instant.MIN ) || !latestReferenceTime.equals( Instant.MAX ) ) )
             {
@@ -2691,6 +2696,7 @@ public class ChartFactory
     /**
      * Small value class for chart title creation.
      * @param metadata the metadata
+     * @param timeWindow the time window to use for the chart title, possibly an aggregate
      * @param metricNames the metric names
      * @param durationUnits the duration units
      * @param chartType the chart type
@@ -2701,6 +2707,7 @@ public class ChartFactory
      * @param summaryStatisticNameQualifier the name qualifier for a summary statistic
      */
     private record ChartTitleParameters( PoolMetadata metadata,
+                                         TimeWindowOuter timeWindow,
                                          Pair<MetricConstants, MetricConstants> metricNames,
                                          ChronoUnit durationUnits,
                                          ChartType chartType,
