@@ -1,7 +1,16 @@
 package wres.tasker;
 
+import java.io.IOException;
 import java.security.Security;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -9,15 +18,20 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlets.HeaderFilter;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -101,30 +115,6 @@ public class Tasker
      */
     static final int MAX_SERVER_THREADS = 100;
 
-
-    /** 
-     * Ensure that the X-Frame-Options header element is included in the response. 
-     * If not already set, then it will be set to DENY. If it is already set when this
-     * is called, then it will be left unchanged (there is no check for DENY).    
-     */
-    private static final HttpChannel.Listener HTTP_CHANNEL_LISTENER = new HttpChannel.Listener()
-    {
-        @Override
-        public void onResponseBegin( Request request )
-        {
-            if ( request.getResponse().getHeader( "X-Frame-Options" ) == null )
-            {
-                request.getResponse().addHeader( "X-Frame-Options", "DENY" );
-            }
-            if ( request.getResponse()
-                        .getHeader( "strict-transport-security" ) == null )
-            {
-                request.getResponse()
-                       .addHeader( "strict-transport-security", "max-age=31536000; includeSubDomains; preload;" );
-            }
-        }
-    };
-
     /**
      * Tasker receives requests for wres runs and passes them along to queue.
      * Actual work is done in WresJob restlet class, Tasker sets up a server.
@@ -155,6 +145,8 @@ public class Tasker
         //Set up the ServlentContextHandler and add the ContextFilter for X-Frame-Options for all requests.
         ServletContextHandler context = new ServletContextHandler( ServletContextHandler.NO_SESSIONS );
         context.setContextPath( "/" );
+
+        //The servlet holder is declared.
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
                                                           "/*" );
 
@@ -168,11 +160,30 @@ public class Tasker
         dynamicHolder.setInitParameter( "jersey.config.server.provider.classnames",
                                         MultiPartFeature.class.getCanonicalName() );
 
-        // Static handler:
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource( Resource.newClassPathResource( "html" ) );
+        //Static handler for index.html. This also impacts the dynamic resources
+        //by being chained in setHandler, below.
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            public boolean handle( Request request,
+                                   Response response,
+                                   Callback callback )
+                    throws Exception
+            {
+                response.getHeaders()
+                        .add( "X-Frame-Options", "DENY" );
+                response.getHeaders()
+                        .add( "strict-transport-security", "max-age=31536000; includeSubDomains; preload;" );
+                return super.handle( request, response, callback );
+            }
+        };
 
-        // Have to chain/wrap the handler this way to get both static/dynamic:
+        ResourceFactory resourceFactory = ResourceFactory.root();
+        Resource resource = resourceFactory.newClassLoaderResource( "html", false );
+        resourceHandler.setBaseResource( resource );
+
+        // Have to chain/wrap the handler this way to get both static/dynamic.
+        // This applies the handle method, above, to dynamic and static resources.
         resourceHandler.setHandler( context );
 
         // Fix the max server threads for better stack memory predictability,
@@ -212,7 +223,6 @@ public class Tasker
                                                                      httpTwo ) )
         {
             serverConnector.setPort( Tasker.SERVER_PORT );
-            serverConnector.addBean( HTTP_CHANNEL_LISTENER );
             ServerConnector[] serverConnectors = { serverConnector };
             jettyServer.setConnectors( serverConnectors );
 
