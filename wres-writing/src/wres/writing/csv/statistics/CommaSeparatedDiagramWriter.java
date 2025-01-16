@@ -1,6 +1,5 @@
 package wres.writing.csv.statistics;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Format;
 import java.time.temporal.ChronoUnit;
@@ -103,34 +102,27 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         Format formatter = declaration.decimalFormat();
 
         // Default, per time-window
-        try
-        {
-            // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for
-            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-            Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
-                    Slicer.getGroupedStatistics( statistics );
+        // Group the statistics by the LRB context in which they appear. There will be one path written
+        // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for
+        // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+        Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
+                Slicer.getGroupedStatistics( statistics );
 
-            for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
-            {
-                // Slice by ensemble averaging type
-                List<List<DiagramStatisticOuter>> sliced =
-                        CommaSeparatedDiagramWriter.getSlicedStatistics( nextGroup );
-                for ( List<DiagramStatisticOuter> nextSlice : sliced )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
-                                                                                   super.getDeclaration(),
-                                                                                   nextSlice,
-                                                                                   formatter,
-                                                                                   super.getDurationUnits() );
-                    paths.addAll( innerPathsWrittenTo );
-                }
-            }
-        }
-        catch ( IOException e )
+        for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
         {
-            throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
+            // Slice by ensemble averaging type
+            List<List<DiagramStatisticOuter>> sliced =
+                    CommaSeparatedDiagramWriter.getSlicedStatistics( nextGroup );
+            for ( List<DiagramStatisticOuter> nextSlice : sliced )
+            {
+                Set<Path> innerPathsWrittenTo =
+                        CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
+                                                                               declaration,
+                                                                               nextSlice,
+                                                                               formatter,
+                                                                               super.getDurationUnits() );
+                paths.addAll( innerPathsWrittenTo );
+            }
         }
 
         return Collections.unmodifiableSet( paths );
@@ -140,11 +132,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * Writes all output for one diagram type.
      *
      * @param outputDirectory the directory into which to write
-     * @param declaration the project declaration
+     * @param declaration the declaration
      * @param output the diagram output
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
-     * @throws IOException if the output cannot be written
      */
 
     private static Set<Path> writeOneDiagramOutputType( Path outputDirectory,
@@ -152,7 +143,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                         List<DiagramStatisticOuter> output,
                                                         Format formatter,
                                                         ChronoUnit durationUnits )
-            throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -173,7 +163,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                         Slicer.filter( output, m ),
                                                                                         headerRow,
                                                                                         formatter,
-                                                                                        durationUnits );
+                                                                                        durationUnits,
+                                                                                        declaration );
 
             pathsWrittenTo.addAll( innerPathsWrittenTo );
 
@@ -191,6 +182,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
+     * @param declaration the declaration
      * @return set of paths actually written to
      */
 
@@ -198,7 +190,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                      List<DiagramStatisticOuter> output,
                                                                      StringJoiner headerRow,
                                                                      Format formatter,
-                                                                     ChronoUnit durationUnits )
+                                                                     ChronoUnit durationUnits,
+                                                                     EvaluationDeclaration declaration )
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -208,7 +201,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         for ( TimeWindowOuter timeWindow : timeWindows )
         {
             List<DiagramStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getPoolMetadata().getTimeWindow().equals( timeWindow ) );
+                    Slicer.filter( output, data -> data.getPoolMetadata()
+                                                       .getTimeWindow()
+                                                       .equals( timeWindow ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
             PoolMetadata meta = next.get( 0 ).getPoolMetadata();
@@ -222,7 +217,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                          headerRow ) ) );
 
             // Write the output
-            String append = CommaSeparatedDiagramWriter.getPathQualifier( timeWindow, durationUnits, output );
+            String append = CommaSeparatedDiagramWriter.getPathQualifier( timeWindow,
+                                                                          declaration,
+                                                                          durationUnits,
+                                                                          output );
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      append,
@@ -483,20 +481,32 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     /**
      * Generates a path qualifier based on the statistics provided.
      * @param timeWindow the time window
+     * @param declaration the declaration
      * @param leadUnits the lead duration units
      * @param statistics the statistics
      * @return a path qualifier or null if non is required
      */
 
     private static String getPathQualifier( TimeWindowOuter timeWindow,
+                                            EvaluationDeclaration declaration,
                                             ChronoUnit leadUnits,
                                             List<DiagramStatisticOuter> statistics )
     {
+        // Pooling windows
+        if ( Objects.nonNull( declaration.validDatePools() )
+             || Objects.nonNull( declaration.eventDetection() )
+             || !declaration.timePools()
+                            .isEmpty() )
+        {
+            return DataUtilities.toStringSafe( timeWindow, leadUnits );
+        }
+
         // Qualify all windows with the latest lead duration
         return DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
                                                      leadUnits )
                + "_"
-               + leadUnits.name().toUpperCase()
+               + leadUnits.name()
+                          .toUpperCase()
                + CommaSeparatedDiagramWriter.getEnsembleAverageQualifierString( statistics );
     }
 

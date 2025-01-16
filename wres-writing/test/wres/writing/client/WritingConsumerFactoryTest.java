@@ -29,6 +29,7 @@ import wres.events.broker.BrokerUtilities;
 import wres.events.client.MessagingClient;
 import wres.events.subscribe.ConsumerFactory;
 import wres.eventsbroker.embedded.EmbeddedBroker;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -200,7 +201,7 @@ class WritingConsumerFactoryTest
                                                                                     ThresholdOperator.GREATER,
                                                                                     ThresholdOrientation.LEFT ) );
 
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
+        Geometry geometry = MessageUtilities.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
 
         Instant earliestValid = Instant.parse( "2551-03-20T01:00:00Z" );
         Instant latestValid = Instant.parse( "2551-03-20T12:00:00Z" );
@@ -209,18 +210,18 @@ class WritingConsumerFactoryTest
         Duration earliestLead = Duration.ofHours( 1 );
         Duration latestLead = Duration.ofHours( 7 );
 
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( earliestReference,
-                                                                         latestReference,
-                                                                         earliestValid,
-                                                                         latestValid,
-                                                                         earliestLead,
-                                                                         latestLead );
+        TimeWindow inner = MessageUtilities.getTimeWindow( earliestReference,
+                                                           latestReference,
+                                                           earliestValid,
+                                                           latestValid,
+                                                           earliestLead,
+                                                           latestLead );
 
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( inner );
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "DRRC2_DRRC2_DRRC2", geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( "DRRC2_DRRC2_DRRC2", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,

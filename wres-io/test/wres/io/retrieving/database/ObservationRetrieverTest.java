@@ -56,7 +56,7 @@ import wres.io.project.Projects;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.io.retrieving.Retriever;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
@@ -208,8 +208,8 @@ public class ObservationRetrieverTest
         // GitHub issue #357
 
         // Time window filter
-        TimeWindow timeWindowInner = MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                                                   Instant.parse( "2023-04-01T10:00:00Z" ) );
+        TimeWindow timeWindowInner = MessageUtilities.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                                     Instant.parse( "2023-04-01T10:00:00Z" ) );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindowInner );
 
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 2 ) );
@@ -267,8 +267,8 @@ public class ObservationRetrieverTest
     public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
     {
         // Build the pool boundaries
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                                         Instant.parse( SECOND_TIME ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                           Instant.parse( SECOND_TIME ) );
         TimeWindowOuter poolBoundaries = TimeWindowOuter.of( inner );
 
         // Build the retriever

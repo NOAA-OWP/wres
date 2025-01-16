@@ -16,7 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
  *
  * @author James Brown
  */
-public class DurationIntervalDeserializer extends JsonDeserializer<Pair<Duration,Duration>>
+public class DurationIntervalDeserializer extends JsonDeserializer<Pair<Duration, Duration>>
 {
     /** The name of the first duration within the interval. */
     private final String firstName;
@@ -25,15 +25,15 @@ public class DurationIntervalDeserializer extends JsonDeserializer<Pair<Duration
     private final String secondName;
 
     @Override
-    public Pair<Duration,Duration> deserialize( JsonParser jp, DeserializationContext context )
+    public Pair<Duration, Duration> deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
     {
         Objects.requireNonNull( jp );
 
         ObjectReader mapper = ( ObjectReader ) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
-        Duration first = DurationDeserializer.getDuration( mapper, node, this.firstName );
-        Duration second = DurationDeserializer.getDuration( mapper, node, this.secondName );
+        Duration first = DurationDeserializer.getDuration( mapper, node, this.firstName, "unit" );
+        Duration second = DurationDeserializer.getDuration( mapper, node, this.secondName, "unit" );
 
         return Pair.of( first, second );
     }

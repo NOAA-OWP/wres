@@ -26,6 +26,7 @@ import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CovariateDatasetBuilder;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
@@ -36,6 +37,13 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.TimeWindowAggregation;
+import wres.config.yaml.components.EventDetectionBuilder;
+import wres.config.yaml.components.EventDetectionCombination;
+import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.EventDetectionParameters;
+import wres.config.yaml.components.EventDetectionParametersBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -67,10 +75,12 @@ import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Variable;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.Geometry;
@@ -136,7 +146,10 @@ class DeclarationValidatorTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( dataset )
                                                          .build();
-        List<CovariateDataset> covariates = List.of( new CovariateDataset( dataset, null, null, null, null ) );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataset )
+                                                            .build();
+        List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )
@@ -190,11 +203,15 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( one )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null, null );
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( dataOne )
+                                                               .build();
         Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( two )
                                         .build();
-        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null, null );
+        CovariateDataset covariateTwo = CovariateDatasetBuilder.builder()
+                                                               .dataset( dataTwo )
+                                                               .build();
 
         List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -216,11 +233,10 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( one )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              TimeScale.TimeScaleFunction.TOTAL );
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( dataOne )
+                                                               .rescaleFunction( TimeScale.TimeScaleFunction.TOTAL )
+                                                               .build();
 
         List<CovariateDataset> covariates = List.of( covariateOne );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -243,11 +259,15 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null, null );
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( dataOne )
+                                                               .build();
         Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.SINGLE_VALUED_FORECASTS )
                                         .build();
-        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null, null );
+        CovariateDataset covariateTwo = CovariateDatasetBuilder.builder()
+                                                               .dataset( dataTwo )
+                                                               .build();
 
         List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -268,7 +288,9 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariate = new CovariateDataset( dataOne, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataOne )
+                                                            .build();
 
         TimeScale timeScaleInner = TimeScale.newBuilder()
                                             .setPeriod( Duration.newBuilder()
@@ -320,7 +342,10 @@ class DeclarationValidatorTest
                                                          .dataset( baselineInner )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( left, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( left )
+                                                            .build();
+
         List<CovariateDataset> covariates = List.of( covariate );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -406,7 +431,9 @@ class DeclarationValidatorTest
                                           .timeZoneOffset( ZoneOffset.ofHours( -7 ) )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .build();
 
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
@@ -466,7 +493,9 @@ class DeclarationValidatorTest
                                           .unit( "baz" )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .build();
 
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
@@ -736,7 +765,10 @@ class DeclarationValidatorTest
                                           .timeScale( timeScaleCovariate )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .build();
+
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         TimeScale timeScaleInner = TimeScale.newBuilder()
@@ -789,8 +821,11 @@ class DeclarationValidatorTest
                                           .timeScale( timeScaleCovariate )
                                           .build();
 
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariate, null, null, null, TimeScale.TimeScaleFunction.TOTAL );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .rescaleFunction( TimeScale.TimeScaleFunction.TOTAL )
+                                                                   .build();
+
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         TimeScale timeScaleInner = TimeScale.newBuilder()
@@ -1124,7 +1159,10 @@ class DeclarationValidatorTest
                                            .geometries( geometries )
                                            .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .build();
+
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -1161,8 +1199,8 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertTrue( DeclarationValidatorTest.contains( events, " the following metrics require single-valued "
-                                                               + "forecasts",
+        assertTrue( DeclarationValidatorTest.contains( events, " the following metrics are not currently "
+                                                               + "supported for this data 'type'",
                                                        StatusLevel.ERROR ) );
     }
 
@@ -2557,7 +2595,10 @@ class DeclarationValidatorTest
                                         .sources( List.of( source, anotherSource ) )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariate = new CovariateDataset( dataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataset )
+                                                            .build();
+
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .covariates( covariates )
@@ -2577,15 +2618,22 @@ class DeclarationValidatorTest
                                         .type( DataType.OBSERVATIONS )
                                         .variable( new Variable( "foo", null, Set.of() ) )
                                         .build();
-        CovariateDataset covariate = new CovariateDataset( dataset, 5.0, 1.0, null, null );
+
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataset )
+                                                            .minimum( 5.0 )
+                                                            .maximum( 1.0 )
+                                                            .build();
 
         Dataset anotherDataset = DatasetBuilder.builder()
                                                .type( DataType.OBSERVATIONS )
                                                .build();
-        CovariateDataset anotherCovariate = new CovariateDataset( anotherDataset,
-                                                                  6.3,
-                                                                  6.2999,
-                                                                  null, null );
+
+        CovariateDataset anotherCovariate = CovariateDatasetBuilder.builder()
+                                                                   .dataset( anotherDataset )
+                                                                   .minimum( 6.3 )
+                                                                   .maximum( 6.2999 )
+                                                                   .build();
 
         List<CovariateDataset> covariates = List.of( covariate, anotherCovariate );
 
@@ -2604,6 +2652,231 @@ class DeclarationValidatorTest
                                                                         + "'maximum' value, which is not allowed. "
                                                                         + "These covariates were not",
                                                                         StatusLevel.ERROR ) ) );
+    }
+
+    @Test
+    void testExplicitPoolsAndEventDetectionProducesErrorAndWarnings()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+        TimePools validDatePools = TimePoolsBuilder.builder()
+                                                   .period( java.time.Duration.ofHours( 1 ) )
+                                                   .build();
+        Set<TimeWindow> timePools = Set.of( MessageUtilities.getTimeWindow() );
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( new TimeInterval( Instant.MIN, Instant.MAX ) )
+                                              .validDatePools( validDatePools )
+                                              .referenceDatePools( validDatePools )
+                                              .leadTimePools( validDatePools )
+                                              .eventDetection( eventDetection )
+                                              .timePools( timePools )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside valid date "
+                                                                        + "pools, which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside explicit "
+                                                                        + "time pools, which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside lead time "
+                                                                        + "pools",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "Event detection was declared alongside reference date "
+                                                                        + "pools",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "it is strongly recommended that you instead declare the 'window_size'",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "it is strongly recommended that you instead declare the 'half_life'",
+                                                                        StatusLevel.WARN ) ) );
+    }
+
+    @Test
+    void testFeatureGroupAndEventDetectionProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .featureGroups( featureGroups )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared alongside feature groups, "
+                                                       + "which is not currently supported",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testFeatureServiceGroupWithPoolingAndEventDetectionProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+
+        FeatureServiceGroup group = new FeatureServiceGroup( "a", "b", true );
+        FeatureService featureService = new FeatureService( URI.create( "http://foo.bar" ), Set.of( group ) );
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .featureService( featureService )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared alongside feature groups, "
+                                                       + "which is not currently supported",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testCovariatesWithDetectAndNoEventDetectionProducesError()
+    {
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.defaultDataset )
+                                                            .purposes( Set.of( CovariatePurpose.FILTER,
+                                                                               CovariatePurpose.DETECT ) )
+                                                            .build();
+        List<CovariateDataset> covariates = List.of( covariate );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Please declare 'event_detection' or remove the "
+                                                       + "'covariates'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithMissingBaselineProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.BASELINE ) )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared with a baseline",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithMissingCovariateProducesError()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.COVARIATES ) )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Event detection was declared with a covariate",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithForecastDataSourcesProducesErrors()
+    {
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED,
+                                                                                EventDetectionDataset.PREDICTED,
+                                                                                EventDetectionDataset.BASELINE ) )
+                                                             .build();
+
+        Dataset dataset = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.SINGLE_VALUED_FORECASTS )
+                                        .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( dataset )
+                                              .right( dataset )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( dataset )
+                                                                               .build() )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "data sources used for event detection contained "
+                                                       + "forecast data, which is not allowed: [OBSERVED, "
+                                                       + "PREDICTED, BASELINE]",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testEventDetectionWithInconsistentParametersProducesError()
+    {
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .combination( EventDetectionCombination.UNION )
+                                               .aggregation( TimeWindowAggregation.AVERAGE )
+                                               .build();
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .parameters( parameters )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "An explicit 'aggregation' method is only valid when "
+                                                       + "the 'operation' is 'intersection'",
+                                                       StatusLevel.ERROR ) );
     }
 
     @Test
@@ -2646,7 +2919,7 @@ class DeclarationValidatorTest
                                             .left( this.defaultDataset )
                                             .right( this.defaultDataset )
                                             .leadTimePools( leadTimePools )
-                                            .timeWindows( timeWindows )
+                                            .timePools( timeWindows )
                                             .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -2724,7 +2997,7 @@ class DeclarationValidatorTest
                   unit: hours
                 feature_service:
                   uri: https://foo/api/location/v3.0/metadata
-                  """;
+                """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
@@ -2761,7 +3034,7 @@ class DeclarationValidatorTest
                   - mean absolute error
                   - box plot of errors by observed value
                   - reliability diagram
-                  """;
+                """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
@@ -2894,7 +3167,7 @@ class DeclarationValidatorTest
                     </right>
                   </inputs>
                 </project>
-                  """;
+                """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 

@@ -39,7 +39,7 @@ import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.wrds.ahps.TimeScaleFromParameterCodes;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -377,7 +377,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
         }
 
         String locationId = Integer.toString( rawLocationId );
-        Geometry geometry = MessageFactory.getGeometry( locationId );
+        Geometry geometry = MessageUtilities.getGeometry( locationId );
         Feature feature = Feature.of( geometry );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( referenceTimeType,
                                                                      forecast.getReferenceDatetime() ),

@@ -30,7 +30,7 @@ import wres.system.SystemSettings;
  * @param caches the database caches/ORMs
  * @param metricsAndThresholds the metrics and thresholds
  * @param project the project
- * @param evaluation the evaluation
+ * @param evaluationMessager the evaluation messager
  * @param timeSeriesStore the time-series data store
  * @param summaryStatistics the summary statistics calculators
  * @param summaryStatisticsForBaseline the summary statistics calculators for baseline datasets
@@ -49,7 +49,7 @@ record EvaluationDetails( SystemSettings systemSettings,
                           DatabaseCaches caches,
                           Set<MetricsAndThresholds> metricsAndThresholds,
                           Project project,
-                          EvaluationMessager evaluation,
+                          EvaluationMessager evaluationMessager,
                           TimeSeriesStore timeSeriesStore,
                           Map<String, List<SummaryStatisticsCalculator>> summaryStatistics,
                           Map<String, List<SummaryStatisticsCalculator>> summaryStatisticsForBaseline,

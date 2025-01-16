@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.Evaluation;
@@ -57,16 +58,16 @@ class DiagramStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "A" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "A" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
-        Geometry anotherGeometry = wres.statistics.MessageFactory.getGeometry( "B" );
-        GeometryTuple anotherGeoTuple = wres.statistics.MessageFactory.getGeometryTuple( anotherGeometry,
-                                                                                         anotherGeometry,
-                                                                                         anotherGeometry );
-        GeometryGroup anotherGeoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, anotherGeoTuple );
+        Geometry anotherGeometry = MessageUtilities.getGeometry( "B" );
+        GeometryTuple anotherGeoTuple = MessageUtilities.getGeometryTuple( anotherGeometry,
+                                                                           anotherGeometry,
+                                                                           anotherGeometry );
+        GeometryGroup anotherGeoGroup = MessageUtilities.getGeometryGroup( null, anotherGeoTuple );
         this.anotherFeatureGroup = FeatureGroup.of( anotherGeoGroup );
 
         Pool pool = MessageFactory.getPool( this.featureGroup,

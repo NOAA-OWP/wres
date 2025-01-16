@@ -25,6 +25,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.reading.netcdf.grid.GridRequest;
 import wres.reading.netcdf.grid.GridReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
@@ -34,7 +35,6 @@ import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>A reader of time-series data from a gridded Netcdf source of National Water Model (NWM) forecasts, simulations or
@@ -180,8 +180,7 @@ public class NwmGridReader implements TimeSeriesReader
         }
 
         // Time window constrained only by the pair declaration
-        TimeWindow timeWindowInner = DeclarationUtilities.getOneBigTimeWindow( this.getDeclaration() );
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindowInner );
+        TimeWindowOuter timeWindow = TimeWindowSlicer.getOneBigTimeWindow( this.getDeclaration() );
 
         // The gridded reader requires a hint about the data type, specifically whether it is a forecast type. This is
         // unlike most other readers where the type can be inferred directly from the structure of the time-series data,

@@ -27,6 +27,7 @@ import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
@@ -93,13 +94,13 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "JUNP1" );
+        Geometry geometry = MessageUtilities.getGeometry( "JUNP1" );
 
         // Create fake outputs
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                            Instant.MAX,
-                                                                            Duration.ofHours( 24 ),
-                                                                            Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                              Instant.MAX,
+                                                              Duration.ofHours( 24 ),
+                                                              Duration.ofHours( 24 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -115,8 +116,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
         Pool pool = MessageFactory.getPool( featureGroup,
                                             timeOne,
@@ -147,10 +148,10 @@ public class WriterTestHelper
 
         BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
 
-        TimeWindow innerTwo = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                            Instant.MAX,
-                                                                            Duration.ofHours( 48 ),
-                                                                            Duration.ofHours( 48 ) );
+        TimeWindow innerTwo = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                              Instant.MAX,
+                                                              Duration.ofHours( 48 ),
+                                                              Duration.ofHours( 48 ) );
         TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
@@ -185,13 +186,13 @@ public class WriterTestHelper
     public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "JUNP1" );
+        Geometry geometry = MessageUtilities.getGeometry( "JUNP1" );
 
         // Create fake outputs
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                            Instant.MAX,
-                                                                            Duration.ofHours( 24 ),
-                                                                            Duration.ofHours( 24 ) );
+        TimeWindow innerOne = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                              Instant.MAX,
+                                                              Duration.ofHours( 24 ),
+                                                              Duration.ofHours( 24 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -207,8 +208,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "JUNP1-JUNP1", geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( "JUNP1-JUNP1", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -266,11 +267,11 @@ public class WriterTestHelper
     {
 
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "CREC1" );
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                            Instant.MAX,
-                                                                            Duration.ofHours( 24 ),
-                                                                            Duration.ofHours( 24 ) );
+        Geometry geometry = MessageUtilities.getGeometry( "CREC1" );
+        TimeWindow innerOne = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                              Instant.MAX,
+                                                              Duration.ofHours( 24 ),
+                                                              Duration.ofHours( 24 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -287,8 +288,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "CREC1-CREC1", geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( "CREC1-CREC1", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -359,11 +360,11 @@ public class WriterTestHelper
     {
 
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "FTSC1" );
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                            Instant.MAX,
-                                                                            Duration.ofHours( 1 ),
-                                                                            Duration.ofHours( 18 ) );
+        Geometry geometry = MessageUtilities.getGeometry( "FTSC1" );
+        TimeWindow innerOne = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                              Instant.MAX,
+                                                              Duration.ofHours( 1 ),
+                                                              Duration.ofHours( 18 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -379,8 +380,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "FTSC1-FTSC1", geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( "FTSC1-FTSC1", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -457,10 +458,10 @@ public class WriterTestHelper
     {
 
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
+        Geometry geometry = MessageUtilities.getGeometry( "DRRC2" );
 
         TimeWindow innerOne =
-                wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+                MessageUtilities.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -476,8 +477,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "DRRC2-DRRC2", geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( "DRRC2-DRRC2", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -555,12 +556,12 @@ public class WriterTestHelper
     {
 
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DOLC2" );
+        Geometry geometry = MessageUtilities.getGeometry( "DOLC2" );
 
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                            Instant.MAX,
-                                                                            Duration.ofHours( 1 ),
-                                                                            Duration.ofHours( 18 ) );
+        TimeWindow innerOne = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                              Instant.MAX,
+                                                              Duration.ofHours( 1 ),
+                                                              Duration.ofHours( 18 ) );
 
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
@@ -577,8 +578,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "DOLC2-DOLC2", geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( "DOLC2-DOLC2", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -642,10 +643,10 @@ public class WriterTestHelper
     {
 
         // location id
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "FTSC1" );
+        Geometry geometry = MessageUtilities.getGeometry( "FTSC1" );
 
         TimeWindow innerOne =
-                wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+                MessageUtilities.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds thresholdOne = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
@@ -658,8 +659,8 @@ public class WriterTestHelper
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -702,7 +703,7 @@ public class WriterTestHelper
 
         // Add data for another time, and one threshold only
         TimeWindow innerTwo =
-                wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+                MessageUtilities.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
         TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolThree = MessageFactory.getPool( featureGroup,

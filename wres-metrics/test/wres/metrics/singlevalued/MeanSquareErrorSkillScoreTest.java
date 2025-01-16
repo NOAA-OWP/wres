@@ -35,7 +35,7 @@ import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.baselines.PersistenceGenerator;
 import wres.metrics.MetricTestDataFactory;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -158,7 +158,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyAsCoefficientOfPersistence()
     {
         // Create the raw time-series
-        Feature feature = Feature.of( MessageFactory.getGeometry( "FAKE2" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "FAKE2" ) );
 
         TimeSeriesMetadata observedMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                      TimeScaleOuter.of( Duration.ofHours( 1 ),

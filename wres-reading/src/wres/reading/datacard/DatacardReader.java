@@ -40,7 +40,7 @@ import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 
 /**
@@ -451,10 +451,10 @@ public class DatacardReader implements TimeSeriesReader
             LOGGER.debug( "Parsed timeseries from '{}'", dataSource.getUri() );
         }
 
-        Geometry geometry = MessageFactory.getGeometry( basicMetadata.featureName,
-                                                        basicMetadata.featureDescription,
-                                                        null,
-                                                        null );
+        Geometry geometry = MessageUtilities.getGeometry( basicMetadata.featureName,
+                                                          basicMetadata.featureDescription,
+                                                          null,
+                                                          null );
         Feature location = Feature.of( geometry );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              // No time scale information: #92480 and #59536

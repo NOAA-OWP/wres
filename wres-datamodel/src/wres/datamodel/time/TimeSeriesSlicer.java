@@ -36,7 +36,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.TimeScale;
@@ -1616,84 +1616,6 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Subtracts any non-instantaneous desired timescale from the earliest lead duration and the earliest valid time to
-     * ensure that sufficient data is retrieved for upscaling.
-     *
-     * @param timeWindow the time window to adjust
-     * @param timeScale the timescale to use
-     * @return the adjusted time window
-     */
-
-    public static TimeWindowOuter adjustTimeWindowForTimeScale( TimeWindowOuter timeWindow,
-                                                                TimeScaleOuter timeScale )
-    {
-        TimeWindow.Builder adjusted = timeWindow.getTimeWindow()
-                                                .toBuilder();
-
-        // Earliest lead duration
-        if ( !timeWindow.getEarliestLeadDuration()
-                        .equals( TimeWindowOuter.DURATION_MIN ) )
-        {
-            Duration period = Duration.ZERO;
-
-            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
-            if ( Objects.nonNull( timeScale )
-                 && !timeScale.isInstantaneous() )
-            {
-                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
-            }
-
-            Duration lowered = timeWindow.getEarliestLeadDuration()
-                                         .minus( period );
-
-            if ( Objects.nonNull( timeScale )
-                 && LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
-                              + "in order to acquire data at the desired timescale of {}.",
-                              timeWindow,
-                              timeWindow.getEarliestLeadDuration(),
-                              lowered,
-                              timeScale );
-            }
-
-            adjusted.setEarliestLeadDuration( MessageFactory.getDuration( lowered ) );
-        }
-
-        // Earliest valid time
-        if ( !timeWindow.getEarliestValidTime()
-                        .equals( Instant.MIN ) )
-        {
-            Duration period = Duration.ZERO;
-
-            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
-            if ( Objects.nonNull( timeScale )
-                 && !timeScale.isInstantaneous() )
-            {
-                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
-            }
-
-            Instant lowered = timeWindow.getEarliestValidTime()
-                                        .minus( period );
-
-            if ( Objects.nonNull( timeScale )
-                 && LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Adjusting the lower valid datetime of time window {} from {} to {} "
-                              + "in order to acquire data at the desired timescale of {}.",
-                              timeWindow,
-                              timeWindow.getEarliestValidTime(),
-                              lowered,
-                              timeScale );
-            }
-
-            adjusted.setEarliestValidTime( MessageFactory.getTimestamp( lowered ) );
-        }
-
-        return TimeWindowOuter.of( adjusted.build() );
-    }
-
-    /**
      * Adds a prescribed offset to the valid time of each time-series in the list.
      *
      * @param <T> the time-series event value type
@@ -1738,8 +1660,9 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Snips the input series to the prescribed time window. Only snips lead durations with respect to reference times 
-     * with the type {@link ReferenceTimeType#T0}.
+     * Snips the input series to the prescribed time window using a right-closed interval for each time dimension,
+     * i.e., the upper bound is included, the lower bound is excluded. Only snips lead durations with respect to
+     * reference times with the type {@link ReferenceTimeType#T0}.
      *
      * @param <T> the time-series event value type
      * @param toSnip the time-series to snip
@@ -1758,24 +1681,25 @@ public final class TimeSeriesSlicer
 
             // Snip datetimes first, because lead durations are only snipped with respect to 
             // the ReferenceTimeType.T0
-            TimeWindow inner = MessageFactory.getTimeWindow( snipTo.getEarliestReferenceTime(),
-                                                             snipTo.getLatestReferenceTime(),
-                                                             snipTo.getEarliestValidTime(),
-                                                             snipTo.getLatestValidTime() );
+            TimeWindow inner = MessageUtilities.getTimeWindow( snipTo.getEarliestReferenceTime(),
+                                                               snipTo.getLatestReferenceTime(),
+                                                               snipTo.getEarliestValidTime(),
+                                                               snipTo.getLatestValidTime() );
             TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
 
-            LOGGER.debug( "Snipping paired time-series {} to the time window of {}.",
+            LOGGER.debug( "Snipping time-series {} to the time window of {}.",
                           toSnip.hashCode(),
                           partialSnip );
 
             returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );
 
             // For all other reference time types, filter the datetimes only
-            if ( toSnip.getReferenceTimes().containsKey( ReferenceTimeType.T0 )
+            if ( toSnip.getReferenceTimes()
+                       .containsKey( ReferenceTimeType.T0 )
                  && !snipTo.bothLeadDurationsAreUnbounded() )
             {
-                LOGGER.debug( "Additionally snipping paired time-series {} to lead durations ({},{}] for the reference "
-                              + "time type of {}.",
+                LOGGER.debug( "Additionally snipping time-series {} to lead durations ({},{}] for the reference time "
+                              + "type of {}.",
                               toSnip.hashCode(),
                               snipTo.getEarliestLeadDuration(),
                               snipTo.getLatestLeadDuration(),

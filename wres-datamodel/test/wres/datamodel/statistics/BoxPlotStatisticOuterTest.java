@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
@@ -73,9 +74,9 @@ class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "A" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "A" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( this.featureGroup,
@@ -122,10 +123,10 @@ class BoxPlotStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
-        Geometry geometryTwo = wres.statistics.MessageFactory.getGeometry( "B" );
+        Geometry geometryTwo = MessageUtilities.getGeometry( "B" );
         GeometryTuple geoTupleTwo =
-                wres.statistics.MessageFactory.getGeometryTuple( geometryTwo, geometryTwo, geometryTwo );
-        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
+                MessageUtilities.getGeometryTuple( geometryTwo, geometryTwo, geometryTwo );
+        GeometryGroup geoGroupTwo = MessageUtilities.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolThree = MessageFactory.getPool( featureGroupTwo,

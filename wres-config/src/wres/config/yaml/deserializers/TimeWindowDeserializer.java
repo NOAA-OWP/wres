@@ -14,7 +14,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.TimeInterval;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -48,8 +48,8 @@ public class TimeWindowDeserializer extends JsonDeserializer<Set<TimeWindow>>
                     JsonNode validDatesNode = nextNode.get( "valid_dates" );
                     TimeInterval validDates = mapper.readValue( validDatesNode, TimeInterval.class );
 
-                    Timestamp minimum = MessageFactory.getTimestamp( validDates.minimum() );
-                    Timestamp maximum = MessageFactory.getTimestamp( validDates.maximum() );
+                    Timestamp minimum = MessageUtilities.getTimestamp( validDates.minimum() );
+                    Timestamp maximum = MessageUtilities.getTimestamp( validDates.maximum() );
                     builder.setEarliestValidTime( minimum )
                            .setLatestValidTime( maximum );
                 }
@@ -60,8 +60,8 @@ public class TimeWindowDeserializer extends JsonDeserializer<Set<TimeWindow>>
                     JsonNode referenceDatesNode = nextNode.get( "reference_dates" );
                     TimeInterval referenceDates = mapper.readValue( referenceDatesNode, TimeInterval.class );
 
-                    Timestamp minimum = MessageFactory.getTimestamp( referenceDates.minimum() );
-                    Timestamp maximum = MessageFactory.getTimestamp( referenceDates.maximum() );
+                    Timestamp minimum = MessageUtilities.getTimestamp( referenceDates.minimum() );
+                    Timestamp maximum = MessageUtilities.getTimestamp( referenceDates.maximum() );
                     builder.setEarliestReferenceTime( minimum )
                            .setLatestReferenceTime( maximum );
                 }
@@ -72,8 +72,8 @@ public class TimeWindowDeserializer extends JsonDeserializer<Set<TimeWindow>>
                     JsonNode leadTimesNode = nextNode.get( "lead_times" );
                     LeadTimeInterval leadTimes = mapper.readValue( leadTimesNode, LeadTimeInterval.class );
 
-                    com.google.protobuf.Duration minimum = MessageFactory.getDuration( leadTimes.minimum() );
-                    com.google.protobuf.Duration maximum = MessageFactory.getDuration( leadTimes.maximum() );
+                    com.google.protobuf.Duration minimum = MessageUtilities.getDuration( leadTimes.minimum() );
+                    com.google.protobuf.Duration maximum = MessageUtilities.getDuration( leadTimes.maximum() );
                     builder.setEarliestLeadDuration( minimum )
                            .setLatestLeadDuration( maximum );
                 }

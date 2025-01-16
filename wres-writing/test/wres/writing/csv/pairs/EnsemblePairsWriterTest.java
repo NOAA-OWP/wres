@@ -45,6 +45,7 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -62,7 +63,7 @@ public final class EnsemblePairsWriterTest
     private static final String DEFAULT_PAIRS_NAME = "pairs.csv";
     private static final String VARIABLE_NAME = "ARMS";
     private static final Feature FEATURE = Feature.of(
-            wres.statistics.MessageFactory.getGeometry( "FRUIT" ) );
+            MessageUtilities.getGeometry( "FRUIT" ) );
     private static final String UNIT = "SCOOBIES";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
@@ -124,10 +125,10 @@ public final class EnsemblePairsWriterTest
                                           .build();
 
         GeometryTuple geoTuple =
-                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PLUM" ),
-                                                                 wres.statistics.MessageFactory.getGeometry( "PLUM" ),
-                                                                 null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+                MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "PLUM" ),
+                                                   MessageUtilities.getGeometry( "PLUM" ),
+                                                   null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -140,7 +141,7 @@ public final class EnsemblePairsWriterTest
         TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
         TimeSeriesMetadata metadata =
                 new TimeSeriesMetadata.Builder( boilerplate ).setFeature( Feature.of(
-                                                                     wres.statistics.MessageFactory.getGeometry( "PLUM" ) ) )
+                                                                     MessageUtilities.getGeometry( "PLUM" ) ) )
                                                              .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
                 TimeSeries.of( metadata, setOfPairs );
@@ -164,10 +165,10 @@ public final class EnsemblePairsWriterTest
                                              .build();
 
         GeometryTuple geoTupleTwo =
-                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
-                                                                 wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
-                                                                 null );
-        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
+                MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "ORANGE" ),
+                                                   MessageUtilities.getGeometry( "ORANGE" ),
+                                                   null );
+        GeometryGroup geoGroupTwo = MessageUtilities.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroupTwo,
@@ -180,7 +181,7 @@ public final class EnsemblePairsWriterTest
         TimeSeriesMetadata boilerplateTwo = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeriesMetadata metadataTwo =
                 new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( Feature.of(
-                                                                        wres.statistics.MessageFactory.getGeometry( "ORANGE" ) ) )
+                                                                        MessageUtilities.getGeometry( "ORANGE" ) ) )
                                                                 .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
                 TimeSeries.of( metadataTwo, setOfPairsTwo );
@@ -206,10 +207,10 @@ public final class EnsemblePairsWriterTest
                                                .build();
 
         GeometryTuple geoTupleThree =
-                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "BANANA" ),
-                                                                 wres.statistics.MessageFactory.getGeometry( "BANANA" ),
-                                                                 null );
-        GeometryGroup geoGroupThree = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleThree );
+                MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "BANANA" ),
+                                                   MessageUtilities.getGeometry( "BANANA" ),
+                                                   null );
+        GeometryGroup geoGroupThree = MessageUtilities.getGeometryGroup( null, geoTupleThree );
         FeatureGroup featureGroupThree = FeatureGroup.of( geoGroupThree );
 
         Pool poolThree = MessageFactory.getPool( featureGroupThree,
@@ -223,7 +224,7 @@ public final class EnsemblePairsWriterTest
         TimeSeriesMetadata boilerplateThree = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeriesMetadata metadataThree =
                 new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( Feature.of(
-                                                                          wres.statistics.MessageFactory.getGeometry( "BANANA" ) ) )
+                                                                          MessageUtilities.getGeometry( "BANANA" ) ) )
                                                                   .build();
 
         TimeSeries<Pair<Double, Ensemble>> timeSeriesThree =
@@ -259,12 +260,12 @@ public final class EnsemblePairsWriterTest
 
                 // Set the measurement units and time scale
                 GeometryTuple geoTuple =
-                        wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry(
+                        MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry(
                                                                                  "PINEAPPLE" ),
-                                                                         wres.statistics.MessageFactory.getGeometry(
+                                                           MessageUtilities.getGeometry(
                                                                                  "PINEAPPLE" ),
-                                                                         null );
-                GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+                                                           null );
+                GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
                 FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
                 Evaluation evaluation = Evaluation.newBuilder()
@@ -335,7 +336,7 @@ public final class EnsemblePairsWriterTest
                 TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadata();
                 TimeSeriesMetadata metadata =
                         new TimeSeriesMetadata.Builder( boilerplate ).setFeature( Feature.of(
-                                                                             wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ) ) )
+                                                                             MessageUtilities.getGeometry( "PINEAPPLE" ) ) )
                                                                      .build();
 
                 TimeSeries<Pair<Double, Ensemble>> timeSeriesNaN = TimeSeries.of( metadata,
@@ -344,12 +345,12 @@ public final class EnsemblePairsWriterTest
 
                 // Set the measurement units and time scale
                 GeometryTuple geoTuple =
-                        wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry(
+                        MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry(
                                                                                  "PINEAPPLE" ),
-                                                                         wres.statistics.MessageFactory.getGeometry(
+                                                           MessageUtilities.getGeometry(
                                                                                  "PINEAPPLE" ),
-                                                                         null );
-                GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+                                                           null );
+                GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
                 FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
                 Evaluation evaluation = Evaluation.newBuilder()

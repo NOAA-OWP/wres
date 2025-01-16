@@ -32,6 +32,7 @@ public record FeatureGroups( Set<GeometryGroup> geometryGroups, Map<GeometryTupl
     /**
      * Sets the default values.
      * @param geometryGroups the geometry groups
+     * @param offsets the offset values associated with features in the group, such as a datum offset, if any
      */
     public FeatureGroups
     {

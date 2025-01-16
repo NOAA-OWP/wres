@@ -36,6 +36,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.bootstrap.BootstrapUtilities;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
@@ -52,6 +53,7 @@ import wres.events.EvaluationMessager;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
+import wres.statistics.generated.Evaluation;
 import wres.writing.csv.pairs.EnsemblePairsWriter;
 import wres.metrics.BoxplotSummaryStatisticFunction;
 import wres.metrics.DiagramSummaryStatisticFunction;
@@ -75,7 +77,6 @@ import wres.pipeline.statistics.StatisticsProcessor;
 import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
@@ -120,12 +121,12 @@ class EvaluationUtilities
     private static final String SUMMARY_STATISTICS_ACROSS_FEATURES = "ALL FEATURES";
 
     /** Re-used string. */
-    private static final String PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY =
-            "Performing retrieval with an in-memory retriever factory.";
+    private static final String CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY =
+            "Created an in-memory retriever factory.";
 
     /** Re-used string. */
-    private static final String PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
-            "Performing retrieval with a retriever factory backed by a persistent store.";
+    private static final String CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
+            "Created a retriever factory backed by a persistent store.";
 
     /** Maximum number of time windows to log. */
     private static final int MAXIMUM_TIME_WINDOWS_TO_LOG = 1000;
@@ -191,11 +192,11 @@ class EvaluationUtilities
 
         // Main dataset
         EvaluationUtilities.createAndPublishSummaryStatistics( evaluationDetails.summaryStatistics(),
-                                                               evaluationDetails.evaluation() );
+                                                               evaluationDetails.evaluationMessager() );
 
         // Baseline
         EvaluationUtilities.createAndPublishSummaryStatistics( evaluationDetails.summaryStatisticsForBaseline(),
-                                                               evaluationDetails.evaluation() );
+                                                               evaluationDetails.evaluationMessager() );
     }
 
     /**
@@ -520,90 +521,28 @@ class EvaluationUtilities
     /**
      * Creates the pool requests from the project.
      *
-     * @param evaluationDescription the evaluation description
      * @param poolFactory the pool factory
+     * @param evaluation the evaluation description
+     * @param evaluationDetails the evaluation details
      * @return the pool requests
      */
 
     static List<PoolRequest> getPoolRequests( PoolFactory poolFactory,
-                                              Evaluation evaluationDescription )
+                                              Evaluation evaluation,
+                                              EvaluationDetails evaluationDetails )
     {
-        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
+        RetrieverFactory<Double, Double, Double> retriever = null;
 
-        // Log some information about the pools
-        if ( LOGGER.isInfoEnabled() )
+        // Event detection supports single-valued datasets only
+        if ( Objects.nonNull( evaluationDetails.declaration()
+                                               .eventDetection() ) )
         {
-            Set<FeatureGroup> features = new TreeSet<>();
-            Set<TimeWindowOuter> timeWindows = new TreeSet<>();
-
-            for ( PoolRequest nextRequest : poolRequests )
-            {
-                FeatureGroup nextFeature = nextRequest.getMetadata()
-                                                      .getFeatureGroup();
-                features.add( nextFeature );
-                TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
-                                                            .getTimeWindow();
-                timeWindows.add( nextTimeWindow );
-            }
-
-            int timeWindowCount = timeWindows.size();
-            int featureCount = features.size();
-
-            // Avoid massive log statements: #129995
-            String extraTime = "";
-            String extraSpace = "";
-            if ( timeWindowCount > MAXIMUM_TIME_WINDOWS_TO_LOG )
-            {
-                extraTime = "first " + MAXIMUM_TIME_WINDOWS_TO_LOG + " ";
-                timeWindows = timeWindows.stream()
-                                         .limit( MAXIMUM_TIME_WINDOWS_TO_LOG )
-                                         .collect( Collectors.toCollection( TreeSet::new ) );
-            }
-            if ( featureCount > MAXIMUM_FEATURES_TO_LOG )
-            {
-                extraSpace = "first " + MAXIMUM_FEATURES_TO_LOG + " ";
-                features = features.stream()
-                                   .limit( MAXIMUM_FEATURES_TO_LOG )
-                                   .collect( Collectors.toCollection( TreeSet::new ) );
-            }
-
-            LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
-                         + "The {}feature groups are: {}. The {}time windows are: {}.",
-                         poolRequests.size(),
-                         featureCount,
-                         timeWindowCount,
-                         extraSpace,
-                         PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
-                         extraTime,
-                         PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
+            retriever = EvaluationUtilities.getSingleValuedRetrieverFactory( evaluationDetails );
         }
 
-        // Log some detailed information about the pools, if required
-        if ( LOGGER.isTraceEnabled() )
-        {
-            for ( PoolRequest nextRequest : poolRequests )
-            {
-                if ( nextRequest.hasBaseline() )
-                {
-                    LOGGER.trace( "Pool request {}/{} is: {}.",
-                                  nextRequest.getMetadata()
-                                             .getPool()
-                                             .getPoolId(),
-                                  nextRequest.getMetadataForBaseline()
-                                             .getPool()
-                                             .getPoolId(),
-                                  nextRequest );
-                }
-                else
-                {
-                    LOGGER.trace( "Pool request {} is: {}.",
-                                  nextRequest.getMetadata()
-                                             .getPool()
-                                             .getPoolId(),
-                                  nextRequest );
-                }
-            }
-        }
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluation, retriever );
+
+        EvaluationUtilities.logPoolDetails( evaluationDetails, poolRequests );
 
         return poolRequests;
     }
@@ -627,18 +566,18 @@ class EvaluationUtilities
 
     /**
      * Forcibly stops an evaluation messager on encountering an error, if already created.
-     * @param evaluation the evaluation messager
+     * @param evaluationMessager the evaluation messager
      * @param error the error
      * @param evaluationId the evaluation identifier
      */
-    static void forceStop( EvaluationMessager evaluation, Exception error, String evaluationId )
+    static void forceStop( EvaluationMessager evaluationMessager, Exception error, String evaluationId )
     {
-        if ( Objects.nonNull( evaluation ) )
+        if ( Objects.nonNull( evaluationMessager ) )
         {
             // Stop forcibly
             LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
 
-            evaluation.stop( error );
+            evaluationMessager.stop( error );
         }
     }
 
@@ -745,6 +684,33 @@ class EvaluationUtilities
                                                .map( ThresholdOuter::getValues )
                                                .collect( Collectors.toSet() ) )
                                    .anyMatch( c -> c.size() > 1 );
+    }
+
+    /**
+     * Returns a {@link RetrieverFactory} for single-valued datasets.
+     * @param details the evaluation details
+     * @return the retriever factory
+     */
+    static RetrieverFactory<Double, Double, Double> getSingleValuedRetrieverFactory( EvaluationDetails details )
+    {
+        // Create a retriever factory to support retrieval for this project
+        RetrieverFactory<Double, Double, Double> retrieverFactory;
+        if ( details.hasInMemoryStore() )
+        {
+            LOGGER.debug( CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY );
+            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( details.project(),
+                                                                        details.timeSeriesStore() );
+        }
+        else
+        {
+            LOGGER.debug( CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+            retrieverFactory = SingleValuedRetrieverFactory.of( details.project(),
+                                                                details.databaseServices()
+                                                                       .database(),
+                                                                details.caches() );
+        }
+
+        return retrieverFactory;
     }
 
     /**
@@ -878,21 +844,8 @@ class EvaluationUtilities
                                                                                      executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double, Double> retrieverFactory;
-        if ( evaluationDetails.hasInMemoryStore() )
-        {
-            LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
-            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
-                                                                        evaluationDetails.timeSeriesStore() );
-        }
-        else
-        {
-            LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
-            retrieverFactory = SingleValuedRetrieverFactory.of( project,
-                                                                evaluationDetails.databaseServices()
-                                                                                 .database(),
-                                                                evaluationDetails.caches() );
-        }
+        RetrieverFactory<Double, Double, Double> retrieverFactory =
+                EvaluationUtilities.getSingleValuedRetrieverFactory( evaluationDetails );
 
         // Create the pool suppliers for all pools in this evaluation
         PoolFactory poolFactory = poolDetails.poolFactory();
@@ -952,7 +905,7 @@ class EvaluationUtilities
                             .setSamplingUncertaintyExecutor( executors.samplingUncertaintyExecutor() )
                             .setPoolRequest( poolRequest )
                             .setPoolSupplier( poolSupplier )
-                            .setEvaluation( evaluationDetails.evaluation() )
+                            .setEvaluation( evaluationDetails.evaluationMessager() )
                             .setMonitor( evaluationDetails.monitor() )
                             .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
@@ -1021,26 +974,27 @@ class EvaluationUtilities
                 List<GeneratedBaselines> supported = Arrays.stream( GeneratedBaselines.values() )
                                                            .filter( GeneratedBaselines::isEnsemble )
                                                            .toList();
-                throw new DeclarationException( "Discovered an evaluation with ensemble forecasts and a generated "
-                                                + "'baseline' with a 'method' of '"
-                                                + method
-                                                + "'. However, this 'method' produces single-valued forecasts, which "
-                                                + "is not allowed. Please declare a baseline that contains ensemble "
-                                                + "forecasts and try again. The following 'method' options support "
-                                                + "ensemble forecasts: "
-                                                + supported );
+                throw new DeclarationException(
+                        "Discovered an evaluation with ensemble forecasts and a generated "
+                        + "'baseline' with a 'method' of '"
+                        + method
+                        + "'. However, this 'method' produces single-valued forecasts, which "
+                        + "is not allowed. Please declare a baseline that contains ensemble "
+                        + "forecasts and try again. The following 'method' options support "
+                        + "ensemble forecasts: "
+                        + supported );
             }
 
             RetrieverFactory<Double, Ensemble, Double> retrieverFactory;
             if ( evaluationDetails.hasInMemoryStore() )
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
+                LOGGER.debug( CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY );
                 retrieverFactory = EnsembleSingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
                                                                                     evaluationDetails.timeSeriesStore() );
             }
             else
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+                LOGGER.debug( CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
                 retrieverFactory = EnsembleSingleValuedRetrieverFactory.of( project,
                                                                             evaluationDetails.databaseServices()
                                                                                              .database(),
@@ -1057,13 +1011,13 @@ class EvaluationUtilities
             RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory;
             if ( evaluationDetails.hasInMemoryStore() )
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
+                LOGGER.debug( CREATED_AN_IN_MEMORY_RETRIEVER_FACTORY );
                 retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.project(),
                                                                         evaluationDetails.timeSeriesStore() );
             }
             else
             {
-                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+                LOGGER.debug( CREATED_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
                 retrieverFactory = EnsembleRetrieverFactory.of( project,
                                                                 evaluationDetails.databaseServices()
                                                                                  .database(),
@@ -1136,7 +1090,7 @@ class EvaluationUtilities
                             .setSamplingUncertaintyExecutor( executors.samplingUncertaintyExecutor() )
                             .setPoolRequest( poolRequest )
                             .setPoolSupplier( poolSupplier )
-                            .setEvaluation( evaluationDetails.evaluation() )
+                            .setEvaluation( evaluationDetails.evaluationMessager() )
                             .setMonitor( evaluationDetails.monitor() )
                             .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
@@ -1390,18 +1344,18 @@ class EvaluationUtilities
      * @param separateMetricsForBaseline whether to generate a filter for baseline pools with separate metrics
      * @return the filters
      */
-    private static List<Predicate<Statistics>> getTimeWindowFilters( Set<TimeWindow> timeWindows,
+    private static List<Predicate<Statistics>> getTimeWindowFilters( Set<TimeWindowOuter> timeWindows,
                                                                      boolean separateMetricsForBaseline )
     {
         List<Predicate<Statistics>> filters = new ArrayList<>();
 
-        for ( TimeWindow timeWindow : timeWindows )
+        for ( TimeWindowOuter timeWindow : timeWindows )
         {
             // Filter for main pools
             Predicate<Statistics> nextMainFilter = statistics -> statistics.hasPool()
                                                                  && statistics.getPool()
                                                                               .getTimeWindow()
-                                                                              .equals( timeWindow );
+                                                                              .equals( timeWindow.getTimeWindow() );
             filters.add( nextMainFilter );
 
             // Separate metrics for baseline?
@@ -1411,7 +1365,7 @@ class EvaluationUtilities
                                                                      && statistics.hasBaselinePool()
                                                                      && statistics.getBaselinePool()
                                                                                   .getTimeWindow()
-                                                                                  .equals( timeWindow );
+                                                                                  .equals( timeWindow.getTimeWindow() );
                 filters.add( nextBaseFilter );
             }
         }
@@ -1584,7 +1538,7 @@ class EvaluationUtilities
                                                            .separateMetrics();
 
         // Get the time window and threshold filters
-        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
         Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
         List<TimeWindowAndThresholdFilterAdapter> timeWindowAndThresholdFilters =
                 EvaluationUtilities.getTimeWindowAndThresholdFilters( timeWindows,
@@ -2027,7 +1981,7 @@ class EvaluationUtilities
      * @param clearThresholdValues is true to clear event threshold values, false otherwise
      * @return the filters
      */
-    private static List<TimeWindowAndThresholdFilterAdapter> getTimeWindowAndThresholdFilters( Set<TimeWindow> timeWindows,
+    private static List<TimeWindowAndThresholdFilterAdapter> getTimeWindowAndThresholdFilters( Set<TimeWindowOuter> timeWindows,
                                                                                                Set<wres.config.yaml.components.Threshold> thresholds,
                                                                                                boolean separateMetricsForBaseline,
                                                                                                boolean clearThresholdValues )
@@ -2073,6 +2027,118 @@ class EvaluationUtilities
                       filters.size() );
 
         return Collections.unmodifiableList( filters );
+    }
+    
+    /**
+     * Log some information about the pools
+     * @param evaluationDetails the evaluation details
+     * @param poolRequests the pool requests
+     */
+
+    private static void logPoolDetails( EvaluationDetails evaluationDetails,
+                                        List<PoolRequest> poolRequests )
+    {
+        // Log some information about the pools
+        if ( LOGGER.isInfoEnabled() )
+        {
+            Set<FeatureGroup> features = new TreeSet<>();
+            Set<TimeWindowOuter> timeWindows = new TreeSet<>();
+
+            for ( PoolRequest nextRequest : poolRequests )
+            {
+                FeatureGroup nextFeature = nextRequest.getMetadata()
+                                                      .getFeatureGroup();
+                features.add( nextFeature );
+                TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
+                                                            .getTimeWindow();
+                timeWindows.add( nextTimeWindow );
+            }
+
+            int timeWindowCount = timeWindows.size();
+            int featureCount = features.size();
+
+            // Avoid massive log statements: #129995
+            String extraTime = "";
+            String extraSpace = "";
+            if ( timeWindowCount > MAXIMUM_TIME_WINDOWS_TO_LOG )
+            {
+                extraTime = "first " + MAXIMUM_TIME_WINDOWS_TO_LOG + " ";
+                timeWindows = timeWindows.stream()
+                                         .limit( MAXIMUM_TIME_WINDOWS_TO_LOG )
+                                         .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+            if ( featureCount > MAXIMUM_FEATURES_TO_LOG )
+            {
+                extraSpace = "first " + MAXIMUM_FEATURES_TO_LOG + " ";
+                features = features.stream()
+                                   .limit( MAXIMUM_FEATURES_TO_LOG )
+                                   .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+
+            if ( Objects.nonNull( evaluationDetails.declaration()
+                                                   .eventDetection() )
+                 && featureCount > 1 )
+            {
+                LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
+                             + "The {}feature groups are: {}. The time windows are based on event detection and "
+                             + "vary by feature group.",
+                             poolRequests.size(),
+                             featureCount,
+                             timeWindowCount,
+                             extraSpace,
+                             PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ) );
+            }
+            else
+            {
+                LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
+                             + "The {}feature groups are: {}. The {}time windows are: {}.",
+                             poolRequests.size(),
+                             featureCount,
+                             timeWindowCount,
+                             extraSpace,
+                             PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
+                             extraTime,
+                             PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
+            }
+        }
+
+        // Log extra details if needed
+        EvaluationUtilities.logPoolDetailsExtra( poolRequests );
+    }
+
+    /**
+     * Log some detailed information about the pools
+     * @param poolRequests the pool requests
+     */
+
+    private static void logPoolDetailsExtra( List<PoolRequest> poolRequests )
+    {
+        // Log some detailed information about the pools, if required
+        if ( LOGGER.isTraceEnabled() )
+        {
+            for ( PoolRequest nextRequest : poolRequests )
+            {
+                if ( nextRequest.hasBaseline() )
+                {
+                    LOGGER.trace( "Pool request {}/{} is: {}.",
+                                  nextRequest.getMetadata()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest.getMetadataForBaseline()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest );
+                }
+                else
+                {
+                    LOGGER.trace( "Pool request {} is: {}.",
+                                  nextRequest.getMetadata()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest );
+                }
+            }
+        }
     }
 
     /**

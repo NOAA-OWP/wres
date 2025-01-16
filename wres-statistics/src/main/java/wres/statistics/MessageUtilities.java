@@ -1,12 +1,11 @@
 package wres.statistics;
 
 import java.time.Instant;
-import java.time.MonthDay;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
@@ -20,19 +19,18 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.SummaryStatistic;
-import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
 /**
- * Factory class for creating statistics messages from POJOs and vice versa.
+ * Utilities for working with statistics messages.
  *
  * @author James Brown
  */
 
-public class MessageFactory
+public class MessageUtilities
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( MessageFactory.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( MessageUtilities.class );
 
     /**
      * <p>Minimum {@link java.time.Duration}.
@@ -96,6 +94,26 @@ public class MessageFactory
         }
 
         return Collections.unmodifiableSet( formats );
+    }
+
+    /**
+     * Uncovers the covariates that have an implicit purpose of filtering, i.e., either
+     * {@link Covariate#hasMinimumInclusiveValue()} or {@link Covariate#hasMaximumInclusiveValue()}.
+     *
+     * @param covariates the covariates, not null
+     * @return the covariates used for filtering
+     * @throws NullPointerException if the covariates is null
+     */
+
+    public static List<Covariate> getCovariateFilters( List<Covariate> covariates )
+    {
+        Objects.requireNonNull( covariates );
+
+        // Covariates with an explicit purpose of filtering
+        return covariates.stream()
+                         .filter( n -> n.hasMinimumInclusiveValue()
+                                       || n.hasMaximumInclusiveValue() )
+                         .toList();
     }
 
     /**
@@ -205,13 +223,13 @@ public class MessageFactory
 
     public static Geometry getGeometry( String name )
     {
-        return MessageFactory.getGeometry( name, null, null, null );
+        return MessageUtilities.getGeometry( name, null, null, null );
     }
 
     /**
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds
-     * default to {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     * default to {@link MessageUtilities#DURATION_MIN} and {@link MessageUtilities#DURATION_MAX}, respectively.
      *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
@@ -233,8 +251,8 @@ public class MessageFactory
         Instant latestR = Instant.MAX;
         Instant earliestV = Instant.MIN;
         Instant latestV = Instant.MAX;
-        java.time.Duration earliestL = MessageFactory.DURATION_MIN;
-        java.time.Duration latestL = MessageFactory.DURATION_MAX;
+        java.time.Duration earliestL = MessageUtilities.DURATION_MIN;
+        java.time.Duration latestL = MessageUtilities.DURATION_MAX;
 
         if ( Objects.nonNull( earliestReferenceTime ) )
         {
@@ -266,9 +284,9 @@ public class MessageFactory
             latestL = latestLead;
         }
 
-        if ( MessageFactory.LOGGER.isTraceEnabled() )
+        if ( MessageUtilities.LOGGER.isTraceEnabled() )
         {
-            MessageFactory.LOGGER.trace(
+            MessageUtilities.LOGGER.trace(
                     "Created a new time window with an earliest reference time of {}, a latest reference time "
                     + "of {}, an earliest valid time of {}, a latest valid time of {}, an earliest lead duration "
                     + "of {} and a latest lead duration of {}.",
@@ -281,12 +299,12 @@ public class MessageFactory
         }
 
         return TimeWindow.newBuilder()
-                         .setEarliestReferenceTime( MessageFactory.getTimestamp( earliestR ) )
-                         .setLatestReferenceTime( MessageFactory.getTimestamp( latestR ) )
-                         .setEarliestValidTime( MessageFactory.getTimestamp( earliestV ) )
-                         .setLatestValidTime( MessageFactory.getTimestamp( latestV ) )
-                         .setEarliestLeadDuration( MessageFactory.getDuration( earliestL ) )
-                         .setLatestLeadDuration( MessageFactory.getDuration( latestL ) )
+                         .setEarliestReferenceTime( MessageUtilities.getTimestamp( earliestR ) )
+                         .setLatestReferenceTime( MessageUtilities.getTimestamp( latestR ) )
+                         .setEarliestValidTime( MessageUtilities.getTimestamp( earliestV ) )
+                         .setLatestValidTime( MessageUtilities.getTimestamp( latestV ) )
+                         .setEarliestLeadDuration( MessageUtilities.getDuration( earliestL ) )
+                         .setLatestLeadDuration( MessageUtilities.getDuration( latestL ) )
                          .build();
     }
 
@@ -302,12 +320,12 @@ public class MessageFactory
     public static TimeWindow getTimeWindow( Instant earliestValidTime,
                                             Instant latestValidTime )
     {
-        return MessageFactory.getTimeWindow( null, null, earliestValidTime, latestValidTime, null, null );
+        return MessageUtilities.getTimeWindow( null, null, earliestValidTime, latestValidTime, null, null );
     }
 
     /**
      * Creates a {@link TimeWindow} from the input. Durations on the lower and upper bounds
-     * default to {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     * default to {@link MessageUtilities#DURATION_MIN} and {@link MessageUtilities#DURATION_MAX}, respectively.
      *
      * @param earliestLead the earliest lead time, optional
      * @param latestLead the latest lead time, optional
@@ -317,7 +335,7 @@ public class MessageFactory
     public static TimeWindow getTimeWindow( java.time.Duration earliestLead,
                                             java.time.Duration latestLead )
     {
-        return MessageFactory.getTimeWindow( null, null, null, null, earliestLead, latestLead );
+        return MessageUtilities.getTimeWindow( null, null, null, null, earliestLead, latestLead );
     }
 
     /**
@@ -336,18 +354,18 @@ public class MessageFactory
                                             Instant earliestValidTime,
                                             Instant latestValidTime )
     {
-        return MessageFactory.getTimeWindow( earliestReferenceTime,
-                                             latestReferenceTime,
-                                             earliestValidTime,
-                                             latestValidTime,
-                                             null,
-                                             null );
+        return MessageUtilities.getTimeWindow( earliestReferenceTime,
+                                               latestReferenceTime,
+                                               earliestValidTime,
+                                               latestValidTime,
+                                               null,
+                                               null );
     }
 
     /**
      * Creates a {@link TimeWindow} from the input. Times on the lower and upper bounds
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds
-     * default to {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     * default to {@link MessageUtilities#DURATION_MIN} and {@link MessageUtilities#DURATION_MAX}, respectively.
      *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
@@ -359,13 +377,13 @@ public class MessageFactory
                                             Instant latestReferenceTime,
                                             java.time.Duration lead )
     {
-        return MessageFactory.getTimeWindow( earliestReferenceTime, latestReferenceTime, null, null, lead, lead );
+        return MessageUtilities.getTimeWindow( earliestReferenceTime, latestReferenceTime, null, null, lead, lead );
     }
 
     /**
      * Creates a {@link TimeWindow} from the input. Times on the lower and upper bounds
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds
-     * default to {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     * default to {@link MessageUtilities#DURATION_MIN} and {@link MessageUtilities#DURATION_MAX}, respectively.
      *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
@@ -379,30 +397,30 @@ public class MessageFactory
                                             java.time.Duration earliestLead,
                                             java.time.Duration latestLead )
     {
-        return MessageFactory.getTimeWindow( earliestReferenceTime,
-                                             latestReferenceTime,
-                                             null,
-                                             null,
-                                             earliestLead,
-                                             latestLead );
+        return MessageUtilities.getTimeWindow( earliestReferenceTime,
+                                               latestReferenceTime,
+                                               null,
+                                               null,
+                                               earliestLead,
+                                               latestLead );
     }
 
     /**
      * Creates an empty {@link TimeWindow} in which the times on the lower and upper bounds
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively, and the durations on the lower and upper
-     * bounds default to {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     * bounds default to {@link MessageUtilities#DURATION_MIN} and {@link MessageUtilities#DURATION_MAX}, respectively.
      *
      * @return the empty time window
      */
 
     public static TimeWindow getTimeWindow()
     {
-        return MessageFactory.getTimeWindow( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null );
+        return MessageUtilities.getTimeWindow( null,
+                                               null,
+                                               null,
+                                               null,
+                                               null,
+                                               null );
     }
 
     /**
@@ -530,7 +548,7 @@ public class MessageFactory
      * Do not construct.
      */
 
-    private MessageFactory()
+    private MessageUtilities()
     {
     }
 

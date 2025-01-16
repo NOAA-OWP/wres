@@ -21,12 +21,13 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.io.project.Project;
 import wres.io.retrieving.CachingRetriever;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.RetrieverUtilities;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -121,7 +122,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<Feature> features,
                                                                    TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
                                                                                         this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
@@ -150,7 +151,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
-        TimeWindow inner = MessageFactory.getTimeWindow();
+        TimeWindow inner = MessageUtilities.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
         return this.getBaselineRetriever( features, outer );
     }
@@ -159,7 +160,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
                                                                                         this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),

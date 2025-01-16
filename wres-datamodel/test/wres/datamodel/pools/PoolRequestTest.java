@@ -15,6 +15,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -44,13 +45,13 @@ class PoolRequestTest
                                     .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                     .build();
 
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "DRRC2" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
-        this.timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                            Instant.parse( "1985-12-31T23:59:59Z" ) ) );
+        this.timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                              Instant.parse( "1985-12-31T23:59:59Z" ) ) );
 
         Pool poolOne = MessageFactory.getPool( this.featureGroup,
                                                this.timeWindow,
@@ -110,9 +111,9 @@ class PoolRequestTest
         assertNotEquals( this.poolRequest, null );
 
         // Unequal cases
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC3" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "DRRC3" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup group = FeatureGroup.of( geoGroup );
 
         Pool oneMorePool = MessageFactory.getPool( group,

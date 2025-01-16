@@ -50,6 +50,7 @@ import wres.statistics.generated.TimeWindow;
  * @param spatialMask a spatial mask
  * @param unit the measurement unit
  * @param unitAliases aliases for measurement units
+ * @param timePools explicit time pools
  * @param referenceDates reference dates
  * @param referenceDatePools reference date pools
  * @param validDates valid dates
@@ -57,6 +58,7 @@ import wres.statistics.generated.TimeWindow;
  * @param leadTimes lead times
  * @param analysisTimes analysis durations
  * @param leadTimePools lead time pools
+ * @param eventDetection event detection
  * @param timeScale the evaluation timescale
  * @param rescaleLenience whether rescaling should admit periods with missing values
  * @param pairFrequency the frequency of the paired data
@@ -91,13 +93,14 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "unit" ) String unit,
                                      @JsonProperty( "unit_aliases" ) Set<UnitAlias> unitAliases,
                                      @JsonDeserialize( using = TimeWindowDeserializer.class )
-                                     @JsonProperty( "time_pools" ) Set<TimeWindow> timeWindows,
+                                     @JsonProperty( "time_pools" ) Set<TimeWindow> timePools,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
                                      @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
                                      @JsonProperty( "valid_dates" ) TimeInterval validDates,
                                      @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
                                      @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
+                                     @JsonProperty( "event_detection" ) EventDetection eventDetection,
                                      @JsonProperty( "analysis_times" ) AnalysisTimes analysisTimes,
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
                                      @JsonProperty( "rescale_lenience" ) TimeScaleLenience rescaleLenience,
@@ -154,6 +157,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param spatialMask a spatial mask
      * @param unit the measurement unit
      * @param unitAliases aliases for measurement units
+     * @param timePools explicit time pools
      * @param referenceDates reference dates
      * @param referenceDatePools reference date pools
      * @param validDates valid dates
@@ -161,6 +165,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param leadTimes lead times
      * @param analysisTimes analysis durations
      * @param leadTimePools lead time pools
+     * @param eventDetection event detection
      * @param timeScale the evaluation timescale
      * @param rescaleLenience whether rescaling should admit periods with missing values
      * @param pairFrequency the frequency of the paired data
@@ -199,9 +204,9 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             unitAliases = this.emptyOrUnmodifiableSet( unitAliases, "unit aliases" );
         }
 
-        if ( Objects.isNull( timeWindows ) )
+        if ( Objects.isNull( timePools ) )
         {
-            timeWindows = this.emptyOrUnmodifiableSet( timeWindows, "time pools" );
+            timePools = this.emptyOrUnmodifiableSet( timePools, "time pools" );
         }
 
         if ( Objects.isNull( rescaleLenience ) )

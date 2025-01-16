@@ -54,7 +54,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.PreReadException;
 import wres.reading.ReadException;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -231,8 +231,8 @@ class NwmTimeSeries implements Closeable
                       this.baseUri );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                                                                               .namingPattern( "NwmTimeSeries Reader %d" )
-                                                                               .build();
+                .namingPattern( "NwmTimeSeries Reader %d" )
+                .build();
 
         BlockingQueue<Runnable> nwmReaderQueue =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
@@ -488,46 +488,55 @@ class NwmTimeSeries implements Closeable
      * @param variableName The NWM variable name.
      * @param attributeName The attribute associated with the variable.
      * @return The String representation of the value of attribute of variable.
+     * @throws IllegalStateException if the NetCDF data could not be accessed
      */
 
     String readAttributeAsString( String variableName, String attributeName )
     {
-        if ( !this.getNetcdfFiles().isEmpty() )
+        if ( !this.getNetcdfFiles()
+                  .isEmpty() )
         {
             // Use the very first netcdf file, assume homogeneity.
-            NetcdfFile netcdfFile = this.getNetcdfFiles()
-                                        .iterator()
-                                        .next();
-            Variable variableVariable = netcdfFile.findVariable( variableName );
-
-            if ( variableVariable == null )
+            Variable variableVariable;
+            try ( NetcdfFile netcdfFile = this.getNetcdfFiles()
+                                              .iterator()
+                                              .next() )
             {
-                Set<String> variables = netcdfFile.getVariables()
-                                                  .stream()
-                                                  .map( Variable::getFullName )
-                                                  .collect( Collectors.toSet() );
+                variableVariable = netcdfFile.findVariable( variableName );
 
-                // Remove the metadata variables
-                variables.remove( "time" );
-                variables.remove( "reference_time" );
-                variables.remove( "feature_id" );
-                variables.remove( "crs" );
+                if ( variableVariable == null )
+                {
+                    Set<String> variables = netcdfFile.getVariables()
+                                                      .stream()
+                                                      .map( Variable::getFullName )
+                                                      .collect( Collectors.toSet() );
 
-                throw new IllegalArgumentException( "There was no variable '"
-                                                    + variableName
-                                                    + "' in the netCDF blob at '"
-                                                    + netcdfFile.getLocation()
-                                                    + "'. The blob contained the following readable variables: "
-                                                    + variables
-                                                    + ". Please declare one of these case-sensitive variable names to "
-                                                    + "evaluate." );
+                    // Remove the metadata variables
+                    variables.remove( "time" );
+                    variables.remove( "reference_time" );
+                    variables.remove( "feature_id" );
+                    variables.remove( "crs" );
+
+                    throw new IllegalArgumentException( "There was no variable '"
+                                                        + variableName
+                                                        + "' in the netCDF blob at '"
+                                                        + netcdfFile.getLocation()
+                                                        + "'. The blob contained the following readable variables: "
+                                                        + variables
+                                                        + ". Please declare one of these case-sensitive variable names to "
+                                                        + "evaluate." );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new IllegalStateException( "Could not read the NetCDF data.", e );
             }
 
             return NwmTimeSeries.readAttributeAsString( variableVariable, attributeName );
         }
         else
         {
-            throw new IllegalStateException( "No netCDF data available." );
+            throw new IllegalStateException( "No NetCDF data available." );
         }
     }
 
@@ -622,9 +631,9 @@ class NwmTimeSeries implements Closeable
             // TODO: use the reference datetime from actual data, not args.
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
-            Geometry geometry = wres.statistics.MessageFactory.getGeometry(
-                                                                            series.getKey()
-                                                                                  .toString() );
+            Geometry geometry = MessageUtilities.getGeometry(
+                    series.getKey()
+                          .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
@@ -661,7 +670,7 @@ class NwmTimeSeries implements Closeable
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch(
-                                                                 CONCURRENT_READS );
+                CONCURRENT_READS );
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
@@ -721,9 +730,9 @@ class NwmTimeSeries implements Closeable
                 sortedEvents.add( ensembleEvent );
             }
 
-            Geometry geometry = MessageFactory.getGeometry(
-                                                            entriesForOne.getKey()
-                                                                         .toString() );
+            Geometry geometry = MessageUtilities.getGeometry(
+                    entriesForOne.getKey()
+                                 .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
@@ -955,10 +964,10 @@ class NwmTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                                                                  "Unable to convert attribute '"
-                                                                  + attributeName
-                                                                  + "' to float because it is type "
-                                                                  + type );
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to float because it is type "
+                            + type );
                 }
             }
         }
@@ -1002,10 +1011,10 @@ class NwmTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                                                                  "Unable to convert attribute '"
-                                                                  + attributeName
-                                                                  + "' to integer because it is type "
-                                                                  + type );
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to integer because it is type "
+                            + type );
                 }
             }
         }
@@ -1156,7 +1165,7 @@ class NwmTimeSeries implements Closeable
         try
         {
             Array array = variable.read( origin, shape );
-            int[] unsafeValues = (int[]) array.get1DJavaArray( DataType.INT );
+            int[] unsafeValues = ( int[] ) array.get1DJavaArray( DataType.INT );
             rawValues = unsafeValues.clone();
         }
         catch ( IOException | InvalidRangeException e )
@@ -1173,11 +1182,11 @@ class NwmTimeSeries implements Closeable
         if ( rawValues.length != countOfRawValuesToRead )
         {
             throw new PreReadException(
-                                          "Expected to read exactly " + countOfRawValuesToRead
-                                          + " values from variable "
-                                          + variableName
-                                          + " instead got "
-                                          + rawValues.length );
+                    "Expected to read exactly " + countOfRawValuesToRead
+                    + " values from variable "
+                    + variableName
+                    + " instead got "
+                    + rawValues.length );
         }
 
         // Write the values to the result array. Skip past unrequested values.
@@ -1200,13 +1209,13 @@ class NwmTimeSeries implements Closeable
         }
 
         LOGGER.debug(
-                      "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
-                      variableName,
-                      minIndex,
-                      maxIndex,
-                      indices,
-                      rawValues.length,
-                      result );
+                "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
+                variableName,
+                minIndex,
+                maxIndex,
+                indices,
+                rawValues.length,
+                result );
         return result;
     }
 
@@ -1610,14 +1619,14 @@ class NwmTimeSeries implements Closeable
                      || rawVariableValues[i] == fillValue )
                 {
                     LOGGER.debug(
-                                  "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
-                                  rawVariableValues[i],
-                                  missingValue,
-                                  fillValue,
-                                  i,
-                                  companionFeatures[i],
-                                  variableName,
-                                  netcdfFile.getLocation() );
+                            "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
+                            rawVariableValues[i],
+                            missingValue,
+                            fillValue,
+                            i,
+                            companionFeatures[i],
+                            variableName,
+                            netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
@@ -1836,11 +1845,11 @@ class NwmTimeSeries implements Closeable
                 if ( timedOut )
                 {
                     throw new PreReadException(
-                                                  "While reading "
-                                                  + netcdfFileName,
-                                                  new TimeoutException(
-                                                                        "Timed out waiting for feature cache after "
-                                                                        + timeout ) );
+                            "While reading "
+                            + netcdfFileName,
+                            new TimeoutException(
+                                    "Timed out waiting for feature cache after "
+                                    + timeout ) );
                 }
             }
             catch ( InterruptedException ie )
@@ -1909,7 +1918,7 @@ class NwmTimeSeries implements Closeable
                 //Read the features from the netCDF file and clone them to ensure that
                 //we are referring to a fresh copy, and not an internal netCDF copy.
                 LOGGER.debug( "Reading features from {}", netcdfFileName );
-                long[] features = (long[]) featureVariable.read().get1DJavaArray( DataType.LONG );
+                long[] features = ( long[] ) featureVariable.read().get1DJavaArray( DataType.LONG );
                 if ( features == null )
                 {
                     throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );
@@ -1950,10 +1959,10 @@ class NwmTimeSeries implements Closeable
                     if ( !Arrays.equals( features, this.originalFeatures ) )
                     {
                         throw new PreReadException(
-                                                      "Non-homogeneous NWM data found. The features from "
-                                                      + netcdfFile.getLocation()
-                                                      + " do not match those found in a previously read "
-                                                      + "netCDF resource in the same NWM timeseries." );
+                                "Non-homogeneous NWM data found. The features from "
+                                + netcdfFile.getLocation()
+                                + " do not match those found in a previously read "
+                                + "netCDF resource in the same NWM timeseries." );
                     }
                     LOGGER.debug( "Finished comparing {} to the features cache",
                                   netcdfFileName );

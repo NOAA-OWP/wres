@@ -21,6 +21,9 @@ message DurationDiagramStatistic
     
     repeated PairOfInstantAndDuration statistics = 2;
     // The pairs of instants and durations that compose the diagram.
+
+    ReferenceTime.ReferenceTimeType reference_time_type = 3;
+    // The reference time type.
     
     message PairOfInstantAndDuration 
     {
@@ -31,8 +34,5 @@ message DurationDiagramStatistic
 
         google.protobuf.Duration duration = 2;
         // The duration.
-
-        ReferenceTime.ReferenceTimeType reference_time_type = 3;
-        // The reference time type.
     }
 }

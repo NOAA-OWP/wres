@@ -26,6 +26,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -64,9 +65,9 @@ class PoolMetadataTest
                                                   .build(),
                                         Pool.getDefaultInstance() ) );
 
-        Geometry geo = wres.statistics.MessageFactory.getGeometry( "A" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geo, geo, geo );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geo = MessageUtilities.getGeometry( "A" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geo, geo, geo );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup group = FeatureGroup.of( geoGroup );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -89,8 +90,8 @@ class PoolMetadataTest
 
         assertNotNull( PoolMetadata.of( PoolMetadata.of(), thresholds ) );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( THIRD_TIME ),
-                                                                                                       Instant.parse( THIRD_TIME ) ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( THIRD_TIME ),
+                                                                                         Instant.parse( THIRD_TIME ) ) );
 
         assertNotNull( PoolMetadata.of( PoolMetadata.of(), timeWindow ) );
 
@@ -122,9 +123,9 @@ class PoolMetadataTest
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Geometry geoOne = wres.statistics.MessageFactory.getGeometry( DRRC2 );
-        GeometryTuple geoTupleOne = wres.statistics.MessageFactory.getGeometryTuple( geoOne, geoOne, geoOne );
-        GeometryGroup geoGroupOne = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleOne );
+        Geometry geoOne = MessageUtilities.getGeometry( DRRC2 );
+        GeometryTuple geoTupleOne = MessageUtilities.getGeometryTuple( geoOne, geoOne, geoOne );
+        GeometryGroup geoGroupOne = MessageUtilities.getGeometryGroup( null, geoTupleOne );
         FeatureGroup featureGroupOne = FeatureGroup.of( geoGroupOne );
 
         Pool pool = MessageFactory.getPool( featureGroupOne,
@@ -194,9 +195,9 @@ class PoolMetadataTest
         assertEquals( m3, m4t );
 
         // Unequal
-        Geometry geoTwo = wres.statistics.MessageFactory.getGeometry( DRRC3 );
-        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( geoTwo, geoTwo, geoTwo );
-        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        Geometry geoTwo = MessageUtilities.getGeometry( DRRC3 );
+        GeometryTuple geoTupleTwo = MessageUtilities.getGeometryTuple( geoTwo, geoTwo, geoTwo );
+        GeometryGroup geoGroupTwo = MessageUtilities.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolSix = MessageFactory.getPool( featureGroupTwo, null, null, null, false, 1 );
@@ -214,8 +215,8 @@ class PoolMetadataTest
             assertEquals( m1, m2 );
         }
         // Add a time window
-        TimeWindowOuter firstWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                                        Instant.parse( SECOND_TIME ) ) );
+        TimeWindowOuter firstWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ) ) );
 
         Pool poolSeven = MessageFactory.getPool( featureGroupTwo,
                                                  firstWindow,
@@ -226,8 +227,8 @@ class PoolMetadataTest
 
         PoolMetadata m6 = PoolMetadata.of( evaluationFive, poolSeven );
 
-        TimeWindowOuter secondWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                                         Instant.parse( SECOND_TIME ) ) );
+        TimeWindowOuter secondWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                           Instant.parse( SECOND_TIME ) ) );
 
         Pool poolEight = MessageFactory.getPool( featureGroupTwo,
                                                  secondWindow,
@@ -242,10 +243,10 @@ class PoolMetadataTest
         assertEquals( m7, m6 );
         assertNotEquals( m3, m6 );
 
-        TimeWindowOuter thirdWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                                        Instant.parse( SECOND_TIME ),
-                                                                                                        Instant.parse( FIRST_TIME ),
-                                                                                                        Instant.parse( SECOND_TIME ) ) );
+        TimeWindowOuter thirdWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ),
+                                                                                          Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ) ) );
 
         Pool poolNine = MessageFactory.getPool( featureGroupTwo,
                                                 thirdWindow,
@@ -365,9 +366,9 @@ class PoolMetadataTest
         // Equal
         assertEquals( PoolMetadata.of().hashCode(), PoolMetadata.of().hashCode() );
 
-        Geometry geoOne = wres.statistics.MessageFactory.getGeometry( DRRC2 );
-        GeometryTuple geoTupleOne = wres.statistics.MessageFactory.getGeometryTuple( geoOne, geoOne, geoOne );
-        GeometryGroup geoGroupOne = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleOne );
+        Geometry geoOne = MessageUtilities.getGeometry( DRRC2 );
+        GeometryTuple geoTupleOne = MessageUtilities.getGeometryTuple( geoOne, geoOne, geoOne );
+        GeometryGroup geoGroupOne = MessageUtilities.getGeometryGroup( null, geoTupleOne );
         FeatureGroup featureGroupOne = FeatureGroup.of( geoGroupOne );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -430,12 +431,12 @@ class PoolMetadataTest
         }
 
         // Add a time window
-        TimeWindowOuter firstWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                                        Instant.parse( SECOND_TIME ) ) );
+        TimeWindowOuter firstWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ) ) );
 
-        Geometry geoTwo = wres.statistics.MessageFactory.getGeometry( DRRC3 );
-        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( geoTwo, geoTwo, geoTwo );
-        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        Geometry geoTwo = MessageUtilities.getGeometry( DRRC3 );
+        GeometryTuple geoTupleTwo = MessageUtilities.getGeometryTuple( geoTwo, geoTwo, geoTwo );
+        GeometryGroup geoGroupTwo = MessageUtilities.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolSix = MessageFactory.getPool( featureGroupTwo,
@@ -447,8 +448,8 @@ class PoolMetadataTest
 
         PoolMetadata m6 = PoolMetadata.of( evaluationThree, poolSix );
 
-        TimeWindowOuter secondWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                                         Instant.parse( SECOND_TIME ) ) );
+        TimeWindowOuter secondWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                           Instant.parse( SECOND_TIME ) ) );
 
         Pool poolSeven = MessageFactory.getPool( featureGroupTwo,
                                                  secondWindow,
@@ -462,10 +463,10 @@ class PoolMetadataTest
         assertEquals( m6.hashCode(), m7.hashCode() );
         assertEquals( m7.hashCode(), m6.hashCode() );
 
-        TimeWindowOuter thirdWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                                        Instant.parse( SECOND_TIME ),
-                                                                                                        Instant.parse( FIRST_TIME ),
-                                                                                                        Instant.parse( SECOND_TIME ) ) );
+        TimeWindowOuter thirdWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ),
+                                                                                          Instant.parse( FIRST_TIME ),
+                                                                                          Instant.parse( SECOND_TIME ) ) );
 
         // Add a threshold
         OneOrTwoThresholds thresholds =
@@ -537,12 +538,12 @@ class PoolMetadataTest
                                           .build();
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
 
-        Geometry geoOne = wres.statistics.MessageFactory.getGeometry( DRRC2 );
-        Geometry geoTwo = wres.statistics.MessageFactory.getGeometry( DRRC3 );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geoOne, geoTwo, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geoOne = MessageUtilities.getGeometry( DRRC2 );
+        Geometry geoTwo = MessageUtilities.getGeometry( DRRC3 );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geoOne, geoTwo, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,

@@ -33,6 +33,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.database.SingleValuedRetrieverFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -89,11 +90,11 @@ class PoolFactoryTest
 
         Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
-        Geometry keyOne = wres.statistics.MessageFactory.getGeometry( "DRRC2", null, null, null );
-        Geometry keyTwo = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        Geometry keyThree = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry keyOne = MessageUtilities.getGeometry( "DRRC2", null, null, null );
+        Geometry keyTwo = MessageUtilities.getGeometry( "DRRC2HSF", null, null, null );
+        Geometry keyThree = MessageUtilities.getGeometry( "DRRC2HSF", null, null, null );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( keyOne, keyTwo, keyThree );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
 
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
@@ -106,7 +107,7 @@ class PoolFactoryTest
                .thenReturn( CFS );
 
         PoolFactory poolFactory = PoolFactory.of( project );
-        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
+        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription, null );
 
         Assertions.assertEquals( 18, actual.size() );
     }
@@ -147,11 +148,11 @@ class PoolFactoryTest
 
         Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
-        Geometry keyOne = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        Geometry keyTwo = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
-        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( "aGroup", geoTuple );
+        Geometry keyOne = MessageUtilities.getGeometry( "DRRC2HSF", null, null, null );
+        Geometry keyTwo = MessageUtilities.getGeometry( "DRRC2HSF", null, null, null );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( keyOne, keyTwo, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
+        GeometryGroup geoGroupTwo = MessageUtilities.getGeometryGroup( "aGroup", geoTuple );
 
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
         FeatureGroup groupTwo = FeatureGroup.of( geoGroupTwo );
@@ -166,7 +167,7 @@ class PoolFactoryTest
 
         PoolFactory poolFactory = PoolFactory.of( project );
 
-        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
+        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription, null );
 
         Assertions.assertEquals( 48, actual.size() );
 

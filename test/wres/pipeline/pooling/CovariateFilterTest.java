@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -29,7 +30,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesUpscaler;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -52,8 +53,10 @@ class CovariateFilterTest
                                                                         .name( "foo" )
                                                                         .build() )
                                               .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariateData )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
 
         // Unconditional filter
         Predicate<Double> filter = d -> true;
@@ -62,7 +65,7 @@ class CovariateFilterTest
 
         Covariate<Double> covariate = new Covariate<>( covariateDataset, filter, desiredTimeScale, null );
 
-        Feature feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "feature" ) );
         TimeSeriesMetadata covariateMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                       TimeScaleOuter.of(),
                                                                       "bar",
@@ -103,7 +106,7 @@ class CovariateFilterTest
         GeometryTuple geoTuple = wres.datamodel.messages.MessageFactory.getGeometryTuple( feature, feature, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
         GeometryGroup geoGroup =
-                wres.statistics.MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
+                MessageUtilities.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool poolDescription =
@@ -149,8 +152,10 @@ class CovariateFilterTest
                                               // Add 4 hours
                                               .timeShift( Duration.ofHours( 4 ) )
                                               .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariateData )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
 
         Predicate<Double> filter = d -> d > 0.5;
 
@@ -158,7 +163,7 @@ class CovariateFilterTest
 
         Covariate<Double> covariate = new Covariate<>( covariateDataset, filter, desiredTimeScale, null );
 
-        Feature feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "feature" ) );
         TimeSeriesMetadata covariateMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                       TimeScaleOuter.of(),
                                                                       "bar",
@@ -200,7 +205,7 @@ class CovariateFilterTest
         GeometryTuple geoTuple = wres.datamodel.messages.MessageFactory.getGeometryTuple( feature, feature, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
         GeometryGroup geoGroup =
-                wres.statistics.MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
+                MessageUtilities.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool poolDescription =
@@ -250,9 +255,10 @@ class CovariateFilterTest
                                                                         .build() )
                                               .timeScale( existingTimeScale )
                                               .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
-
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariateData )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
         Predicate<Double> filter = d -> d > 0.5;
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ),
@@ -261,7 +267,7 @@ class CovariateFilterTest
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
         Covariate<Double> covariate = new Covariate<>( covariateDataset, filter, desiredTimeScale, upscaler );
 
-        Feature feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "feature" ) );
         TimeSeriesMetadata covariateMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                       timeScale,
                                                                       "bar",
@@ -305,7 +311,7 @@ class CovariateFilterTest
         GeometryTuple geoTuple = wres.datamodel.messages.MessageFactory.getGeometryTuple( feature, feature, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
         GeometryGroup geoGroup =
-                wres.statistics.MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
+                MessageUtilities.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool poolDescription =

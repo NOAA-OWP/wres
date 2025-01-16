@@ -33,7 +33,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -53,7 +53,7 @@ final class TimeSeriesSlicerTest
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final Feature DRRC2 = Feature.of(
-            wres.statistics.MessageFactory.getGeometry( "DRRC2" ) );
+            MessageUtilities.getGeometry( "DRRC2" ) );
     private static final String T2010_01_01T16_00_00Z = "2010-01-01T16:00:00Z";
     private static final Instant T2010_01_01T15_00_00Z = Instant.parse( "2010-01-01T15:00:00Z" );
     private static final Instant T2010_01_01T12_00_00Z = Instant.parse( "2010-01-01T12:00:00Z" );
@@ -72,7 +72,7 @@ final class TimeSeriesSlicerTest
     private static final Instant T2086_05_01T00_00_00Z = Instant.parse( "2086-05-01T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "Fruit";
-    private static final Feature FEATURE_NAME = Feature.of( MessageFactory.getGeometry( "Tropics" ) );
+    private static final Feature FEATURE_NAME = Feature.of( MessageUtilities.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     @Test
@@ -139,7 +139,7 @@ final class TimeSeriesSlicerTest
         //Iterate and test
         TimeSeries<Pair<Double, Double>> filteredOne =
                 TimeSeriesSlicer.filter( one,
-                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow(
+                                         TimeWindowOuter.of( MessageUtilities.getTimeWindow(
                                                  secondBasisTime,
                                                  secondBasisTime,
                                                  TimeWindowOuter.DURATION_MIN,
@@ -149,7 +149,7 @@ final class TimeSeriesSlicerTest
 
         TimeSeries<Pair<Double, Double>> filteredTwo =
                 TimeSeriesSlicer.filter( two,
-                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow(
+                                         TimeWindowOuter.of( MessageUtilities.getTimeWindow(
                                                  secondBasisTime,
                                                  secondBasisTime,
                                                  TimeWindowOuter.DURATION_MIN,
@@ -159,7 +159,7 @@ final class TimeSeriesSlicerTest
 
         TimeSeries<Pair<Double, Double>> filteredThree =
                 TimeSeriesSlicer.filter( three,
-                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow(
+                                         TimeWindowOuter.of( MessageUtilities.getTimeWindow(
                                                  secondBasisTime,
                                                  secondBasisTime,
                                                  TimeWindowOuter.DURATION_MIN,
@@ -188,7 +188,7 @@ final class TimeSeriesSlicerTest
         TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstMetadata, first );
 
         // Filter the series
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( T1985_01_01T01_00_00Z, T1985_01_01T02_00_00Z );
+        TimeWindow inner = MessageUtilities.getTimeWindow( T1985_01_01T01_00_00Z, T1985_01_01T02_00_00Z );
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
         TimeSeries<Pair<Double, Double>> actual = TimeSeriesSlicer.filter( one, outer );
 
@@ -247,7 +247,7 @@ final class TimeSeriesSlicerTest
         for ( Duration duration : durations )
         {
             TimeWindowOuter window =
-                    TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( duration, duration ) );
+                    TimeWindowOuter.of( MessageUtilities.getTimeWindow( duration, duration ) );
             TimeSeries<Pair<Double, Double>> events =
                     TimeSeriesSlicer.filter( ts.get().get( 0 ), window );
             for ( Event<Pair<Double, Double>> nextPair : events.getEvents() )
@@ -271,9 +271,9 @@ final class TimeSeriesSlicerTest
 
         TimeSeries<Pair<Double, Double>> next = durationCheck.get().get( 0 );
         next = TimeSeriesSlicer.filter( next,
-                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours(
+                                        TimeWindowOuter.of( MessageUtilities.getTimeWindow( Duration.ofHours(
                                                                                                                   51 ),
-                                                                                                          Duration.ofHours(
+                                                                                            Duration.ofHours(
                                                                                                                   51 ) ) ) );
 
         Duration actualDuration = Duration.between( next.getReferenceTimes().values().iterator().next(),
@@ -1077,7 +1077,7 @@ final class TimeSeriesSlicerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
 
         Duration frequency = Duration.ofHours( 6 );
 
@@ -1129,7 +1129,7 @@ final class TimeSeriesSlicerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
 
         Duration frequency = Duration.ofHours( 3 );
 
@@ -1180,8 +1180,8 @@ final class TimeSeriesSlicerTest
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ) );
 
         TimeWindowOuter timeWindow =
-                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ZERO,
-                                                                                  Duration.ofDays( 1 ) ) );
+                TimeWindowOuter.of( MessageUtilities.getTimeWindow( Duration.ZERO,
+                                                                    Duration.ofDays( 1 ) ) );
 
         Duration frequency = Duration.ofDays( 1 );
 
@@ -1197,8 +1197,8 @@ final class TimeSeriesSlicerTest
         assertEquals( expectedOne, actualOne );
 
         TimeWindowOuter timeWindowTwo =
-                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofDays( 1 ),
-                                                                                  Duration.ofDays( 2 ) ) );
+                TimeWindowOuter.of( MessageUtilities.getTimeWindow( Duration.ofDays( 1 ),
+                                                                    Duration.ofDays( 2 ) ) );
 
 
         SortedSet<Instant> actualTwo = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
@@ -1335,8 +1335,8 @@ final class TimeSeriesSlicerTest
         Duration lowerLeadBound = Duration.ZERO;
         Duration upperLeadBound = Duration.ofHours( 240 );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( lowerLeadBound,
-                                                                                                       upperLeadBound ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow( lowerLeadBound,
+                                                                                         upperLeadBound ) );
 
         SortedSet<Instant> actual = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
                                                                                             right,
@@ -1457,64 +1457,6 @@ final class TimeSeriesSlicerTest
         Ensemble one = Ensemble.of( 1.0 );
         Ensemble actual = multiplyEnsembleByThree.apply( one );
         Ensemble expected = Ensemble.of( 3.0 );
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void testAdjustByTimeScalePeriodWhenTimeScaleIsInstantaneous()
-    {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                              Duration.ofHours( 2 ) );
-        TimeScale timeScale = TimeScale.newBuilder()
-                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
-                                                                               .setSeconds( 1 ) )
-                                       .build();
-        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
-        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
-
-        TimeWindowOuter actual = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
-        assertEquals( timeWindowOuter, actual );
-    }
-
-    @Test
-    void testAdjustTimeWindowEarliestLeadDurationForTimeScale()
-    {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                              Duration.ofHours( 2 ) );
-        TimeScale timeScale = TimeScale.newBuilder()
-                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
-                                                                               .setSeconds( 1800 ) )
-                                       .build();
-        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
-        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
-
-        TimeWindowOuter actual = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Duration.ofMinutes( 30 ),
-                                                                 Duration.ofHours( 2 ) );
-        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
-
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void testAdjustTimeWindowEarliestValidTimeForTimeScale()
-    {
-        Instant earliest = Instant.parse( "2055-03-23T00:00:00Z" );
-        Instant latest = Instant.parse( "2055-03-24T00:00:00Z" );
-
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( earliest, latest );
-        TimeScale timeScale = TimeScale.newBuilder()
-                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
-                                                                               .setSeconds( 86400 ) )
-                                       .build();
-        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
-        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
-
-        TimeWindowOuter actual = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2055-03-22T00:00:00Z" ),
-                                                                 latest );
-        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
-
         assertEquals( expected, actual );
     }
 

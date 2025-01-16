@@ -14,7 +14,7 @@ import net.jcip.annotations.Immutable;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.SummaryStatistic;
@@ -85,7 +85,7 @@ public class DurationScoreStatisticOuter
                                              PoolMetadata metadata,
                                              SummaryStatistic summaryStatistic )
         {
-            super( component, metadata, next -> MessageFactory.getDuration( next.getValue() ).toString(), summaryStatistic );
+            super( component, metadata, next -> MessageUtilities.getDuration( next.getValue() ).toString(), summaryStatistic );
 
             this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
         }

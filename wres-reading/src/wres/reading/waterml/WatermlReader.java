@@ -53,7 +53,7 @@ import wres.reading.waterml.timeseries.Qualifier;
 import wres.reading.waterml.timeseries.SiteCode;
 import wres.reading.waterml.timeseries.TimeSeriesValue;
 import wres.reading.waterml.timeseries.TimeSeriesValues;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -594,7 +594,7 @@ public class WatermlReader implements TimeSeriesReader
             }
         }
 
-        Geometry geometry = MessageFactory.getGeometry( featureName, siteDescription, siteSrid, siteWkt );
+        Geometry geometry = MessageUtilities.getGeometry( featureName, siteDescription, siteSrid, siteWkt );
         return Feature.of( geometry );
     }
 

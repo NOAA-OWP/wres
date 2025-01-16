@@ -20,7 +20,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeries.Builder;
 
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -36,7 +36,7 @@ class PersistenceGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final String CMS = "CMS";
     private static final String DISCHARGE = "DISCHARGE";
-    private static final Feature FAKE2 = Feature.of( MessageFactory.getGeometry( "FAKE2" ) );
+    private static final Feature FAKE2 = Feature.of( MessageUtilities.getGeometry( "FAKE2" ) );
 
     // Times used    
     private static final Instant T2551_03_20T12_00_00Z = Instant.parse( "2551-03-20T12:00:00Z" );

@@ -34,7 +34,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 
 /**
  * Tests the {@link DatacardReader}.
@@ -118,10 +118,10 @@ class DatacardReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( "DRRC2",
-                                                                                                       "DOLORES RIVER, CO",
-                                                                                                       null,
-                                                                                                       null ) ),
+                                               Feature.of( MessageUtilities.getGeometry( "DRRC2",
+                                                                                         "DOLORES RIVER, CO",
+                                                                                         null,
+                                                                                         null ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -214,10 +214,10 @@ class DatacardReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( MessageFactory.getGeometry( "DRRC2",
-                                                                                       "DOLORES RIVER, CO",
-                                                                                       null,
-                                                                                       null ) ),
+                                               Feature.of( MessageUtilities.getGeometry( "DRRC2",
+                                                                                         "DOLORES RIVER, CO",
+                                                                                         null,
+                                                                                         null ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =

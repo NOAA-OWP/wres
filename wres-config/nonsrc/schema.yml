@@ -73,10 +73,15 @@ definitions:
           # To support data direct
           - type: "null"
       covariates:
-        type: array
-        items:
-          "$ref": "#/definitions/Covariate"
-        minItems: 1
+        anyOf:
+          - "$ref": "#/definitions/Covariate"
+          - type: array
+            items:
+              "$ref": "#/definitions/Covariate"
+            minItems: 1
+          - type: string
+            minLength: 1
+            maxLength: 2083
         uniqueItems: true
       features:
         type: array
@@ -100,6 +105,10 @@ definitions:
         "$ref": "#/definitions/Dates"
       time_pools:
         "$ref": "#/definitions/TimePools"
+      event_detection:
+        anyOf:
+          - "$ref": "#/definitions/EventDetection"
+          - "$ref": "#/definitions/DatasetEnum"
       reference_date_pools:
         "$ref": "#/definitions/TimePoolSequence"
       valid_dates:
@@ -275,7 +284,7 @@ definitions:
           - "$ref": "#/definitions/EnsembleFilter"
           - type: array
             items:
-               oneOf:
+              oneOf:
                 - type: integer
                 - type: string
                   minLength: 1
@@ -381,8 +390,9 @@ definitions:
 
   Covariate:
     title: An evaluation covariate.
-    description: "A covariate is cross-paired with the main variates (observed, 
-    predicted and baseline) and used to filter these variates."
+    description: "A covariate is an associated source of time-series data, which 
+    may be used to filter the main variates (observed, predicted and baseline) 
+    or conduct event detection."
     "$ref": "#/definitions/BasicDataset"
     # Close this schema to unevaluated properties 
     unevaluatedProperties: false
@@ -390,12 +400,21 @@ definitions:
       # The minimum value of the covariate
       minimum:
         type: number
-      # The minimum value of the covariate
+      # The maximum value of the covariate
       maximum:
         type: number
       # Target time-scale function, if not the evaluation time-scale function
       rescale_function:
         "$ref": "#/definitions/TimeScaleFunctionEnum"
+      # Purpose(s) of the covariate
+      purpose:
+        anyOf:
+          - "$ref": "#/definitions/CovariatePurposeEnum"
+          - type: array
+            items:
+              "$ref": "#/definitions/CovariatePurposeEnum"
+            uniqueItems: true
+            minItems: 1
 
   Source:
     title: A data source.
@@ -559,6 +578,67 @@ definitions:
     required:
       - period
       - unit
+
+  EventDetection:
+    title: Time-series event detection
+    description: "Performs time-series event detection using a declared dataset 
+    and optional detection parameters."
+    type: object
+    additionalProperties: false
+    properties:
+      dataset:
+        anyOf:
+          - "$ref": "#/definitions/DatasetEnum"
+          - type: array
+            items:
+              "$ref": "#/definitions/DatasetEnum"
+            uniqueItems: true
+            minItems: 1
+      method:
+        "$ref": "#/definitions/EventDetectionMethodEnum"
+      parameters:
+        anyOf:
+          - "$ref": "#/definitions/EventDetectionParametersReginaOgden"
+    required:
+      - dataset
+
+  EventDetectionParametersReginaOgden:
+    title: Time-series event detection parameters for the Regina-Ogden method
+    description: "Event detection parameters for the Regina-Ogden event 
+    detection method."
+    type: object
+    additionalProperties: false
+    properties:
+      window_size:
+        type: integer
+        minimum: 1
+      minimum_event_duration:
+        type: integer
+        minimum: 0
+      half_life:
+        type: integer
+        minimum: 1
+      start_radius:
+        type: integer
+        minimum: 0
+      duration_unit:
+        "$ref": "#/definitions/DurationEnum"
+      combination:
+        anyOf:
+          - "$ref": "#/definitions/EventDetectionCombinationEnum"
+          - "$ref": "#/definitions/EventDetectionCombination"
+
+  EventDetectionCombination:
+    title: Strategy for combining events
+    description: "A strategy for combining events detected across multiple 
+    datasets."
+    type: object
+    additionalProperties: false
+    properties:
+      operation:
+        "$ref": "#/definitions/EventDetectionCombinationEnum"
+      aggregation:
+        "$ref": "#/definitions/EventDetectionAggregationEnum"
 
   CrossPair:
     title: Cross-pairing of time-series for consistency
@@ -1035,7 +1115,7 @@ definitions:
     required:
       - alias
       - unit
-          
+
   Quantiles:
     title: Quantile statistics.
     description: Quantile statistics for a variable.
@@ -1061,7 +1141,7 @@ definitions:
         type: integer
         minimum: 2
     required:
-      - name       
+      - name
 
   Thresholds:
     title: An ordinary set of thresholds.
@@ -1490,6 +1570,20 @@ definitions:
       - minimum
       - maximum
 
+  CovariatePurposeEnum:
+    type: string
+    enum:
+      - filter
+      - detect
+
+  DatasetEnum:
+    type: string
+    enum:
+      - observed
+      - predicted
+      - baseline
+      - covariates
+
   TimeScaleLenienceEnum:
     title: The lenience to apply when rescaling time-series.
     description: "The side(s) of data where lenience should be applied when 
@@ -1757,3 +1851,37 @@ definitions:
       - observations
       - simulations
       - analyses
+
+  EventDetectionMethodEnum:
+    title: The method for event detection.
+    description: "Use this to select the method for detecting events in 
+    time-series."
+    type: string
+    enum:
+      - regina-ogden
+      - default
+
+  EventDetectionCombinationEnum:
+    title: The method for combining events across data sources.
+    description: "Identifies the method for combining events across different 
+      time-series data sources, such as observed and predicted."
+    type: string
+    enum:
+      - union
+      - intersection
+
+  EventDetectionAggregationEnum:
+    title: The method for aggregating events across data sources.
+    description: "Identifies the method for aggregating events across different 
+      time-series data sources, such as observed and predicted. The strategy 
+      'none' applies no aggregation. The 'maximum' forms the maximum period 
+      across each set of intersecting events. The 'minimum' forms the minimum 
+      period across each set of intersecting events or the temporal 
+      intersection. The 'average' forms the average of the start datetimes and 
+      the end datetimes for each set of intersecting events."
+    type: string
+    enum:
+      - none
+      - maximum
+      - minimum
+      - average

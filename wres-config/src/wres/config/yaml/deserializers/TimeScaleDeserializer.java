@@ -46,7 +46,7 @@ public class TimeScaleDeserializer extends JsonDeserializer<wres.config.yaml.com
         if ( node.has( "period" )
              && node.has( "unit" ) )
         {
-            java.time.Duration duration = DurationDeserializer.getDuration( mapper, node, "period" );
+            java.time.Duration duration = DurationDeserializer.getDuration( mapper, node, "period", "unit" );
             Duration protoDuration = Duration.newBuilder()
                                              .setSeconds( duration.getSeconds() )
                                              .setNanos( duration.getNano() )

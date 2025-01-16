@@ -61,6 +61,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
@@ -75,6 +76,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -421,10 +423,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Time windows
-        Set<TimeWindowOuter> timeWindows = DeclarationUtilities.getTimeWindows( this.getDeclaration() )
-                                                               .stream()
-                                                               .map( TimeWindowOuter::of )
-                                                               .collect( Collectors.toSet() );
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( this.getDeclaration() );
 
         // Find the thresholds-by-metric for which blobs should be created
 
@@ -857,7 +856,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
 
+        // Uncover the covariates used for filtering only
         List<Covariate> covariates = MessageFactory.parse( declaration.covariates() );
+        covariates = MessageUtilities.getCovariateFilters( covariates );
 
         // Iterate through the ensemble average types
         for ( Map.Entry<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> next : thresholds.entrySet() )

@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -32,7 +33,7 @@ import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.Ensemble;
 import wres.io.project.Project;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeWindow;
 
@@ -69,7 +70,7 @@ class EnsembleRetrieverFactoryInMemoryTest
         TimeSeriesStore.Builder builder = new TimeSeriesStore.Builder();
 
 
-        Feature feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "feature" ) );
         this.features = Set.of( feature );
 
         TimeSeriesMetadata leftMetadata = TimeSeriesMetadata.of( Map.of(),
@@ -163,8 +164,12 @@ class EnsembleRetrieverFactoryInMemoryTest
                                                                     .name( VARIABLE_NAME )
                                                                     .build() )
                                           .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariate, null, null, DatasetOrientation.LEFT, null );
+
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
+
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
@@ -196,8 +201,8 @@ class EnsembleRetrieverFactoryInMemoryTest
     @Test
     void testGetRightRetriever()
     {
-        TimeWindow innerTimeWindow = MessageFactory.getTimeWindow( TimeWindowOuter.DURATION_MIN,
-                                                                   TimeWindowOuter.DURATION_MAX );
+        TimeWindow innerTimeWindow = MessageUtilities.getTimeWindow( TimeWindowOuter.DURATION_MIN,
+                                                                     TimeWindowOuter.DURATION_MAX );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( innerTimeWindow );
         Supplier<Stream<TimeSeries<Ensemble>>> actual = this.tester.getRightRetriever( this.features, timeWindow );
 
@@ -211,8 +216,8 @@ class EnsembleRetrieverFactoryInMemoryTest
     @Test
     void testGetBaselineRetriever()
     {
-        TimeWindow innerTimeWindow = MessageFactory.getTimeWindow( TimeWindowOuter.DURATION_MIN,
-                                                                   TimeWindowOuter.DURATION_MAX );
+        TimeWindow innerTimeWindow = MessageUtilities.getTimeWindow( TimeWindowOuter.DURATION_MIN,
+                                                                     TimeWindowOuter.DURATION_MAX );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( innerTimeWindow );
         Supplier<Stream<TimeSeries<Ensemble>>> actual = this.tester.getBaselineRetriever( this.features, timeWindow );
 

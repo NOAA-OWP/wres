@@ -1,14 +1,20 @@
 package wres.config.yaml.deserializers;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectReader;
 
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.statistics.generated.TimeScale;
@@ -32,6 +38,7 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
         Double minimum = null;
         Double maximum = null;
         TimeScale.TimeScaleFunction rescaleFunction = null;
+        Set<CovariatePurpose> purposes = null;
 
         // Not part of the declaration language, just used internally
         DatasetOrientation featureNameOrientation = null;
@@ -59,8 +66,35 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
                                                     .toUpperCase();
                 rescaleFunction = TimeScale.TimeScaleFunction.valueOf( functionString );
             }
+
+            if ( lastNode.has( "purpose" ) )
+            {
+                JsonNode purposeNode = lastNode.get( "purpose" );
+
+                if ( purposeNode.isTextual() )
+                {
+                    String purposeString = purposeNode.asText()
+                                                      .toUpperCase();
+                    CovariatePurpose purposeEnum = CovariatePurpose.valueOf( purposeString );
+                    purposes = Collections.singleton( purposeEnum );
+                }
+                else if ( purposeNode.isArray() )
+                {
+                    ObjectReader reader = ( ObjectReader ) jp.getCodec();
+                    JavaType type = reader.getTypeFactory()
+                                          .constructCollectionType( Set.class, CovariatePurpose.class );
+                    JsonParser parser = reader.treeAsTokens( purposeNode );
+                    purposes = reader.readValue( parser, type );
+                }
+            }
         }
 
-        return new CovariateDataset( basicDataset, minimum, maximum, featureNameOrientation, rescaleFunction );
+        return CovariateDatasetBuilder.builder().dataset( basicDataset )
+                                      .minimum( minimum )
+                                      .maximum( maximum )
+                                      .featureNameOrientation( featureNameOrientation )
+                                      .rescaleFunction( rescaleFunction )
+                                      .purposes( purposes )
+                                      .build();
     }
 }

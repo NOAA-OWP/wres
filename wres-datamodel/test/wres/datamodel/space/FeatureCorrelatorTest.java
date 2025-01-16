@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 
@@ -22,8 +23,8 @@ class FeatureCorrelatorTest
     /** Test instance. */
     private FeatureCorrelator testInstance;
 
-    private static final Geometry GEOMETRY = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
-    private static final Geometry ANOTHER_GEOMETRY = wres.statistics.MessageFactory.getGeometry( "DRRC3" );
+    private static final Geometry GEOMETRY = MessageUtilities.getGeometry( "DRRC2" );
+    private static final Geometry ANOTHER_GEOMETRY = MessageUtilities.getGeometry( "DRRC3" );
     private static final Feature FEATURE = Feature.of( GEOMETRY );
     private static final Feature ANOTHER_FEATURE = Feature.of( ANOTHER_GEOMETRY );
 
@@ -31,21 +32,21 @@ class FeatureCorrelatorTest
     void runBeforeEachTest()
     {
         Set<FeatureTuple> features =
-                Set.of( FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "a" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "b" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "c" ) ) ),
-                        FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "d" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "e" ),
-                                                                                          null ) ),
-                        FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "f" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "g" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "h" ) ) ),
-                        FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "i" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "j" ),
-                                                                                          null ) ),
-                        FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "k" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "l" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "m" ) ) ) );
+                Set.of( FeatureTuple.of( MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "a" ),
+                                                                            MessageUtilities.getGeometry( "b" ),
+                                                                            MessageUtilities.getGeometry( "c" ) ) ),
+                        FeatureTuple.of( MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "d" ),
+                                                                            MessageUtilities.getGeometry( "e" ),
+                                                                            null ) ),
+                        FeatureTuple.of( MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "f" ),
+                                                                            MessageUtilities.getGeometry( "g" ),
+                                                                            MessageUtilities.getGeometry( "h" ) ) ),
+                        FeatureTuple.of( MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "i" ),
+                                                                            MessageUtilities.getGeometry( "j" ),
+                                                                            null ) ),
+                        FeatureTuple.of( MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "k" ),
+                                                                            MessageUtilities.getGeometry( "l" ),
+                                                                            MessageUtilities.getGeometry( "m" ) ) ) );
 
         this.testInstance = FeatureCorrelator.of( features );
     }
@@ -53,38 +54,38 @@ class FeatureCorrelatorTest
     @Test
     void testGetLeftForRightFeature()
     {
-        assertAll( () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "a" ) ) ),
-                                       this.testInstance.getLeftForRightFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "b" ) ) ) ),
-                   () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "d" ) ) ),
-                                       this.testInstance.getLeftForRightFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "e" ) ) ) ),
-                   () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "f" ) ) ),
-                                       this.testInstance.getLeftForRightFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "g" ) ) ) ),
-                   () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "i" ) ) ),
-                                       this.testInstance.getLeftForRightFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "j" ) ) ) ),
-                   () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "k" ) ) ),
-                                       this.testInstance.getLeftForRightFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "l" ) ) ) ) );
+        assertAll( () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "a" ) ) ),
+                                       this.testInstance.getLeftForRightFeature( Feature.of( MessageUtilities.getGeometry( "b" ) ) ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "d" ) ) ),
+                                       this.testInstance.getLeftForRightFeature( Feature.of( MessageUtilities.getGeometry( "e" ) ) ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "f" ) ) ),
+                                       this.testInstance.getLeftForRightFeature( Feature.of( MessageUtilities.getGeometry( "g" ) ) ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "i" ) ) ),
+                                       this.testInstance.getLeftForRightFeature( Feature.of( MessageUtilities.getGeometry( "j" ) ) ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "k" ) ) ),
+                                       this.testInstance.getLeftForRightFeature( Feature.of( MessageUtilities.getGeometry( "l" ) ) ) ) );
 
     }
 
     @Test
     void testGetLeftForBaselineFeature()
     {
-        assertAll( () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "a" ) ) ),
-                                       this.testInstance.getLeftForBaselineFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "c" ) ) ) ),
-                   () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "f" ) ) ),
-                                       this.testInstance.getLeftForBaselineFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "h" ) ) ) ),
-                   () -> assertEquals( Set.of( Feature.of( wres.statistics.MessageFactory.getGeometry( "k" ) ) ),
-                                       this.testInstance.getLeftForBaselineFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "m" ) ) ) ) );
+        assertAll( () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "a" ) ) ),
+                                       this.testInstance.getLeftForBaselineFeature( Feature.of( MessageUtilities.getGeometry( "c" ) ) ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "f" ) ) ),
+                                       this.testInstance.getLeftForBaselineFeature( Feature.of( MessageUtilities.getGeometry( "h" ) ) ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageUtilities.getGeometry( "k" ) ) ),
+                                       this.testInstance.getLeftForBaselineFeature( Feature.of( MessageUtilities.getGeometry( "m" ) ) ) ) );
 
     }
 
     @Test
     void testGetFeatureTuplesForLeftFeature()
     {
-        assertAll( () -> assertEquals( Set.of( FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "f" ),
-                                                                                                                 wres.statistics.MessageFactory.getGeometry( "g" ),
-                                                                                                                 wres.statistics.MessageFactory.getGeometry( "h" ) ) ) ),
-                                       this.testInstance.getFeatureTuplesForLeftFeature( Feature.of( wres.statistics.MessageFactory.getGeometry( "f" ) ) ) ) );
+        assertAll( () -> assertEquals( Set.of( FeatureTuple.of( MessageUtilities.getGeometryTuple( MessageUtilities.getGeometry( "f" ),
+                                                                                                   MessageUtilities.getGeometry( "g" ),
+                                                                                                   MessageUtilities.getGeometry( "h" ) ) ) ),
+                                       this.testInstance.getFeatureTuplesForLeftFeature( Feature.of( MessageUtilities.getGeometry( "f" ) ) ) ) );
 
     }
 

@@ -24,6 +24,7 @@ import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.events.subscribe.ConsumerFactory;
+import wres.statistics.MessageUtilities;
 import wres.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
 import wres.writing.csv.statistics.CommaSeparatedDiagramWriter;
 import wres.writing.csv.statistics.CommaSeparatedDurationDiagramWriter;
@@ -32,7 +33,6 @@ import wres.writing.csv.statistics.CsvStatisticsWriter;
 import wres.writing.netcdf.NetcdfOutputWriter;
 import wres.writing.protobuf.ProtobufWriter;
 import wres.events.subscribe.StatisticsConsumer;
-import wres.statistics.MessageFactory;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -203,9 +203,9 @@ class StatisticsConsumerFactory implements ConsumerFactory
                    .addDurationScoreConsumer( wres.config.yaml.components.Format.CSV,
                                               CommaSeparatedScoreWriter.of( this.declaration,
                                                                             path,
-                                                                            next -> MessageFactory.getDuration( next.getStatistic()
-                                                                                                                    .getValue() )
-                                                                                                  .toString() ) )
+                                                                            next -> MessageUtilities.getDuration( next.getStatistic()
+                                                                                                                      .getValue() )
+                                                                                                    .toString() ) )
                    .addDoubleScoreConsumer( wres.config.yaml.components.Format.CSV,
                                             CommaSeparatedScoreWriter.of( this.declaration,
                                                                           path,
@@ -366,13 +366,13 @@ class StatisticsConsumerFactory implements ConsumerFactory
                 MetricName metricName = metricComponent.getName();
 
                 com.google.protobuf.Duration minimum = metricComponent.getMinimum();
-                Duration minimumDuration = MessageFactory.getDuration( minimum );
+                Duration minimumDuration = MessageUtilities.getDuration( minimum );
                 double minimumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( minimumDuration, units );
                 com.google.protobuf.Duration maximum = metricComponent.getMaximum();
-                Duration maximumDuration = MessageFactory.getDuration( maximum );
+                Duration maximumDuration = MessageUtilities.getDuration( maximum );
                 double maximumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( maximumDuration, units );
                 com.google.protobuf.Duration optimum = metricComponent.getOptimum();
-                Duration optimumDuration = MessageFactory.getDuration( optimum );
+                Duration optimumDuration = MessageUtilities.getDuration( optimum );
                 double optimumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( optimumDuration, units );
 
                 DoubleScoreMetric.DoubleScoreMetricComponent doubleMetric =
@@ -385,7 +385,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                                     .build();
 
                 com.google.protobuf.Duration statistic = nextComponent.getValue();
-                Duration statisticDuration = MessageFactory.getDuration( statistic );
+                Duration statisticDuration = MessageUtilities.getDuration( statistic );
                 double decimalStatistic = TimeSeriesSlicer.durationToDecimalMilliPrecision( statisticDuration, units );
                 DoubleScoreStatistic.DoubleScoreStatisticComponent doubleStatistic =
                         DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()

@@ -31,6 +31,9 @@ message ReferenceTime
         
         ISSUED_TIME = 3;
         // The time at which a time-series was published or "issued".
+
+        EARLIEST_VALID_TIME = 4;
+        // The earliest valid time in the time-series.
     }
 
     google.protobuf.Timestamp reference_time = 1;

@@ -22,7 +22,7 @@ import wres.metrics.FunctionFactory;
 import wres.metrics.Metric;
 import wres.metrics.MetricParameterException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
@@ -110,7 +110,7 @@ public class TimingErrorDurationStatistics
                                                   .getStatisticsList()
                                                   .stream()
                                                   .map( DurationDiagramStatistic.PairOfInstantAndDuration::getDuration )
-                                                  .map( wres.statistics.MessageFactory::getDuration )
+                                                  .map( MessageUtilities::getDuration )
                                                   .toArray( Duration[]::new);
 
                 Duration duration = nextFunction.apply( input );
@@ -121,7 +121,7 @@ public class TimingErrorDurationStatistics
                         = DurationScoreStatisticComponent.newBuilder()
                                                          .setMetric( componentMetric );
 
-                builder.setValue( MessageFactory.getDuration( duration ) );
+                builder.setValue( MessageUtilities.getDuration( duration ) );
 
                 scoreBuilder.addStatistics( builder );
             }

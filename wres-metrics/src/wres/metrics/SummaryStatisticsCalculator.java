@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
 
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -360,7 +360,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                                     null );
 
                 List<Duration> samples = this.getOrAddDurationScoreSlot( name );
-                Duration nextScore = MessageFactory.getDuration( component.getValue() );
+                Duration nextScore = MessageUtilities.getDuration( component.getValue() );
                 samples.add( nextScore );
             }
         }
@@ -475,8 +475,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             for ( int i = 0; i < valuesCount; i++ )
             {
                 DurationDiagramStatistic.PairOfInstantAndDuration statistic = diagram.getStatistics( i );
-                Instant instant = MessageFactory.getInstant( statistic.getTime() );
-                Duration duration = MessageFactory.getDuration( statistic.getDuration() );
+                Instant instant = MessageUtilities.getInstant( statistic.getTime() );
+                Duration duration = MessageUtilities.getDuration( statistic.getDuration() );
 
                 // Create a thread safe list to add, if needed
                 List<Duration> newList = new FastList<Duration>().asSynchronized();
@@ -696,7 +696,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 Duration[] durations = samples.toArray( new Duration[0] );
 
                 Duration statisticValue = durationStatistic.apply( durations );
-                com.google.protobuf.Duration statisticProto = MessageFactory.getDuration( statisticValue );
+                com.google.protobuf.Duration statisticProto = MessageUtilities.getDuration( statisticValue );
                 component.setValue( statisticProto );
             }
         }
@@ -760,7 +760,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             for ( int i = 0; i < componentCount; i++ )
             {
                 DurationDiagramStatistic.PairOfInstantAndDuration.Builder pair = diagram.getStatisticsBuilder( i );
-                Instant instant = MessageFactory.getInstant( pair.getTime() );
+                Instant instant = MessageUtilities.getInstant( pair.getTime() );
                 List<Duration> sample = samples.get( instant );
 
                 // Filter any null values and sort. Null values can occur if the pairs were empty, for example,
@@ -771,7 +771,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 Duration[] durations = sample.toArray( new Duration[0] );
 
                 Duration statisticValue = durationStatistic.apply( durations );
-                com.google.protobuf.Duration statisticProto = MessageFactory.getDuration( statisticValue );
+                com.google.protobuf.Duration statisticProto = MessageUtilities.getDuration( statisticValue );
                 pair.setDuration( statisticProto );
             }
         }

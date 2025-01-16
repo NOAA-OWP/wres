@@ -30,12 +30,17 @@ import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.EventDetectionBuilder;
+import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -57,7 +62,7 @@ import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.VariableBuilder;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -194,14 +199,14 @@ class DeclarationInterpolatorTest
                                               .uri( predictedUri )
                                               .build();
 
-        List<Source> observedSources = List.of( observedSource );
+        List<Source> observedSourcesInner = List.of( observedSource );
         this.observedDataset = DatasetBuilder.builder()
-                                             .sources( observedSources )
+                                             .sources( observedSourcesInner )
                                              .build();
 
-        List<Source> predictedSources = List.of( predictedSource );
+        List<Source> predictedSourcesInner = List.of( predictedSource );
         this.predictedDataset = DatasetBuilder.builder()
-                                              .sources( predictedSources )
+                                              .sources( predictedSourcesInner )
                                               .build();
 
         DataSourceConfig.Source observedDataSource = new DataSourceConfig.Source( observedUri,
@@ -264,13 +269,13 @@ class DeclarationInterpolatorTest
     @Test
     void testInterpolateAllValidMetricsForSingleValuedTimeSeries()
     {
-        Dataset predictedDataset = DatasetBuilder.builder( this.predictedDataset )
-                                                 .type( DataType.SIMULATIONS )
-                                                 .build();
+        Dataset predictedDatasetInner = DatasetBuilder.builder( this.predictedDataset )
+                                                      .type( DataType.SIMULATIONS )
+                                                      .build();
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.observedDataset )
-                                                                        .right( predictedDataset )
+                                                                        .right( predictedDatasetInner )
                                                                         .build();
 
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( declaration, false );
@@ -290,13 +295,13 @@ class DeclarationInterpolatorTest
     @Test
     void testInterpolateAllValidMetricsForEnsembleTimeSeries()
     {
-        Dataset predictedDataset = DatasetBuilder.builder( this.predictedDataset )
-                                                 .type( DataType.ENSEMBLE_FORECASTS )
-                                                 .build();
+        Dataset predictedDatasetInner = DatasetBuilder.builder( this.predictedDataset )
+                                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                                      .build();
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.observedDataset )
-                                                                        .right( predictedDataset )
+                                                                        .right( predictedDatasetInner )
                                                                         .build();
 
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( declaration, false );
@@ -336,14 +341,14 @@ class DeclarationInterpolatorTest
                                              .sourceInterface( SourceInterface.WRDS_AHPS )
                                              .build();
 
-        List<Source> observedSources = List.of( observedSource );
+        List<Source> observedSourcesInner = List.of( observedSource );
         Dataset left = DatasetBuilder.builder()
-                                     .sources( observedSources )
+                                     .sources( observedSourcesInner )
                                      .build();
 
-        List<Source> predictedSources = List.of( predictedSource );
+        List<Source> predictedSourcesInner = List.of( predictedSource );
         Dataset right = DatasetBuilder.builder()
-                                      .sources( predictedSources )
+                                      .sources( predictedSourcesInner )
                                       .build();
 
         List<Source> baselineSources = List.of( baselineSource );
@@ -438,8 +443,8 @@ class DeclarationInterpolatorTest
     @Test
     void testInterpolateLeftAndBaselineFeatureFromDeclaredRightWhenSameAuthority()
     {
-        Set<GeometryTuple> features = Set.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
-                                              BASELINE_NAME_TWO_DECLARED_FEATURE );
+        Set<GeometryTuple> features = Set.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+                                              RIGHT_NAME_TWO_DECLARED_FEATURE );
         EvaluationDeclaration expected
                 = DeclarationInterpolatorTest.getBoilerplateEvaluationWith( features,
                                                                             null,
@@ -1117,7 +1122,10 @@ class DeclarationInterpolatorTest
                                                          .dataset( this.predictedDataset )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
+
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
@@ -1335,7 +1343,9 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNames()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1378,7 +1388,9 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyDeclaredCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1411,7 +1423,9 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyIngestedCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1485,8 +1499,10 @@ class DeclarationInterpolatorTest
         Dataset rightData = DatasetBuilder.builder( this.observedDataset )
                                           .sources( List.of( source ) )
                                           .build();
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( rightData )
+                                                            .build();
 
-        CovariateDataset covariate = new CovariateDataset( rightData, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
@@ -1621,13 +1637,13 @@ class DeclarationInterpolatorTest
         Duration durationTwo = Duration.ofHours( 12 );
 
         TimeWindow one = TimeWindow.newBuilder()
-                                   .setEarliestValidTime( MessageFactory.getTimestamp( validWindowOne ) )
-                                   .setLatestValidTime( MessageFactory.getTimestamp( validWindowTwo ) )
+                                   .setEarliestValidTime( MessageUtilities.getTimestamp( validWindowOne ) )
+                                   .setLatestValidTime( MessageUtilities.getTimestamp( validWindowTwo ) )
                                    .build();
 
         TimeWindow two = TimeWindow.newBuilder()
-                                   .setEarliestLeadDuration( MessageFactory.getDuration( durationOne ) )
-                                   .setLatestLeadDuration( MessageFactory.getDuration( durationTwo ) )
+                                   .setEarliestLeadDuration( MessageUtilities.getDuration( durationOne ) )
+                                   .setLatestLeadDuration( MessageUtilities.getDuration( durationTwo ) )
                                    .build();
 
         Set<TimeWindow> timeWindows = Set.of( one, two );
@@ -1642,29 +1658,29 @@ class DeclarationInterpolatorTest
                                             .leadTimes( new LeadTimeInterval( Duration.ofHours( 1 ),
                                                                               Duration.ofHours( 100 ) ) )
                                             .validDates( new TimeInterval( validOne, validTwo ) )
-                                            .timeWindows( timeWindows )
+                                            .timePools( timeWindows )
                                             .build();
 
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration, false );
 
-        Set<TimeWindow> actual = interpolated.timeWindows();
+        Set<TimeWindow> actual = interpolated.timePools();
 
         TimeWindow expectedOne = TimeWindow.newBuilder()
-                                           .setEarliestValidTime( MessageFactory.getTimestamp( validWindowOne ) )
-                                           .setLatestValidTime( MessageFactory.getTimestamp( validWindowTwo ) )
-                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( Instant.MIN ) )
-                                           .setLatestReferenceTime( MessageFactory.getTimestamp( Instant.MAX ) )
-                                           .setEarliestLeadDuration( MessageFactory.getDuration( Duration.ofHours( 1 ) ) )
-                                           .setLatestLeadDuration( MessageFactory.getDuration( Duration.ofHours( 100 ) ) )
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( validWindowOne ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( validWindowTwo ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( Instant.MIN ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( Instant.MAX ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( Duration.ofHours( 1 ) ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( Duration.ofHours( 100 ) ) )
                                            .build();
 
         TimeWindow expectedTwo = TimeWindow.newBuilder()
-                                           .setEarliestValidTime( MessageFactory.getTimestamp( validOne ) )
-                                           .setLatestValidTime( MessageFactory.getTimestamp( validTwo ) )
-                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( Instant.MIN ) )
-                                           .setLatestReferenceTime( MessageFactory.getTimestamp( Instant.MAX ) )
-                                           .setEarliestLeadDuration( MessageFactory.getDuration( durationOne ) )
-                                           .setLatestLeadDuration( MessageFactory.getDuration( durationTwo ) )
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( validOne ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( validTwo ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( Instant.MIN ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( Instant.MAX ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( durationOne ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( durationTwo ) )
                                            .build();
 
         Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
@@ -1740,6 +1756,31 @@ class DeclarationInterpolatorTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testInterpolateCovariatePurposeForEventDetection()
+    {
+        EventDetection detection = EventDetectionBuilder.builder()
+                                                        .datasets( Set.of( EventDetectionDataset.COVARIATES ) )
+                                                        .build();
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .covariates( List.of( covariate ) )
+                                                                        .eventDetection( detection )
+                                                                        .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration,
+                                                                                  false );
+        assertTrue( interpolated.covariates()
+                                .stream()
+                                .anyMatch( n -> n.purposes()
+                                                 .contains( CovariatePurpose.DETECT ) ) );
+
+    }
+
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation
 
     @Test
@@ -1753,7 +1794,7 @@ class DeclarationInterpolatorTest
                     - uri: another_file.csv
                   type: simulations
                 thresholds: [23.0, 25.0]
-                  """;
+                """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
@@ -1788,7 +1829,7 @@ class DeclarationInterpolatorTest
                     - uri: another_file.csv
                   type: ensemble forecasts
                 thresholds: [23.0, 25.0]
-                  """;
+                """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
@@ -1830,7 +1871,7 @@ class DeclarationInterpolatorTest
                     reference_dates:
                       minimum: 2023-02-01T00:00:00Z
                       maximum: 2062-02-01T00:00:00Z
-                        """,
+                    """,
             """
                     observed:
                       - some_file.csv
@@ -1839,7 +1880,7 @@ class DeclarationInterpolatorTest
                     lead_time_pools:
                       period: 23
                       unit: days
-                        """
+                    """
     } )
     void testDeserializeAndInterpolatePredictedDatasetAsSingleValuedForecastWhenNoEnsembleDeclaration( String declaration )
             throws IOException
@@ -1932,7 +1973,7 @@ class DeclarationInterpolatorTest
                   minimum: 0
                   maximum: 0
                   unit: hours
-                  """;
+                """;
 
         DataTypes dataTypes = new DataTypes( null,
                                              null,
@@ -1978,7 +2019,7 @@ class DeclarationInterpolatorTest
                       name: DOLC2
                       wkt: POINT (-999 -998)
                   - CREC1
-                  """;
+                """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
@@ -2033,7 +2074,7 @@ class DeclarationInterpolatorTest
                 metrics:
                   - name: mean square error skill score
                     thresholds: [12, 24, 27]
-                  """;
+                """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
@@ -2076,7 +2117,7 @@ class DeclarationInterpolatorTest
                   - name: pearson correlation coefficient
                     ensemble_average: mean
                     svg: true
-                  """;
+                """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
@@ -2107,7 +2148,7 @@ class DeclarationInterpolatorTest
                 metrics:
                   - mean square error skill score
                   - probability of detection
-                  """;
+                """;
 
         EvaluationDeclaration actualDeclaration = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actualDeclaration, false );

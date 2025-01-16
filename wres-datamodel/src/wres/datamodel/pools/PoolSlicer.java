@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
@@ -660,7 +661,7 @@ public class PoolSlicer
 
         if ( !unionWindows.isEmpty() )
         {
-            TimeWindowOuter unionWindow = TimeWindowOuter.unionOf( unionWindows );
+            TimeWindowOuter unionWindow = TimeWindowSlicer.union( unionWindows );
             builder.setTimeWindow( unionWindow.getTimeWindow() );
         }
 

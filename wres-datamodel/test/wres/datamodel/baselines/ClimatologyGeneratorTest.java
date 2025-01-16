@@ -22,7 +22,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesUpscaler;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeScale;
 
@@ -59,7 +59,7 @@ class ClimatologyGeneratorTest
     /** Measurement unit. */
     private static final String CMS = "CMS";
     /** feature name. */
-    private static final Feature FAKE = Feature.of( MessageFactory.getGeometry( "FAKE" ) );
+    private static final Feature FAKE = Feature.of( MessageUtilities.getGeometry( "FAKE" ) );
 
     @BeforeEach
     public void runBeforeEachTest()
@@ -424,7 +424,7 @@ class ClimatologyGeneratorTest
     @Test
     void testApplyThrowsExpectedExceptionForTemplateTimeSeriesWithUnexpectedFeature()
     {
-        Feature foo = Feature.of( MessageFactory.getGeometry( "FOO" ) );
+        Feature foo = Feature.of( MessageUtilities.getGeometry( "FOO" ) );
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTime.ReferenceTimeType.T0,
                                                                         T1983_01_01T06_00_00Z ),
                                                                 TimeScaleOuter.of(),

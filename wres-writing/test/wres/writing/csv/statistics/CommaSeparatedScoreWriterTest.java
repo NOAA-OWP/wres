@@ -19,8 +19,8 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
+import wres.statistics.MessageUtilities;
 import wres.writing.WriterTestHelper;
-import wres.statistics.MessageFactory;
 
 /**
  * Tests the writing of score outputs to a file of Comma Separated Values (CSV).
@@ -126,7 +126,7 @@ public class CommaSeparatedScoreWriterTest
         CommaSeparatedScoreWriter<DurationScoreComponentOuter, DurationScoreStatisticOuter> writer =
                 CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
-                                              next -> MessageFactory.getDuration( next.getStatistic().getValue() ).toString() );
+                                              next -> MessageUtilities.getDuration( next.getStatistic().getValue() ).toString() );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
 

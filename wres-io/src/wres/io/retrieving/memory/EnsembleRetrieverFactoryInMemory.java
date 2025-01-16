@@ -11,10 +11,10 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Variable;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.project.Project;
@@ -22,7 +22,7 @@ import wres.io.retrieving.CachingRetriever;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.RetrieverUtilities;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -126,7 +126,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( timeWindow );
 
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
                                                                                         this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
@@ -157,7 +157,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     @Override
     public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features )
     {
-        TimeWindow inner = MessageFactory.getTimeWindow();
+        TimeWindow inner = MessageUtilities.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
         return this.getBaselineRetriever( features, outer );
     }
@@ -169,7 +169,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( timeWindow );
 
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
                                                                                         this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),

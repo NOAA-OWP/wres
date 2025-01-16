@@ -18,12 +18,12 @@ import wres.statistics.generated.Outputs.ProtobufFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
 
 /**
- * Tests the {@link MessageFactory}.
+ * Tests the {@link MessageUtilities}.
  *
  * @author James Brown
  */
 
-class MessageFactoryTest
+class MessageUtilitiesTest
 {
     @Test
     void testDeclaredFormats()
@@ -43,7 +43,7 @@ class MessageFactoryTest
                                  .setNetcdf( NetcdfFormat.newBuilder() )
                                  .build();
 
-        Set<Format> actual = MessageFactory.getDeclaredFormats( outputs );
+        Set<Format> actual = MessageUtilities.getDeclaredFormats( outputs );
 
         assertEquals( expected, actual );
     }
@@ -57,7 +57,7 @@ class MessageFactoryTest
                                        .setVariableName( "foo" )
                                        .build();
 
-        assertEquals( "2.1 <= foo <= 4.3", MessageFactory.toString( covariate ) );
+        assertEquals( "2.1 <= foo <= 4.3", MessageUtilities.toString( covariate ) );
     }
 
     @Test
@@ -68,7 +68,7 @@ class MessageFactoryTest
                                        .setVariableName( "foo" )
                                        .build();
 
-        assertEquals( "foo >= 2.1", MessageFactory.toString( covariate ) );
+        assertEquals( "foo >= 2.1", MessageUtilities.toString( covariate ) );
     }
 
     @Test
@@ -79,6 +79,6 @@ class MessageFactoryTest
                                        .setVariableName( "foo" )
                                        .build();
 
-        assertEquals( "foo <= 4.3", MessageFactory.toString( covariate ) );
+        assertEquals( "foo <= 4.3", MessageUtilities.toString( covariate ) );
     }
 }

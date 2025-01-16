@@ -1,6 +1,8 @@
 package wres.config.yaml.components;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -16,6 +18,7 @@ import wres.statistics.generated.TimeScale;
  * @param maximum the maximum value, optional
  * @param featureNameOrientation the orientation of the feature names used by the covariate dataset, optional
  * @param rescaleFunction the timescale function to use when it differs from the evaluation timescale function
+ * @param purposes the purposes or applications of the covariate dataset, optional
  */
 @RecordBuilder
 @JsonDeserialize( using = CovariateDatasetDeserializer.class )
@@ -23,7 +26,8 @@ public record CovariateDataset( Dataset dataset,
                                 @JsonProperty( "minimum" ) Double minimum,
                                 @JsonProperty( "maximum" ) Double maximum,
                                 DatasetOrientation featureNameOrientation,
-                                @JsonProperty( "rescale_function" ) TimeScale.TimeScaleFunction rescaleFunction )
+                                @JsonProperty( "rescale_function" ) TimeScale.TimeScaleFunction rescaleFunction,
+                                @JsonProperty( "purpose" ) Set<CovariatePurpose> purposes )
 {
     /**
      * Creates an instance.
@@ -32,9 +36,15 @@ public record CovariateDataset( Dataset dataset,
      * @param maximum the maximum value, optional
      * @param featureNameOrientation the orientation of the feature names used by the covariate dataset, optional
      * @param rescaleFunction the timescale function to use when it differs from the evaluation timescale function
+     * @param purposes the purposes or applications of the covariate dataset, optional
      */
     public CovariateDataset
     {
         Objects.requireNonNull( dataset, "The covariate dataset cannot be null." );
+
+        if ( Objects.isNull( purposes ) )
+        {
+            purposes = Collections.emptySet();
+        }
     }
 }

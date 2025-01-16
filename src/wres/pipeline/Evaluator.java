@@ -61,6 +61,7 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.reading.ReaderUtilities;
 import wres.reading.netcdf.grid.GriddedFeatures;
+import wres.statistics.MessageUtilities;
 import wres.writing.netcdf.NetcdfOutputWriter;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.pipeline.pooling.PoolFactory;
@@ -498,8 +499,8 @@ public class Evaluator
         LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
 
         // Formats delivered by within-process subscribers, in a mutable list
-        Set<Consumer.Format> internalFormats = wres.statistics.MessageFactory.getDeclaredFormats( declaration.formats()
-                                                                                                             .outputs() );
+        Set<Consumer.Format> internalFormats = MessageUtilities.getDeclaredFormats( declaration.formats()
+                                                                                               .outputs() );
 
         internalFormats = new HashSet<>( internalFormats );
         internalFormats.removeAll( externalFormats );
@@ -654,6 +655,11 @@ public class Evaluator
             // Re-assign the declaration augmented by the ingested data
             declarationWithFeaturesAndThresholds = project.getDeclaration();
 
+            // Update the evaluation details with the newly created project
+            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                        .project( project )
+                                                        .build();
+
             LOGGER.debug( "Finished ingest of time-series data." );
 
             // Set the project hash for identification
@@ -706,7 +712,9 @@ public class Evaluator
             evaluationMessager.start();
 
             PoolFactory poolFactory = PoolFactory.of( project );
-            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
+            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory,
+                                                                                  evaluationDescription,
+                                                                                  evaluationDetails );
 
             int poolCount = poolRequests.size();
             monitor.setPoolCount( poolCount );
@@ -748,11 +756,10 @@ public class Evaluator
                                                                              clearThresholdValues );
             }
 
-            // Set the project and evaluation, metrics and thresholds and summary statistics
+            // Set the project and evaluation messager, metrics and thresholds and summary statistics
             evaluationDetails =
                     EvaluationDetailsBuilder.builder( evaluationDetails )
-                                            .project( project )
-                                            .evaluation( evaluationMessager )
+                                            .evaluationMessager( evaluationMessager )
                                             .declaration( declarationWithFeaturesAndThresholds )
                                             .metricsAndThresholds( metricsAndThresholds )
                                             .summaryStatistics( summaryStatsCalculators )

@@ -2,9 +2,7 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -17,8 +15,7 @@ import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.Immutable;
 
-import wres.datamodel.messages.MessageUtilities;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 
@@ -85,7 +82,7 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     /**
      * Constructs a {@link TimeWindowOuter} with a canonical {@link TimeWindow}.
      * 
-     * @see MessageFactory#getTimeWindow() and related methods
+     * @see MessageUtilities#getTimeWindow() and related methods
      * @param timeWindow a time window
      * @return a time window
      */
@@ -104,84 +101,10 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
         return newInstance;
     }
 
-    /**
-     * Returns a {@link TimeWindowOuter} that represents the union of the inputs, specifically where the
-     * {@link #getEarliestReferenceTime()} and {@link #getLatestReferenceTime()} are the earliest and latest instances, 
-     * respectively, and likewise for the {@link #getEarliestValidTime()} and {@link #getLatestValidTime()}, and the 
-     * {@link #getEarliestLeadDuration()} and {@link #getLatestLeadDuration()}.
-     * 
-     * @param input the input windows
-     * @return the union of the inputs with respect to dates and lead times
-     * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the input is empty
-     * @throws NullPointerException if any input is null
-     */
-
-    public static TimeWindowOuter unionOf( Set<TimeWindowOuter> input )
-    {
-        Objects.requireNonNull( input, "Cannot determine the union of time windows for a null input." );
-
-        if ( input.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot determine the union of time windows for empty input." );
-        }
-
-        if ( new HashSet<>( input ).contains( null ) )
-        {
-            throw new IllegalArgumentException( "Cannot determine the union of time windows for input that contains "
-                                                + "one or more null time windows." );
-        }
-
-        // Check and set time parameters
-        TimeWindowOuter first = input.iterator().next();
-        Instant earliestR = first.getEarliestReferenceTime();
-        Instant latestR = first.getLatestReferenceTime();
-        Instant earliestV = first.getEarliestValidTime();
-        Instant latestV = first.getLatestValidTime();
-        Duration earliestL = first.getEarliestLeadDuration();
-        Duration latestL = first.getLatestLeadDuration();
-
-        for ( TimeWindowOuter next : input )
-        {
-            if ( earliestR.isAfter( next.getEarliestReferenceTime() ) )
-            {
-                earliestR = next.getEarliestReferenceTime();
-            }
-            if ( latestR.isBefore( next.getLatestReferenceTime() ) )
-            {
-                latestR = next.getLatestReferenceTime();
-            }
-            if ( earliestL.compareTo( next.getEarliestLeadDuration() ) > 0 )
-            {
-                earliestL = next.getEarliestLeadDuration();
-            }
-            if ( latestL.compareTo( next.getLatestLeadDuration() ) < 0 )
-            {
-                latestL = next.getLatestLeadDuration();
-            }
-            if ( earliestV.isAfter( next.getEarliestValidTime() ) )
-            {
-                earliestV = next.getEarliestValidTime();
-            }
-            if ( latestV.isBefore( next.getLatestValidTime() ) )
-            {
-                latestV = next.getLatestValidTime();
-            }
-        }
-
-        TimeWindow unionWindow = wres.statistics.MessageFactory.getTimeWindow( earliestR,
-                                                                               latestR,
-                                                                               earliestV,
-                                                                               latestV,
-                                                                               earliestL,
-                                                                               latestL );
-        return TimeWindowOuter.of( unionWindow );
-    }
-
     @Override
     public int compareTo( TimeWindowOuter o )
     {
-        return MessageUtilities.compare( this.getTimeWindow(), o.getTimeWindow() );
+        return wres.datamodel.messages.MessageUtilities.compare( this.getTimeWindow(), o.getTimeWindow() );
     }
 
     @Override
@@ -362,48 +285,57 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
 
         this.timeWindow = timeWindow;
 
-        if ( !this.getTimeWindow().hasEarliestReferenceTime() )
+        if ( !this.getTimeWindow()
+                  .hasEarliestReferenceTime() )
         {
             throw new NullPointerException( "The earliest reference time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasLatestReferenceTime() )
+        if ( !this.getTimeWindow()
+                  .hasLatestReferenceTime() )
         {
             throw new NullPointerException( "The latest reference time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasEarliestValidTime() )
+        if ( !this.getTimeWindow()
+                  .hasEarliestValidTime() )
         {
             throw new NullPointerException( "The earliest valid time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasLatestValidTime() )
+        if ( !this.getTimeWindow()
+                  .hasLatestValidTime() )
         {
             throw new NullPointerException( "The latest valid time cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasEarliestLeadDuration() )
+        if ( !this.getTimeWindow()
+                  .hasEarliestLeadDuration() )
         {
             throw new NullPointerException( "The earliest lead duration cannot be null." );
         }
 
-        if ( !this.getTimeWindow().hasLatestLeadDuration() )
+        if ( !this.getTimeWindow()
+                  .hasLatestLeadDuration() )
         {
             throw new NullPointerException( "The latest lead duration cannot be null." );
         }
 
         // Correct time ordering
-        if ( this.getLatestReferenceTime().isBefore( this.getEarliestReferenceTime() ) )
+        if ( this.getLatestReferenceTime()
+                 .isBefore( this.getEarliestReferenceTime() ) )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest reference time is "
                                                 + "before its earliest reference time." );
         }
-        if ( this.getLatestValidTime().isBefore( this.getEarliestValidTime() ) )
+        if ( this.getLatestValidTime()
+                 .isBefore( this.getEarliestValidTime() ) )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest valid time is "
                                                 + "before its earliest valid time." );
         }
-        if ( this.getLatestLeadDuration().compareTo( this.getEarliestLeadDuration() ) < 0 )
+        if ( this.getLatestLeadDuration()
+                 .compareTo( this.getEarliestLeadDuration() ) < 0 )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest lead duration is "
                                                 + "before its earliest lead duration." );

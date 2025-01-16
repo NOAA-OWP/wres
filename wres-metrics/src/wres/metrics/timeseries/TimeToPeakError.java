@@ -93,20 +93,22 @@ public class TimeToPeakError extends TimingError
         for ( TimeSeries<Pair<Double, Double>> next : pool.get() )
         {
             // Some events?
-            if ( !next.getEvents().isEmpty() )
+            if ( !next.getEvents()
+                      .isEmpty() )
             {
                 Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRandomNumberGenerator() );
 
                 // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
                 Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
-                // Add the time-to-peak error against the first available reference time
-                Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
-                Map.Entry<ReferenceTimeType, Instant> firstEntry = referenceTimes.entrySet()
-                                                                                 .iterator()
-                                                                                 .next();
-                Instant referenceTime = firstEntry.getValue();
-                ReferenceTimeType referenceTimeType = firstEntry.getKey();
+                // Add the time-to-peak error against the reference time
+                Map.Entry<ReferenceTimeType, Instant> referenceTimeAndType =
+                        TimingErrorHelper.getReferenceTimeForTimingError( next );
+                Instant referenceTime = referenceTimeAndType.getValue();
+                ReferenceTimeType referenceTimeType = referenceTimeAndType.getKey();
+
+                // Set the reference time type
+                builder.setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) );
 
                 if ( LOGGER.isTraceEnabled() )
                 {
@@ -117,18 +119,15 @@ public class TimeToPeakError extends TimingError
                                   pool.hashCode() );
                 }
 
-                PairOfInstantAndDuration pair = PairOfInstantAndDuration.newBuilder()
-                                                                        .setTime( Timestamp.newBuilder()
-                                                                                           .setSeconds( referenceTime.getEpochSecond() )
-                                                                                           .setNanos( referenceTime.getNano() ) )
-                                                                        .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                                  .setSeconds(
-                                                                                                                          error.getSeconds() )
-                                                                                                                  .setNanos(
-                                                                                                                          error.getNano() ) )
-                                                                        .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf(
-                                                                                referenceTimeType.name() ) )
-                                                                        .build();
+                PairOfInstantAndDuration pair =
+                        PairOfInstantAndDuration.newBuilder()
+                                                .setTime( Timestamp.newBuilder()
+                                                                   .setSeconds( referenceTime.getEpochSecond() )
+                                                                   .setNanos( referenceTime.getNano() ) )
+                                                .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                          .setSeconds( error.getSeconds() )
+                                                                                          .setNanos( error.getNano() ) )
+                                                .build();
 
                 builder.addStatistics( pair );
             }

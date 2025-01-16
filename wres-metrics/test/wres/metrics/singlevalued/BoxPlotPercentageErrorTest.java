@@ -23,7 +23,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.metrics.MetricTestDataFactory;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.MetricName;
@@ -104,7 +104,7 @@ public final class BoxPlotPercentageErrorTest
         {
             List<Event<Pair<Double, Double>>> events = new ArrayList<>();
 
-            TimeWindow inner = MessageFactory.getTimeWindow( duration, duration );
+            TimeWindow inner = MessageUtilities.getTimeWindow( duration, duration );
             TimeWindowOuter window = TimeWindowOuter.of( inner );
 
             for ( TimeSeries<Pair<Double, Double>> next : input.get() )

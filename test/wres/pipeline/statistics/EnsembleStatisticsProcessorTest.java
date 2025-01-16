@@ -57,6 +57,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.metrics.MetricParameterException;
 import wres.metrics.categorical.ContingencyTable;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryTuple;
@@ -846,9 +847,9 @@ public final class EnsembleStatisticsProcessorTest
         StatisticsStore statistics = this.getAndCombineStatistics( processors, poolData );
 
         // Expected result
-        TimeWindow timeWindow = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                              Duration.ofHours( 24 ) );
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                                Duration.ofHours( 24 ) );
         TimeWindowOuter expectedWindow = TimeWindowOuter.of( timeWindow );
 
         Evaluation evaluation = Evaluation.newBuilder()

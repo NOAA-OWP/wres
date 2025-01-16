@@ -61,6 +61,7 @@ import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.TestData;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.DatabaseSettings;
@@ -76,7 +77,7 @@ class DatabaseProjectTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseProjectTest.class );
     private static final Feature FEATURE = Feature.of(
-            wres.statistics.MessageFactory.getGeometry( "F" ) );
+            MessageUtilities.getGeometry( "F" ) );
     @Mock
     private SystemSettings mockSystemSettings;
 

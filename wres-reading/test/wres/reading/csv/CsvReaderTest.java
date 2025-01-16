@@ -31,7 +31,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -96,7 +96,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -164,7 +164,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -178,7 +178,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -249,7 +249,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -263,7 +263,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -331,7 +331,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -345,7 +345,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -412,7 +412,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_01T12_00_00Z ),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -425,7 +425,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_02T12_00_00Z ),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -438,7 +438,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_01T12_00_00Z ),
                                                null,
                                                QINE,
-                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedThree =

@@ -12,7 +12,7 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 
 /**
@@ -49,7 +49,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         Integer srid = row.getValue( "srid" );
         String wkt = row.getValue( "wkt" );
 
-        Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
+        Geometry geometry = MessageUtilities.getGeometry( name, description, srid, wkt );
         this.key = Feature.of( geometry );
 
         if ( row.hasColumn( this.getIDName() ) )

@@ -51,7 +51,7 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -697,10 +697,10 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         TimeScaleOuter scale = TimeScaleOuter.of( header.scalePeriod, header.scaleFunction );
         Map<ReferenceTimeType, Instant> referenceTimes = this.getReferenceTimesFromHeader( header, zoneOffset );
         String locationWkt = this.getWktFromHeader( header );
-        Geometry geometry = MessageFactory.getGeometry( header.locationName,
-                                                        header.locationDescription,
-                                                        null,
-                                                        locationWkt );
+        Geometry geometry = MessageUtilities.getGeometry( header.locationName,
+                                                          header.locationDescription,
+                                                          null,
+                                                          locationWkt );
         Feature feature = Feature.of( geometry );
 
         TimeSeriesMetadata justParsed = TimeSeriesMetadata.of( referenceTimes,

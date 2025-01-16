@@ -22,7 +22,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdOuter.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 
 /**
  * <p>Tests the {@link DataUtilities}.
@@ -84,14 +84,14 @@ final class DataUtilitiesTest
     {
         //Test equality
         Pair<TimeWindowOuter, ThresholdOuter> first =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
         Pair<TimeWindowOuter, ThresholdOuter> second =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -99,8 +99,8 @@ final class DataUtilitiesTest
         //Test inequality and anticommutativity 
         //Earliest date
         Pair<TimeWindowOuter, ThresholdOuter> third =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -108,8 +108,8 @@ final class DataUtilitiesTest
         assertEquals( 0, first.compareTo( third ) + third.compareTo( first ) );
         //Latest date
         Pair<TimeWindowOuter, ThresholdOuter> fourth =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ) ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -117,10 +117,10 @@ final class DataUtilitiesTest
         assertEquals( 0, third.compareTo( fourth ) + fourth.compareTo( third ) );
         //Valid time
         Pair<TimeWindowOuter, ThresholdOuter> fifth =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ),
-                                                                                           Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ) ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -128,10 +128,10 @@ final class DataUtilitiesTest
         assertEquals( 0, fourth.compareTo( fifth ) + fifth.compareTo( fourth ) );
         //Threshold
         Pair<TimeWindowOuter, ThresholdOuter> sixth =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ),
-                                                                                           Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ) ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -147,20 +147,20 @@ final class DataUtilitiesTest
     {
         //Equality
         Pair<TimeWindowOuter, ThresholdOuter> zeroeth =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
         Pair<TimeWindowOuter, ThresholdOuter> first =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
         Pair<TimeWindowOuter, ThresholdOuter> second =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -182,8 +182,8 @@ final class DataUtilitiesTest
         //Test inequalities
         //Earliest date
         Pair<TimeWindowOuter, ThresholdOuter> third =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.MAX ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -191,8 +191,8 @@ final class DataUtilitiesTest
 
         //Latest date
         Pair<TimeWindowOuter, ThresholdOuter> fourth =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ) ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -200,10 +200,10 @@ final class DataUtilitiesTest
 
         //Valid time
         Pair<TimeWindowOuter, ThresholdOuter> fifth =
-                Pair.of( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ),
-                                                                                           Instant.parse( FIRST_TIME ),
-                                                                                           Instant.parse( SECOND_TIME ) ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );
@@ -211,10 +211,10 @@ final class DataUtilitiesTest
 
         //Threshold
         Pair<TimeWindowOuter, ThresholdOuter> sixth =
-                Pair.of( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                           Instant.parse( SECOND_TIME ),
-                                                                           Instant.parse( FIRST_TIME ),
-                                                                           Instant.parse( SECOND_TIME ) ) ),
+                Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ),
+                                                                             Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             ThresholdOperator.GREATER,
                                             ThresholdOrientation.LEFT ) );

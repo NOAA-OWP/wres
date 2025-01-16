@@ -27,6 +27,7 @@ import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Variable;
+import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.pools.Pool;
@@ -752,7 +753,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         {
             // Find the union of the time windows, bearing in mind that lead durations can influence the valid 
             // datetimes for observation selection
-            TimeWindowOuter unionWindow = TimeWindowOuter.unionOf( timeWindows );
+            TimeWindowOuter unionWindow = TimeWindowSlicer.union( timeWindows );
             Supplier<Stream<TimeSeries<L>>> leftRetriever = factory.getLeftRetriever( features, unionWindow );
             Supplier<Stream<TimeSeries<L>>> cachingRetriever = CachingRetriever.of( leftRetriever );
 
@@ -763,9 +764,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             // Log any de-duplication that was achieved
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug(
-                        "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to {} "
-                        + "using the union of time windows across all pools, which is {}.",
+                LOGGER.debug( "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to "
+                              + "{} using the union of time windows across all pools, which is {}.",
                         this.getPoolRequests().size(),
                         DatasetOrientation.LEFT,
                         timeWindows.size(),

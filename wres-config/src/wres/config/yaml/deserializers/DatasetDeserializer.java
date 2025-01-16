@@ -304,8 +304,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         {
             JsonNode memberNode = filterNode.get( "members" );
             members = this.getMembers( reader, memberNode );
-            exclude = filterNode.has( "exclude" ) && filterNode.get( "exclude" )
-                                                               .asBoolean();
+            exclude = filterNode.has( "exclude" )
+                      && filterNode.get( "exclude" )
+                                   .asBoolean();
         }
 
         // Ordinary member declaration

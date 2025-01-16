@@ -34,6 +34,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -169,7 +170,7 @@ public final class MetricTestDataFactory
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       Feature.of(
-                                              wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                              MessageUtilities.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
@@ -183,7 +184,7 @@ public final class MetricTestDataFactory
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       Feature.of(
-                                              wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                              MessageUtilities.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
@@ -285,17 +286,17 @@ public final class MetricTestDataFactory
 
     public static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
     {
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( featureId );
+        Geometry geometry = MessageUtilities.getGeometry( featureId );
 
         if ( baseline )
         {
-            GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-            GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+            GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+            GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
             return FeatureGroup.of( geoGroup );
         }
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         return FeatureGroup.of( geoGroup );
     }
 
@@ -335,9 +336,9 @@ public final class MetricTestDataFactory
             }
         }
 
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                         Instant.parse( SECOND_TIME ),
-                                                                         Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "103.1", false );
@@ -877,10 +878,10 @@ public final class MetricTestDataFactory
         secondValues.add( Event.of( Instant.parse( SIXTH_TIME ), Pair.of( 1.0, 10.0 ) ) );
 
         // Create some default metadata for the time-series
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                         Instant.parse( THIRD_TIME ),
-                                                                         Duration.ofHours( 6 ),
-                                                                         Duration.ofHours( 18 ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( THIRD_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
@@ -921,10 +922,10 @@ public final class MetricTestDataFactory
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
 
         // Create some default metadata for the time-series
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                         Instant.parse( THIRD_TIME ),
-                                                                         Duration.ofHours( 6 ),
-                                                                         Duration.ofHours( 18 ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( THIRD_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 18 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
@@ -971,10 +972,10 @@ public final class MetricTestDataFactory
         secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), Pair.of( 4.0, 7.0 ) ) );
 
         // Create some default metadata for the time-series
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( THIRD_TIME ),
-                                                                         Instant.parse( THIRD_TIME ),
-                                                                         Duration.ofHours( 6 ),
-                                                                         Duration.ofHours( 30 ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( THIRD_TIME ),
+                                                           Instant.parse( THIRD_TIME ),
+                                                           Duration.ofHours( 6 ),
+                                                           Duration.ofHours( 30 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
@@ -1118,10 +1119,10 @@ public final class MetricTestDataFactory
         fourth.add( Event.of( Instant.parse( "2551-03-20T09:00:00Z" ),
                               Pair.of( 840.33, 311.00 ) ) );
 
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2551-03-17T00:00:00Z" ),
-                                                                         Instant.parse( "2551-03-20T00:00:00Z" ),
-                                                                         Duration.ofSeconds( 10800 ),
-                                                                         Duration.ofSeconds( 118800 ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                           Instant.parse( "2551-03-20T00:00:00Z" ),
+                                                           Duration.ofSeconds( 10800 ),
+                                                           Duration.ofSeconds( 118800 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "FAKE2", false );
@@ -1184,9 +1185,9 @@ public final class MetricTestDataFactory
             }
         }
 
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                         Instant.parse( SECOND_TIME ),
-                                                                         Duration.ofHours( 24 ) );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = Boilerplate.getFeatureGroup();

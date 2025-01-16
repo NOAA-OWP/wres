@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -375,7 +374,7 @@ class WrdsAhpsJsonReaderTest
                                 }
                             ]
                         }
-                                        """;
+                        """;
     }
 
     @Test
@@ -387,12 +386,12 @@ class WrdsAhpsJsonReaderTest
               Stream<TimeSeriesTuple> tupleStream = reader.read( this.fakeSource, inputStream ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
-            Geometry geometry = MessageFactory.getGeometry( "FROV2",
-                                                            "Front Royal",
-                                                            null,
-                                                            null );
+            Geometry geometry = MessageUtilities.getGeometry( "FROV2",
+                                                              "Front Royal",
+                                                              null,
+                                                              null );
 
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
                                                                          Instant.parse( "2021-11-14T13:46:00Z" ) ),
@@ -443,12 +442,12 @@ class WrdsAhpsJsonReaderTest
               Stream<TimeSeriesTuple> tupleStream = reader.read( this.fakeSource, inputStream ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
-            Geometry geometry = MessageFactory.getGeometry( "ERBA2",
-                                                            null,
-                                                            null,
-                                                            null );
+            Geometry geometry = MessageUtilities.getGeometry( "ERBA2",
+                                                              null,
+                                                              null,
+                                                              null );
 
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                                  TimeScaleOuter.of(),
