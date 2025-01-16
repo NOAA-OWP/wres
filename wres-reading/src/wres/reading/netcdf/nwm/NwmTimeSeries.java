@@ -498,38 +498,32 @@ class NwmTimeSeries implements Closeable
         {
             // Use the very first netcdf file, assume homogeneity.
             Variable variableVariable;
-            try ( NetcdfFile netcdfFile = this.getNetcdfFiles()
-                                              .iterator()
-                                              .next() )
+            NetcdfFile netcdfFile = this.getNetcdfFiles()
+                                        .iterator()
+                                        .next();
+            variableVariable = netcdfFile.findVariable( variableName );
+
+            if ( variableVariable == null )
             {
-                variableVariable = netcdfFile.findVariable( variableName );
+                Set<String> variables = netcdfFile.getVariables()
+                                                  .stream()
+                                                  .map( Variable::getFullName )
+                                                  .collect( Collectors.toSet() );
 
-                if ( variableVariable == null )
-                {
-                    Set<String> variables = netcdfFile.getVariables()
-                                                      .stream()
-                                                      .map( Variable::getFullName )
-                                                      .collect( Collectors.toSet() );
+                // Remove the metadata variables
+                variables.remove( "time" );
+                variables.remove( "reference_time" );
+                variables.remove( "feature_id" );
+                variables.remove( "crs" );
 
-                    // Remove the metadata variables
-                    variables.remove( "time" );
-                    variables.remove( "reference_time" );
-                    variables.remove( "feature_id" );
-                    variables.remove( "crs" );
-
-                    throw new IllegalArgumentException( "There was no variable '"
-                                                        + variableName
-                                                        + "' in the netCDF blob at '"
-                                                        + netcdfFile.getLocation()
-                                                        + "'. The blob contained the following readable variables: "
-                                                        + variables
-                                                        + ". Please declare one of these case-sensitive variable names to "
-                                                        + "evaluate." );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalStateException( "Could not read the NetCDF data.", e );
+                throw new IllegalArgumentException( "There was no variable '"
+                                                    + variableName
+                                                    + "' in the netCDF blob at '"
+                                                    + netcdfFile.getLocation()
+                                                    + "'. The blob contained the following readable variables: "
+                                                    + variables
+                                                    + ". Please declare one of these case-sensitive variable names to "
+                                                    + "evaluate." );
             }
 
             return NwmTimeSeries.readAttributeAsString( variableVariable, attributeName );
