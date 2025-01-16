@@ -21,7 +21,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;
 
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -34,7 +34,7 @@ public class TimeSeriesTest
 {
     private static final String VARIABLE_NAME = "Chickens";
     private static final Feature FEATURE_NAME = Feature.of(
-            MessageFactory.getGeometry( "Georgia" ) );
+            MessageUtilities.getGeometry( "Georgia" ) );
     private static final String UNIT = "kg/h";
 
     /**

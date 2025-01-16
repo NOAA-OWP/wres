@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.Evaluation;
@@ -68,9 +69,9 @@ class DurationDiagramStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "A" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "A" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( this.featureGroup,
@@ -108,9 +109,9 @@ class DurationDiagramStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
-        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "B" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "B" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup anotherFeatureGroup = FeatureGroup.of( geoGroup );
 
         Pool poolTwo = MessageFactory.getPool( anotherFeatureGroup,

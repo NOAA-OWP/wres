@@ -44,11 +44,12 @@ import wres.config.MetricConstants.SampleDataGroup;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.BoxplotStatistic.Box;
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramStatistic;
@@ -2129,13 +2130,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             CsvStatisticsWriter.addEmptyValues( joiner, 1 );
         }
 
-        // Covariate filters
-        if ( !evaluation.getCovariatesList()
-                        .isEmpty() )
+        // Covariates with an explicit purpose of filtering
+        List<Covariate> covariates = MessageUtilities.getCovariateFilters( evaluation.getCovariatesList() );
+
+        if ( !covariates.isEmpty() )
         {
-            String joined = evaluation.getCovariatesList()
-                                      .stream()
-                                      .map( MessageFactory::toString )
+            String joined = covariates.stream()
+                                      .map( MessageUtilities::toString )
                                       .collect( Collectors.joining( LIST_DELIMITER ) );
 
             this.append( joiner, joined, true );

@@ -80,7 +80,7 @@ import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Variable;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.Geometry;
@@ -2663,7 +2663,7 @@ class DeclarationValidatorTest
         TimePools validDatePools = TimePoolsBuilder.builder()
                                                    .period( java.time.Duration.ofHours( 1 ) )
                                                    .build();
-        Set<TimeWindow> timePools = Set.of( MessageFactory.getTimeWindow() );
+        Set<TimeWindow> timePools = Set.of( MessageUtilities.getTimeWindow() );
         EvaluationDeclaration declaration
                 = EvaluationDeclarationBuilder.builder()
                                               .left( this.defaultDataset )

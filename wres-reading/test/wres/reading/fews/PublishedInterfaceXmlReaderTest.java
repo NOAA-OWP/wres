@@ -35,7 +35,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -48,10 +48,10 @@ class PublishedInterfaceXmlReaderTest
 {
     private static final String TEST_XML = "test.xml";
     private static final String TEST = "test";
-    private static final Geometry DRRC2 = wres.statistics.MessageFactory.getGeometry( "DRRC2",
-                                                                                      "DOLORES, CO",
-                                                                                      null,
-                                                                                      "POINT ( 108.5045 37.4739 )" );
+    private static final Geometry DRRC2 = MessageUtilities.getGeometry( "DRRC2",
+                                                                        "DOLORES, CO",
+                                                                        null,
+                                                                        "POINT ( 108.5045 37.4739 )" );
     private static final String DRRC3 = "DRRC3";
     private static final String CFS = "CFS";
     private static final String QINE = "QINE";
@@ -470,7 +470,7 @@ class PublishedInterfaceXmlReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_01T12_00_00Z ),
                                                TimeScaleOuter.of(),
                                                QINE,
-                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedThree =

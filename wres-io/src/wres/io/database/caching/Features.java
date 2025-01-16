@@ -10,7 +10,7 @@ import wres.datamodel.DataProvider;
 import wres.io.database.details.FeatureDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 
 /**
@@ -126,7 +126,7 @@ public class Features
                 String description = dataProvider.getString( "description" );
                 Integer srid = dataProvider.getInt( "srid" );
                 String wkt = dataProvider.getString( "wkt" );
-                Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
+                Geometry geometry = MessageUtilities.getGeometry( name, description, srid, wkt );
                 value = Feature.of( geometry );
             }
 

@@ -30,6 +30,7 @@ import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CovariateDatasetBuilder;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -54,7 +55,7 @@ import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.VariableBuilder;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
@@ -129,6 +130,9 @@ public class DeclarationInterpolator
             "'. If this is incorrect, please fix the declared ";
     /** Re-used string. */
     private static final String TYPE = "'type'.";
+    /** Re-used string. */
+    public static final String INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF =
+            "Interpolated the covariate dataset {} to have a purpose of {}.";
 
     /**
      * Performs pre-ingest interpolation of "missing" declaration from the available declaration. Currently, this
@@ -160,6 +164,7 @@ public class DeclarationInterpolator
         // Interpolate the covariate feature name orientations
         List<EvaluationStatusEvent> events =
                 new ArrayList<>( DeclarationInterpolator.interpolateCovariateFeatureOrientations( adjustedBuilder ) );
+        DeclarationInterpolator.interpolateCovariatePurpose( adjustedBuilder );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedBuilder );
         // Interpolate the evaluation-wide decimal format string for each numeric format type
@@ -617,6 +622,54 @@ public class DeclarationInterpolator
                                                            .geometries( notDeclared )
                                                            .build();
             builder.features( interpolatedFeatures );
+        }
+    }
+
+    /**
+     * Interpolates the purpose of a covariate dataset from the context in which it is declared.
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void interpolateCovariatePurpose( EvaluationDeclarationBuilder builder )
+    {
+        if ( Objects.nonNull( builder.eventDetection() )
+             && builder.covariates()
+                       .stream()
+                       .anyMatch( s -> s.purposes()
+                                        .isEmpty() ) )
+        {
+            LOGGER.debug( "Interpolating the purpose of one or more covariate datasets." );
+
+            // Find the covariates with no declared purpose
+            List<CovariateDataset> covariates = builder.covariates()
+                                                       .stream()
+                                                       .filter( n -> n.purposes()
+                                                                      .isEmpty() )
+                                                       .toList();
+            List<CovariateDataset> adjusted = new ArrayList<>();
+            for ( CovariateDataset next : covariates )
+            {
+                CovariateDatasetBuilder adjustedBuilder = CovariateDatasetBuilder.builder( next );
+                if ( Objects.nonNull( next.minimum() )
+                     || Objects.nonNull( next.maximum() ) )
+                {
+                    adjustedBuilder.purposes( Set.of( CovariatePurpose.FILTER ) );
+                    LOGGER.debug( INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF,
+                                  next.dataset(),
+                                  CovariatePurpose.FILTER );
+                }
+                else
+                {
+                    adjustedBuilder.purposes( Set.of( CovariatePurpose.DETECT ) );
+                    LOGGER.debug( INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF,
+                                  next.dataset(),
+                                  CovariatePurpose.DETECT );
+                }
+
+                adjusted.add( adjustedBuilder.build() );
+            }
+
+            builder.covariates( adjusted );
         }
     }
 
@@ -1315,8 +1368,8 @@ public class DeclarationInterpolator
     private static Pair<com.google.protobuf.Duration, com.google.protobuf.Duration>
     getLeadDurationInterval( EvaluationDeclarationBuilder builder )
     {
-        Duration earliestDuration = MessageFactory.DURATION_MIN;
-        Duration latestDuration = MessageFactory.DURATION_MAX;
+        Duration earliestDuration = MessageUtilities.DURATION_MIN;
+        Duration latestDuration = MessageUtilities.DURATION_MAX;
 
         if ( Objects.nonNull( builder.leadTimes() ) )
         {
@@ -1334,8 +1387,8 @@ public class DeclarationInterpolator
             }
         }
 
-        com.google.protobuf.Duration earliestProtoDuration = MessageFactory.getDuration( earliestDuration );
-        com.google.protobuf.Duration latestProtoDuration = MessageFactory.getDuration( latestDuration );
+        com.google.protobuf.Duration earliestProtoDuration = MessageUtilities.getDuration( earliestDuration );
+        com.google.protobuf.Duration latestProtoDuration = MessageUtilities.getDuration( latestDuration );
 
         return Pair.of( earliestProtoDuration, latestProtoDuration );
     }
@@ -1365,8 +1418,8 @@ public class DeclarationInterpolator
             }
         }
 
-        Timestamp earliestValidProto = MessageFactory.getTimestamp( earliestValid );
-        Timestamp latestValidProto = MessageFactory.getTimestamp( latestValid );
+        Timestamp earliestValidProto = MessageUtilities.getTimestamp( earliestValid );
+        Timestamp latestValidProto = MessageUtilities.getTimestamp( latestValid );
 
         return Pair.of( earliestValidProto, latestValidProto );
     }
@@ -1397,8 +1450,8 @@ public class DeclarationInterpolator
             }
         }
 
-        Timestamp earliestReferenceProto = MessageFactory.getTimestamp( earliestReference );
-        Timestamp latestReferenceProto = MessageFactory.getTimestamp( latestReference );
+        Timestamp earliestReferenceProto = MessageUtilities.getTimestamp( earliestReference );
+        Timestamp latestReferenceProto = MessageUtilities.getTimestamp( latestReference );
 
         return Pair.of( earliestReferenceProto, latestReferenceProto );
     }

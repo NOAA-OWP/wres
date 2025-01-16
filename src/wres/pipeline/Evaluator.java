@@ -61,6 +61,7 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.reading.ReaderUtilities;
 import wres.reading.netcdf.grid.GriddedFeatures;
+import wres.statistics.MessageUtilities;
 import wres.writing.netcdf.NetcdfOutputWriter;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.pipeline.pooling.PoolFactory;
@@ -498,8 +499,8 @@ public class Evaluator
         LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
 
         // Formats delivered by within-process subscribers, in a mutable list
-        Set<Consumer.Format> internalFormats = wres.statistics.MessageFactory.getDeclaredFormats( declaration.formats()
-                                                                                                             .outputs() );
+        Set<Consumer.Format> internalFormats = MessageUtilities.getDeclaredFormats( declaration.formats()
+                                                                                               .outputs() );
 
         internalFormats = new HashSet<>( internalFormats );
         internalFormats.removeAll( externalFormats );

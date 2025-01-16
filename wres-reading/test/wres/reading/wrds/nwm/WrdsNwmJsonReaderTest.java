@@ -26,7 +26,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -139,7 +139,7 @@ class WrdsNwmJsonReaderTest
                                                                          Instant.parse( "2020-01-12T00:00:00Z" ) ),
                                                                  null,
                                                                  "streamflow",
-                                                                 Feature.of( MessageFactory.getGeometry( "8588002" ) ),
+                                                                 Feature.of( MessageUtilities.getGeometry( "8588002" ) ),
                                                                  "meter^3 / sec" );
             TimeSeries<Double> expectedSeries =
                     new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),

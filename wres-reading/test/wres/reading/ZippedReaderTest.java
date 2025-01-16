@@ -28,7 +28,7 @@
 //import wres.datamodel.time.TimeSeries;
 //import wres.datamodel.time.TimeSeriesMetadata;
 //import wres.reading.DataSource.DataDisposition;
-//import wres.statistics.MessageFactory;
+//import wres.statistics.MessageUtilities;
 //
 ///**
 // * Tests the {@link ZippedReader}.
@@ -115,7 +115,7 @@
 //                        TimeSeriesMetadata.of( Collections.emptyMap(),
 //                                               null,
 //                                               QINE,
-//                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
+//                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
 //                                               CFS );
 //
 //                TimeSeries<Double> expectedOne =

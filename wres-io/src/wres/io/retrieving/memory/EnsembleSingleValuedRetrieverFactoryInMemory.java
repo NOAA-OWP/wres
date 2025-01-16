@@ -22,7 +22,7 @@ import wres.io.retrieving.CachingRetriever;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.RetrieverUtilities;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -160,7 +160,7 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
-        TimeWindow inner = MessageFactory.getTimeWindow();
+        TimeWindow inner = MessageUtilities.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
         return this.getBaselineRetriever( features, outer );
     }

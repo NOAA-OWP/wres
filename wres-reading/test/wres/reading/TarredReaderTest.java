@@ -32,7 +32,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.system.SystemSettings;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -165,7 +165,7 @@ class TarredReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -179,7 +179,7 @@ class TarredReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageUtilities.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -189,10 +189,10 @@ class TarredReaderTest
                                                         .addEvent( Event.of( T1985_06_01T15_00_00Z, 6.0 ) )
                                                         .build();
 
-                Feature feature = Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2,
-                                                                                          "DOLORES, CO",
-                                                                                          0,
-                                                                                          "POINT ( 108.5045 37.4739 )" ) );
+                Feature feature = Feature.of( MessageUtilities.getGeometry( DRRC2,
+                                                                            "DOLORES, CO",
+                                                                            0,
+                                                                            "POINT ( 108.5045 37.4739 )" ) );
                 TimeSeriesMetadata expectedMetadataThree =
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                TimeScaleOuter.of(),

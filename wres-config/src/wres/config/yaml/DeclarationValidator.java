@@ -2250,35 +2250,20 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> eventDetectionIsValid( EvaluationDeclaration declaration )
     {
+        // Validate the covariates, if defined. This includes sad paths even when event detection is undefined
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationValidator.covariatesAreValidForEventDetection( declaration ) );
+
+        // All remaining sad paths require event detection to be declared
         if ( Objects.isNull( declaration.eventDetection() ) )
         {
-            List<EvaluationStatusEvent> events = new ArrayList<>();
-
-            // Error when a covariate dataset is declared with the purpose of event detection, but no event detection is
-            // declared
-            if ( declaration.covariates()
-                            .stream()
-                            .anyMatch( n -> n.purposes()
-                                             .contains( CovariatePurpose.DETECT ) ) )
-            {
-                EvaluationStatusEvent error
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The evaluation declared one or more 'covariates' "
-                                                                 + "whose 'purpose' is to 'detect' events, but event "
-                                                                 + "detection was not declared. Please declare "
-                                                                 + "'event_detection' or remove the 'covariates' whose "
-                                                                 + "'purpose' is to 'detect' and " + TRY_AGAIN )
-                                               .build();
-                events.add( error );
-            }
-
-            return Collections.unmodifiableList( events );
+            return events;
         }
 
         // No forecast data for event detection
-        List<EvaluationStatusEvent> events =
-                new ArrayList<>( DeclarationValidator.eventDetectionDoesNotUseForecastData( declaration ) );
+        List<EvaluationStatusEvent> forecasts =
+                DeclarationValidator.eventDetectionDoesNotUseForecastData( declaration );
+        events.addAll( forecasts );
 
         // Error when also declaring valid date pools
         if ( Objects.nonNull( declaration.validDatePools() ) )
@@ -2348,29 +2333,6 @@ public class DeclarationValidator
             events.add( error );
         }
 
-        // Error when a covariate dataset is declared for event detection that does not exist
-        if ( declaration.eventDetection()
-                        .datasets()
-                        .contains( EventDetectionDataset.COVARIATES )
-             && declaration.covariates()
-                           .stream()
-                           .noneMatch( n -> n.purposes()
-                                             .contains( CovariatePurpose.DETECT ) ) )
-        {
-            EvaluationStatusEvent error
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "Event detection was declared with a covariate data "
-                                                             + "source, but no covariate dataset was declared for "
-                                                             + "event detection. Please declare one or more "
-                                                             + "'covariates' with a 'purpose' of 'detect' or "
-                                                             + "remove the 'covariates' from the 'dataset' declared "
-                                                             + "for 'event_detection' and try "
-                                                             + AGAIN )
-                                           .build();
-            events.add( error );
-        }
-
         // Warning when declaring other types of explicit pool
         if ( Objects.nonNull( declaration.leadTimePools() ) )
         {
@@ -2404,6 +2366,99 @@ public class DeclarationValidator
         // Check parameters
         List<EvaluationStatusEvent> parameters = DeclarationValidator.eventDetectionParametersAreValid( declaration );
         events.addAll( parameters );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Validates covariates in the context of event detection.
+     *
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> covariatesAreValidForEventDetection( EvaluationDeclaration declaration )
+    {
+
+        if ( Objects.isNull( declaration.eventDetection() ) )
+        {
+            List<EvaluationStatusEvent> events = new ArrayList<>();
+
+            // Error when a covariate dataset is declared with the purpose of event detection, but no event detection is
+            // declared
+            if ( declaration.covariates()
+                            .stream()
+                            .anyMatch( n -> n.purposes()
+                                             .contains( CovariatePurpose.DETECT ) ) )
+            {
+                EvaluationStatusEvent error
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The evaluation declared one or more 'covariates' "
+                                                                 + "whose 'purpose' is to 'detect' events, but event "
+                                                                 + "detection was not declared. Please declare "
+                                                                 + "'event_detection' or remove the 'covariates' whose "
+                                                                 + "'purpose' is to 'detect' and " + TRY_AGAIN )
+                                               .build();
+                events.add( error );
+            }
+
+            return Collections.unmodifiableList( events );
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Error when a covariate dataset is declared for event detection that does not exist
+        if ( declaration.eventDetection()
+                        .datasets()
+                        .contains( EventDetectionDataset.COVARIATES )
+             && declaration.covariates()
+                           .stream()
+                           // No explicit or implicit purpose of detect, implicit if no filtering
+                           .noneMatch( n -> n.purposes()
+                                             .contains( CovariatePurpose.DETECT )
+                                            || ( n.purposes()
+                                                  .isEmpty()
+                                                 && Objects.isNull( n.minimum() )
+                                                 && Objects.isNull( n.maximum() ) ) ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Event detection was declared with a covariate data "
+                                                             + "source, but no covariate dataset was declared for "
+                                                             + "event detection. Please declare one or more "
+                                                             + "'covariates' with a 'purpose' of 'detect' or "
+                                                             + "remove the 'covariates' from the 'dataset' declared "
+                                                             + "for 'event_detection' and try "
+                                                             + AGAIN )
+                                           .build();
+            events.add( error );
+        }
+
+        // Warn if covariates are used without an explicit purpose of detect
+        if ( declaration.eventDetection()
+                        .datasets()
+                        .contains( EventDetectionDataset.COVARIATES )
+             && declaration.covariates()
+                           .stream()
+                           .anyMatch( n -> n.purposes()
+                                            .isEmpty()
+                                           && Objects.isNull( n.minimum() )
+                                           && Objects.isNull( n.maximum() ) ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Event detection was declared with covariate data "
+                                                             + "sources, but the 'purpose' of one or more of these "
+                                                             + "covariates was not explicitly declared as 'detect'. "
+                                                             + "As these covariates do not provide filtering "
+                                                             + "criteria, they are assumed to be declared for event "
+                                                             + "detection and will be used for this purpose." )
+                                           .build();
+            events.add( error );
+        }
 
         return Collections.unmodifiableList( events );
     }

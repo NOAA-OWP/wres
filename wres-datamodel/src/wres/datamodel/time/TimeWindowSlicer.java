@@ -21,7 +21,7 @@ import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -106,12 +106,12 @@ public class TimeWindowSlicer
             }
         }
 
-        TimeWindow unionWindow = wres.statistics.MessageFactory.getTimeWindow( earliestR,
-                                                                               latestR,
-                                                                               earliestV,
-                                                                               latestV,
-                                                                               earliestL,
-                                                                               latestL );
+        TimeWindow unionWindow = MessageUtilities.getTimeWindow( earliestR,
+                                                                 latestR,
+                                                                 earliestV,
+                                                                 latestV,
+                                                                 earliestL,
+                                                                 latestL );
         return TimeWindowOuter.of( unionWindow );
     }
 
@@ -274,12 +274,12 @@ public class TimeWindowSlicer
                 leadEnd = leadStart;
             }
 
-            TimeWindow window = MessageFactory.getTimeWindow( referenceStart,
-                                                              referenceEnd,
-                                                              validStart,
-                                                              validEnd,
-                                                              leadStart,
-                                                              leadEnd );
+            TimeWindow window = MessageUtilities.getTimeWindow( referenceStart,
+                                                                referenceEnd,
+                                                                validStart,
+                                                                validEnd,
+                                                                leadStart,
+                                                                leadEnd );
             return TimeWindowOuter.of( window );
         }
         else if ( method == TimeWindowAggregation.MAXIMUM )
@@ -302,12 +302,12 @@ public class TimeWindowSlicer
             Duration leadEnd = leadEnds.stream()
                                        .max( Duration::compareTo )
                                        .orElse( TimeWindowOuter.DURATION_MAX );
-            TimeWindow window = MessageFactory.getTimeWindow( referenceStart,
-                                                              referenceEnd,
-                                                              validStart,
-                                                              validEnd,
-                                                              leadStart,
-                                                              leadEnd );
+            TimeWindow window = MessageUtilities.getTimeWindow( referenceStart,
+                                                                referenceEnd,
+                                                                validStart,
+                                                                validEnd,
+                                                                leadStart,
+                                                                leadEnd );
             return TimeWindowOuter.of( window );
         }
         else if ( method == TimeWindowAggregation.AVERAGE )
@@ -329,12 +329,12 @@ public class TimeWindowSlicer
             Duration leadEnd = leadEndMillis.isPresent() ?
                     Duration.ofMillis( ( long ) leadEndMillis.getAsDouble() ) :
                     TimeWindowOuter.DURATION_MAX;
-            TimeWindow window = MessageFactory.getTimeWindow( referenceStart,
-                                                              referenceEnd,
-                                                              validStart,
-                                                              validEnd,
-                                                              leadStart,
-                                                              leadEnd );
+            TimeWindow window = MessageUtilities.getTimeWindow( referenceStart,
+                                                                referenceEnd,
+                                                                validStart,
+                                                                validEnd,
+                                                                leadStart,
+                                                                leadEnd );
             return TimeWindowOuter.of( window );
         }
 
@@ -383,7 +383,7 @@ public class TimeWindowSlicer
                               timeScale );
             }
 
-            adjusted.setEarliestLeadDuration( MessageFactory.getDuration( lowered ) );
+            adjusted.setEarliestLeadDuration( MessageUtilities.getDuration( lowered ) );
         }
 
         // Earliest valid time
@@ -413,7 +413,7 @@ public class TimeWindowSlicer
                               timeScale );
             }
 
-            adjusted.setEarliestValidTime( MessageFactory.getTimestamp( lowered ) );
+            adjusted.setEarliestValidTime( MessageUtilities.getTimestamp( lowered ) );
         }
 
         return TimeWindowOuter.of( adjusted.build() );
@@ -483,7 +483,7 @@ public class TimeWindowSlicer
      * <p>If any of these variables are missing from the input, defaults are used, which represent the
      * computationally-feasible limiting values. For example, the smallest and largest possible instant is
      * {@link Instant#MIN} and {@link Instant#MAX}, respectively. The smallest and largest possible {@link Duration} is
-     * {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     * {@link MessageUtilities#DURATION_MIN} and {@link MessageUtilities#DURATION_MAX}, respectively.
      *
      * @param declaration the declaration
      * @return a time window
@@ -498,8 +498,8 @@ public class TimeWindowSlicer
         Instant latestReferenceTime = Instant.MAX;
         Instant earliestValidTime = Instant.MIN;
         Instant latestValidTime = Instant.MAX;
-        Duration smallestLeadDuration = MessageFactory.DURATION_MIN;
-        Duration largestLeadDuration = MessageFactory.DURATION_MAX;
+        Duration smallestLeadDuration = MessageUtilities.DURATION_MIN;
+        Duration largestLeadDuration = MessageUtilities.DURATION_MAX;
 
         // Reference datetimes
         if ( Objects.nonNull( declaration.referenceDates() ) )
@@ -552,12 +552,12 @@ public class TimeWindowSlicer
             }
         }
 
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( earliestReferenceTime,
-                                                              latestReferenceTime,
-                                                              earliestValidTime,
-                                                              latestValidTime,
-                                                              smallestLeadDuration,
-                                                              largestLeadDuration );
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( earliestReferenceTime,
+                                                                latestReferenceTime,
+                                                                earliestValidTime,
+                                                                latestValidTime,
+                                                                smallestLeadDuration,
+                                                                largestLeadDuration );
 
         return TimeWindowOuter.of( timeWindow );
     }
@@ -700,8 +700,8 @@ public class TimeWindowSlicer
         // Window increments are zero?
         if ( Duration.ZERO.equals( increment ) )
         {
-            com.google.protobuf.Duration earliest = MessageFactory.getDuration( earliestExclusive );
-            com.google.protobuf.Duration latest = MessageFactory.getDuration( latestInclusive );
+            com.google.protobuf.Duration earliest = MessageUtilities.getDuration( earliestExclusive );
+            com.google.protobuf.Duration latest = MessageUtilities.getDuration( latestInclusive );
             TimeWindow window = baseWindow.getTimeWindow()
                                           .toBuilder()
                                           .setEarliestLeadDuration( earliest )
@@ -715,8 +715,8 @@ public class TimeWindowSlicer
             while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
             {
                 // Add the current time window
-                com.google.protobuf.Duration earliest = MessageFactory.getDuration( earliestExclusive );
-                com.google.protobuf.Duration latest = MessageFactory.getDuration( latestInclusive );
+                com.google.protobuf.Duration earliest = MessageUtilities.getDuration( earliestExclusive );
+                com.google.protobuf.Duration latest = MessageUtilities.getDuration( latestInclusive );
                 TimeWindow window = baseWindow.getTimeWindow()
                                               .toBuilder()
                                               .setEarliestLeadDuration( earliest )
@@ -886,8 +886,8 @@ public class TimeWindowSlicer
                                                            TimeWindowOuter baseWindow,
                                                            boolean areReferenceTimes )
     {
-        Timestamp earliest = MessageFactory.getTimestamp( earliestExclusive );
-        Timestamp latest = MessageFactory.getTimestamp( latestInclusive );
+        Timestamp earliest = MessageUtilities.getTimestamp( earliestExclusive );
+        Timestamp latest = MessageUtilities.getTimestamp( latestInclusive );
 
         // Reference dates
         if ( areReferenceTimes )

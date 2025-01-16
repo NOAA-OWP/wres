@@ -27,7 +27,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
@@ -57,9 +57,9 @@ abstract class CommaSeparatedStatisticsWriter
      */
 
     static final TimeWindowOuter HEADER_INDEX =
-            TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                              Instant.MIN,
-                                                              Duration.ofSeconds( Long.MIN_VALUE ) ) );
+            TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                Instant.MIN,
+                                                                Duration.ofSeconds( Long.MIN_VALUE ) ) );
 
     /**
      * Resolution for writing duration outputs.

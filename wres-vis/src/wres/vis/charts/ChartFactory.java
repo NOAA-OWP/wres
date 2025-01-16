@@ -83,7 +83,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeWindowSlicer;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
@@ -1680,7 +1680,7 @@ public class ChartFactory
         name += this.getTimeScaleForTitle( metadata, durationUnits );
         name += this.getTimeWindowForTitle( parameters.timeWindow(), chartType, statisticType, durationUnits );
         name += this.getThresholdForTitle( metadata, chartType, statisticType );
-        name += this.getCovariatesForTitle( metadata );
+        name += this.getCovariateFiltersForTitle( metadata );
         name += this.getQuantilesQualifier( metricName,
                                             parameters.quantiles(),
                                             isSummaryStatistic );
@@ -2049,14 +2049,15 @@ public class ChartFactory
      * @throws NullPointerException if any input is null
      */
 
-    private String getCovariatesForTitle( PoolMetadata metadata )
+    private String getCovariateFiltersForTitle( PoolMetadata metadata )
     {
         Objects.requireNonNull( metadata );
 
         String threshold = "";
 
-        List<Covariate> covariates = metadata.getEvaluation()
-                                             .getCovariatesList();
+        // Covariates with an explicit purpose of filtering
+        List<Covariate> covariates = MessageUtilities.getCovariateFilters( metadata.getEvaluation()
+                                                                                   .getCovariatesList() );
         if ( !covariates.isEmpty() )
         {
             threshold = " and covariate filters of: ";
@@ -2066,7 +2067,7 @@ public class ChartFactory
             // Iterate the covariates and continue to add while less than the character limit
             for ( Covariate covariate : covariates )
             {
-                String next = MessageFactory.toString( covariate );
+                String next = MessageUtilities.toString( covariate );
                 if ( ( ( builder + "; " + next ).length() + 3 ) < COVARIATE_CHARACTER_LIMIT )
                 {
                     builder.add( next );
@@ -2568,63 +2569,63 @@ public class ChartFactory
     private TimeWindowOuter getAggregateTimeWindow( Set<TimeWindowOuter> timeWindows )
     {
         // Start with the unbounded window
-        TimeWindow.Builder builder = MessageFactory.getTimeWindow()
-                                                   .toBuilder();
+        TimeWindow.Builder builder = MessageUtilities.getTimeWindow()
+                                                     .toBuilder();
 
         SortedSet<Instant> earliestReference =
                 timeWindows.stream()
-                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
-                                                                  .getEarliestReferenceTime() ) )
+                           .map( s -> MessageUtilities.getInstant( s.getTimeWindow()
+                                                                    .getEarliestReferenceTime() ) )
                            .collect( Collectors.toCollection( TreeSet::new ) );
         SortedSet<Instant> latestReference =
                 timeWindows.stream()
-                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
-                                                                  .getLatestReferenceTime() ) )
+                           .map( s -> MessageUtilities.getInstant( s.getTimeWindow()
+                                                                    .getLatestReferenceTime() ) )
                            .collect( Collectors.toCollection( TreeSet::new ) );
         SortedSet<Instant> earliestValid =
                 timeWindows.stream()
-                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
-                                                                  .getEarliestValidTime() ) )
+                           .map( s -> MessageUtilities.getInstant( s.getTimeWindow()
+                                                                    .getEarliestValidTime() ) )
                            .collect( Collectors.toCollection( TreeSet::new ) );
         SortedSet<Instant> latestValid =
                 timeWindows.stream()
-                           .map( s -> MessageFactory.getInstant( s.getTimeWindow()
-                                                                  .getLatestValidTime() ) )
+                           .map( s -> MessageUtilities.getInstant( s.getTimeWindow()
+                                                                    .getLatestValidTime() ) )
                            .collect( Collectors.toCollection( TreeSet::new ) );
         SortedSet<Duration> earliestLead =
                 timeWindows.stream()
-                           .map( s -> MessageFactory.getDuration( s.getTimeWindow()
-                                                                   .getEarliestLeadDuration() ) )
+                           .map( s -> MessageUtilities.getDuration( s.getTimeWindow()
+                                                                     .getEarliestLeadDuration() ) )
                            .collect( Collectors.toCollection( TreeSet::new ) );
         SortedSet<Duration> latestLead =
                 timeWindows.stream()
-                           .map( s -> MessageFactory.getDuration( s.getTimeWindow()
-                                                                   .getLatestLeadDuration() ) )
+                           .map( s -> MessageUtilities.getDuration( s.getTimeWindow()
+                                                                     .getLatestLeadDuration() ) )
                            .collect( Collectors.toCollection( TreeSet::new ) );
 
         if ( earliestReference.size() == 1 )
         {
-            builder.setEarliestReferenceTime( MessageFactory.getTimestamp( earliestReference.first() ) );
+            builder.setEarliestReferenceTime( MessageUtilities.getTimestamp( earliestReference.first() ) );
         }
         if ( latestReference.size() == 1 )
         {
-            builder.setLatestReferenceTime( MessageFactory.getTimestamp( latestReference.first() ) );
+            builder.setLatestReferenceTime( MessageUtilities.getTimestamp( latestReference.first() ) );
         }
         if ( earliestValid.size() == 1 )
         {
-            builder.setEarliestValidTime( MessageFactory.getTimestamp( earliestValid.first() ) );
+            builder.setEarliestValidTime( MessageUtilities.getTimestamp( earliestValid.first() ) );
         }
         if ( latestValid.size() == 1 )
         {
-            builder.setLatestValidTime( MessageFactory.getTimestamp( latestValid.first() ) );
+            builder.setLatestValidTime( MessageUtilities.getTimestamp( latestValid.first() ) );
         }
         if ( earliestLead.size() == 1 )
         {
-            builder.setEarliestLeadDuration( MessageFactory.getDuration( earliestLead.first() ) );
+            builder.setEarliestLeadDuration( MessageUtilities.getDuration( earliestLead.first() ) );
         }
         if ( latestLead.size() == 1 )
         {
-            builder.setLatestLeadDuration( MessageFactory.getDuration( latestLead.first() ) );
+            builder.setLatestLeadDuration( MessageUtilities.getDuration( latestLead.first() ) );
         }
 
         return TimeWindowOuter.of( builder.build() );

@@ -39,6 +39,7 @@ import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.database.EnsembleRetrieverFactory;
 import wres.io.retrieving.database.SingleValuedRetrieverFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -108,9 +109,9 @@ class PoolsGeneratorTest
                                                                         .right( right )
                                                                         .build();
 
-        Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry feature = MessageUtilities.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         // Mock the sufficient elements of Project
@@ -206,9 +207,9 @@ class PoolsGeneratorTest
                                             .right( right )
                                             .build();
 
-        Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry feature = MessageUtilities.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         // Mock the sufficient elements of Project

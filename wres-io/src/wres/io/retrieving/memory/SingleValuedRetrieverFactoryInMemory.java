@@ -27,7 +27,7 @@ import wres.io.retrieving.CachingRetriever;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.RetrieverUtilities;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -151,7 +151,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
-        TimeWindow inner = MessageFactory.getTimeWindow();
+        TimeWindow inner = MessageUtilities.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
         return this.getBaselineRetriever( features, outer );
     }

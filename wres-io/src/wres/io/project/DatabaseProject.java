@@ -56,6 +56,7 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.config.yaml.VariableNames;
 import wres.io.retrieving.DataAccessException;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -1395,11 +1396,11 @@ public class DatabaseProject implements Project
             GeometryTuple geoTuple;
             if ( hasBaseline )
             {
-                geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+                geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
             }
             else
             {
-                geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
+                geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, null );
             }
 
             FeatureTuple featureTuple = FeatureTuple.of( geoTuple );

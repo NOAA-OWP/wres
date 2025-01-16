@@ -45,6 +45,7 @@ import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Covariate;
 import wres.statistics.generated.DiagramStatistic;
@@ -75,7 +76,7 @@ import wres.statistics.generated.Evaluation.DefaultData;
  * which often provide extra behavior. The "parse" methods provide a direct (one-to-one) translation in each direction
  * and the "get" methods involve an indirect translation or one-to-many/many-to-one translation.
  *
- * @see wres.statistics.MessageFactory
+ * @see MessageUtilities
  * @author James Brown
  */
 

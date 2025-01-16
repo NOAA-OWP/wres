@@ -30,7 +30,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -267,17 +267,17 @@ public class ReginaOgdenEventDetector implements EventDetector
             {
                 if ( Objects.isNull( currentEvent ) )
                 {
-                    Timestamp nextTime = MessageFactory.getTimestamp( nextEvent.getTime() );
-                    currentEvent = MessageFactory.getTimeWindow()
-                                                 .toBuilder()
-                                                 .setEarliestValidTime( nextTime );
+                    Timestamp nextTime = MessageUtilities.getTimestamp( nextEvent.getTime() );
+                    currentEvent = MessageUtilities.getTimeWindow()
+                                                   .toBuilder()
+                                                   .setEarliestValidTime( nextTime );
                 }
             }
             else
             {
                 if ( Objects.nonNull( currentEvent ) )
                 {
-                    Timestamp nextTime = MessageFactory.getTimestamp( lastEvent.getTime() );
+                    Timestamp nextTime = MessageUtilities.getTimestamp( lastEvent.getTime() );
                     currentEvent.setLatestValidTime( nextTime );
                     TimeWindow timeWindow = currentEvent.build();
                     TimeWindowOuter wrapped = TimeWindowOuter.of( timeWindow );
@@ -292,7 +292,7 @@ public class ReginaOgdenEventDetector implements EventDetector
         // Mop up an ongoing event
         if ( Objects.nonNull( currentEvent ) )
         {
-            Timestamp nextTime = MessageFactory.getTimestamp( lastEvent.getTime() );
+            Timestamp nextTime = MessageUtilities.getTimestamp( lastEvent.getTime() );
             currentEvent.setLatestValidTime( nextTime );
             TimeWindow timeWindow = currentEvent.build();
             TimeWindowOuter wrapped = TimeWindowOuter.of( timeWindow );
@@ -582,7 +582,7 @@ public class ReginaOgdenEventDetector implements EventDetector
                              .minus( Duration.ofNanos( 1 ) );
         Instant right = origin.plus( radius );
 
-        TimeWindow window = MessageFactory.getTimeWindow( left, right );
+        TimeWindow window = MessageUtilities.getTimeWindow( left, right );
         TimeWindowOuter wrapped = TimeWindowOuter.of( window );
 
         // Snip the series to the bounds
@@ -788,7 +788,7 @@ public class ReginaOgdenEventDetector implements EventDetector
 
             TimeWindow adjusted = nextEvent.getTimeWindow()
                                            .toBuilder()
-                                           .setEarliestValidTime( MessageFactory.getTimestamp( refinedStart ) )
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( refinedStart ) )
                                            .build();
 
             adjustedWindows.add( TimeWindowOuter.of( adjusted ) );

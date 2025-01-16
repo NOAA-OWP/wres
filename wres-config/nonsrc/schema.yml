@@ -73,10 +73,15 @@ definitions:
           # To support data direct
           - type: "null"
       covariates:
-        type: array
-        items:
-          "$ref": "#/definitions/Covariate"
-        minItems: 1
+        anyOf:
+          - "$ref": "#/definitions/Covariate"
+          - type: array
+            items:
+              "$ref": "#/definitions/Covariate"
+            minItems: 1
+          - type: string
+            minLength: 1
+            maxLength: 2083
         uniqueItems: true
       features:
         type: array

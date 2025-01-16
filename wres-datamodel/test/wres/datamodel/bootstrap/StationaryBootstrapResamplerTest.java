@@ -22,7 +22,7 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 
 /**
@@ -570,7 +570,7 @@ class StationaryBootstrapResamplerTest
         return TimeSeriesMetadata.of( referenceTimes,
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       "foo",
-                                      Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                      Feature.of( MessageUtilities.getGeometry( "bar" ) ),
                                       "baz" );
     }
 }

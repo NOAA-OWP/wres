@@ -62,6 +62,7 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
@@ -193,8 +194,8 @@ public class SingleValuedRetrieverFactoryTest
     public void testGetLeftRetrieverWithTimeWindowReturnsOneTimeSeriesWithFiveEvents()
     {
         // The time window to select events
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                                                         T2023_04_01T07_00_00Z );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                           T2023_04_01T07_00_00Z );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
@@ -232,8 +233,8 @@ public class SingleValuedRetrieverFactoryTest
     public void testGetCovariateRetrieverWithTimeWindowReturnsOneTimeSeriesWithFiveEvents()
     {
         // The time window to select events
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                                                         T2023_04_01T07_00_00Z );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                           T2023_04_01T07_00_00Z );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
@@ -272,10 +273,10 @@ public class SingleValuedRetrieverFactoryTest
     public void testGetRightRetrieverWithTimeWindowReturnsOneTimeSeriesWithThreeEvents()
     {
         // The time window to select events
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                                                         T2023_04_01T00_00_00Z,
-                                                                         T2023_04_01T01_00_00Z,
-                                                                         T2023_04_01T04_00_00Z );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
+                                                           T2023_04_01T00_00_00Z,
+                                                           T2023_04_01T01_00_00Z,
+                                                           T2023_04_01T04_00_00Z );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
@@ -313,10 +314,10 @@ public class SingleValuedRetrieverFactoryTest
     {
 
         // The time window to select events
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                                                         T2023_04_01T00_00_00Z,
-                                                                         T2023_04_01T01_00_00Z,
-                                                                         T2023_04_01T04_00_00Z );
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
+                                                           T2023_04_01T00_00_00Z,
+                                                           T2023_04_01T01_00_00Z,
+                                                           T2023_04_01T04_00_00Z );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series

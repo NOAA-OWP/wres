@@ -52,7 +52,7 @@ import wres.eventdetection.EventDetector;
 import wres.eventdetection.EventDetectorFactory;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -156,9 +156,9 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "foo" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
         Project project = Mockito.mock( Project.class );
@@ -172,20 +172,20 @@ class EventsGeneratorTest
         Instant startOne = Instant.parse( "2079-12-03T08:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T10:00:00Z" );
 
-        TimeWindow expectedOne = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                               .build();
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                 .build();
 
         Instant startTwo = Instant.parse( "2079-12-03T09:00:00Z" );
         Instant endTwo = Instant.parse( "2079-12-03T11:00:00Z" );
 
-        TimeWindow expectedTwo = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
-                                               .build();
+        TimeWindow expectedTwo = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                                 .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
                                                 TimeWindowOuter.of( expectedTwo ) );
@@ -250,9 +250,9 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "foo" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
         Project project = Mockito.mock( Project.class );
@@ -266,29 +266,29 @@ class EventsGeneratorTest
         Instant startOne = Instant.parse( "2079-12-03T08:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T10:00:00Z" );
 
-        TimeWindow expectedOne = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                               .build();
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                 .build();
 
         Instant startTwo = Instant.parse( "2079-12-03T09:00:00Z" );
         Instant endTwo = Instant.parse( "2079-12-03T11:00:00Z" );
 
-        TimeWindow expectedTwo = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
-                                               .build();
+        TimeWindow expectedTwo = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                                 .build();
 
         Instant startThree = Instant.parse( "2079-12-03T07:00:00Z" );
         Instant endThree = Instant.parse( "2079-12-03T09:00:00Z" );
 
-        TimeWindow expectedThree = MessageFactory.getTimeWindow()
-                                                 .toBuilder()
-                                                 .setEarliestValidTime( MessageFactory.getTimestamp( startThree ) )
-                                                 .setLatestValidTime( MessageFactory.getTimestamp( endThree ) )
-                                                 .build();
+        TimeWindow expectedThree = MessageUtilities.getTimeWindow()
+                                                   .toBuilder()
+                                                   .setEarliestValidTime( MessageUtilities.getTimestamp( startThree ) )
+                                                   .setLatestValidTime( MessageUtilities.getTimestamp( endThree ) )
+                                                   .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
                                                 TimeWindowOuter.of( expectedTwo ),
@@ -355,9 +355,9 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "foo" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
         Project project = Mockito.mock( Project.class );
@@ -371,11 +371,11 @@ class EventsGeneratorTest
         Instant startOne = Instant.parse( "2079-12-03T07:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T11:00:00Z" );
 
-        TimeWindow expectedOne = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                               .build();
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                 .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ) );
 
@@ -481,9 +481,9 @@ class EventsGeneratorTest
                                                                         .covariates( covariateDatasets )
                                                                         .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "foo" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
         Project project = Mockito.mock( Project.class );
@@ -497,29 +497,29 @@ class EventsGeneratorTest
         Instant startOne = Instant.parse( "2079-12-03T08:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T10:00:00Z" );
 
-        TimeWindow expectedOne = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                               .build();
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                 .build();
 
         Instant startTwo = Instant.parse( "2079-12-03T09:00:00Z" );
         Instant endTwo = Instant.parse( "2079-12-03T11:00:00Z" );
 
-        TimeWindow expectedTwo = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
-                                               .build();
+        TimeWindow expectedTwo = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                                 .build();
 
         Instant startThree = Instant.parse( "2079-12-03T07:00:00Z" );
         Instant endThree = Instant.parse( "2079-12-03T09:00:00Z" );
 
-        TimeWindow expectedThree = MessageFactory.getTimeWindow()
-                                                 .toBuilder()
-                                                 .setEarliestValidTime( MessageFactory.getTimestamp( startThree ) )
-                                                 .setLatestValidTime( MessageFactory.getTimestamp( endThree ) )
-                                                 .build();
+        TimeWindow expectedThree = MessageUtilities.getTimeWindow()
+                                                   .toBuilder()
+                                                   .setEarliestValidTime( MessageUtilities.getTimestamp( startThree ) )
+                                                   .setLatestValidTime( MessageUtilities.getTimestamp( endThree ) )
+                                                   .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
                                                 TimeWindowOuter.of( expectedTwo ),
@@ -576,9 +576,9 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "foo" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
         Project project = Mockito.mock( Project.class );
@@ -592,38 +592,38 @@ class EventsGeneratorTest
         Instant startOne = Instant.parse( "2079-12-03T08:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T10:00:00Z" );
 
-        TimeWindow expectedOne = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                               .build();
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                 .build();
 
         Instant startTwo = Instant.parse( "2079-12-03T09:00:00Z" );
         Instant endTwo = Instant.parse( "2079-12-03T11:00:00Z" );
 
-        TimeWindow expectedTwo = MessageFactory.getTimeWindow()
-                                               .toBuilder()
-                                               .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
-                                               .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
-                                               .build();
+        TimeWindow expectedTwo = MessageUtilities.getTimeWindow()
+                                                 .toBuilder()
+                                                 .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                                 .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                                 .build();
 
         Instant startThree = Instant.parse( "2079-12-03T03:00:00Z" );
         Instant endThree = Instant.parse( "2079-12-03T03:00:00Z" );
 
-        TimeWindow expectedThree = MessageFactory.getTimeWindow()
-                                                 .toBuilder()
-                                                 .setEarliestValidTime( MessageFactory.getTimestamp( startThree ) )
-                                                 .setLatestValidTime( MessageFactory.getTimestamp( endThree ) )
-                                                 .build();
+        TimeWindow expectedThree = MessageUtilities.getTimeWindow()
+                                                   .toBuilder()
+                                                   .setEarliestValidTime( MessageUtilities.getTimestamp( startThree ) )
+                                                   .setLatestValidTime( MessageUtilities.getTimestamp( endThree ) )
+                                                   .build();
 
         Instant startFour = Instant.parse( "2079-12-03T04:00:00Z" );
         Instant endFour = Instant.parse( "2079-12-03T04:00:00Z" );
 
-        TimeWindow expectedFour = MessageFactory.getTimeWindow()
-                                                .toBuilder()
-                                                .setEarliestValidTime( MessageFactory.getTimestamp( startFour ) )
-                                                .setLatestValidTime( MessageFactory.getTimestamp( endFour ) )
-                                                .build();
+        TimeWindow expectedFour = MessageUtilities.getTimeWindow()
+                                                  .toBuilder()
+                                                  .setEarliestValidTime( MessageUtilities.getTimestamp( startFour ) )
+                                                  .setLatestValidTime( MessageUtilities.getTimestamp( endFour ) )
+                                                  .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
                                                 TimeWindowOuter.of( expectedTwo ),
@@ -669,7 +669,7 @@ class EventsGeneratorTest
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of(),
                                                              "foo",
-                                                             Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                                             Feature.of( MessageUtilities.getGeometry( "bar" ) ),
                                                              "baz" );
         return new TimeSeries.Builder<Double>()
                 .addEvent( one )

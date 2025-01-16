@@ -66,7 +66,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeScale;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 
 /**
  * A utility class for working with {@link EvaluationDeclaration}.
@@ -342,7 +342,7 @@ public class DeclarationUtilities
 
         if ( Objects.isNull( returnMe ) )
         {
-            returnMe = MessageFactory.DURATION_MIN;
+            returnMe = MessageUtilities.DURATION_MIN;
         }
 
         return returnMe;
@@ -370,7 +370,7 @@ public class DeclarationUtilities
 
         if ( Objects.isNull( returnMe ) )
         {
-            returnMe = MessageFactory.DURATION_MAX;
+            returnMe = MessageUtilities.DURATION_MAX;
         }
 
         return returnMe;

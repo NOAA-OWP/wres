@@ -23,7 +23,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -53,7 +53,7 @@ class BootstrapUtilitiesTest
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of(),
                                                              "foo",
-                                                             Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                                             Feature.of( MessageUtilities.getGeometry( "bar" ) ),
                                                              "baz" );
         TimeSeries<String> noEvents = TimeSeries.of( metadata );
         TimeSeries<String> oneEvent =
@@ -77,7 +77,7 @@ class BootstrapUtilitiesTest
     void testGetOptimalBlockSizeForStationaryBootstrap()
     {
         // Observations: 25510317T00_FAKE2_observations.xml
-        Feature feature = Feature.of( MessageFactory.getGeometry( "bar" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "bar" ) );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Collections.emptyMap(),
                                                              TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                                              "foo",
@@ -146,7 +146,7 @@ class BootstrapUtilitiesTest
         GeometryTuple geoTuple = wres.datamodel.messages.MessageFactory.getGeometryTuple( feature, feature, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
         GeometryGroup geoGroup =
-                wres.statistics.MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
+                MessageUtilities.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool poolDescription =

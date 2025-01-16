@@ -31,7 +31,7 @@ import ucar.unidata.geoloc.LatLonPoint;
 
 import wres.config.yaml.components.SpatialMask;
 import wres.datamodel.space.Feature;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.reading.netcdf.Netcdf;
 
@@ -237,10 +237,10 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
 
         GriddedFeatures.validateLonLat( x, y );
 
-        Geometry geometry = MessageFactory.getGeometry( GriddedFeatures.getGriddedNameFromLonLat( x, y ),
-                                                        GriddedFeatures.getGriddedDescriptionFromLonLat( x, y ),
-                                                        4326,
-                                                        wkt );
+        Geometry geometry = MessageUtilities.getGeometry( GriddedFeatures.getGriddedNameFromLonLat( x, y ),
+                                                          GriddedFeatures.getGriddedDescriptionFromLonLat( x, y ),
+                                                          4326,
+                                                          wkt );
 
         return Feature.of( geometry );
     }

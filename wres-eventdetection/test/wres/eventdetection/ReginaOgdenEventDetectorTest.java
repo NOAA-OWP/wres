@@ -17,7 +17,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -55,7 +55,7 @@ class ReginaOgdenEventDetectorTest
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of(),
                                                              "foo",
-                                                             Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                                             Feature.of( MessageUtilities.getGeometry( "bar" ) ),
                                                              "baz" );
         TimeSeries<Double> timeSeries =
                 new TimeSeries.Builder<Double>()
@@ -79,20 +79,20 @@ class ReginaOgdenEventDetectorTest
         Instant startOne = Instant.parse( "2079-12-03T03:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T03:00:00Z" );
 
-        TimeWindow expectedInnerOne = MessageFactory.getTimeWindow()
-                                                    .toBuilder()
-                                                    .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                                    .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                                    .build();
+        TimeWindow expectedInnerOne = MessageUtilities.getTimeWindow()
+                                                      .toBuilder()
+                                                      .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                      .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                      .build();
 
         Instant startTwo = Instant.parse( "2079-12-03T08:00:00Z" );
         Instant endTwo = Instant.parse( "2079-12-03T10:00:00Z" );
 
-        TimeWindow expectedInnerTwo = MessageFactory.getTimeWindow()
-                                                    .toBuilder()
-                                                    .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
-                                                    .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
-                                                    .build();
+        TimeWindow expectedInnerTwo = MessageUtilities.getTimeWindow()
+                                                      .toBuilder()
+                                                      .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                                      .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                                      .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInnerOne ),
                                                 TimeWindowOuter.of( expectedInnerTwo ) );
@@ -119,11 +119,11 @@ class ReginaOgdenEventDetectorTest
         Instant start = Instant.parse( "2018-01-22T02:00:00Z" );
         Instant end = Instant.parse( "2018-01-29T00:00:00Z" );
 
-        TimeWindow expectedInner = MessageFactory.getTimeWindow()
-                                                 .toBuilder()
-                                                 .setEarliestValidTime( MessageFactory.getTimestamp( start ) )
-                                                 .setLatestValidTime( MessageFactory.getTimestamp( end ) )
-                                                 .build();
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow()
+                                                   .toBuilder()
+                                                   .setEarliestValidTime( MessageUtilities.getTimestamp( start ) )
+                                                   .setLatestValidTime( MessageUtilities.getTimestamp( end ) )
+                                                   .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInner ) );
 
@@ -165,29 +165,29 @@ class ReginaOgdenEventDetectorTest
         Instant startOne = Instant.parse( "2018-01-22T02:00:00Z" );
         Instant endOne = Instant.parse( "2018-01-29T00:00:00Z" );
 
-        TimeWindow expectedInnerOne = MessageFactory.getTimeWindow()
-                                                    .toBuilder()
-                                                    .setEarliestValidTime( MessageFactory.getTimestamp( startOne ) )
-                                                    .setLatestValidTime( MessageFactory.getTimestamp( endOne ) )
-                                                    .build();
+        TimeWindow expectedInnerOne = MessageUtilities.getTimeWindow()
+                                                      .toBuilder()
+                                                      .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                                      .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                                      .build();
 
         Instant startTwo = Instant.parse( "2018-03-04T18:00:00Z" );
         Instant endTwo = Instant.parse( "2018-03-11T16:00:00Z" );
 
-        TimeWindow expectedInnerTwo = MessageFactory.getTimeWindow()
-                                                    .toBuilder()
-                                                    .setEarliestValidTime( MessageFactory.getTimestamp( startTwo ) )
-                                                    .setLatestValidTime( MessageFactory.getTimestamp( endTwo ) )
-                                                    .build();
+        TimeWindow expectedInnerTwo = MessageUtilities.getTimeWindow()
+                                                      .toBuilder()
+                                                      .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                                      .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                                      .build();
 
         Instant startThree = Instant.parse( "2018-04-15T10:00:00Z" );
         Instant endThree = Instant.parse( "2018-04-22T08:00:00Z" );
 
-        TimeWindow expectedInnerThree = MessageFactory.getTimeWindow()
-                                                      .toBuilder()
-                                                      .setEarliestValidTime( MessageFactory.getTimestamp( startThree ) )
-                                                      .setLatestValidTime( MessageFactory.getTimestamp( endThree ) )
-                                                      .build();
+        TimeWindow expectedInnerThree = MessageUtilities.getTimeWindow()
+                                                        .toBuilder()
+                                                        .setEarliestValidTime( MessageUtilities.getTimestamp( startThree ) )
+                                                        .setLatestValidTime( MessageUtilities.getTimestamp( endThree ) )
+                                                        .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInnerOne ),
                                                 TimeWindowOuter.of( expectedInnerTwo ),
@@ -249,11 +249,11 @@ class ReginaOgdenEventDetectorTest
         Instant start = Instant.parse( "2018-01-21T19:00:00Z" );
         Instant end = Instant.parse( "2018-01-29T00:00:00Z" );
 
-        TimeWindow expectedInner = MessageFactory.getTimeWindow()
-                                                 .toBuilder()
-                                                 .setEarliestValidTime( MessageFactory.getTimestamp( start ) )
-                                                 .setLatestValidTime( MessageFactory.getTimestamp( end ) )
-                                                 .build();
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow()
+                                                   .toBuilder()
+                                                   .setEarliestValidTime( MessageUtilities.getTimestamp( start ) )
+                                                   .setLatestValidTime( MessageUtilities.getTimestamp( end ) )
+                                                   .build();
 
         Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedInner ) );
 
@@ -306,7 +306,7 @@ class ReginaOgdenEventDetectorTest
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of(),
                                                              "foo",
-                                                             Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                                             Feature.of( MessageUtilities.getGeometry( "bar" ) ),
                                                              "baz" );
         TimeSeries.Builder<Double> timeSeries = new TimeSeries.Builder<Double>().setMetadata( metadata );
 

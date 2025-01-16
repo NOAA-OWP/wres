@@ -17,7 +17,7 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 
 /**
  * Tests the {@link BootstrapPool}.
@@ -92,7 +92,7 @@ class BootstrapPoolTest
         return TimeSeriesMetadata.of( Map.of(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       "foo",
-                                      Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                      Feature.of( MessageUtilities.getGeometry( "bar" ) ),
                                       "baz" );
     }
 }

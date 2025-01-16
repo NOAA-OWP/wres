@@ -29,7 +29,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -78,7 +78,7 @@ class ChartDataFactoryTest
                                                             .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                                             .build(),
                                                   Pool.getDefaultInstance() ),
-                                 TimeWindowOuter.of( MessageFactory.getTimeWindow() ) );
+                                 TimeWindowOuter.of( MessageUtilities.getTimeWindow() ) );
 
         BoxplotStatisticOuter input = BoxplotStatisticOuter.of( BoxplotStatistic.newBuilder()
                                                                                 .setMetric( BoxplotMetric.newBuilder()

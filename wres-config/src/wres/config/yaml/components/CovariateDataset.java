@@ -1,5 +1,6 @@
 package wres.config.yaml.components;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
@@ -41,10 +42,9 @@ public record CovariateDataset( Dataset dataset,
     {
         Objects.requireNonNull( dataset, "The covariate dataset cannot be null." );
 
-        if ( Objects.isNull( purposes )
-             || purposes.isEmpty() )
+        if ( Objects.isNull( purposes ) )
         {
-            purposes = Set.of( CovariatePurpose.FILTER );
+            purposes = Collections.emptySet();
         }
     }
 }

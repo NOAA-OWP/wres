@@ -14,8 +14,8 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
@@ -29,7 +29,7 @@ public class CommaSeparatedUtilitiesTest
 {
     private static final Evaluation EVALUATION = Evaluation.newBuilder()
                                                            .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                                           .build();;
+                                                           .build();
 
     private TimeWindowOuter timeWindow;
 
@@ -43,19 +43,19 @@ public class CommaSeparatedUtilitiesTest
         Duration earlyLead = Duration.ofHours( 6 );
         Duration lateLead = Duration.ofHours( 120 );
 
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( earlyRef,
-                                                                         lateRef,
-                                                                         earlyValid,
-                                                                         lateValid,
-                                                                         earlyLead,
-                                                                         lateLead );
+        TimeWindow inner = MessageUtilities.getTimeWindow( earlyRef,
+                                                           lateRef,
+                                                           earlyValid,
+                                                           lateValid,
+                                                           earlyLead,
+                                                           lateLead );
         this.timeWindow = TimeWindowOuter.of( inner );
     }
 
     @Test
     public void testGetTimeWindowHeaderFromSampleMetadataWithInstantaneousTimeScale()
     {
-        Pool pool = MessageFactory.getPool( (FeatureGroup) null,
+        Pool pool = MessageFactory.getPool( null,
                                             this.timeWindow,
                                             TimeScaleOuter.of(),
                                             null,
@@ -81,7 +81,7 @@ public class CommaSeparatedUtilitiesTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.TOTAL );
 
-        Pool pool = MessageFactory.getPool( (FeatureGroup) null,
+        Pool pool = MessageFactory.getPool( null,
                                             this.timeWindow,
                                             timeScale,
                                             null,

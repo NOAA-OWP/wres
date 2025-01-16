@@ -15,8 +15,7 @@ import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.Immutable;
 
-import wres.datamodel.messages.MessageUtilities;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 
 
@@ -83,7 +82,7 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     /**
      * Constructs a {@link TimeWindowOuter} with a canonical {@link TimeWindow}.
      * 
-     * @see MessageFactory#getTimeWindow() and related methods
+     * @see MessageUtilities#getTimeWindow() and related methods
      * @param timeWindow a time window
      * @return a time window
      */
@@ -105,7 +104,7 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     @Override
     public int compareTo( TimeWindowOuter o )
     {
-        return MessageUtilities.compare( this.getTimeWindow(), o.getTimeWindow() );
+        return wres.datamodel.messages.MessageUtilities.compare( this.getTimeWindow(), o.getTimeWindow() );
     }
 
     @Override

@@ -49,7 +49,7 @@ import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -303,7 +303,7 @@ public class ChartDataFactory
                 com.google.protobuf.Duration score = entry.getComponent( metric )
                                                           .getStatistic()
                                                           .getValue();
-                Duration durationStat = MessageFactory.getDuration( score );
+                Duration durationStat = MessageUtilities.getDuration( score );
 
                 // Find the decimal hours
                 double doubleResult = Double.NaN;

@@ -27,7 +27,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeWindowSlicer;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -226,12 +226,12 @@ public class RetrieverUtilities
                 latestValidTime = timeWindow.getLatestValidTime();
             }
 
-            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                             Instant.MAX,
-                                                                             earliestValidTime,
-                                                                             latestValidTime,
-                                                                             earliestAnalysisDuration,
-                                                                             latestAnalysisDuration );
+            TimeWindow inner = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                               Instant.MAX,
+                                                               earliestValidTime,
+                                                               latestValidTime,
+                                                               earliestAnalysisDuration,
+                                                               latestAnalysisDuration );
 
             return TimeWindowOuter.of( inner );
         }
@@ -244,10 +244,10 @@ public class RetrieverUtilities
             // time should be treated when that declaration is concerned with filtering or pooling by reference time.
             // TODO: be explicit about the connection between reference times/types and declaration options.
             // For now, reference times are not used to filter here
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             timeWindow.getEarliestValidTime(),
-                                                             timeWindow.getLatestValidTime() );
+            TimeWindow inner = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                               Instant.MAX,
+                                                               timeWindow.getEarliestValidTime(),
+                                                               timeWindow.getLatestValidTime() );
             return TimeWindowOuter.of( inner );
         }
     }

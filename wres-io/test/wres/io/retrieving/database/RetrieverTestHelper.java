@@ -14,7 +14,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import wres.config.yaml.components.Variable;
 import wres.datamodel.space.Feature;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 
 /**
  * Helper for running retrieval tests.
@@ -25,7 +25,7 @@ class RetrieverTestHelper
     static final long PROJECT_ID = 1;
     /** A project natural id (hash) for testing */
     static final String PROJECT_HASH = "1c1d76049f6e433ded63b4f3a6ad82ab";
-    static final Feature FEATURE = Feature.of( MessageFactory.getGeometry( "F" ) );
+    static final Feature FEATURE = Feature.of( MessageUtilities.getGeometry( "F" ) );
     static final String VARIABLE_NAME = "Q";
     static final Variable VARIABLE = new Variable( "Q", null, Set.of() );
     static final String UNIT = "[ft_i]3/s";

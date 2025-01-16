@@ -21,12 +21,12 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class TestData
 {
-    static final Feature FEATURE = Feature.of( MessageFactory.getGeometry( "F" ) );
+    static final Feature FEATURE = Feature.of( MessageUtilities.getGeometry( "F" ) );
     static final String VARIABLE_NAME = "Q";
     static final String UNIT = "[ft_i]3/s";
     static final URI FAKE_URI = URI.create( "file:///some.csv" );

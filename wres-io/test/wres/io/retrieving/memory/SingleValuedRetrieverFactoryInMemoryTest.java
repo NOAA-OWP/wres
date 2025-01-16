@@ -32,7 +32,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.project.Project;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeWindow;
 
@@ -69,7 +69,7 @@ class SingleValuedRetrieverFactoryInMemoryTest
         TimeSeriesStore.Builder builder = new TimeSeriesStore.Builder();
 
 
-        Feature feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "feature" ) );
         this.features = Set.of( feature );
 
         TimeSeriesMetadata leftMetadata = TimeSeriesMetadata.of( Map.of(),
@@ -199,8 +199,8 @@ class SingleValuedRetrieverFactoryInMemoryTest
     @Test
     void testGetRightRetriever()
     {
-        TimeWindow innerTimeWindow = wres.statistics.MessageFactory.getTimeWindow( TimeWindowOuter.DURATION_MIN,
-                                                                                   TimeWindowOuter.DURATION_MAX );
+        TimeWindow innerTimeWindow = MessageUtilities.getTimeWindow( TimeWindowOuter.DURATION_MIN,
+                                                                     TimeWindowOuter.DURATION_MAX );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( innerTimeWindow );
         Supplier<Stream<TimeSeries<Double>>> actual = this.tester.getRightRetriever( this.features, timeWindow );
 
@@ -214,8 +214,8 @@ class SingleValuedRetrieverFactoryInMemoryTest
     @Test
     void testGetBaselineRetriever()
     {
-        TimeWindow innerTimeWindow = wres.statistics.MessageFactory.getTimeWindow( TimeWindowOuter.DURATION_MIN,
-                                                                                   TimeWindowOuter.DURATION_MAX );
+        TimeWindow innerTimeWindow = MessageUtilities.getTimeWindow( TimeWindowOuter.DURATION_MIN,
+                                                                     TimeWindowOuter.DURATION_MAX );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( innerTimeWindow );
         Supplier<Stream<TimeSeries<Double>>> actual = this.tester.getBaselineRetriever( this.features, timeWindow );
 

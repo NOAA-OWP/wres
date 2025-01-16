@@ -14,7 +14,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.types.Ensemble;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 
 /**
@@ -49,7 +49,7 @@ class TimeSeriesStoreTest
     {
         TimeSeriesStore.Builder builder = new TimeSeriesStore.Builder();
 
-        this.feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
+        this.feature = Feature.of( MessageUtilities.getGeometry( "feature" ) );
 
         TimeSeriesMetadata leftMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                  TimeScaleOuter.of(),

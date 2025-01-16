@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.datamodel.pools.MeasurementUnit;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -77,17 +77,17 @@ class SummaryStatisticsCalculatorTest
                                        .addScores( score )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.1 );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.1 );
 
-        SummaryStatistic q2 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.5 );
+        SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.5 );
 
-        SummaryStatistic q3 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.9 );
+        SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
         ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
@@ -186,17 +186,17 @@ class SummaryStatisticsCalculatorTest
                                        .addDiagrams( rocDiagram )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.1 );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.1 );
 
-        SummaryStatistic q2 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.5 );
+        SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.5 );
 
-        SummaryStatistic q3 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.9 );
+        SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
         ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
@@ -299,17 +299,17 @@ class SummaryStatisticsCalculatorTest
                                        .addDurationScores( score )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.1 );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.1 );
 
-        SummaryStatistic q2 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.5 );
+        SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.5 );
 
-        SummaryStatistic q3 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.9 );
+        SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
         ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
@@ -371,12 +371,12 @@ class SummaryStatisticsCalculatorTest
                 DurationDiagramMetric.newBuilder().setName( MetricName.TIME_TO_PEAK_ERROR )
                                      .build();
 
-        Timestamp first = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T00:00:00Z" ) );
-        Timestamp second = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T01:00:00Z" ) );
-        Timestamp third = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T02:00:00Z" ) );
-        Duration one = MessageFactory.getDuration( java.time.Duration.ofHours( 1 ) );
-        Duration two = MessageFactory.getDuration( java.time.Duration.ofHours( 2 ) );
-        Duration three = MessageFactory.getDuration( java.time.Duration.ofHours( 3 ) );
+        Timestamp first = MessageUtilities.getTimestamp( Instant.parse( "2023-03-03T00:00:00Z" ) );
+        Timestamp second = MessageUtilities.getTimestamp( Instant.parse( "2023-03-03T01:00:00Z" ) );
+        Timestamp third = MessageUtilities.getTimestamp( Instant.parse( "2023-03-03T02:00:00Z" ) );
+        Duration one = MessageUtilities.getDuration( java.time.Duration.ofHours( 1 ) );
+        Duration two = MessageUtilities.getDuration( java.time.Duration.ofHours( 2 ) );
+        Duration three = MessageUtilities.getDuration( java.time.Duration.ofHours( 3 ) );
 
         List<DurationDiagramStatistic.PairOfInstantAndDuration> errorPairs =
                 List.of( DurationDiagramStatistic.PairOfInstantAndDuration.newBuilder()
@@ -402,17 +402,17 @@ class SummaryStatisticsCalculatorTest
                                        .addDurationDiagrams( ttpes )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.1 );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.1 );
 
-        SummaryStatistic q2 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.5 );
+        SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.5 );
 
-        SummaryStatistic q3 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.9 );
+        SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
         ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
@@ -430,9 +430,9 @@ class SummaryStatisticsCalculatorTest
         {
             Statistics.Builder next = nominal.toBuilder();
 
-            Duration firstDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i ) );
-            Duration secondDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 1 ) );
-            Duration thirdDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 2 ) );
+            Duration firstDuration = MessageUtilities.getDuration( java.time.Duration.ofHours( i ) );
+            Duration secondDuration = MessageUtilities.getDuration( java.time.Duration.ofHours( i + 1 ) );
+            Duration thirdDuration = MessageUtilities.getDuration( java.time.Duration.ofHours( i + 2 ) );
 
             // Set the new pairs
             next.getDurationDiagramsBuilder( 0 )
@@ -449,9 +449,9 @@ class SummaryStatisticsCalculatorTest
 
         List<Statistics> actual = calculator.get();
 
-        Duration firstExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 3960 ) );
-        Duration secondExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 7560 ) );
-        Duration thirdExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 11160 ) );
+        Duration firstExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 3960 ) );
+        Duration secondExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 7560 ) );
+        Duration thirdExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 11160 ) );
         Statistics.Builder expectedFirstBuilder = nominal.toBuilder()
                                                          .setSummaryStatistic( q1 );
         expectedFirstBuilder.getDurationDiagramsBuilder( 0 )
@@ -464,9 +464,9 @@ class SummaryStatisticsCalculatorTest
                             .getStatisticsBuilder( 2 )
                             .setDuration( thirdExpected );
 
-        Duration fourthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 19800 ) );
-        Duration fifthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 23400 ) );
-        Duration sixthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 27000 ) );
+        Duration fourthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 19800 ) );
+        Duration fifthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 23400 ) );
+        Duration sixthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 27000 ) );
         Statistics.Builder expectedSecondBuilder = nominal.toBuilder()
                                                           .setSummaryStatistic( q2 );
         expectedSecondBuilder.getDurationDiagramsBuilder( 0 )
@@ -479,9 +479,9 @@ class SummaryStatisticsCalculatorTest
                              .getStatisticsBuilder( 2 )
                              .setDuration( sixthExpected );
 
-        Duration seventhExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 35640 ) );
-        Duration eighthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 39240 ) );
-        Duration ninthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 42840 ) );
+        Duration seventhExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 35640 ) );
+        Duration eighthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 39240 ) );
+        Duration ninthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 42840 ) );
         Statistics.Builder expectedThirdBuilder = nominal.toBuilder()
                                                          .setSummaryStatistic( q3 );
         expectedThirdBuilder.getDurationDiagramsBuilder( 0 )
@@ -532,9 +532,9 @@ class SummaryStatisticsCalculatorTest
                                        .addScores( score )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.5 );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.5 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
 
@@ -667,12 +667,12 @@ class SummaryStatisticsCalculatorTest
                 DurationDiagramMetric.newBuilder().setName( MetricName.TIME_TO_PEAK_ERROR )
                                      .build();
 
-        Timestamp one = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T00:00:00Z" ) );
-        Timestamp two = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T01:00:00Z" ) );
-        Timestamp three = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T02:00:00Z" ) );
-        Duration a = MessageFactory.getDuration( java.time.Duration.ofHours( 1 ) );
-        Duration b = MessageFactory.getDuration( java.time.Duration.ofHours( 2 ) );
-        Duration c = MessageFactory.getDuration( java.time.Duration.ofHours( 3 ) );
+        Timestamp one = MessageUtilities.getTimestamp( Instant.parse( "2023-03-03T00:00:00Z" ) );
+        Timestamp two = MessageUtilities.getTimestamp( Instant.parse( "2023-03-03T01:00:00Z" ) );
+        Timestamp three = MessageUtilities.getTimestamp( Instant.parse( "2023-03-03T02:00:00Z" ) );
+        Duration a = MessageUtilities.getDuration( java.time.Duration.ofHours( 1 ) );
+        Duration b = MessageUtilities.getDuration( java.time.Duration.ofHours( 2 ) );
+        Duration c = MessageUtilities.getDuration( java.time.Duration.ofHours( 3 ) );
 
         List<DurationDiagramStatistic.PairOfInstantAndDuration> errorPairs =
                 List.of( DurationDiagramStatistic.PairOfInstantAndDuration.newBuilder()
@@ -701,17 +701,17 @@ class SummaryStatisticsCalculatorTest
                                        .addDurationDiagrams( ttpes )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.1 );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.1 );
 
-        SummaryStatistic q2 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.5 );
+        SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.5 );
 
-        SummaryStatistic q3 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                  SummaryStatistic.StatisticDimension.RESAMPLED,
-                                                                  0.9 );
+        SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
+                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
         ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
@@ -757,9 +757,9 @@ class SummaryStatisticsCalculatorTest
                                           .setSeconds( i * 60 * 60 ) );
 
             // Create the duration diagram
-            Duration firstDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i ) );
-            Duration secondDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 1 ) );
-            Duration thirdDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 2 ) );
+            Duration firstDuration = MessageUtilities.getDuration( java.time.Duration.ofHours( i ) );
+            Duration secondDuration = MessageUtilities.getDuration( java.time.Duration.ofHours( i + 1 ) );
+            Duration thirdDuration = MessageUtilities.getDuration( java.time.Duration.ofHours( i + 2 ) );
 
             // Set the new pairs
             nextBuilder.getDurationDiagramsBuilder( 0 )
@@ -806,9 +806,9 @@ class SummaryStatisticsCalculatorTest
                             .setValue( Duration.newBuilder()
                                                .setSeconds( 3960 ) );
 
-        Duration firstExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 3960 ) );
-        Duration secondExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 7560 ) );
-        Duration thirdExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 11160 ) );
+        Duration firstExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 3960 ) );
+        Duration secondExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 7560 ) );
+        Duration thirdExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 11160 ) );
 
         expectedFirstBuilder.getDurationDiagramsBuilder( 0 )
                             .getStatisticsBuilder( 0 )
@@ -840,9 +840,9 @@ class SummaryStatisticsCalculatorTest
                              .setValue( Duration.newBuilder()
                                                 .setSeconds( 19800 ) );
 
-        Duration fourthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 19800 ) );
-        Duration fifthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 23400 ) );
-        Duration sixthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 27000 ) );
+        Duration fourthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 19800 ) );
+        Duration fifthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 23400 ) );
+        Duration sixthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 27000 ) );
 
         expectedSecondBuilder.getDurationDiagramsBuilder( 0 )
                              .getStatisticsBuilder( 0 )
@@ -874,9 +874,9 @@ class SummaryStatisticsCalculatorTest
                             .setValue( Duration.newBuilder()
                                                .setSeconds( 35640 ) );
 
-        Duration seventhExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 35640 ) );
-        Duration eighthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 39240 ) );
-        Duration ninthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 42840 ) );
+        Duration seventhExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 35640 ) );
+        Duration eighthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 39240 ) );
+        Duration ninthExpected = MessageUtilities.getDuration( java.time.Duration.ofSeconds( 42840 ) );
 
         expectedThirdBuilder.getDurationDiagramsBuilder( 0 )
                             .getStatisticsBuilder( 0 )
@@ -926,9 +926,9 @@ class SummaryStatisticsCalculatorTest
                                        .addScores( score )
                                        .build();
 
-        SummaryStatistic mean = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
-                                                                    SummaryStatistic.StatisticDimension.FEATURES,
-                                                                    null );
+        SummaryStatistic mean = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
+                                                                      SummaryStatistic.StatisticDimension.FEATURES,
+                                                                      null );
 
         ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
@@ -990,9 +990,9 @@ class SummaryStatisticsCalculatorTest
                                        .addScores( score )
                                        .build();
 
-        SummaryStatistic sd = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
-                                                                  SummaryStatistic.StatisticDimension.FEATURES,
-                                                                  null );
+        SummaryStatistic sd = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
+                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    null );
 
         ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofScalarSummaryStatistic( sd );
 
@@ -1089,9 +1089,9 @@ class SummaryStatisticsCalculatorTest
                                    .addScores( correlationScore )
                                    .build();
 
-        SummaryStatistic mean = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
-                                                                    SummaryStatistic.StatisticDimension.FEATURES,
-                                                                    null );
+        SummaryStatistic mean = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
+                                                                      SummaryStatistic.StatisticDimension.FEATURES,
+                                                                      null );
 
         ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
@@ -1149,15 +1149,15 @@ class SummaryStatisticsCalculatorTest
                                        .addScores( score )
                                        .build();
 
-        SummaryStatistic mean = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
-                                                                    SummaryStatistic.StatisticDimension.FEATURES,
-                                                                    null );
+        SummaryStatistic mean = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
+                                                                      SummaryStatistic.StatisticDimension.FEATURES,
+                                                                      null );
 
         ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
-        SummaryStatistic sd = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
-                                                                  SummaryStatistic.StatisticDimension.FEATURES,
-                                                                  null );
+        SummaryStatistic sd = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
+                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    null );
 
         ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofScalarSummaryStatistic( sd );
 
@@ -1244,9 +1244,9 @@ class SummaryStatisticsCalculatorTest
                                        .addScores( score )
                                        .build();
 
-        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.BOX_PLOT,
-                                                                  SummaryStatistic.StatisticDimension.FEATURES,
-                                                                  null );
+        SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.BOX_PLOT,
+                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    null );
 
         BoxplotSummaryStatisticFunction q1f = FunctionFactory.ofBoxplotSummaryStatistic( q1 );
 

@@ -45,7 +45,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -831,10 +831,10 @@ class WrdsAhpsReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .collect( Collectors.toList() );
 
-            Geometry geometry = MessageFactory.getGeometry( FEATURE_NAME,
-                                                            "Front Royal",
-                                                            null,
-                                                            null );
+            Geometry geometry = MessageUtilities.getGeometry( FEATURE_NAME,
+                                                              "Front Royal",
+                                                              null,
+                                                              null );
 
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
                                                                          Instant.parse( "2021-11-14T13:46:00Z" ) ),

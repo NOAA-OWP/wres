@@ -33,6 +33,7 @@ import wres.eventdetection.EventDetectionException;
 import wres.eventdetection.EventDetector;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeScale;
 
 /**
@@ -269,7 +270,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         }
 
         Set<TimeWindowOuter> events = new TreeSet<>();
-        TimeWindowOuter unbounded = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
+        TimeWindowOuter unbounded = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
         FeatureGroup featureGroup = details.featureGroup();
         Function<FeatureTuple, Feature> featureGetter = details.featureGetter();
         RetrieverFactory<Double, Double, Double> eventRetriever = details.eventRetriever();

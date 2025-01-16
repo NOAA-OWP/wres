@@ -46,7 +46,7 @@ import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -364,7 +364,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                                             .getNames()
                                             .getNwsName();
 
-        Geometry geometry = MessageFactory.getGeometry( featureName, featureDescription, null, null );
+        Geometry geometry = MessageUtilities.getGeometry( featureName, featureDescription, null, null );
         Feature feature = Feature.of( geometry );
 
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( datetimes,

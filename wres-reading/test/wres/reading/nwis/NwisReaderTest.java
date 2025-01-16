@@ -53,7 +53,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
@@ -730,10 +730,10 @@ class NwisReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .collect( Collectors.toList() );
 
-            Feature featureKey = Feature.of( MessageFactory.getGeometry( "09165000",
-                                                                         "DOLORES RIVER BELOW RICO, CO.",
-                                                                         4326,
-                                                                         "POINT ( -108.0603517 37.63888428 )" ) );
+            Feature featureKey = Feature.of( MessageUtilities.getGeometry( "09165000",
+                                                                           "DOLORES RIVER BELOW RICO, CO.",
+                                                                           4326,
+                                                                           "POINT ( -108.0603517 37.63888428 )" ) );
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                                  TimeScaleOuter.of(),
                                                                  "00060",
@@ -1104,10 +1104,10 @@ class NwisReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .collect( Collectors.toList() );
 
-            Feature featureKey = Feature.of( MessageFactory.getGeometry( "16211600",
-                                                                         "Makaha Str nr Makaha, Oahu, HI",
-                                                                         4326,
-                                                                         "POINT ( -158.1801667 21.50158333 )" ) );
+            Feature featureKey = Feature.of( MessageUtilities.getGeometry( "16211600",
+                                                                           "Makaha Str nr Makaha, Oahu, HI",
+                                                                           4326,
+                                                                           "POINT ( -158.1801667 21.50158333 )" ) );
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                                  TimeScaleOuter.of(),
                                                                  "00060",

@@ -90,7 +90,7 @@ import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -2293,6 +2293,87 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithCovariateSourceOnly() throws IOException
+    {
+        String yaml = """
+                 observed:
+                   - some_file.csv
+                 predicted:
+                   sources: another_file.csv
+                 covariates: precipitation.tgz
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        URI covariateOneUri = URI.create( "precipitation.tgz" );
+        Source covariateOneSource = SourceBuilder.builder()
+                                                 .uri( covariateOneUri )
+                                                 .build();
+
+        List<Source> covariateOneSources = List.of( covariateOneSource );
+
+        Dataset covariateOneDataset = DatasetBuilder.builder()
+                                                    .sources( covariateOneSources )
+                                                    .build();
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateOneDataset )
+                                                               .build();
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateOne );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .covariates( covariateDatasets )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSingletonCovariate() throws IOException
+    {
+        String yaml = """
+                 observed:
+                   - some_file.csv
+                 predicted:
+                   sources: another_file.csv
+                 covariates:
+                   sources: precipitation.tgz
+                   variable: precipitation
+                   minimum: 0.25
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        URI covariateOneUri = URI.create( "precipitation.tgz" );
+        Source covariateOneSource = SourceBuilder.builder()
+                                                 .uri( covariateOneUri )
+                                                 .build();
+
+        List<Source> covariateOneSources = List.of( covariateOneSource );
+
+        Dataset covariateOneDataset = DatasetBuilder.builder()
+                                                    .sources( covariateOneSources )
+                                                    .variable( new Variable( "precipitation", null, Set.of() ) )
+                                                    .build();
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateOneDataset )
+                                                               .minimum( 0.25 )
+                                                               .build();
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateOne );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .covariates( covariateDatasets )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithExplicitTimePools() throws IOException
     {
         String yaml = """
@@ -2339,21 +2420,21 @@ class DeclarationFactoryTest
         java.time.Duration expectedDurationFour = java.time.Duration.ofHours( 12 );
 
         TimeWindow expectedOne = TimeWindow.newBuilder()
-                                           .setEarliestValidTime( MessageFactory.getTimestamp( expectedInstantTwo ) )
-                                           .setLatestValidTime( MessageFactory.getTimestamp( expectedInstantFour ) )
-                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( expectedInstantOne ) )
-                                           .setLatestReferenceTime( MessageFactory.getTimestamp( expectedInstantThree ) )
-                                           .setEarliestLeadDuration( MessageFactory.getDuration( expectedDurationOne ) )
-                                           .setLatestLeadDuration( MessageFactory.getDuration( expectedDurationTwo ) )
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantTwo ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantThree ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationTwo ) )
                                            .build();
 
         TimeWindow expectedTwo = TimeWindow.newBuilder()
-                                           .setEarliestValidTime( MessageFactory.getTimestamp( expectedInstantFive ) )
-                                           .setLatestValidTime( MessageFactory.getTimestamp( expectedInstantSeven ) )
-                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( expectedInstantFour ) )
-                                           .setLatestReferenceTime( MessageFactory.getTimestamp( expectedInstantSix ) )
-                                           .setEarliestLeadDuration( MessageFactory.getDuration( expectedDurationThree ) )
-                                           .setLatestLeadDuration( MessageFactory.getDuration( expectedDurationFour ) )
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantFive ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantSeven ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantSix ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationThree ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationFour ) )
                                            .build();
 
         Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
@@ -2388,13 +2469,13 @@ class DeclarationFactoryTest
         java.time.Duration expectedDurationTwo = java.time.Duration.ofHours( 12 );
 
         TimeWindow expectedOne = TimeWindow.newBuilder()
-                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( expectedInstantOne ) )
-                                           .setLatestReferenceTime( MessageFactory.getTimestamp( expectedInstantTwo ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantTwo ) )
                                            .build();
 
         TimeWindow expectedTwo = TimeWindow.newBuilder()
-                                           .setEarliestLeadDuration( MessageFactory.getDuration( expectedDurationOne ) )
-                                           .setLatestLeadDuration( MessageFactory.getDuration( expectedDurationTwo ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationTwo ) )
                                            .build();
 
         Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );

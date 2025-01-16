@@ -50,7 +50,7 @@ import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
 import wres.reading.DataSource;
 import wres.reading.netcdf.grid.GriddedFeatures;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
@@ -79,10 +79,10 @@ class SingleValuedGriddedRetrieverTest
     private Long projectId;
 
     /** A feature for testing. */
-    private static final Feature FEATURE = Feature.of( wres.statistics.MessageFactory.getGeometry( "POINT( 1 2 )",
-                                                                                                   null,
-                                                                                                   4326,
-                                                                                                   "POINT( 1 2 )" ) );
+    private static final Feature FEATURE = Feature.of( MessageUtilities.getGeometry( "POINT( 1 2 )",
+                                                                                     null,
+                                                                                     4326,
+                                                                                     "POINT( 1 2 )" ) );
 
     /** A variable name for testing. */
     private static final String VARIABLE_NAME = "QINE";
@@ -162,12 +162,12 @@ class SingleValuedGriddedRetrieverTest
         Duration leadStart = Duration.ofHours( 0 );
         Duration leadEnd = Duration.ofHours( 5 );
 
-        TimeWindow inner = MessageFactory.getTimeWindow( referenceStart,
-                                                         referenceEnd,
-                                                         validStart,
-                                                         validEnd,
-                                                         leadStart,
-                                                         leadEnd );
+        TimeWindow inner = MessageUtilities.getTimeWindow( referenceStart,
+                                                           referenceEnd,
+                                                           validStart,
+                                                           validEnd,
+                                                           leadStart,
+                                                           leadEnd );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Build the retriever

@@ -70,6 +70,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Covariate;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
@@ -130,29 +131,29 @@ class MessageFactoryTest
     private static final Duration LATEST_LEAD = Duration.ofHours( 7 );
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
-    private static final Feature FEATURE = Feature.of( wres.statistics.MessageFactory.getGeometry( FEATURE_NAME ) );
+    private static final Feature FEATURE = Feature.of( MessageUtilities.getGeometry( FEATURE_NAME ) );
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
     private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =
-            wres.datamodel.time.TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( NINTH_TIME,
-                                                                                                  TENTH_TIME,
-                                                                                                  ELEVENTH_TIME,
-                                                                                                  TWELFTH_TIME,
-                                                                                                  EARLIEST_LEAD,
-                                                                                                  LATEST_LEAD ) );
-    private static final Geometry LOCATION = wres.statistics.MessageFactory.getGeometry( FEATURE_NAME,
-                                                                                         null,
-                                                                                         null,
-                                                                                         "POINT ( 23.45, 56.21 )" );
-    private static final Geometry ANOTHER_LOCATION = wres.statistics.MessageFactory.getGeometry( "DOLC2" );
+            wres.datamodel.time.TimeWindowOuter.of( MessageUtilities.getTimeWindow( NINTH_TIME,
+                                                                                    TENTH_TIME,
+                                                                                    ELEVENTH_TIME,
+                                                                                    TWELFTH_TIME,
+                                                                                    EARLIEST_LEAD,
+                                                                                    LATEST_LEAD ) );
+    private static final Geometry LOCATION = MessageUtilities.getGeometry( FEATURE_NAME,
+                                                                           null,
+                                                                           null,
+                                                                           "POINT ( 23.45, 56.21 )" );
+    private static final Geometry ANOTHER_LOCATION = MessageUtilities.getGeometry( "DOLC2" );
     private static final FeatureGroup FEATURE_GROUP =
-            FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( null,
-                                                                              wres.statistics.MessageFactory.getGeometryTuple(
+            FeatureGroup.of( MessageUtilities.getGeometryGroup( null,
+                                                                MessageUtilities.getGeometryTuple(
                                                                                       LOCATION,
                                                                                       LOCATION,
                                                                                       LOCATION ) ) );
     private static final FeatureGroup ANOTHER_FEATURE_GROUP =
-            FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( null,
-                                                                              wres.statistics.MessageFactory.getGeometryTuple(
+            FeatureGroup.of( MessageUtilities.getGeometryGroup( null,
+                                                                MessageUtilities.getGeometryTuple(
                                                                                       ANOTHER_LOCATION,
                                                                                       ANOTHER_LOCATION,
                                                                                       ANOTHER_LOCATION ) ) );
@@ -933,12 +934,12 @@ class MessageFactoryTest
 
     private List<DurationScoreStatisticOuter> getDurationScoreStatisticsForOnePool()
     {
-        TimeWindowOuter timeOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                                                    FIFTH_TIME,
-                                                                                                    FIRST_TIME,
-                                                                                                    SEVENTH_TIME,
-                                                                                                    Duration.ofHours( 1 ),
-                                                                                                    Duration.ofHours( 18 ) ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( FIRST_TIME,
+                                                                                      FIFTH_TIME,
+                                                                                      FIRST_TIME,
+                                                                                      SEVENTH_TIME,
+                                                                                      Duration.ofHours( 1 ),
+                                                                                      Duration.ofHours( 18 ) ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -999,12 +1000,12 @@ class MessageFactoryTest
 
     private List<DurationDiagramStatisticOuter> getDurationDiagramStatisticsForOnePool()
     {
-        TimeWindowOuter timeOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                                                    FIFTH_TIME,
-                                                                                                    FIRST_TIME,
-                                                                                                    SEVENTH_TIME,
-                                                                                                    Duration.ofHours( 1 ),
-                                                                                                    Duration.ofHours( 18 ) ) );
+        TimeWindowOuter timeOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( FIRST_TIME,
+                                                                                      FIFTH_TIME,
+                                                                                      FIRST_TIME,
+                                                                                      SEVENTH_TIME,
+                                                                                      Duration.ofHours( 1 ),
+                                                                                      Duration.ofHours( 18 ) ) );
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),

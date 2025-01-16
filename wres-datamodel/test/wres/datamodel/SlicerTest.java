@@ -43,7 +43,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.types.Probability;
 import wres.datamodel.types.VectorOfDoubles;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
@@ -421,19 +421,19 @@ class SlicerTest
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
 
-        TimeWindowOuter windowOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                      Instant.MAX,
-                                                                                                      Duration.ofHours(
+        TimeWindowOuter windowOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours(
                                                                                                               1 ) ) );
 
-        TimeWindowOuter windowTwo = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                      Instant.MAX,
-                                                                                                      Duration.ofHours(
+        TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours(
                                                                                                               2 ) ) );
 
-        TimeWindowOuter windowThree = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                        Instant.MAX,
-                                                                                                        Duration.ofHours(
+        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                          Instant.MAX,
+                                                                                          Duration.ofHours(
                                                                                                                 3 ) ) );
 
         OneOrTwoThresholds thresholdOne =
@@ -524,19 +524,19 @@ class SlicerTest
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
 
-        TimeWindowOuter windowOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                      Instant.MAX,
-                                                                                                      Duration.ofHours(
+        TimeWindowOuter windowOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours(
                                                                                                               1 ) ) );
 
-        TimeWindowOuter windowTwo = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                      Instant.MAX,
-                                                                                                      Duration.ofHours(
+        TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours(
                                                                                                               2 ) ) );
 
-        TimeWindowOuter windowThree = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                        Instant.MAX,
-                                                                                                        Duration.ofHours(
+        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                          Instant.MAX,
+                                                                                          Duration.ofHours(
                                                                                                                 2 ) ) );
 
         OneOrTwoThresholds thresholdOne =
@@ -688,19 +688,19 @@ class SlicerTest
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
 
-        TimeWindowOuter windowOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                      Instant.MAX,
-                                                                                                      Duration.ofHours(
+        TimeWindowOuter windowOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours(
                                                                                                               1 ) ) );
 
-        TimeWindowOuter windowTwo = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                      Instant.MAX,
-                                                                                                      Duration.ofHours(
+        TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                        Instant.MAX,
+                                                                                        Duration.ofHours(
                                                                                                               2 ) ) );
 
-        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                        Instant.MAX,
-                                                                                        Duration.ofHours( 2 ) ) );
+        TimeWindowOuter windowThree = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                                          Instant.MAX,
+                                                                                          Duration.ofHours( 2 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),

@@ -36,7 +36,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.TimeScale;
@@ -1681,10 +1681,10 @@ public final class TimeSeriesSlicer
 
             // Snip datetimes first, because lead durations are only snipped with respect to 
             // the ReferenceTimeType.T0
-            TimeWindow inner = MessageFactory.getTimeWindow( snipTo.getEarliestReferenceTime(),
-                                                             snipTo.getLatestReferenceTime(),
-                                                             snipTo.getEarliestValidTime(),
-                                                             snipTo.getLatestValidTime() );
+            TimeWindow inner = MessageUtilities.getTimeWindow( snipTo.getEarliestReferenceTime(),
+                                                               snipTo.getLatestReferenceTime(),
+                                                               snipTo.getEarliestValidTime(),
+                                                               snipTo.getLatestValidTime() );
             TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
 
             LOGGER.debug( "Snipping time-series {} to the time window of {}.",

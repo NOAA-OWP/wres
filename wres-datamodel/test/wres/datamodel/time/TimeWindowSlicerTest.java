@@ -24,7 +24,7 @@ import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeWindowAggregation;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
@@ -73,20 +73,20 @@ class TimeWindowSlicerTest
     @Test
     void testUnion()
     {
-        TimeWindow firstInner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                              FOURTH_TIME,
-                                                                              Duration.ofHours( 5 ),
-                                                                              Duration.ofHours( 25 ) );
+        TimeWindow firstInner = MessageUtilities.getTimeWindow( SECOND_TIME,
+                                                                FOURTH_TIME,
+                                                                Duration.ofHours( 5 ),
+                                                                Duration.ofHours( 25 ) );
         TimeWindowOuter first = TimeWindowOuter.of( firstInner );
-        TimeWindow secondInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                               THIRD_TIME,
-                                                                               Duration.ofHours( -5 ),
-                                                                               Duration.ofHours( 20 ) );
+        TimeWindow secondInner = MessageUtilities.getTimeWindow( FIRST_TIME,
+                                                                 THIRD_TIME,
+                                                                 Duration.ofHours( -5 ),
+                                                                 Duration.ofHours( 20 ) );
         TimeWindowOuter second = TimeWindowOuter.of( secondInner );
-        TimeWindow expectedInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                                 FOURTH_TIME,
-                                                                                 Duration.ofHours( -5 ),
-                                                                                 Duration.ofHours( 25 ) );
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow( FIRST_TIME,
+                                                                   FOURTH_TIME,
+                                                                   Duration.ofHours( -5 ),
+                                                                   Duration.ofHours( 25 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
         Set<TimeWindowOuter> union = new HashSet<>();
         union.add( first );
@@ -96,26 +96,26 @@ class TimeWindowSlicerTest
 
         assertEquals( expected, actual );
 
-        TimeWindow thirdInner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                              FOURTH_TIME,
-                                                                              FIRST_TIME,
-                                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                                              Duration.ofHours( 5 ),
-                                                                              Duration.ofHours( 21 ) );
+        TimeWindow thirdInner = MessageUtilities.getTimeWindow( SECOND_TIME,
+                                                                FOURTH_TIME,
+                                                                FIRST_TIME,
+                                                                Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                                Duration.ofHours( 5 ),
+                                                                Duration.ofHours( 21 ) );
         TimeWindowOuter third = TimeWindowOuter.of( thirdInner );
-        TimeWindow fourthInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                               THIRD_TIME,
-                                                                               Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                                               FOURTH_TIME,
-                                                                               Duration.ZERO,
-                                                                               Duration.ofHours( 20 ) );
+        TimeWindow fourthInner = MessageUtilities.getTimeWindow( FIRST_TIME,
+                                                                 THIRD_TIME,
+                                                                 Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                                 FOURTH_TIME,
+                                                                 Duration.ZERO,
+                                                                 Duration.ofHours( 20 ) );
         TimeWindowOuter fourth = TimeWindowOuter.of( fourthInner );
-        TimeWindow fifthInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                              FOURTH_TIME,
-                                                                              Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                                              Duration.ZERO,
-                                                                              Duration.ofHours( 21 ) );
+        TimeWindow fifthInner = MessageUtilities.getTimeWindow( FIRST_TIME,
+                                                                FOURTH_TIME,
+                                                                Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                                Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                                Duration.ZERO,
+                                                                Duration.ofHours( 21 ) );
         TimeWindowOuter expectedTwo = TimeWindowOuter.of( fifthInner );
         Set<TimeWindowOuter> unionTwo = new HashSet<>();
         unionTwo.add( third );
@@ -164,14 +164,14 @@ class TimeWindowSlicerTest
     @Test
     void testIntersectionOnLeadDurationsOnly()
     {
-        TimeWindow one = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                       Duration.ofHours( 3 ) );
-        TimeWindow two = MessageFactory.getTimeWindow( Duration.ofHours( 3 ),
-                                                       Duration.ofHours( 5 ) );
-        TimeWindow three = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                         Duration.ofHours( 2 ) );
-        TimeWindow four = MessageFactory.getTimeWindow( Duration.ofHours( 6 ),
-                                                        Duration.ofHours( 7 ) );
+        TimeWindow one = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                         Duration.ofHours( 3 ) );
+        TimeWindow two = MessageUtilities.getTimeWindow( Duration.ofHours( 3 ),
+                                                         Duration.ofHours( 5 ) );
+        TimeWindow three = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
+        TimeWindow four = MessageUtilities.getTimeWindow( Duration.ofHours( 6 ),
+                                                          Duration.ofHours( 7 ) );
         Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
                                              TimeWindowOuter.of( two ) );
         Set<TimeWindowOuter> second = Set.of( TimeWindowOuter.of( three ),
@@ -187,14 +187,14 @@ class TimeWindowSlicerTest
     @Test
     void testIntersectionOnValidTimeOnly()
     {
-        TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                       Instant.parse( INSTANT_TWO ) );
-        TimeWindow two = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
-                                                       Instant.parse( INSTANT_THREE ) );
-        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+        TimeWindow one = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                         Instant.parse( INSTANT_TWO ) );
+        TimeWindow two = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FOUR ),
                                                          Instant.parse( INSTANT_THREE ) );
-        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ELEVEN ),
-                                                        Instant.parse( INSTANT_TEN ) );
+        TimeWindow three = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                           Instant.parse( INSTANT_THREE ) );
+        TimeWindow four = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ELEVEN ),
+                                                          Instant.parse( INSTANT_TEN ) );
         Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
                                              TimeWindowOuter.of( two ) );
         Set<TimeWindowOuter> second = Set.of( TimeWindowOuter.of( three ),
@@ -239,12 +239,12 @@ class TimeWindowSlicerTest
         Instant ns7 = Instant.parse( "2023-11-09T16:48:00Z" );
         Instant ne7 = Instant.parse( "2023-12-05T04:48:00Z" );
 
-        TimeWindow one = MessageFactory.getTimeWindow( s1, e1 );
-        TimeWindow two = MessageFactory.getTimeWindow( s2, e2 );
-        TimeWindow three = MessageFactory.getTimeWindow( s3, e3 );
-        TimeWindow four = MessageFactory.getTimeWindow( s4, e4 );
-        TimeWindow five = MessageFactory.getTimeWindow( s5, e5 );
-        TimeWindow six = MessageFactory.getTimeWindow( s6, e6 );
+        TimeWindow one = MessageUtilities.getTimeWindow( s1, e1 );
+        TimeWindow two = MessageUtilities.getTimeWindow( s2, e2 );
+        TimeWindow three = MessageUtilities.getTimeWindow( s3, e3 );
+        TimeWindow four = MessageUtilities.getTimeWindow( s4, e4 );
+        TimeWindow five = MessageUtilities.getTimeWindow( s5, e5 );
+        TimeWindow six = MessageUtilities.getTimeWindow( s6, e6 );
 
         Set<TimeWindowOuter> left = Set.of( TimeWindowOuter.of( one ),
                                             TimeWindowOuter.of( two ),
@@ -253,13 +253,13 @@ class TimeWindowSlicerTest
                                             TimeWindowOuter.of( five ),
                                             TimeWindowOuter.of( six ) );
 
-        TimeWindow oneRight = MessageFactory.getTimeWindow( ns1, ne1 );
-        TimeWindow twoRight = MessageFactory.getTimeWindow( ns2, ne2 );
-        TimeWindow threeRight = MessageFactory.getTimeWindow( ns3, ne3 );
-        TimeWindow fourRight = MessageFactory.getTimeWindow( ns4, ne4 );
-        TimeWindow fiveRight = MessageFactory.getTimeWindow( ns5, ne5 );
-        TimeWindow sixRight = MessageFactory.getTimeWindow( ns6, ne6 );
-        TimeWindow sevenRight = MessageFactory.getTimeWindow( ns7, ne7 );
+        TimeWindow oneRight = MessageUtilities.getTimeWindow( ns1, ne1 );
+        TimeWindow twoRight = MessageUtilities.getTimeWindow( ns2, ne2 );
+        TimeWindow threeRight = MessageUtilities.getTimeWindow( ns3, ne3 );
+        TimeWindow fourRight = MessageUtilities.getTimeWindow( ns4, ne4 );
+        TimeWindow fiveRight = MessageUtilities.getTimeWindow( ns5, ne5 );
+        TimeWindow sixRight = MessageUtilities.getTimeWindow( ns6, ne6 );
+        TimeWindow sevenRight = MessageUtilities.getTimeWindow( ns7, ne7 );
 
         Set<TimeWindowOuter> right = Set.of( TimeWindowOuter.of( oneRight ),
                                              TimeWindowOuter.of( twoRight ),
@@ -277,22 +277,22 @@ class TimeWindowSlicerTest
     @Test
     void testIntersectionOnReferenceTimeOnly()
     {
-        TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                       Instant.parse( INSTANT_TWO ),
-                                                       Instant.MIN,
-                                                       Instant.MAX );
-        TimeWindow two = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
-                                                       Instant.parse( INSTANT_THREE ),
-                                                       Instant.MIN,
-                                                       Instant.MAX );
-        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+        TimeWindow one = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                         Instant.parse( INSTANT_TWO ),
+                                                         Instant.MIN,
+                                                         Instant.MAX );
+        TimeWindow two = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FOUR ),
                                                          Instant.parse( INSTANT_THREE ),
                                                          Instant.MIN,
                                                          Instant.MAX );
-        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ELEVEN ),
-                                                        Instant.parse( INSTANT_TEN ),
-                                                        Instant.MIN,
-                                                        Instant.MAX );
+        TimeWindow three = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                           Instant.parse( INSTANT_THREE ),
+                                                           Instant.MIN,
+                                                           Instant.MAX );
+        TimeWindow four = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ELEVEN ),
+                                                          Instant.parse( INSTANT_TEN ),
+                                                          Instant.MIN,
+                                                          Instant.MAX );
         Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
                                              TimeWindowOuter.of( two ) );
         Set<TimeWindowOuter> second = Set.of( TimeWindowOuter.of( three ),
@@ -309,30 +309,30 @@ class TimeWindowSlicerTest
     @Test
     void testIntersectionOnLeadDurationValidTimeAndReferenceTime()
     {
-        TimeWindow one = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                       Instant.parse( "1934-01-02T00:00:00Z" ),
-                                                       Instant.parse( "1935-01-01T00:00:00Z" ),
-                                                       Instant.parse( "1935-01-02T00:00:00Z" ),
-                                                       Duration.ofHours( 1 ),
-                                                       Duration.ofHours( 2 ) );
-        TimeWindow two = MessageFactory.getTimeWindow( Instant.parse( "1933-01-01T00:00:00Z" ),
-                                                       Instant.parse( "1934-01-02T00:00:00Z" ),
-                                                       Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                       Instant.parse( "1935-01-02T00:00:00Z" ),
-                                                       Duration.ofHours( 1 ),
-                                                       Duration.ofHours( 2 ) );
-        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1934-01-04T00:00:00Z" ),
+        TimeWindow one = MessageUtilities.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-02T00:00:00Z" ),
                                                          Instant.parse( "1935-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1935-01-03T00:00:00Z" ),
-                                                         Duration.ofHours( 2 ),
-                                                         Duration.ofHours( 5 ) );
-        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                        Instant.parse( "1934-01-02T00:00:00Z" ),
-                                                        Instant.parse( "1935-01-01T00:00:00Z" ),
-                                                        Instant.parse( "1935-01-02T00:00:00Z" ),
-                                                        Duration.ofHours( 3 ),
-                                                        Duration.ofHours( 4 ) );
+                                                         Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                         Duration.ofHours( 1 ),
+                                                         Duration.ofHours( 2 ) );
+        TimeWindow two = MessageUtilities.getTimeWindow( Instant.parse( "1933-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                         Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                         Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                         Duration.ofHours( 1 ),
+                                                         Duration.ofHours( 2 ) );
+        TimeWindow three = MessageUtilities.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                           Instant.parse( "1934-01-04T00:00:00Z" ),
+                                                           Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                           Instant.parse( "1935-01-03T00:00:00Z" ),
+                                                           Duration.ofHours( 2 ),
+                                                           Duration.ofHours( 5 ) );
+        TimeWindow four = MessageUtilities.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                          Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                          Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                          Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                          Duration.ofHours( 3 ),
+                                                          Duration.ofHours( 4 ) );
 
         Set<TimeWindowOuter> first = Set.of( TimeWindowOuter.of( one ),
                                              TimeWindowOuter.of( two ) );
@@ -351,54 +351,54 @@ class TimeWindowSlicerTest
     void testIntersects()
     {
         // Lead duration only
-        TimeWindow one = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                       Duration.ofHours( 3 ) );
-        TimeWindow two = MessageFactory.getTimeWindow( Duration.ofHours( 3 ),
-                                                       Duration.ofHours( 5 ) );
+        TimeWindow one = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                         Duration.ofHours( 3 ) );
+        TimeWindow two = MessageUtilities.getTimeWindow( Duration.ofHours( 3 ),
+                                                         Duration.ofHours( 5 ) );
 
         // Valid time only
-        TimeWindow three = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                         Instant.parse( INSTANT_TWO ) );
-        TimeWindow four = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
-                                                        Instant.parse( INSTANT_THREE ) );
+        TimeWindow three = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                           Instant.parse( INSTANT_TWO ) );
+        TimeWindow four = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                          Instant.parse( INSTANT_THREE ) );
 
         // Reference time only
-        TimeWindow five = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                        Instant.parse( INSTANT_TWO ),
-                                                        Instant.MIN,
-                                                        Instant.MAX );
-        TimeWindow six = MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
-                                                       Instant.parse( INSTANT_THREE ),
-                                                       Instant.MIN,
-                                                       Instant.MAX );
+        TimeWindow five = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                          Instant.parse( INSTANT_TWO ),
+                                                          Instant.MIN,
+                                                          Instant.MAX );
+        TimeWindow six = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                         Instant.parse( INSTANT_THREE ),
+                                                         Instant.MIN,
+                                                         Instant.MAX );
 
         // All dimensions
-        TimeWindow seven = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1934-01-02T00:00:00Z" ),
-                                                         Instant.parse( "1935-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1935-01-02T00:00:00Z" ),
-                                                         Duration.ofHours( 1 ),
-                                                         Duration.ofHours( 2 ) );
-        TimeWindow eight = MessageFactory.getTimeWindow( Instant.parse( "1933-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1934-01-02T00:00:00Z" ),
-                                                         Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1935-01-02T00:00:00Z" ),
-                                                         Duration.ofHours( 1 ),
-                                                         Duration.ofHours( 2 ) );
+        TimeWindow seven = MessageUtilities.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                           Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                           Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                           Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                           Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
+        TimeWindow eight = MessageUtilities.getTimeWindow( Instant.parse( "1933-01-01T00:00:00Z" ),
+                                                           Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                           Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                           Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                           Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
 
         // No intersection
-        TimeWindow nine = MessageFactory.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
-                                                        Instant.parse( "1934-01-02T00:00:00Z" ),
-                                                        Instant.parse( "1935-01-01T00:00:00Z" ),
-                                                        Instant.parse( "1935-01-02T00:00:00Z" ),
-                                                        Duration.ofHours( 1 ),
-                                                        Duration.ofHours( 2 ) );
-        TimeWindow ten = MessageFactory.getTimeWindow( Instant.parse( "2033-01-01T00:00:00Z" ),
-                                                       Instant.parse( "2034-01-02T00:00:00Z" ),
-                                                       Instant.parse( "2034-01-01T00:00:00Z" ),
-                                                       Instant.parse( "2035-01-02T00:00:00Z" ),
-                                                       Duration.ofHours( 3 ),
-                                                       Duration.ofHours( 4 ) );
+        TimeWindow nine = MessageUtilities.getTimeWindow( Instant.parse( "1934-01-01T00:00:00Z" ),
+                                                          Instant.parse( "1934-01-02T00:00:00Z" ),
+                                                          Instant.parse( "1935-01-01T00:00:00Z" ),
+                                                          Instant.parse( "1935-01-02T00:00:00Z" ),
+                                                          Duration.ofHours( 1 ),
+                                                          Duration.ofHours( 2 ) );
+        TimeWindow ten = MessageUtilities.getTimeWindow( Instant.parse( "2033-01-01T00:00:00Z" ),
+                                                         Instant.parse( "2034-01-02T00:00:00Z" ),
+                                                         Instant.parse( "2034-01-01T00:00:00Z" ),
+                                                         Instant.parse( "2035-01-02T00:00:00Z" ),
+                                                         Duration.ofHours( 3 ),
+                                                         Duration.ofHours( 4 ) );
 
         assertAll( () -> assertTrue( TimeWindowSlicer.intersects( TimeWindowOuter.of( one ),
                                                                   TimeWindowOuter.of( two ) ) ),
@@ -415,8 +415,8 @@ class TimeWindowSlicerTest
     @Test
     void testAdjustByTimeScalePeriodWhenTimeScaleIsInstantaneous()
     {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                              Duration.ofHours( 2 ) );
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                                Duration.ofHours( 2 ) );
         TimeScale timeScale = TimeScale.newBuilder()
                                        .setPeriod( com.google.protobuf.Duration.newBuilder()
                                                                                .setSeconds( 1 ) )
@@ -432,8 +432,8 @@ class TimeWindowSlicerTest
     @Test
     void testAdjustTimeWindowEarliestLeadDurationForTimeScale()
     {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                              Duration.ofHours( 2 ) );
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                                Duration.ofHours( 2 ) );
         TimeScale timeScale = TimeScale.newBuilder()
                                        .setPeriod( com.google.protobuf.Duration.newBuilder()
                                                                                .setSeconds( 1800 ) )
@@ -442,8 +442,8 @@ class TimeWindowSlicerTest
         TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
 
         TimeWindowOuter actual = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Duration.ofMinutes( 30 ),
-                                                                 Duration.ofHours( 2 ) );
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow( Duration.ofMinutes( 30 ),
+                                                                   Duration.ofHours( 2 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
         assertEquals( expected, actual );
@@ -455,7 +455,7 @@ class TimeWindowSlicerTest
         Instant earliest = Instant.parse( "2055-03-23T00:00:00Z" );
         Instant latest = Instant.parse( "2055-03-24T00:00:00Z" );
 
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( earliest, latest );
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( earliest, latest );
         TimeScale timeScale = TimeScale.newBuilder()
                                        .setPeriod( com.google.protobuf.Duration.newBuilder()
                                                                                .setSeconds( 86400 ) )
@@ -464,8 +464,8 @@ class TimeWindowSlicerTest
         TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
 
         TimeWindowOuter actual = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2055-03-22T00:00:00Z" ),
-                                                                 latest );
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow( Instant.parse( "2055-03-22T00:00:00Z" ),
+                                                                   latest );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
         assertEquals( expected, actual );
@@ -497,54 +497,54 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 24 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 1 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                               Duration.ofHours( 2 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 2 ),
-                                                               Duration.ofHours( 3 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 3 ),
-                                                               Duration.ofHours( 4 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 4 ),
-                                                               Duration.ofHours( 5 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 5 ),
-                                                               Duration.ofHours( 6 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 6 ),
-                                                               Duration.ofHours( 7 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 7 ),
-                                                               Duration.ofHours( 8 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 8 ),
-                                                               Duration.ofHours( 9 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 9 ),
-                                                               Duration.ofHours( 10 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 10 ),
-                                                               Duration.ofHours( 11 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 11 ),
-                                                               Duration.ofHours( 12 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 12 ),
-                                                               Duration.ofHours( 13 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 13 ),
-                                                               Duration.ofHours( 14 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 14 ),
-                                                               Duration.ofHours( 15 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 15 ),
-                                                               Duration.ofHours( 16 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 16 ),
-                                                               Duration.ofHours( 17 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 18 ),
-                                                               Duration.ofHours( 19 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 19 ),
-                                                               Duration.ofHours( 20 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 20 ),
-                                                               Duration.ofHours( 21 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 21 ),
-                                                               Duration.ofHours( 22 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 22 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 23 ),
-                                                               Duration.ofHours( 24 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 1 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                                 Duration.ofHours( 2 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 2 ),
+                                                                 Duration.ofHours( 3 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 3 ),
+                                                                 Duration.ofHours( 4 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 4 ),
+                                                                 Duration.ofHours( 5 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 5 ),
+                                                                 Duration.ofHours( 6 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 6 ),
+                                                                 Duration.ofHours( 7 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 7 ),
+                                                                 Duration.ofHours( 8 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 8 ),
+                                                                 Duration.ofHours( 9 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 9 ),
+                                                                 Duration.ofHours( 10 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 10 ),
+                                                                 Duration.ofHours( 11 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 11 ),
+                                                                 Duration.ofHours( 12 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 12 ),
+                                                                 Duration.ofHours( 13 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 13 ),
+                                                                 Duration.ofHours( 14 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 14 ),
+                                                                 Duration.ofHours( 15 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 15 ),
+                                                                 Duration.ofHours( 16 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 16 ),
+                                                                 Duration.ofHours( 17 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 18 ),
+                                                                 Duration.ofHours( 19 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 19 ),
+                                                                 Duration.ofHours( 20 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 20 ),
+                                                                 Duration.ofHours( 21 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 21 ),
+                                                                 Duration.ofHours( 22 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 22 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 23 ),
+                                                                 Duration.ofHours( 24 ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -585,10 +585,10 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 2 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 24 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
-                                                               Duration.ofHours( 48 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 24 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 24 ),
+                                                                 Duration.ofHours( 48 ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -640,114 +640,114 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 18 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),
-                                                               //2551-03-17T00:00:00Z
-                                                               Instant.parse( INSTANT_TWELVE ),
-                                                               //2551-03-17T13:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),
-                                                               //2551-03-17T00:00:00Z
-                                                               Instant.parse( INSTANT_TWELVE ),
-                                                               //2551-03-17T13:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),
-                                                               //2551-03-17T07:00:00Z
-                                                               Instant.parse( INSTANT_FOURTEEN ),
-                                                               //2551-03-17T20:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),
-                                                               //2551-03-17T07:00:00Z
-                                                               Instant.parse( INSTANT_FOURTEEN ),
-                                                               //2551-03-17T20:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),
-                                                               //2551-03-17T14:00:00Z
-                                                               Instant.parse( INSTANT_SIXTEEN ),
-                                                               //2551-03-18T03:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),
-                                                               //2551-03-17T14:00:00Z
-                                                               Instant.parse( INSTANT_SIXTEEN ),
-                                                               //2551-03-18T03:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),
-                                                               //2551-03-17T21:00:00Z
-                                                               Instant.parse( INSTANT_EIGHTEEN ),
-                                                               //2551-03-18T10:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),
-                                                               //2551-03-17T21:00:00Z
-                                                               Instant.parse( INSTANT_EIGHTEEN ),
-                                                               //2551-03-18T10:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),
-                                                               //2551-03-18T04:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY ),
-                                                               //2551-03-18T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),
-                                                               //2551-03-18T04:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY ),
-                                                               //2551-03-18T17:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),
-                                                               //2551-03-18T11:00:00Z
-                                                               Instant.parse( INSTANT_ELEVEN ),
-                                                               //2551-03-19T00:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),
-                                                               //2551-03-18T11:00:00Z
-                                                               Instant.parse( INSTANT_ELEVEN ),
-                                                               //2551-03-19T00:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),
-                                                               //2551-03-18T18:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_THREE ),
-                                                               //2551-03-19T07:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),
-                                                               //2551-03-18T18:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_THREE ),
-                                                               //2551-03-19T07:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),
-                                                               //2551-03-19T01:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_FIVE ),
-                                                               //2551-03-19T14:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),
-                                                               //2551-03-19T01:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_FIVE ),
-                                                               //2551-03-19T14:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),
-                                                               //2551-03-19T08:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_SEVEN ),
-                                                               //2551-03-19T21:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 23 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),
-                                                               //2551-03-19T08:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_SEVEN ),
-                                                               //2551-03-19T21:00:00Z
-                                                               Duration.ofHours( 17 ),
-                                                               Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINE ),
+                                                                 //2551-03-17T00:00:00Z
+                                                                 Instant.parse( INSTANT_TWELVE ),
+                                                                 //2551-03-17T13:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINE ),
+                                                                 //2551-03-17T00:00:00Z
+                                                                 Instant.parse( INSTANT_TWELVE ),
+                                                                 //2551-03-17T13:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),
+                                                                 //2551-03-17T07:00:00Z
+                                                                 Instant.parse( INSTANT_FOURTEEN ),
+                                                                 //2551-03-17T20:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),
+                                                                 //2551-03-17T07:00:00Z
+                                                                 Instant.parse( INSTANT_FOURTEEN ),
+                                                                 //2551-03-17T20:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),
+                                                                 //2551-03-17T14:00:00Z
+                                                                 Instant.parse( INSTANT_SIXTEEN ),
+                                                                 //2551-03-18T03:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),
+                                                                 //2551-03-17T14:00:00Z
+                                                                 Instant.parse( INSTANT_SIXTEEN ),
+                                                                 //2551-03-18T03:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),
+                                                                 //2551-03-17T21:00:00Z
+                                                                 Instant.parse( INSTANT_EIGHTEEN ),
+                                                                 //2551-03-18T10:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),
+                                                                 //2551-03-17T21:00:00Z
+                                                                 Instant.parse( INSTANT_EIGHTEEN ),
+                                                                 //2551-03-18T10:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),
+                                                                 //2551-03-18T04:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY ),
+                                                                 //2551-03-18T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),
+                                                                 //2551-03-18T04:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY ),
+                                                                 //2551-03-18T17:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),
+                                                                 //2551-03-18T11:00:00Z
+                                                                 Instant.parse( INSTANT_ELEVEN ),
+                                                                 //2551-03-19T00:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),
+                                                                 //2551-03-18T11:00:00Z
+                                                                 Instant.parse( INSTANT_ELEVEN ),
+                                                                 //2551-03-19T00:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),
+                                                                 //2551-03-18T18:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_THREE ),
+                                                                 //2551-03-19T07:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),
+                                                                 //2551-03-18T18:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_THREE ),
+                                                                 //2551-03-19T07:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),
+                                                                 //2551-03-19T01:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_FIVE ),
+                                                                 //2551-03-19T14:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),
+                                                                 //2551-03-19T01:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_FIVE ),
+                                                                 //2551-03-19T14:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),
+                                                                 //2551-03-19T08:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_SEVEN ),
+                                                                 //2551-03-19T21:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 23 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),
+                                                                 //2551-03-19T08:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_SEVEN ),
+                                                                 //2551-03-19T21:00:00Z
+                                                                 Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 40 ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -795,16 +795,16 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),
-                                                               //2551-03-17T00:00:00Z
-                                                               Instant.parse( INSTANT_TEN ),
-                                                               //2551-03-20T00:00:00Z
-                                                               Instant.parse( INSTANT_ELEVEN ),
-                                                               //2551-03-19T00:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_EIGHT ),
-                                                               //2551-03-24T00:00:00Z
-                                                               Duration.ofHours( 1 ),
-                                                               Duration.ofHours( 25 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINE ),
+                                                                 //2551-03-17T00:00:00Z
+                                                                 Instant.parse( INSTANT_TEN ),
+                                                                 //2551-03-20T00:00:00Z
+                                                                 Instant.parse( INSTANT_ELEVEN ),
+                                                                 //2551-03-19T00:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_EIGHT ),
+                                                                 //2551-03-24T00:00:00Z
+                                                                 Duration.ofHours( 1 ),
+                                                                 Duration.ofHours( 25 ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -834,12 +834,12 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Instant.MIN,
-                                                               Instant.MAX,
-                                                               MessageFactory.DURATION_MIN,
-                                                               MessageFactory.DURATION_MAX ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 MessageUtilities.DURATION_MIN,
+                                                                 MessageUtilities.DURATION_MAX ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -896,236 +896,236 @@ class TimeWindowSlicerTest
 
         // Generate the expected time windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 23 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_FOUR ),
-                                                               //2017-08-08T01:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),
-                                                               //2017-08-08T01:00:00Z
-                                                               Instant.parse( INSTANT_FIVE ),
-                                                               //2017-08-08T02:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIVE ),
-                                                               //2017-08-08T02:00:00Z
-                                                               Instant.parse( INSTANT_SIX ),
-                                                               //2017-08-08T03:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SIX ),
-                                                               //2017-08-08T03:00:00Z
-                                                               Instant.parse( INSTANT_SEVEN ),
-                                                               //2017-08-08T04:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVEN ),
-                                                               //2017-08-08T04:00:00Z
-                                                               Instant.parse( INSTANT_EIGHT ),
-                                                               //2017-08-08T05:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_EIGHT ),
-                                                               //2017-08-08T05:00:00Z
-                                                               Instant.parse( "2017-08-08T06:00:00Z" ),
-                                                               //2017-08-08T06:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T06:00:00Z" ),
-                                                               //2017-08-08T06:00:00Z
-                                                               Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                               //2017-08-08T07:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                               //2017-08-08T07:00:00Z
-                                                               Instant.parse( "2017-08-08T08:00:00Z" ),
-                                                               //2017-08-08T08:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T08:00:00Z" ),
-                                                               //2017-08-08T08:00:00Z
-                                                               Instant.parse( "2017-08-08T09:00:00Z" ),
-                                                               //2017-08-08T09:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T09:00:00Z" ),
-                                                               //2017-08-08T09:00:00Z
-                                                               Instant.parse( "2017-08-08T10:00:00Z" ),
-                                                               //2017-08-08T10:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T10:00:00Z" ),
-                                                               //2017-08-08T10:00:00Z
-                                                               Instant.parse( "2017-08-08T11:00:00Z" ),
-                                                               //2017-08-08T11:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T11:00:00Z" ),
-                                                               //2017-08-08T11:00:00Z
-                                                               Instant.parse( "2017-08-08T12:00:00Z" ),
-                                                               //2017-08-08T12:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T12:00:00Z" ),
-                                                               //2017-08-08T12:00:00Z
-                                                               Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                               //2017-08-08T13:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                               //2017-08-08T13:00:00Z
-                                                               Instant.parse( "2017-08-08T14:00:00Z" ),
-                                                               //2017-08-08T14:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T14:00:00Z" ),
-                                                               //2017-08-08T14:00:00Z
-                                                               Instant.parse( "2017-08-08T15:00:00Z" ),
-                                                               //2017-08-08T15:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T15:00:00Z" ),
-                                                               //2017-08-08T15:00:00Z
-                                                               Instant.parse( "2017-08-08T16:00:00Z" ),
-                                                               //2017-08-08T16:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T16:00:00Z" ),
-                                                               //2017-08-08T16:00:00Z
-                                                               Instant.parse( "2017-08-08T17:00:00Z" ),
-                                                               //2017-08-08T17:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T17:00:00Z" ),
-                                                               //2017-08-08T17:00:00Z
-                                                               Instant.parse( "2017-08-08T18:00:00Z" ),
-                                                               //2017-08-08T18:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T18:00:00Z" ),
-                                                               //2017-08-08T18:00:00Z
-                                                               Instant.parse( "2017-08-08T19:00:00Z" ),
-                                                               //2017-08-08T19:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T19:00:00Z" ),
-                                                               //2017-08-08T19:00:00Z
-                                                               Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                               //2017-08-08T20:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                               //2017-08-08T20:00:00Z
-                                                               Instant.parse( "2017-08-08T21:00:00Z" ),
-                                                               //2017-08-08T21:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T21:00:00Z" ),
-                                                               //2017-08-08T21:00:00Z
-                                                               Instant.parse( "2017-08-08T22:00:00Z" ),
-                                                               //2017-08-08T22:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T22:00:00Z" ),
-                                                               //2017-08-08T22:00:00Z
-                                                               Instant.parse( INSTANT_TWO ),
-                                                               //2017-08-08T23:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_FOUR ),
+                                                                 //2017-08-08T01:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FOUR ),
+                                                                 //2017-08-08T01:00:00Z
+                                                                 Instant.parse( INSTANT_FIVE ),
+                                                                 //2017-08-08T02:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FIVE ),
+                                                                 //2017-08-08T02:00:00Z
+                                                                 Instant.parse( INSTANT_SIX ),
+                                                                 //2017-08-08T03:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_SIX ),
+                                                                 //2017-08-08T03:00:00Z
+                                                                 Instant.parse( INSTANT_SEVEN ),
+                                                                 //2017-08-08T04:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_SEVEN ),
+                                                                 //2017-08-08T04:00:00Z
+                                                                 Instant.parse( INSTANT_EIGHT ),
+                                                                 //2017-08-08T05:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_EIGHT ),
+                                                                 //2017-08-08T05:00:00Z
+                                                                 Instant.parse( "2017-08-08T06:00:00Z" ),
+                                                                 //2017-08-08T06:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T06:00:00Z" ),
+                                                                 //2017-08-08T06:00:00Z
+                                                                 Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                 //2017-08-08T07:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                 //2017-08-08T07:00:00Z
+                                                                 Instant.parse( "2017-08-08T08:00:00Z" ),
+                                                                 //2017-08-08T08:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T08:00:00Z" ),
+                                                                 //2017-08-08T08:00:00Z
+                                                                 Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                 //2017-08-08T09:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                 //2017-08-08T09:00:00Z
+                                                                 Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                 //2017-08-08T10:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                 //2017-08-08T10:00:00Z
+                                                                 Instant.parse( "2017-08-08T11:00:00Z" ),
+                                                                 //2017-08-08T11:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T11:00:00Z" ),
+                                                                 //2017-08-08T11:00:00Z
+                                                                 Instant.parse( "2017-08-08T12:00:00Z" ),
+                                                                 //2017-08-08T12:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T12:00:00Z" ),
+                                                                 //2017-08-08T12:00:00Z
+                                                                 Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 //2017-08-08T13:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 //2017-08-08T13:00:00Z
+                                                                 Instant.parse( "2017-08-08T14:00:00Z" ),
+                                                                 //2017-08-08T14:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T14:00:00Z" ),
+                                                                 //2017-08-08T14:00:00Z
+                                                                 Instant.parse( "2017-08-08T15:00:00Z" ),
+                                                                 //2017-08-08T15:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T15:00:00Z" ),
+                                                                 //2017-08-08T15:00:00Z
+                                                                 Instant.parse( "2017-08-08T16:00:00Z" ),
+                                                                 //2017-08-08T16:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T16:00:00Z" ),
+                                                                 //2017-08-08T16:00:00Z
+                                                                 Instant.parse( "2017-08-08T17:00:00Z" ),
+                                                                 //2017-08-08T17:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T17:00:00Z" ),
+                                                                 //2017-08-08T17:00:00Z
+                                                                 Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                                 //2017-08-08T18:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                                 //2017-08-08T18:00:00Z
+                                                                 Instant.parse( "2017-08-08T19:00:00Z" ),
+                                                                 //2017-08-08T19:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T19:00:00Z" ),
+                                                                 //2017-08-08T19:00:00Z
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 //2017-08-08T20:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 //2017-08-08T20:00:00Z
+                                                                 Instant.parse( "2017-08-08T21:00:00Z" ),
+                                                                 //2017-08-08T21:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T21:00:00Z" ),
+                                                                 //2017-08-08T21:00:00Z
+                                                                 Instant.parse( "2017-08-08T22:00:00Z" ),
+                                                                 //2017-08-08T22:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T22:00:00Z" ),
+                                                                 //2017-08-08T22:00:00Z
+                                                                 Instant.parse( INSTANT_TWO ),
+                                                                 //2017-08-08T23:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual time windows for the explicit test
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -1191,16 +1191,16 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_TWO ),
-                                                               //2017-08-08T23:00:00Z
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               //2017-08-08T00:00:00Z
-                                                               Instant.parse( INSTANT_THREE ),
-                                                               //2017-08-09T17:00:00Z
-                                                               Duration.ofHours( 0 ),
-                                                               Duration.ofHours( 18 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_TWO ),
+                                                                 //2017-08-08T23:00:00Z
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 //2017-08-08T00:00:00Z
+                                                                 Instant.parse( INSTANT_THREE ),
+                                                                 //2017-08-09T17:00:00Z
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 18 ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -1252,60 +1252,60 @@ class TimeWindowSlicerTest
         Duration first = Duration.ofHours( 0 );
         Duration last = Duration.ofHours( 40 );
 
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),
-                                                               //2551-03-17T00:00:00Z
-                                                               Instant.parse( INSTANT_TWELVE ),
-                                                               //2551-03-17T13:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),
-                                                               //2551-03-17T07:00:00Z
-                                                               Instant.parse( INSTANT_FOURTEEN ),
-                                                               //2551-03-17T20:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),
-                                                               //2551-03-17T14:00:00Z
-                                                               Instant.parse( INSTANT_SIXTEEN ),
-                                                               //2551-03-18T03:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),
-                                                               //2551-03-17T21:00:00Z
-                                                               Instant.parse( INSTANT_EIGHTEEN ),
-                                                               //2551-03-18T10:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),
-                                                               //2551-03-18T04:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY ),
-                                                               //2551-03-18T17:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),
-                                                               //2551-03-18T11:00:00Z
-                                                               Instant.parse( INSTANT_ELEVEN ),
-                                                               //2551-03-19T00:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),
-                                                               //2551-03-18T18:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_THREE ),
-                                                               //2551-03-19T07:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),
-                                                               //2551-03-19T01:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_FIVE ),
-                                                               //2551-03-19T14:00:00Z
-                                                               first,
-                                                               last ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),
-                                                               //2551-03-19T08:00:00Z
-                                                               Instant.parse( INSTANT_TWENTY_SEVEN ),
-                                                               //2551-03-19T21:00:00Z
-                                                               first,
-                                                               last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINE ),
+                                                                 //2551-03-17T00:00:00Z
+                                                                 Instant.parse( INSTANT_TWELVE ),
+                                                                 //2551-03-17T13:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),
+                                                                 //2551-03-17T07:00:00Z
+                                                                 Instant.parse( INSTANT_FOURTEEN ),
+                                                                 //2551-03-17T20:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),
+                                                                 //2551-03-17T14:00:00Z
+                                                                 Instant.parse( INSTANT_SIXTEEN ),
+                                                                 //2551-03-18T03:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),
+                                                                 //2551-03-17T21:00:00Z
+                                                                 Instant.parse( INSTANT_EIGHTEEN ),
+                                                                 //2551-03-18T10:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),
+                                                                 //2551-03-18T04:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY ),
+                                                                 //2551-03-18T17:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),
+                                                                 //2551-03-18T11:00:00Z
+                                                                 Instant.parse( INSTANT_ELEVEN ),
+                                                                 //2551-03-19T00:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),
+                                                                 //2551-03-18T18:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_THREE ),
+                                                                 //2551-03-19T07:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),
+                                                                 //2551-03-19T01:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_FIVE ),
+                                                                 //2551-03-19T14:00:00Z
+                                                                 first,
+                                                                 last ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),
+                                                                 //2551-03-19T08:00:00Z
+                                                                 Instant.parse( INSTANT_TWENTY_SEVEN ),
+                                                                 //2551-03-19T21:00:00Z
+                                                                 first,
+                                                                 last ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowSlicer.getTimeWindows( declaration );
@@ -1350,8 +1350,8 @@ class TimeWindowSlicerTest
         Duration first = Duration.ofHours( 43 );
         Duration last = Duration.ofHours( 43 );
 
-        TimeWindow inner = MessageFactory.getTimeWindow( first,
-                                                         last );
+        TimeWindow inner = MessageUtilities.getTimeWindow( first,
+                                                           last );
         expectedTimeWindows.add( inner );
 
         // Generate the actual windows
@@ -1392,10 +1392,10 @@ class TimeWindowSlicerTest
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 2 );
 
-        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                            Instant.parse( "2017-08-08T13:00:00Z" ) );
-        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                            Instant.parse( "2017-08-08T20:00:00Z" ) );
+        TimeWindow innerOne = MessageUtilities.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                              Instant.parse( "2017-08-08T13:00:00Z" ) );
+        TimeWindow innerTwo = MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                              Instant.parse( "2017-08-08T20:00:00Z" ) );
 
         expectedTimeWindows.add( TimeWindowOuter.of( innerOne ) );
         expectedTimeWindows.add( TimeWindowOuter.of( innerTwo ) );
@@ -1438,30 +1438,30 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 4 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                               Duration.ofHours( 19 ),
-                                                               Duration.ofHours( 27 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                               Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                               Duration.ofHours( 19 ),
-                                                               Duration.ofHours( 27 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                               Duration.ofHours( 26 ),
-                                                               Duration.ofHours( 34 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.MIN,
-                                                               Instant.MAX,
-                                                               Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                               Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                               Duration.ofHours( 26 ),
-                                                               Duration.ofHours( 34 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 Duration.ofHours( 19 ),
+                                                                 Duration.ofHours( 27 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 19 ),
+                                                                 Duration.ofHours( 27 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 Duration.ofHours( 26 ),
+                                                                 Duration.ofHours( 34 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 26 ),
+                                                                 Duration.ofHours( 34 ) ) );
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows.stream()
@@ -1514,30 +1514,30 @@ class TimeWindowSlicerTest
 
         // Generate the expected windows
         Set<TimeWindow> expectedTimeWindows = new HashSet<>( 4 );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                               Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                               Duration.ofHours( 19 ),
-                                                               Duration.ofHours( 27 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                               Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                               Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                               Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                               Duration.ofHours( 19 ),
-                                                               Duration.ofHours( 27 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                               Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                               Instant.parse( INSTANT_ONE ),
-                                                               Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                               Duration.ofHours( 26 ),
-                                                               Duration.ofHours( 34 ) ) );
-        expectedTimeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                               Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                               Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                               Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                               Duration.ofHours( 26 ),
-                                                               Duration.ofHours( 34 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                 Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 Duration.ofHours( 19 ),
+                                                                 Duration.ofHours( 27 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                 Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 19 ),
+                                                                 Duration.ofHours( 27 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                 Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 Duration.ofHours( 26 ),
+                                                                 Duration.ofHours( 34 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                 Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 26 ),
+                                                                 Duration.ofHours( 34 ) ) );
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows.stream()
@@ -1551,12 +1551,12 @@ class TimeWindowSlicerTest
     {
         Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();
         TimeWindowOuter actual = TimeWindowSlicer.aggregate( timeWindows, TimeWindowAggregation.MAXIMUM );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2088-08-08T23:00:00Z" ),
-                                                                 Instant.parse( "2110-08-09T16:00:00Z" ),
-                                                                 Instant.parse( "2080-08-08T07:00:00Z" ),
-                                                                 Instant.parse( "2102-08-08T20:00:00Z" ),
-                                                                 Duration.ofHours( 13 ),
-                                                                 Duration.ofHours( 39 ) );
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow( Instant.parse( "2088-08-08T23:00:00Z" ),
+                                                                   Instant.parse( "2110-08-09T16:00:00Z" ),
+                                                                   Instant.parse( "2080-08-08T07:00:00Z" ),
+                                                                   Instant.parse( "2102-08-08T20:00:00Z" ),
+                                                                   Duration.ofHours( 13 ),
+                                                                   Duration.ofHours( 39 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
         assertEquals( expected, actual );
@@ -1567,12 +1567,12 @@ class TimeWindowSlicerTest
     {
         Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();
         TimeWindowOuter actual = TimeWindowSlicer.aggregate( timeWindows, TimeWindowAggregation.MINIMUM );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2099-08-08T23:00:00Z" ),
-                                                                 Instant.parse( "2106-08-09T16:00:00Z" ),
-                                                                 Instant.parse( "2099-08-08T07:00:00Z" ),
-                                                                 Instant.parse( "2100-08-08T13:00:00Z" ),
-                                                                 Duration.ofHours( 20 ),
-                                                                 Duration.ofHours( 27 ) );
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow( Instant.parse( "2099-08-08T23:00:00Z" ),
+                                                                   Instant.parse( "2106-08-09T16:00:00Z" ),
+                                                                   Instant.parse( "2099-08-08T07:00:00Z" ),
+                                                                   Instant.parse( "2100-08-08T13:00:00Z" ),
+                                                                   Duration.ofHours( 20 ),
+                                                                   Duration.ofHours( 27 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
         assertEquals( expected, actual );
@@ -1583,12 +1583,12 @@ class TimeWindowSlicerTest
     {
         Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();
         TimeWindowOuter actual = TimeWindowSlicer.aggregate( timeWindows, TimeWindowAggregation.AVERAGE );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2092-08-08T15:00:00Z" ),
-                                                                 Instant.parse( "2108-12-09T00:00:00Z" ),
-                                                                 Instant.parse( "2090-04-08T09:00:00Z" ),
-                                                                 Instant.parse( "2101-08-08T17:40:00Z" ),
-                                                                 Duration.ofMinutes( 17 * 60 + 20 ),
-                                                                 Duration.ofMinutes( 31 * 60 + 40 ) );
+        TimeWindow expectedInner = MessageUtilities.getTimeWindow( Instant.parse( "2092-08-08T15:00:00Z" ),
+                                                                   Instant.parse( "2108-12-09T00:00:00Z" ),
+                                                                   Instant.parse( "2090-04-08T09:00:00Z" ),
+                                                                   Instant.parse( "2101-08-08T17:40:00Z" ),
+                                                                   Duration.ofMinutes( 17 * 60 + 20 ),
+                                                                   Duration.ofMinutes( 31 * 60 + 40 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
         assertEquals( expected, actual );
@@ -1819,24 +1819,24 @@ class TimeWindowSlicerTest
     private Set<TimeWindowOuter> getTimeWindowsForAggregationTesting()
     {
         Set<TimeWindow> timeWindows = new HashSet<>( 3 );
-        timeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2099-08-08T23:00:00Z" ),
-                                                       Instant.parse( "2109-08-09T16:00:00Z" ),
-                                                       Instant.parse( "2090-08-07T13:00:00Z" ),
-                                                       Instant.parse( "2100-08-08T13:00:00Z" ),
-                                                       Duration.ofHours( 19 ),
-                                                       Duration.ofHours( 27 ) ) );
-        timeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2088-08-08T23:00:00Z" ),
-                                                       Instant.parse( "2110-08-09T16:00:00Z" ),
-                                                       Instant.parse( "2080-08-08T07:00:00Z" ),
-                                                       Instant.parse( "2101-08-08T20:00:00Z" ),
-                                                       Duration.ofHours( 13 ),
-                                                       Duration.ofHours( 29 ) ) );
-        timeWindows.add( MessageFactory.getTimeWindow( Instant.parse( "2089-08-08T23:00:00Z" ),
-                                                       Instant.parse( "2106-08-09T16:00:00Z" ),
-                                                       Instant.parse( "2099-08-08T07:00:00Z" ),
-                                                       Instant.parse( "2102-08-08T20:00:00Z" ),
-                                                       Duration.ofHours( 20 ),
-                                                       Duration.ofHours( 39 ) ) );
+        timeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2099-08-08T23:00:00Z" ),
+                                                         Instant.parse( "2109-08-09T16:00:00Z" ),
+                                                         Instant.parse( "2090-08-07T13:00:00Z" ),
+                                                         Instant.parse( "2100-08-08T13:00:00Z" ),
+                                                         Duration.ofHours( 19 ),
+                                                         Duration.ofHours( 27 ) ) );
+        timeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2088-08-08T23:00:00Z" ),
+                                                         Instant.parse( "2110-08-09T16:00:00Z" ),
+                                                         Instant.parse( "2080-08-08T07:00:00Z" ),
+                                                         Instant.parse( "2101-08-08T20:00:00Z" ),
+                                                         Duration.ofHours( 13 ),
+                                                         Duration.ofHours( 29 ) ) );
+        timeWindows.add( MessageUtilities.getTimeWindow( Instant.parse( "2089-08-08T23:00:00Z" ),
+                                                         Instant.parse( "2106-08-09T16:00:00Z" ),
+                                                         Instant.parse( "2099-08-08T07:00:00Z" ),
+                                                         Instant.parse( "2102-08-08T20:00:00Z" ),
+                                                         Duration.ofHours( 20 ),
+                                                         Duration.ofHours( 39 ) ) );
         return timeWindows.stream()
                           .map( TimeWindowOuter::of )
                           .collect( Collectors.toUnmodifiableSet() );

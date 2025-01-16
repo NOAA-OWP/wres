@@ -35,7 +35,7 @@ import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
-import wres.statistics.MessageFactory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -487,10 +487,10 @@ public class CsvReader implements TimeSeriesReader
             }
         }
 
-        Geometry geometry = MessageFactory.getGeometry( locationName,
-                                                        locationDescription,
-                                                        locationSrid,
-                                                        locationWkt );
+        Geometry geometry = MessageUtilities.getGeometry( locationName,
+                                                          locationDescription,
+                                                          locationSrid,
+                                                          locationWkt );
         Feature location = Feature.of( geometry );
 
         // Reference datetime is optional, many sources do not have any.

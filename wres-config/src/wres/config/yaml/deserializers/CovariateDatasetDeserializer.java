@@ -38,7 +38,7 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
         Double minimum = null;
         Double maximum = null;
         TimeScale.TimeScaleFunction rescaleFunction = null;
-        Set<CovariatePurpose> purposes = Collections.singleton( CovariatePurpose.FILTER );
+        Set<CovariatePurpose> purposes = null;
 
         // Not part of the declaration language, just used internally
         DatasetOrientation featureNameOrientation = null;
