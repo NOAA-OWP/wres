@@ -189,7 +189,7 @@ public class ReginaOgdenEventDetector implements EventDetector
                 if ( Objects.nonNull( builder.windowSize() ) )
                 {
                     builder.halfLife( builder.windowSize()
-                                             .dividedBy( 20 ) );
+                                             .dividedBy( 10 ) );
                     LOGGER.debug( "When performing event detection with the Regina-Ogden method, the half-life was "
                                   + "undefined. However, the window size was defined. The default half life is {}, "
                                   + "which is one twentieth of the window size. This default may not be appropriate and "
@@ -215,7 +215,7 @@ public class ReginaOgdenEventDetector implements EventDetector
                 if ( Objects.nonNull( parameters.halfLife() ) )
                 {
                     builder.windowSize( parameters.halfLife()
-                                                  .multipliedBy( 20 ) );
+                                                  .multipliedBy( 10 ) );
                     LOGGER.debug( "When performing event detection with the Regina-Ogden method, the window size for "
                                   + "smoothing and detecting trends was undefined. However, the half life was defined. "
                                   + "The default window size is {}, which is twenty times the half-life. This default "
