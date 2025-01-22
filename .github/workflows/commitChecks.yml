@@ -76,7 +76,6 @@ jobs:
   systests:
     needs: Build
     runs-on: ubuntu-latest
-    continue-on-error: true
     permissions:
       contents: read
 
@@ -171,7 +170,7 @@ jobs:
         mkdir -p h2_in_memory_test_results
         mkdir -p outputs
         mv wres_evaluation_* outputs
-        mv outputs outputs h2_in_memory_test_results
+        mv outputs h2_in_memory_test_results
         mv systests-*/build/reports/tests/test/* h2_in_memory_test_results
 
     # Run systests
@@ -190,7 +189,7 @@ jobs:
         mkdir -p legacy_xml_results
         mkdir -p outputs
         mv wres_evaluation_* outputs
-        mv outputs outputs legacy_xml_results
+        mv outputs legacy_xml_results
         mv systests-*/build/reports/tests/test/* legacy_xml_results
 
     # Archive the artifacts created from this build
