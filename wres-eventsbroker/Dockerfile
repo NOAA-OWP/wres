@@ -53,16 +53,20 @@ ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --rel
 ARG BROKER_USER=wres_eventsbroker
 
 # Create user and group
-RUN groupadd --system --gid 1370800073 wres && \
-    useradd  --system --no-log-init \
-             --create-home --home-dir ${BROKER_WORK} \
-             --uid 502 --gid 1370800073 ${BROKER_USER}
+#RUN groupadd --system --gid 1370800073 wres && \
+#    useradd  --system --no-log-init \
+#             --create-home --home-dir ${BROKER_WORK} \
+#             --uid 502 --gid 1370800073 ${BROKER_USER}
     
 WORKDIR ${BROKER_WORK}
 
 # Create directories with the correct permissions
-RUN mkdir -p {${BROKER_HOME},${BROKER_CONFIG},${BROKER_INSTANCE}} && \
-    chown ${BROKER_USER} ${BROKER_INSTANCE}
+#RUN mkdir -p {${BROKER_HOME},${BROKER_CONFIG},${BROKER_INSTANCE}} && \
+#    chown ${BROKER_USER} ${BROKER_INSTANCE}
+
+RUN mkdir -m 777 -p ${BROKER_HOME}
+RUN mkdir -m 777 -p ${BROKER_CONFIG}
+RUN mkdir -m 777 -p ${BROKER_INSTANCE}
 
 COPY --from=builder /workspace/out ${BROKER_HOME}
 

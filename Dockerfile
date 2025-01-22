@@ -12,8 +12,8 @@ RUN dnf install -y \
     && dnf clean all
 
 # For examples of the following for alpine or debian, see git history.
-RUN groupadd --gid 1370800073 wres \
-    && useradd --uid 498 --gid 1370800073 wres_docker --home-dir /container_home
+#RUN groupadd --gid 1370800073 wres \
+#    && useradd --uid 498 --gid 1370800073 wres_docker --home-dir /container_home
 
 # Specifies which version of the main WRES version to use.
 ARG version
@@ -41,7 +41,7 @@ WORKDIR /opt/wres-worker-${worker_version}
 # In order to set umask for file sharing, use a wrapper script, see #56790
 COPY ./scripts/docker-entrypoint.sh .
 
-USER wres_docker
+#USER wres_docker
 
 CMD [ "./docker-entrypoint.sh" ]
 
