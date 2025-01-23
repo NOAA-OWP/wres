@@ -74,7 +74,7 @@ jobs:
           scripts/build/distributions/wres-admin-scripts-*.zip
 
   systests:
-    needs: Build 
+    needs: Build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -97,7 +97,7 @@ jobs:
     # Download artifacts from previous step
     - name: Download Artifacts
       uses: actions/download-artifact@v4
-      with: 
+      with:
         github-token: ${{ github.token }}
 
     # Set env variables for zip versions
@@ -111,9 +111,9 @@ jobs:
         echo "systests_dir=$( ls -1d systests-*[a-f0-9] )" >> "$GITHUB_ENV"
 
     # Run systests
-    - name: System tests in memory
+    - name: System tests in memory zero externalization
       run: | 
-        echo "Starting the system tests in memory..."
+        echo "Starting the system tests in memory zero externalization..."
 
         # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
         # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
@@ -125,9 +125,12 @@ jobs:
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario514 --tests=Scenario720 --tests=Scenario721
 
         # Save the test results
-        mkdir -p test_results_0
-        mv systests-*/build/reports/tests/test/* test_results_0
-        mv systests-*/build/*.log test_results_0       
+        mkdir -p zero_external_test_results
+        mkdir -p outputs
+        mv wres_evaluation_* outputs
+        mv outputs zero_external_test_results
+        mv systests-*/build/reports/tests/test/* zero_external_test_results
+        mv systests-*/build/*.log zero_external_test_results       
 
     # Run systests
     - name: System tests with external graphics and numerics writing
@@ -144,9 +147,12 @@ jobs:
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario514 --tests=Scenario720 --tests=Scenario721
 
         # Save the test results
-        mkdir -p test_results_1
-        mv systests-*/build/reports/tests/test/* test_results_1
-        mv systests-*/build/*.log test_results_1
+        mkdir -p external_graphics_writing_test_results
+        mkdir -p outputs
+        mv wres_evaluation_* outputs
+        mv outputs external_graphics_writing_test_results
+        mv systests-*/build/reports/tests/test/* external_graphics_writing_test_results
+        mv systests-*/build/*.log external_graphics_writing_test_results
 
     # Run systests
     - name: System tests with an H2 in-memory database
@@ -161,8 +167,11 @@ jobs:
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario514 --tests=Scenario720 --tests=Scenario721
         
         # Save the test results
-        mkdir -p test_results_2
-        mv systests-*/build/reports/tests/test/* test_results_2
+        mkdir -p h2_in_memory_test_results
+        mkdir -p outputs
+        mv wres_evaluation_* outputs
+        mv outputs h2_in_memory_test_results
+        mv systests-*/build/reports/tests/test/* h2_in_memory_test_results
 
     # Run systests
     - name: System tests with the legacy XML evaluation language
@@ -177,19 +186,24 @@ jobs:
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario720 --tests=Scenario721
         
         # Save the test results
-        mkdir -p test_results_3
-        mv systests-*/build/reports/tests/test/* test_results_3
+        mkdir -p legacy_xml_results
+        mkdir -p outputs
+        mv wres_evaluation_* outputs
+        mv outputs legacy_xml_results
+        mv systests-*/build/reports/tests/test/* legacy_xml_results
 
     # Archive the artifacts created from this build
     - name: Archive system tests
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: systest-result-artifacts
+        retention-days: 30
         path: |
-          test_results_0
-          test_results_1
-          test_results_2
-          test_results_3        
+          zero_external_test_results
+          external_graphics_writing_test_results
+          h2_in_memory_test_results
+          legacy_xml_results        
 
   dependency-submission:
     runs-on: ubuntu-latest
