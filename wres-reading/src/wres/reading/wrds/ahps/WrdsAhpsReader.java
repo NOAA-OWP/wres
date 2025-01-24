@@ -467,19 +467,24 @@ public class WrdsAhpsReader implements TimeSeriesReader
         // Forecast data?
         boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
 
-        if ( ( isForecast && Objects.isNull( declaration.referenceDates() ) ) )
+        if ( ( isForecast
+               && Objects.isNull( declaration.referenceDates() ) ) )
         {
             throw new ReadException( "While attempting to read forecasts from the WRDS AHPS service, discovered an "
                                      + "evaluation with missing 'reference_dates', which is not allowed. Please "
                                      + "declare 'reference_dates' to constrain the evaluation to a finite amount of "
                                      + "time-series data." );
         }
-        else if ( !isForecast && Objects.isNull( declaration.validDates() ) )
+        else if ( !isForecast
+                  && Objects.isNull( declaration.validDates() ) )
         {
-            throw new ReadException( "While attempting to read observations from the WRDS AHPS service, discovered an "
-                                     + "evaluation with missing 'valid_dates', which is not allowed. Please declare "
-                                     + "'valid_dates' to constrain the evaluation to a finite amount of time-series "
-                                     + "data." );
+            throw new ReadException( "While attempting to read a non-forecast data source from the WRDS AHPS service, "
+                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
+                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data. The data type was: "
+                                     + dataSource.getContext()
+                                                 .type()
+                                     + "." );
         }
 
         // When dates are present, both bookends are present because this was validated on construction of the reader

@@ -117,9 +117,9 @@ public class DeclarationValidator
     private static final String THE_EVALUATION_DECLARED = "The evaluation declared ";
     /** Re-used string. */
     private static final String WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE =
-            "When inspecting the interfaces associated with the ";
+            "When inspecting the interfaces associated with the '";
     /** Re-used string. */
-    private static final String DATA_DISCOVERED_AN_INTERFACE_OF = " data, discovered an interface of '";
+    private static final String DATA_DISCOVERED_AN_INTERFACE_OF = "' data, discovered an interface of '";
     /** Re-used string. */
     private static final String WHICH_ADMITS_THE_DATA_TYPES = "', which admits the data types ";
     /** Re-used string. */
@@ -5162,27 +5162,25 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
         Set<DataType> types = sourceInterface.getDataTypes();
-        if ( Objects.isNull( type ) && ( sourceInterface == SourceInterface.WRDS_AHPS
-                                         || sourceInterface == SourceInterface.WRDS_NWM ) )
+        if ( Objects.isNull( type )
+             && ( sourceInterface == SourceInterface.WRDS_AHPS
+                  || sourceInterface == SourceInterface.WRDS_NWM ) )
         {
             EvaluationStatusEvent event =
                     EvaluationStatusEvent.newBuilder()
                                          .setStatusLevel( StatusLevel.WARN )
-                                         .setEventMessage(
-                                                 WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE
-                                                 + orientation
-                                                 + DATA_DISCOVERED_AN_INTERFACE_OF
-                                                 + sourceInterface
-                                                 + WHICH_ADMITS_THE_DATA_TYPES
-                                                 + types
-                                                 + ", but the data 'type' for the '"
-                                                 + orientation
-                                                 + "' data was not declared. This is allowed, but a default "
-                                                 + "selection will be made when requesting data, namely "
-                                                 + "'single valued forecasts'. If this is not intended, please "
-                                                 + "add an explicit 'type' for the "
-                                                 + orientation
-                                                 + " data and try again." )
+                                         .setEventMessage( WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE
+                                                           + orientation
+                                                           + DATA_DISCOVERED_AN_INTERFACE_OF
+                                                           + sourceInterface
+                                                           + WHICH_ADMITS_THE_DATA_TYPES
+                                                           + types
+                                                           + ", but the data 'type' for the '"
+                                                           + orientation
+                                                           + "' data was not declared. This is allowed, but the data "
+                                                           + "'type' will need to be inferred from the available "
+                                                           + "context and there may be subsequent warnings or errors "
+                                                           + "related to this." )
                                          .build();
             events.add( event );
         }
