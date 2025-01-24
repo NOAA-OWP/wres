@@ -117,9 +117,9 @@ public class DeclarationValidator
     private static final String THE_EVALUATION_DECLARED = "The evaluation declared ";
     /** Re-used string. */
     private static final String WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE =
-            "When inspecting the interfaces associated with the ";
+            "When inspecting the interfaces associated with the '";
     /** Re-used string. */
-    private static final String DATA_DISCOVERED_AN_INTERFACE_OF = " data, discovered an interface of '";
+    private static final String DATA_DISCOVERED_AN_INTERFACE_OF = "' data, discovered an interface of '";
     /** Re-used string. */
     private static final String WHICH_ADMITS_THE_DATA_TYPES = "', which admits the data types ";
     /** Re-used string. */
