@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1779,6 +1780,33 @@ class DeclarationInterpolatorTest
                                 .anyMatch( n -> n.purposes()
                                                  .contains( CovariatePurpose.DETECT ) ) );
 
+    }
+
+    @Test
+    void testInterpolateForecastDataTypeForWrdsSourceWhenForecastDeclarationIncluded()
+    {
+        Instant validOne = Instant.parse( "2033-12-01T09:15:23Z" );
+        Instant validTwo = Instant.parse( "2083-12-01T09:15:23Z" );
+
+        Dataset predicted = DatasetBuilder.builder( this.predictedDataset )
+                                          .sources( List.of( SourceBuilder.builder()
+                                                                          .sourceInterface( SourceInterface.WRDS_AHPS )
+                                                                          .uri( URI.create( "http://foo.bar" ) )
+                                                                          .build() ) )
+                                          .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( predicted )
+                                            .referenceDates( new TimeInterval( validOne, validTwo ) )
+                                            .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration,
+                                                                                  false );
+
+        assertSame( DataType.SINGLE_VALUED_FORECASTS, interpolated.right()
+                                                                  .type() );
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation

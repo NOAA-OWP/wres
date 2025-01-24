@@ -145,7 +145,7 @@ definitions:
       cross_pair:
         "$ref": "#/definitions/CrossPair"
       ensemble_average:
-        "$ref": "#/definitions/EnsembleAverageEnum"
+        "$ref": "#/definitions/AverageEnum"
       season:
         "$ref": "#/definitions/SeasonFilter"
       values:
@@ -384,7 +384,7 @@ definitions:
         type: string
         format: date-time
       average:
-        "$ref": "#/definitions/EnsembleAverageEnum"
+        "$ref": "#/definitions/AverageEnum"
     required:
       - name
 
@@ -1389,7 +1389,7 @@ definitions:
         type: integer
         minimum: 1
       ensemble_average:
-        "$ref": "#/definitions/EnsembleAverageEnum"
+        "$ref": "#/definitions/AverageEnum"
       svg:
         type: boolean
       png:
@@ -1412,7 +1412,7 @@ definitions:
         type: integer
         minimum: 1
       ensemble_average:
-        "$ref": "#/definitions/EnsembleAverageEnum"
+        "$ref": "#/definitions/AverageEnum"
       svg:
         type: boolean
       png:
@@ -1639,9 +1639,9 @@ definitions:
       - within features
       - across features
 
-  EnsembleAverageEnum:
-    title: The ensemble averaging function.
-    description: "The name of a function that converts an ensemble of values 
+  AverageEnum:
+    title: The averaging function.
+    description: "The name of a function that converts a collection of values 
     into a single value."
     type: string
     enum:
