@@ -242,6 +242,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                      featureGroup.getName(),
                      combination );
 
+        // Aggregate any intersecting events, as needed
         return this.aggregateEvents( events,
                                      detection.parameters()
                                               .aggregation(),
@@ -491,7 +492,6 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                       + "metadata: {}.", timeSeries.getEvents()
                                                    .size(), timeSeries.getMetadata() );
 
-        // Unbounded time window, placeholder
         return this.eventDetector()
                    .detect( timeSeries );
     }
