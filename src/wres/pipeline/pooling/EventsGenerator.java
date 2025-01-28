@@ -1,5 +1,7 @@
 package wres.pipeline.pooling;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +21,8 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeWindowAggregation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -35,9 +39,11 @@ import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
- * Generates {@link TimeWindowOuter} corresponding to events from {@link TimeSeries}.
+ * Generates {@link TimeWindowOuter} corresponding to events from {@link TimeSeries} and combines them with any declared
+ * time windows and/or time constraints.
  *
  * @param leftUpscaler the upscaler for single-valued time-series with a left orientation
  * @param rightUpscaler the upscaler for single-valued time-series with a right orientation
@@ -82,7 +88,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
     }
 
     /**
-     * Performs event detection for one or more declared time-series datasets.
+     * Performs event detection for one or more declared time-series datasets, combining the detected events with any
+     * declared time windows.
+     *
      * @param project the project whose time-series data should be used
      * @param featureGroup the feature group to use for event detection
      * @param eventRetriever the retriever for time-series data
@@ -243,10 +251,14 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                      combination );
 
         // Aggregate any intersecting events, as needed
-        return this.aggregateEvents( events,
-                                     detection.parameters()
-                                              .aggregation(),
-                                     featureGroup );
+        Set<TimeWindowOuter> aggregated = this.aggregateEvents( events,
+                                                                detection.parameters()
+                                                                         .aggregation(),
+                                                                featureGroup );
+
+        // Adjust the time windows to account for existing time windows and other explicit time constraints
+        Set<TimeWindowOuter> declared = TimeWindowSlicer.getTimeWindows( declaration );
+        return this.adjustTimeWindows( aggregated, declared, declaration.referenceDates(), declaration.leadTimes() );
     }
 
     /**
@@ -353,6 +365,88 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         }
 
         return Collections.unmodifiableSet( events );
+    }
+
+    /**
+     * Adjusts the time windows generated using event detection to reflect any declared time windows or associated
+     * time constraints.
+     *
+     * @param events the detected events
+     * @param declared the declared time windows, if any
+     * @param referenceTimes the declared reference time constraints, if any
+     * @param leadTimes the declared lead time constraints, if any
+     * @return the adjust time windows
+     */
+
+    private Set<TimeWindowOuter> adjustTimeWindows( Set<TimeWindowOuter> events,
+                                                    Set<TimeWindowOuter> declared,
+                                                    TimeInterval referenceTimes,
+                                                    LeadTimeInterval leadTimes )
+    {
+        Set<TimeWindowOuter> returnMe = new HashSet<>();
+
+        // Add any overall reference time or lead time boundaries into the events
+        for ( TimeWindowOuter nextEvent : events )
+        {
+            TimeWindowOuter nextAdjusted = nextEvent;
+
+            // Add the reference times, if required
+            if ( Objects.nonNull( referenceTimes ) )
+            {
+                Instant earliest = referenceTimes.minimum();
+                Instant latest = referenceTimes.maximum();
+                TimeWindow adjusted = nextEvent.getTimeWindow()
+                                               .toBuilder()
+                                               .setEarliestReferenceTime( MessageUtilities.getTimestamp( earliest ) )
+                                               .setLatestReferenceTime( MessageUtilities.getTimestamp( latest ) )
+                                               .build();
+                nextAdjusted = TimeWindowOuter.of( adjusted );
+            }
+
+            // Add the lead times, if required
+            if ( Objects.nonNull( leadTimes ) )
+            {
+                Duration earliest = leadTimes.minimum();
+                Duration latest = leadTimes.maximum();
+                TimeWindow adjusted = nextAdjusted.getTimeWindow()
+                                                  .toBuilder()
+                                                  .setEarliestLeadDuration( MessageUtilities.getDuration( earliest ) )
+                                                  .setLatestLeadDuration( MessageUtilities.getDuration( latest ) )
+                                                  .build();
+                nextAdjusted = TimeWindowOuter.of( adjusted );
+            }
+
+            returnMe.add( nextAdjusted );
+        }
+
+        // Merge any declared time window constraints into the event time windows, which will override any basic
+        // constraints imposed above
+        if ( !declared.isEmpty() )
+        {
+            Set<TimeWindowOuter> adjustedEvents = new HashSet<>();
+            for ( TimeWindowOuter next : returnMe )
+            {
+                for ( TimeWindowOuter adjust : declared )
+                {
+                    TimeWindow adjusted = next.getTimeWindow()
+                                              .toBuilder()
+                                              .setEarliestReferenceTime( adjust.getTimeWindow()
+                                                                               .getEarliestReferenceTime() )
+                                              .setLatestReferenceTime( adjust.getTimeWindow()
+                                                                             .getLatestReferenceTime() )
+                                              .setEarliestLeadDuration( adjust.getTimeWindow()
+                                                                              .getEarliestLeadDuration() )
+                                              .setLatestLeadDuration( adjust.getTimeWindow()
+                                                                            .getLatestLeadDuration() )
+                                              .build();
+                    adjustedEvents.add( TimeWindowOuter.of( adjusted ) );
+                }
+            }
+
+            returnMe = adjustedEvents;
+        }
+
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
