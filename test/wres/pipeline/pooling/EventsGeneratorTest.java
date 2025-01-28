@@ -35,8 +35,10 @@ import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.EventDetectionMethod;
 import wres.config.yaml.components.EventDetectionParameters;
 import wres.config.yaml.components.EventDetectionParametersBuilder;
+import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -629,6 +631,99 @@ class EventsGeneratorTest
                                                 TimeWindowOuter.of( expectedTwo ),
                                                 TimeWindowOuter.of( expectedThree ),
                                                 TimeWindowOuter.of( expectedFour ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testEventDetectionAddsDeclaredTimeConstraintsToDetectedEvent()
+    {
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        EventDetectionParameters parameters = EventDetectionParametersBuilder.builder()
+                                                                             .build();
+        EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
+                                                                        parameters );
+        String measurementUnit = "foo";
+        EventsGenerator generator = new EventsGenerator( upscaler,
+                                                         upscaler,
+                                                         upscaler,
+                                                         upscaler,
+                                                         measurementUnit,
+                                                         detector );
+
+        TimeSeries<Double> timeSeriesOne = this.getTestTimeSeriesWithOffset( Duration.ZERO );
+
+        // Mock a retriever factory
+        Mockito.when( this.leftRetriever.get() )
+               .thenReturn( Stream.of( timeSeriesOne ) );
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+               .thenReturn( this.leftRetriever );
+
+        // Mock the sufficient elements of a project with two separate datasets for event detection
+        EventDetection eventDeclaration = EventDetectionBuilder.builder()
+                                                               .method( EventDetectionMethod.REGINA_OGDEN )
+                                                               .parameters( parameters )
+                                                               .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                               .build();
+        // Reference time constraints
+        Instant earliestReference = Instant.parse( "2099-10-21T00:00:00Z" );
+        Instant latestReference = Instant.parse( "2101-10-21T00:00:00Z" );
+        TimeInterval referenceTimes = new TimeInterval( earliestReference, latestReference );
+
+        // Lead time constraints
+        Duration earliestLead = Duration.ofHours( 23 );
+        Duration latestLead = Duration.ofHours( 79 );
+        LeadTimeInterval leadTimes = new LeadTimeInterval( earliestLead, latestLead );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .eventDetection( eventDeclaration )
+                                                                        .referenceDates( referenceTimes )
+                                                                        .leadTimes( leadTimes )
+                                                                        .build();
+
+        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
+        FeatureGroup groupOne = FeatureGroup.of( geoGroup );
+
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( groupOne ) );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+
+        Set<TimeWindowOuter> actual = generator.doEventDetection( project, groupOne, this.retrieverFactory );
+
+        Instant startOne = Instant.parse( "2079-12-03T03:00:00Z" );
+        Instant endOne = Instant.parse( "2079-12-03T05:00:00Z" );
+
+        TimeWindow expectedOne =
+                MessageUtilities.getTimeWindow()
+                                .toBuilder()
+                                .setEarliestValidTime( MessageUtilities.getTimestamp( startOne ) )
+                                .setLatestValidTime( MessageUtilities.getTimestamp( endOne ) )
+                                .setEarliestReferenceTime( MessageUtilities.getTimestamp( earliestReference ) )
+                                .setLatestReferenceTime( MessageUtilities.getTimestamp( latestReference ) )
+                                .setEarliestLeadDuration( MessageUtilities.getDuration( earliestLead ) )
+                                .setLatestLeadDuration( MessageUtilities.getDuration( latestLead ) )
+                                .build();
+
+        Instant startTwo = Instant.parse( "2079-12-03T09:00:00Z" );
+        Instant endTwo = Instant.parse( "2079-12-03T10:00:00Z" );
+
+        TimeWindow expectedTwo =
+                MessageUtilities.getTimeWindow()
+                                .toBuilder()
+                                .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
+                                .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
+                                .setEarliestReferenceTime( MessageUtilities.getTimestamp( earliestReference ) )
+                                .setLatestReferenceTime( MessageUtilities.getTimestamp( latestReference ) )
+                                .setEarliestLeadDuration( MessageUtilities.getDuration( earliestLead ) )
+                                .setLatestLeadDuration( MessageUtilities.getDuration( latestLead ) )
+                                .build();
+
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
+                                                TimeWindowOuter.of( expectedTwo ) );
 
         assertEquals( expected, actual );
     }

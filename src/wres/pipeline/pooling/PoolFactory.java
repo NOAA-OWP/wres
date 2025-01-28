@@ -90,7 +90,6 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeScale;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -498,12 +497,12 @@ public class PoolFactory
                                                                     Set<FeatureGroup> featureGroups,
                                                                     RetrieverFactory<Double, Double, Double> eventRetriever )
     {
-        // Declared time windows
-        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
-
         // Time windows without event detection
         if ( Objects.isNull( declaration.eventDetection() ) )
         {
+            // Declared time windows
+            Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
+
             return featureGroups.stream()
                                 .collect( Collectors.toMap( Function.identity(),
                                                             g -> timeWindows ) );
@@ -515,32 +514,6 @@ public class PoolFactory
         {
             Set<TimeWindowOuter> events = this.getEventsGenerator()
                                               .doEventDetection( project, nextGroup, eventRetriever );
-
-            // Add the lead time and reference date constraints to each event, if defined
-            if ( !timeWindows.isEmpty() )
-            {
-                Set<TimeWindowOuter> adjustedEvents = new HashSet<>();
-                for ( TimeWindowOuter next : events )
-                {
-                    for ( TimeWindowOuter adjust : timeWindows )
-                    {
-                        TimeWindow adjusted = next.getTimeWindow()
-                                                  .toBuilder()
-                                                  .setEarliestReferenceTime( adjust.getTimeWindow()
-                                                                                   .getEarliestReferenceTime() )
-                                                  .setLatestReferenceTime( adjust.getTimeWindow()
-                                                                                 .getLatestReferenceTime() )
-                                                  .setEarliestLeadDuration( adjust.getTimeWindow()
-                                                                                  .getEarliestLeadDuration() )
-                                                  .setLatestLeadDuration( adjust.getTimeWindow()
-                                                                                .getLatestLeadDuration() )
-                                                  .build();
-                        adjustedEvents.add( TimeWindowOuter.of( adjusted ) );
-                    }
-                }
-
-                events = Collections.unmodifiableSet( adjustedEvents );
-            }
 
             featurefulWindows.put( nextGroup, events );
         }
