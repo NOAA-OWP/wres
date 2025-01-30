@@ -2684,10 +2684,6 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> duplication =
                 DeclarationValidator.checkForDuplicationOfMetricsByName( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( duplication );
-        // Time-series metrics require single-valued forecasts
-        List<EvaluationStatusEvent> singleValued =
-                DeclarationValidator.checkSingleValuedDataForTimeSeriesMetrics( declaration );
-        events.addAll( singleValued );
         // Baseline defined for metrics that require one
         List<EvaluationStatusEvent> baselinePresent =
                 DeclarationValidator.checkBaselinePresentForMetricsThatNeedIt( declaration );
@@ -3519,45 +3515,6 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that single-valued datasets are present when declaring time-series metrics.
-     * @param declaration the evaluation declaration
-     * @return the validation events encountered
-     */
-    private static List<EvaluationStatusEvent> checkSingleValuedDataForTimeSeriesMetrics( EvaluationDeclaration declaration )
-    {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        Set<MetricConstants> metrics =
-                DeclarationValidator.getSingleValuedTimeSeriesMetrics( declaration );
-
-        if ( Objects.nonNull( declaration.right() )
-             && Objects.nonNull( declaration.right()
-                                            .type() )
-             && declaration.right()
-                           .type() == DataType.ENSEMBLE_FORECASTS
-             && !metrics.isEmpty() )
-
-        {
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "The declared or inferred data 'type' for the 'predicted' "
-                                                             + "dataset is "
-                                                             + declaration.right()
-                                                                          .type()
-                                                             + ", but the following metrics are not currently "
-                                                             + "supported for this data 'type': "
-                                                             + metrics
-                                                             + ". Please remove these metrics or change the data "
-                                                             + "'type'." )
-                                           .build();
-            events.add( event );
-        }
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
      * Checks that a baseline is declared when metrics are included that require it.
      * @param declaration the evaluation declaration
      * @return the validation events encountered
@@ -3786,20 +3743,6 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * @param declaration the declaration
-     * @return the declared metrics in the specified group, if any
-     */
-
-    private static Set<MetricConstants> getSingleValuedTimeSeriesMetrics( EvaluationDeclaration declaration )
-    {
-        return declaration.metrics()
-                          .stream()
-                          .map( Metric::name )
-                          .filter( next -> next.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
-                          .collect( Collectors.toSet() );
     }
 
     /**

@@ -1182,29 +1182,6 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testTimeSeriesMetricsWithoutSingleValuedForecastsResultsInError()
-    {
-        Dataset dataset = DatasetBuilder.builder()
-                                        .sources( List.of() )
-                                        .type( DataType.ENSEMBLE_FORECASTS )
-                                        .build();
-
-        Metric metric = new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null );
-        Set<Metric> metrics = Set.of( metric );
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( this.defaultDataset )
-                                                                        .right( dataset )
-                                                                        .metrics( metrics )
-                                                                        .build();
-
-        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
-
-        assertTrue( DeclarationValidatorTest.contains( events, " the following metrics are not currently "
-                                                               + "supported for this data 'type'",
-                                                       StatusLevel.ERROR ) );
-    }
-
-    @Test
     void testScoreThatNeedsBaselineWithNoBaselineResultsInError()
     {
         Metric metric = new Metric( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE, null );
@@ -2475,7 +2452,6 @@ class DeclarationValidatorTest
         assertFalse( DeclarationValidatorTest.contains( events,
                                                         "no 'feature_groups' were declared",
                                                         StatusLevel.ERROR ) );
-
     }
 
     @Test
