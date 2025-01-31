@@ -174,6 +174,16 @@ public class Tasker
                         .add( "X-Frame-Options", "DENY" );
                 response.getHeaders()
                         .add( "strict-transport-security", "max-age=31536000; includeSubDomains; preload;" );
+                response.getHeaders()
+                        .add( "Content-Security-Policy", "default-src 'self' https: data: blob:;"
+                                + " script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;"
+                                + " style-src 'self' 'unsafe-inline' https: data: blob:;"
+                                + " img-src 'self' data: https:;"
+                                + " font-src 'self' data:;"
+                                + " connect-src 'self' https:;"
+                                + " object-src 'none';");
+                response.getHeaders()
+                        .add( "Referrer-Policy", "strict-origin-when-cross-origin" );
                 return super.handle( request, response, callback );
             }
         };
@@ -195,6 +205,9 @@ public class Tasker
         jettyServer.setHandler( resourceHandler );
 
         HttpConfiguration httpConfig = new HttpConfiguration();
+
+        // Remover Server from the response headers.
+        httpConfig.setSendServerVersion( false );
 
         // Support HTTP/1.1
         HttpConnectionFactory httpOneOne = new HttpConnectionFactory( httpConfig );
