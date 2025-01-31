@@ -17,18 +17,33 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 public class MeanError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
     /**
-     * Canonical description of the metric.
+     * Basic description of the metric.
      */
 
-    public static final DoubleScoreMetric METRIC_INNER =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( MetricConstants.MEAN_ERROR.getMinimum() )
-                                                                       .setMaximum( MetricConstants.MEAN_ERROR.getMaximum() )
-                                                                       .setOptimum( MetricConstants.MEAN_ERROR.getOptimum() )
-                                                                       .setName( MetricName.MAIN ) )
-                             .setName( MetricName.MEAN_ERROR )
-                             .build();
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.MEAN_ERROR )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.MEAN_ERROR.getMinimum() )
+                                      .setMaximum( MetricConstants.MEAN_ERROR.getMaximum() )
+                                      .setOptimum( MetricConstants.MEAN_ERROR.getOptimum() )
+                                      .setName( MetricName.MAIN )
+                                      .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( MeanError.MAIN )
+                                                                          .setName( MetricName.MEAN_ERROR )
+                                                                          .build();
 
     /**
      * Returns an instance.

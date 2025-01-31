@@ -25,16 +25,34 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
-    /** Canonical description of the metric. */
-    public static final DoubleScoreMetric METRIC_INNER =
-            DoubleScoreMetric.newBuilder()
-                             .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMinimum() )
-                                                                       .setMaximum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMaximum() )
-                                                                       .setOptimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getOptimum() )
-                                                                       .setName( MetricName.MAIN ) )
-                             .setName( MetricName.MEAN_ABSOLUTE_ERROR )
-                             .build();
+    /**
+     * Basic description of the metric.
+     */
+
+    public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
+                                                                          .setName( MetricName.MEAN_ABSOLUTE_ERROR )
+                                                                          .build();
+
+    /**
+     * Main score component.
+     */
+
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMinimum() )
+                                      .setMaximum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMaximum() )
+                                      .setOptimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getOptimum() )
+                                      .setName( MetricName.MAIN )
+                                      .build();
+
+    /**
+     * Full description of the metric.
+     */
+
+    public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
+                                                                          .addComponents( MeanAbsoluteError.MAIN )
+                                                                          .setName( MetricName.MEAN_ABSOLUTE_ERROR )
+                                                                          .build();
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MeanAbsoluteError.class );

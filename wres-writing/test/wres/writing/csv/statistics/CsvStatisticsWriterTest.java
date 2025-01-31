@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -213,7 +212,8 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
-                                     + "MEAN,,SECONDS,0.000000000,0.000000000,0.000000000,1,,,,,,,3600.000000000";
+                                     + "MEAN,ENSEMBLE MEDIAN,SECONDS,0.000000000,0.000000000,0.000000000,1,,,,,,,"
+                                     + "3600.000000000";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -221,7 +221,8 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
-                                     + "MEDIAN,,SECONDS,0.000000000,0.000000000,0.000000000,2,,,,,,,7200.000000000";
+                                     + "MEDIAN,ENSEMBLE MEDIAN,SECONDS,0.000000000,0.000000000,0.000000000,2,,,,,,,"
+                                     + "7200.000000000";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
@@ -229,8 +230,8 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                        + "PT18H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR "
-                                       + "STATISTIC,MAXIMUM,,SECONDS,0.000000000,0.000000000,0.000000000,3,,,,,,,"
-                                       + "10800.000000000";
+                                       + "STATISTIC,MAXIMUM,ENSEMBLE MEDIAN,SECONDS,0.000000000,0.000000000,"
+                                       + "0.000000000,3,,,,,,,10800.000000000";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
@@ -415,7 +416,7 @@ class CsvStatisticsWriterTest
             String lineFourExpected = "QINE,SQIN,,,1,RIGHT,\"FTSC1-FTSC1\",\"FTSC1\",,,,\"FTSC1\",,,,,,,,"
                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
-                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR,ERROR,,"
+                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR,ERROR,ENSEMBLE MEAN,"
                                       + "SECONDS,-9223372036854775808.000000000,0.000000000,0.000000000,2,,,,,,,"
                                       + "7200.000000000";
 
@@ -632,7 +633,7 @@ class CsvStatisticsWriterTest
         Statistics.Builder builder = Statistics.newBuilder()
                                                .addAllScores( scores.stream()
                                                                     .map( DoubleScoreStatisticOuter::getStatistic )
-                                                                    .collect( Collectors.toList() ) );
+                                                                    .toList() );
         if ( addSampleQuantile )
         {
             SummaryStatistic quantile = SummaryStatistic.newBuilder()
@@ -670,12 +671,15 @@ class CsvStatisticsWriterTest
 
         Pool pool = scores.get( 0 )
                           .getPoolMetadata()
-                          .getPool();
+                          .getPool()
+                          .toBuilder()
+                          .setEnsembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                          .build();
 
         return Statistics.newBuilder()
                          .addAllDurationScores( scores.stream()
                                                       .map( DurationScoreStatisticOuter::getStatistic )
-                                                      .collect( Collectors.toList() ) )
+                                                      .toList() )
                          .setPool( pool )
                          .build();
     }
@@ -691,12 +695,14 @@ class CsvStatisticsWriterTest
 
         Pool pool = scores.get( 0 )
                           .getPoolMetadata()
-                          .getPool();
+                          .getPool().toBuilder()
+                          .setEnsembleAverageType( Pool.EnsembleAverageType.MEAN )
+                          .build();
 
         return Statistics.newBuilder()
                          .addAllDurationDiagrams( scores.stream()
                                                         .map( DurationDiagramStatisticOuter::getStatistic )
-                                                        .collect( Collectors.toList() ) )
+                                                        .toList() )
                          .setPool( pool )
                          .build();
     }
@@ -720,10 +726,10 @@ class CsvStatisticsWriterTest
         return Statistics.newBuilder()
                          .addAllOneBoxPerPair( boxesPaired.stream()
                                                           .map( BoxplotStatisticOuter::getStatistic )
-                                                          .collect( Collectors.toList() ) )
+                                                          .toList() )
                          .addAllOneBoxPerPool( boxesPooled.stream()
                                                           .map( BoxplotStatisticOuter::getStatistic )
-                                                          .collect( Collectors.toList() ) )
+                                                          .toList() )
                          .setPool( pool )
                          .build();
     }
@@ -744,7 +750,7 @@ class CsvStatisticsWriterTest
         return Statistics.newBuilder()
                          .addAllDiagrams( boxes.stream()
                                                .map( DiagramStatisticOuter::getStatistic )
-                                               .collect( Collectors.toList() ) )
+                                               .toList() )
                          .setPool( pool )
                          .build();
     }
