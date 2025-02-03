@@ -176,8 +176,8 @@ public class Tasker
                         .add( "strict-transport-security", "max-age=31536000; includeSubDomains; preload;" );
                 response.getHeaders()
                         .add( "Content-Security-Policy", "default-src 'self' https: data: blob:;"
-                                + " script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;"
-                                + " style-src 'self' 'unsafe-inline' https: data: blob:;"
+                                + " script-src 'self' https: data: blob:;"
+                                + " style-src 'self' https: data: blob:;"
                                 + " img-src 'self' data: https:;"
                                 + " font-src 'self' data:;"
                                 + " connect-src 'self' https:;"
