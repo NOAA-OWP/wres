@@ -198,7 +198,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             this.ensembleScore = null;
         }
 
-        // Ensemble input, multi-vector output
+        // Ensemble input, diagram output
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
         {
             this.ensembleDiagrams = MetricFactory.ofEnsembleDiagrams( metricExecutor,
@@ -299,7 +299,9 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Process the metrics that consume single-valued pairs, which includes any dichotomous metrics derived from 
         // single-valued pairs: #109783. See later for dichotomous metrics produced from ensemble pairs
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED )
+             || this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
+             || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
             // Derive the single-valued pairs from the ensemble pairs using the configured mapper
             Function<TimeSeries<Pair<Double, Ensemble>>, TimeSeries<Pair<Double, Double>>> mapper =
@@ -1010,7 +1012,6 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // If null, this is being called by the superclass constructor, not the local constructor
         if ( Objects.nonNull( this.toSingleValues ) )
         {
-
             // Thresholds required for dichotomous and probability metrics
             for ( MetricConstants next : super.getMetrics() )
             {

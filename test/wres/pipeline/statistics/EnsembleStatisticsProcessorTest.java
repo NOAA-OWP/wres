@@ -1,10 +1,5 @@
 package wres.pipeline.statistics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,10 +13,15 @@ import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
+import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationInterpolator;
@@ -35,6 +35,7 @@ import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOrientation;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -57,8 +58,16 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.metrics.MetricParameterException;
 import wres.metrics.categorical.ContingencyTable;
+import wres.metrics.singlevalued.BiasFraction;
+import wres.metrics.singlevalued.CoefficientOfDetermination;
+import wres.metrics.singlevalued.CorrelationPearsons;
+import wres.metrics.singlevalued.MeanAbsoluteError;
+import wres.metrics.singlevalued.MeanError;
+import wres.metrics.singlevalued.RootMeanSquareError;
 import wres.statistics.MessageUtilities;
+import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Threshold;
@@ -70,10 +79,10 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  *
  * @author James Brown
  */
-public final class EnsembleStatisticsProcessorTest
+class EnsembleStatisticsProcessorTest
 {
     @Test
-    public void testGetFilterForEnsemblePairs()
+    void testGetFilterForEnsemblePairs()
     {
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
         wres.config.yaml.components.ThresholdOperator condition = wres.config.yaml.components.ThresholdOperator.GREATER;
@@ -108,7 +117,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
+    void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
     {
         EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithoutThresholds();
@@ -140,6 +149,26 @@ public final class EnsembleStatisticsProcessorTest
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE )
                       .get( 0 );
 
+        DurationDiagramStatisticOuter diagram = Slicer.filter( results.getDurationDiagramStatistics(),
+                                                               MetricConstants.TIME_TO_PEAK_ERROR )
+                                                      .get( 0 );
+
+        DurationDiagramStatistic.PairOfInstantAndDuration actual = diagram.getStatistic()
+                                                                          .getStatisticsList()
+                                                                          .get( 0 );
+
+        Instant expectedInstant = Instant.parse( "1981-12-01T00:00:00Z" );
+        Duration expectedDurationHours = Duration.ofHours( 760 );
+        com.google.protobuf.Duration expectedDuration = MessageUtilities.getDuration( expectedDurationHours );
+        Timestamp expectedTimestamp = MessageUtilities.getTimestamp( expectedInstant );
+        DurationDiagramStatistic.PairOfInstantAndDuration expected =
+                DurationDiagramStatistic.PairOfInstantAndDuration.newBuilder()
+                                                                 .setTime( expectedTimestamp )
+                                                                 .setDuration( expectedDuration )
+                                                                 .build();
+
+        assertEquals( expected, actual );
+
         assertEquals( -0.032093836077598345,
                       bias.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
@@ -164,7 +193,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithValueThresholds()
+    void testApplyWithValueThresholds()
             throws IOException, MetricParameterException, InterruptedException
     {
         EvaluationDeclaration declaration =
@@ -175,146 +204,338 @@ public final class EnsembleStatisticsProcessorTest
         StatisticsStore statistics = this.getAndCombineStatistics( processors,
                                                                    TestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
-        //Validate bias
+        // Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                               MetricConstants.BIAS_FRACTION );
-        assertEquals( -0.032093836077598345,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.032093836077598345,
-                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.0365931379807274,
-                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.039706682985140816,
-                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.0505708024162773,
-                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.056658160809530816,
-                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
 
-        //Validate CoD
+        DoubleScoreStatistic bOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.032093836077598345 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.032093836077598345 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.0365931379807274 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.039706682985140816 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.0505708024162773 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.056658160809530816 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> biasExpected = List.of( bOne, bTwo, bThree, bFour, bFive, bSix );
+        List<DoubleScoreStatistic> biasActual = bias.stream()
+                                                    .map( DoubleScoreStatisticOuter::getStatistic )
+                                                    .toList();
+        assertEquals( biasExpected, biasActual );
+
+        // Validate CoD
         List<DoubleScoreStatisticOuter> cod = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION );
 
-        assertEquals( 0.7873367083297588,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7873367083297588,
-                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7653639626077698,
-                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.76063213080129,
-                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7542039364210298,
-                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7492338765733539,
-                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreStatistic cOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7873367083297588 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7873367083297588 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7653639626077698 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.76063213080129 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7542039364210298 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7492338765733539 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
 
-        //Validate rho
+        List<DoubleScoreStatistic> codExpected = List.of( cOne, cTwo, cThree, cFour, cFive, cSix );
+        List<DoubleScoreStatistic> codActual = cod.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( codExpected, codActual );
+
+        // Validate rho
         List<DoubleScoreStatisticOuter> rho = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
 
-        assertEquals( 0.8873199582618204,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8873199582618204,
-                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8748508230594344,
-                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8721422652304439,
-                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.868449155921652,
-                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8655829692024641,
-                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreStatistic rOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8873199582618204 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8873199582618204 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8748508230594344 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8721422652304439 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.868449155921652 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8655829692024641 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
 
-        //Validate mae
+        List<DoubleScoreStatistic> rhoExpected = List.of( rOne, rTwo, rThree, rFour, rFive, rSix );
+        List<DoubleScoreStatistic> rhoActual = rho.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( rhoExpected, rhoActual );
+
+        // Validate mae
         List<DoubleScoreStatisticOuter> mae = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR );
 
-        assertEquals( 11.009512537315405,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 11.009512537315405,
-                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 17.675554578575646,
-                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 18.997815872635968,
-                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 20.625668563442144,
-                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 22.094227646773568,
-                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreMetric.DoubleScoreMetricComponent maeMetric = MeanAbsoluteError.MAIN.toBuilder()
+                                                                                       .setUnits( "CMS" )
+                                                                                       .build();
+
+        DoubleScoreStatistic mOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 11.009512537315405 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 11.009512537315405 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 17.675554578575646 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 18.997815872635968 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 20.625668563442144 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 22.094227646773568 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> maeExpected = List.of( mOne, mTwo, mThree, mFour, mFive, mSix );
+        List<DoubleScoreStatistic> maeActual = mae.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( maeExpected, maeActual );
 
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                             MetricConstants.MEAN_ERROR );
 
-        assertEquals( -1.1578693543670804,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -1.1578693543670804,
-                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -2.1250409720950096,
-                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -2.485577073942586,
-                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -3.4840043925326953,
-                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -4.2185439080739515,
-                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreMetric.DoubleScoreMetricComponent meMetric = MeanError.MAIN.toBuilder()
+                                                                              .setUnits( "CMS" )
+                                                                              .build();
+
+        DoubleScoreStatistic meOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -1.1578693543670804 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -1.1578693543670804 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -2.1250409720950096 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -2.485577073942586 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -3.4840043925326953 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -4.2185439080739515 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> meExpected = List.of( meOne, meTwo, meThree, meFour, meFive, meSix );
+        List<DoubleScoreStatistic> meActual = me.stream()
+                                                .map( DoubleScoreStatisticOuter::getStatistic )
+                                                .toList();
+        assertEquals( meExpected, meActual );
 
         //Validate rmse
         List<DoubleScoreStatisticOuter> rmse = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                               MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
-        assertEquals( 41.01563032408479,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 41.01563032408479,
-                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 52.55361580348335,
-                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 54.824261554390944,
-                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 58.12352988180837,
-                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 61.12163959516187,
-                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreMetric.DoubleScoreMetricComponent rmseMetric = RootMeanSquareError.MAIN.toBuilder()
+                                                                                          .setUnits( "CMS" )
+                                                                                          .build();
+        DoubleScoreStatistic rmOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 41.01563032408479 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 41.01563032408479 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 52.55361580348335 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 54.824261554390944 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 58.12352988180837 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 61.12163959516187 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> rmseExpected = List.of( rmOne, rmTwo, rmThree, rmFour, rmFive, rmSix );
+        List<DoubleScoreStatistic> rmseActual = rmse.stream()
+                                                    .map( DoubleScoreStatisticOuter::getStatistic )
+                                                    .toList();
+        assertEquals( rmseExpected, rmseActual );
     }
 
     @Test
-    public void testApplyWithValueThresholdsAndCategoricalMeasures()
+    void testApplyWithValueThresholdsAndCategoricalMeasures()
             throws MetricParameterException, IOException, InterruptedException
     {
         // Create declaration
@@ -396,7 +617,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithProbabilityThresholds()
+    void testApplyWithProbabilityThresholds()
             throws IOException, MetricParameterException, InterruptedException
     {
         EvaluationDeclaration declaration =
@@ -407,144 +628,338 @@ public final class EnsembleStatisticsProcessorTest
         StatisticsStore statistics = this.getAndCombineStatistics( processors,
                                                                    TestDataFactory.getTimeSeriesOfEnsemblePairsOne() );
 
-        //Obtain the results
-        List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
+        // Validate bias
+        List<DoubleScoreStatisticOuter> bias = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                              MetricConstants.BIAS_FRACTION );
 
-        //Validate bias
-        List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
+        DoubleScoreStatistic bOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.032093836077598345 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.032093836077598345 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.0365931379807274 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.039706682985140816 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.05090288343061958 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.056658160809530816 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
 
-        assertEquals( -0.032093836077598345,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.032093836077598345,
-                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.0365931379807274,
-                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.039706682985140816,
-                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.05090288343061958,
-                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.056658160809530816,
-                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        List<DoubleScoreStatistic> biasExpected = List.of( bOne, bTwo, bThree, bFour, bFive, bSix );
+        List<DoubleScoreStatistic> biasActual = bias.stream()
+                                                    .map( DoubleScoreStatisticOuter::getStatistic )
+                                                    .toList();
+        assertEquals( biasExpected, biasActual );
 
-        //Validate CoD
-        List<DoubleScoreStatisticOuter> cod =
-                Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertEquals( 0.7873367083297588,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7873367083297588,
-                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7653639626077698,
-                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.76063213080129,
-                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7540690263086123,
-                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7492338765733539,
-                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        // Validate CoD
+        List<DoubleScoreStatisticOuter> cod = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION );
 
-        //Validate rho
-        List<DoubleScoreStatisticOuter> rho =
-                Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        DoubleScoreStatistic cOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7873367083297588 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7873367083297588 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7653639626077698 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.76063213080129 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7540690263086123 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7492338765733539 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
 
-        assertEquals( 0.8873199582618204,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8873199582618204,
-                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8748508230594344,
-                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8721422652304439,
-                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8683714794421868,
-                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8655829692024641,
-                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        List<DoubleScoreStatistic> codExpected = List.of( cOne, cTwo, cThree, cFour, cFive, cSix );
+        List<DoubleScoreStatistic> codActual = cod.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( codExpected, codActual );
 
-        //Validate mae
-        List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
+        // Validate rho
+        List<DoubleScoreStatisticOuter> rho = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
 
-        assertEquals( 11.009512537315405,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 11.009512537315405,
-                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 17.675554578575646,
-                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 18.997815872635968,
-                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 20.65378515950092,
-                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 22.094227646773568,
-                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreStatistic rOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8873199582618204 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8873199582618204 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8748508230594344 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8721422652304439 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8683714794421868 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8655829692024641 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> rhoExpected = List.of( rOne, rTwo, rThree, rFour, rFive, rSix );
+        List<DoubleScoreStatistic> rhoActual = rho.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( rhoExpected, rhoActual );
+
+        // Validate mae
+        List<DoubleScoreStatisticOuter> mae = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                             MetricConstants.MEAN_ABSOLUTE_ERROR );
+
+        DoubleScoreMetric.DoubleScoreMetricComponent maeMetric = MeanAbsoluteError.MAIN.toBuilder()
+                                                                                       .setUnits( "CMS" )
+                                                                                       .build();
+
+        DoubleScoreStatistic mOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 11.009512537315405 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 11.009512537315405 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 17.675554578575646 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 18.997815872635968 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 20.65378515950092 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 22.094227646773568 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> maeExpected = List.of( mOne, mTwo, mThree, mFour, mFive, mSix );
+        List<DoubleScoreStatistic> maeActual = mae.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( maeExpected, maeActual );
 
         //Validate me
-        List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
+        List<DoubleScoreStatisticOuter> me = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                            MetricConstants.MEAN_ERROR );
 
-        assertEquals( -1.1578693543670804,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -1.1578693543670804,
-                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -2.1250409720950096,
-                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -2.485577073942586,
-                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -3.5134287820490377,
-                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -4.2185439080739515,
-                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreMetric.DoubleScoreMetricComponent meMetric = MeanError.MAIN.toBuilder()
+                                                                              .setUnits( "CMS" )
+                                                                              .build();
+
+        DoubleScoreStatistic meOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -1.1578693543670804 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -1.1578693543670804 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -2.1250409720950096 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -2.485577073942586 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -3.5134287820490377 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -4.2185439080739515 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> meExpected = List.of( meOne, meTwo, meThree, meFour, meFive, meSix );
+        List<DoubleScoreStatistic> meActual = me.stream()
+                                                .map( DoubleScoreStatisticOuter::getStatistic )
+                                                .toList();
+        assertEquals( meExpected, meActual );
 
         //Validate rmse
-        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertEquals( 41.01563032408479,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 41.01563032408479,
-                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 52.55361580348335,
-                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 54.824261554390944,
-                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 58.19124412599005,
-                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 61.12163959516187,
-                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+
+        DoubleScoreMetric.DoubleScoreMetricComponent rmseMetric = RootMeanSquareError.MAIN.toBuilder()
+                                                                                          .setUnits( "CMS" )
+                                                                                          .build();
+        DoubleScoreStatistic rmOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 41.01563032408479 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 41.01563032408479 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 52.55361580348335 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 54.824261554390944 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 58.19124412599005 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 61.12163959516187 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> rmseExpected = List.of( rmOne, rmTwo, rmThree, rmFour, rmFive, rmSix );
+        List<DoubleScoreStatistic> rmseActual = rmse.stream()
+                                                    .map( DoubleScoreStatisticOuter::getStatistic )
+                                                    .toList();
+        assertEquals( rmseExpected, rmseActual );
     }
 
     @Test
-    public void testExceptionOnNullInput() throws MetricParameterException
+    void testExceptionOnNullInput() throws MetricParameterException
     {
         // Create declaration
         Dataset left = DatasetBuilder.builder()
@@ -574,7 +989,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
+    void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
             throws MetricParameterException
     {
         // Create declaration
@@ -603,7 +1018,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
+    void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
             throws MetricParameterException
     {
         // Create declaration
@@ -623,7 +1038,7 @@ public final class EnsembleStatisticsProcessorTest
 
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability(0.1 )
+                                                   .setLeftThresholdProbability( 0.1 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();
@@ -657,7 +1072,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithAllValidMetrics() throws MetricParameterException
+    void testApplyWithAllValidMetrics() throws MetricParameterException
     {
         EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetrics();
@@ -685,7 +1100,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithValueThresholdsAndMissings()
+    void testApplyWithValueThresholdsAndMissings()
             throws IOException, MetricParameterException, InterruptedException
     {
         EvaluationDeclaration declaration =
@@ -698,143 +1113,338 @@ public final class EnsembleStatisticsProcessorTest
                 this.getAndCombineStatistics( processors,
                                               TestDataFactory.getTimeSeriesOfEnsemblePairsOneWithMissings() );
 
-        //Obtain the results
-        List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
+        // Validate bias
+        List<DoubleScoreStatisticOuter> bias = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                              MetricConstants.BIAS_FRACTION );
 
-        //Validate bias
-        List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
-        assertEquals( -0.032093836077598345,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.032093836077598345,
-                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.0365931379807274,
-                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.039706682985140816,
-                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.0505708024162773,
-                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -0.056658160809530816,
-                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreStatistic bOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.032093836077598345 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.032093836077598345 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.0365931379807274 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.039706682985140816 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.0505708024162773 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic bSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -0.056658160809530816 )
+                                                                                 .setMetric( BiasFraction.MAIN ) )
+                                    .setMetric( BiasFraction.BASIC_METRIC )
+                                    .build();
 
-        //Validate CoD
-        List<DoubleScoreStatisticOuter> cod =
-                Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        assertEquals( 0.7873367083297588,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7873367083297588,
-                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7653639626077698,
-                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.76063213080129,
-                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7542039364210298,
-                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.7492338765733539,
-                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        List<DoubleScoreStatistic> biasExpected = List.of( bOne, bTwo, bThree, bFour, bFive, bSix );
+        List<DoubleScoreStatistic> biasActual = bias.stream()
+                                                    .map( DoubleScoreStatisticOuter::getStatistic )
+                                                    .toList();
+        assertEquals( biasExpected, biasActual );
 
-        //Validate rho
-        List<DoubleScoreStatisticOuter> rho =
-                Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        // Validate CoD
+        List<DoubleScoreStatisticOuter> cod = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION );
 
-        assertEquals( 0.8873199582618204,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8873199582618204,
-                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8748508230594344,
-                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8721422652304439,
-                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.868449155921652,
-                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 0.8655829692024641,
-                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreStatistic cOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7873367083297588 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7873367083297588 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7653639626077698 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.76063213080129 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7542039364210298 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic cSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.7492338765733539 )
+                                                                                 .setMetric( CoefficientOfDetermination.MAIN ) )
+                                    .setMetric( CoefficientOfDetermination.BASIC_METRIC )
+                                    .build();
 
-        //Validate mae
-        List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
+        List<DoubleScoreStatistic> codExpected = List.of( cOne, cTwo, cThree, cFour, cFive, cSix );
+        List<DoubleScoreStatistic> codActual = cod.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( codExpected, codActual );
 
-        assertEquals( 11.009512537315405,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 11.009512537315405,
-                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 17.675554578575646,
-                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 18.997815872635968,
-                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 20.625668563442144,
-                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 22.094227646773568,
-                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        // Validate rho
+        List<DoubleScoreStatisticOuter> rho = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+
+        DoubleScoreStatistic rOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8873199582618204 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8873199582618204 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8748508230594344 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8721422652304439 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.868449155921652 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 0.8655829692024641 )
+                                                                                 .setMetric( CorrelationPearsons.MAIN ) )
+                                    .setMetric( CorrelationPearsons.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> rhoExpected = List.of( rOne, rTwo, rThree, rFour, rFive, rSix );
+        List<DoubleScoreStatistic> rhoActual = rho.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( rhoExpected, rhoActual );
+
+        // Validate mae
+        List<DoubleScoreStatisticOuter> mae = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                             MetricConstants.MEAN_ABSOLUTE_ERROR );
+
+        DoubleScoreMetric.DoubleScoreMetricComponent maeMetric = MeanAbsoluteError.MAIN.toBuilder()
+                                                                                       .setUnits( "CMS" )
+                                                                                       .build();
+
+        DoubleScoreStatistic mOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 11.009512537315405 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 11.009512537315405 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 17.675554578575646 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 18.997815872635968 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 20.625668563442144 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic mSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 22.094227646773568 )
+                                                                                 .setMetric( maeMetric ) )
+                                    .setMetric( MeanAbsoluteError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> maeExpected = List.of( mOne, mTwo, mThree, mFour, mFive, mSix );
+        List<DoubleScoreStatistic> maeActual = mae.stream()
+                                                  .map( DoubleScoreStatisticOuter::getStatistic )
+                                                  .toList();
+        assertEquals( maeExpected, maeActual );
 
         //Validate me
-        List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
+        List<DoubleScoreStatisticOuter> me = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                            MetricConstants.MEAN_ERROR );
 
-        assertEquals( -1.1578693543670804,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -1.1578693543670804,
-                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -2.1250409720950096,
-                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -2.485577073942586,
-                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -3.4840043925326953,
-                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( -4.2185439080739515,
-                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        DoubleScoreMetric.DoubleScoreMetricComponent meMetric = MeanError.MAIN.toBuilder()
+                                                                              .setUnits( "CMS" )
+                                                                              .build();
+
+        DoubleScoreStatistic meOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -1.1578693543670804 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -1.1578693543670804 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -2.1250409720950096 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -2.485577073942586 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -3.4840043925326953 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic meSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( -4.2185439080739515 )
+                                                                                 .setMetric( meMetric ) )
+                                    .setMetric( MeanError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> meExpected = List.of( meOne, meTwo, meThree, meFour, meFive, meSix );
+        List<DoubleScoreStatistic> meActual = me.stream()
+                                                .map( DoubleScoreStatisticOuter::getStatistic )
+                                                .toList();
+        assertEquals( meExpected, meActual );
 
         //Validate rmse
-        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        assertEquals( 41.01563032408479,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 41.01563032408479,
-                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 52.55361580348335,
-                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 54.824261554390944,
-                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 58.12352988180837,
-                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
-        assertEquals( 61.12163959516187,
-                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
-                      Precision.EPSILON );
+        List<DoubleScoreStatisticOuter> rmse = Slicer.filter( statistics.getDoubleScoreStatistics(),
+                                                              MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+
+        DoubleScoreMetric.DoubleScoreMetricComponent rmseMetric = RootMeanSquareError.MAIN.toBuilder()
+                                                                                          .setUnits( "CMS" )
+                                                                                          .build();
+        DoubleScoreStatistic rmOne =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 41.01563032408479 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmTwo =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 41.01563032408479 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmThree =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 52.55361580348335 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmFour =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 54.824261554390944 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmFive =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 58.12352988180837 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+        DoubleScoreStatistic rmSix =
+                DoubleScoreStatistic.newBuilder()
+                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
+                                                                                 .setValue( 61.12163959516187 )
+                                                                                 .setMetric( rmseMetric ) )
+                                    .setMetric( RootMeanSquareError.BASIC_METRIC )
+                                    .build();
+
+        List<DoubleScoreStatistic> rmseExpected = List.of( rmOne, rmTwo, rmThree, rmFour, rmFive, rmSix );
+        List<DoubleScoreStatistic> rmseActual = rmse.stream()
+                                                    .map( DoubleScoreStatisticOuter::getStatistic )
+                                                    .toList();
+        assertEquals( rmseExpected, rmseActual );
     }
 
     @Test
-    public void testContingencyTable()
+    void testContingencyTable()
             throws IOException, MetricParameterException, InterruptedException
     {
         EvaluationDeclaration declaration =
@@ -843,7 +1453,7 @@ public final class EnsembleStatisticsProcessorTest
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
 
-        Pool<TimeSeries<Pair<Double,Ensemble>>> poolData = TestDataFactory.getTimeSeriesOfEnsemblePairsTwo();
+        Pool<TimeSeries<Pair<Double, Ensemble>>> poolData = TestDataFactory.getTimeSeriesOfEnsemblePairsTwo();
         StatisticsStore statistics = this.getAndCombineStatistics( processors, poolData );
 
         // Expected result
@@ -939,7 +1549,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierTwo = Threshold.newBuilder()
-                                           .setLeftThresholdProbability(0.25 )
+                                           .setLeftThresholdProbability( 0.25 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setDataType( Threshold.ThresholdDataType.LEFT )
                                            .build();
@@ -980,7 +1590,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierThree = Threshold.newBuilder()
-                                             .setLeftThresholdProbability(0.5 )
+                                             .setLeftThresholdProbability( 0.5 )
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .setDataType( Threshold.ThresholdDataType.LEFT )
                                              .build();
@@ -1127,7 +1737,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithValueThresholdsAndNoData()
+    void testApplyWithValueThresholdsAndNoData()
             throws MetricParameterException, InterruptedException
     {
         EvaluationDeclaration declaration =
@@ -1152,7 +1762,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testThatSampleSizeIsConstructedForEnsembleInput() throws MetricParameterException
+    void testThatSampleSizeIsConstructedForEnsembleInput() throws MetricParameterException
     {
         // Create declaration
         Dataset left = DatasetBuilder.builder()
@@ -1197,7 +1807,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testThatSampleSizeIsConstructedForEnsembleInputWhenProbabilityScoreExists()
+    void testThatSampleSizeIsConstructedForEnsembleInputWhenProbabilityScoreExists()
             throws MetricParameterException
     {
         // Create declaration
