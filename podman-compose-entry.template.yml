@@ -124,8 +124,11 @@ services:
          - /mnt/wres_keys:/wres_secrets:ro
          # To support durable queues after a cycling down and up.
          - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
+         # Persistent log location
+         - /mnt/wres_share/logs/broker/:/mnt/wres_share/logs/broker/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
+         - RABBITMQ_LOG_LOCATION=/mnt/wres_share/logs/broker/
          - WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_CERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_KEYFILE=${WRES_RABBITMQ_SSL_OPTIONS_KEYFILE}
@@ -210,6 +213,8 @@ services:
          - /mnt/wres_share/heap_dumps/eventsbroker:/mnt/wres_share/heap_dumps/eventsbroker
          # For certificates and keys that correspond to them
          - /mnt/wres_keys:/wres_secrets:ro
+          # Persistent log location
+         - /mnt/wres_share/logs/eventsbroker/:/mnt/wres_share/logs/eventsbroker/
         environment:
          - BROKER_WORK=/container_home
          - BROKER_KEYSTORE_PATH=${EVENTSBROKER_KEYSTORE_PATH}
@@ -240,6 +245,8 @@ services:
          - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
          # To write heap dumps
          - /mnt/wres_share/heap_dumps/graphics:/mnt/wres_share/heap_dumps/graphics
+          # Persistent log location
+         - /mnt/wres_share/logs/graphics/:/mnt/wres_share/logs/graphics/
         environment:
          # Override the broker address and port in the binding URL of the event.properties
          - JAVA_OPTS=-Dwres.startBroker=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms3640m -Xmx3640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/graphics/java_pid%p_$$CON_HOSTNAME.hprof' -XX:StartFlightRecording=name=graphics,maxsize=256m,disk=true,maxage=24h,dumponexit=true,filename=/mnt/wres_share/heap_dumps/graphics/$$CON_HOSTNAME -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/graphics/$$CON_HOSTNAME
@@ -266,6 +273,8 @@ services:
          - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
          # To write heap dumps
          - /mnt/wres_share/heap_dumps/writing:/mnt/wres_share/heap_dumps/writing
+          # Persistent log location
+         - /mnt/wres_share/logs/writing/:/mnt/wres_share/logs/writing/
         environment:
          # Override the broker address and port in the binding URL of the event.properties
          - JAVA_OPTS=-Dwres.startBroker=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms3640m -Xmx3640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/writing -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/writing/java_pid%p.hprof /mnt/wres_share/heap_dumps/writing/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/writing/java_pid%p_$$CON_HOSTNAME.hprof' -XX:StartFlightRecording=name=writing,maxsize=256m,disk=true,maxage=24h,dumponexit=true,filename=/mnt/wres_share/heap_dumps/writing/$$CON_HOSTNAME -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/writing/$$CON_HOSTNAME
