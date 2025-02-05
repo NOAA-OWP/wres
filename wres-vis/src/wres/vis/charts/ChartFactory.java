@@ -504,8 +504,14 @@ public class ChartFactory
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        // Use the metadata from the first element, plus the aggregate time window
+        if ( statistics.isEmpty() )
+        {
+            throw new ChartBuildingException( "Could not create the duration diagram charts as none were supplied with "
+                                              + "valid statistics." );
+        }
+
         DurationDiagramStatisticOuter example = statistics.get( 0 );
+
         PoolMetadata metadata = example.getPoolMetadata();
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
@@ -2556,6 +2562,12 @@ public class ChartFactory
     {
         ReferenceTime.ReferenceTimeType type = example.getStatistic()
                                                       .getReferenceTimeType();
+
+        if ( type == ReferenceTime.ReferenceTimeType.UNKNOWN )
+        {
+            return "REFERENCE TIME OF UNKNOWN TYPE [UTC]";
+        }
+
         return type.toString()
                    .replace( "_", " " )
                + " [UTC]";
