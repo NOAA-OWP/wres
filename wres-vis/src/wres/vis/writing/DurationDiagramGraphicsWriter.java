@@ -148,28 +148,35 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
 
                 for ( List<DurationDiagramStatisticOuter> nextStatistics : grouped )
                 {
-                    DurationDiagramStatisticOuter next = nextStatistics.get( 0 );
-                    MetricConstants metricName = next.getMetricName();
-                    PoolMetadata metadata = next.getPoolMetadata();
-                    String pathQualifier = DurationDiagramGraphicsWriter.getPathQualifier( nextStatistics );
+                    List<DurationDiagramStatisticOuter> filtered =
+                            DurationDiagramGraphicsWriter.filterEmptyStatistics( nextStatistics );
 
-                    JFreeChart chart = chartFactory.getDurationDiagramChart( nextStatistics,
-                                                                             helper.getDurationUnits() );
+                    if ( !filtered.isEmpty() )
+                    {
+                        DurationDiagramStatisticOuter next = filtered.get( 0 );
 
-                    // Build the output file name
-                    Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                              metadata,
-                                                                              pathQualifier,
-                                                                              metricName,
-                                                                              null );
+                        MetricConstants metricName = next.getMetricName();
+                        PoolMetadata metadata = next.getPoolMetadata();
+                        String pathQualifier = DurationDiagramGraphicsWriter.getPathQualifier( filtered );
 
-                    // Write formats
-                    Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                           chart,
-                                                                           metricName.getCanonicalName(),
-                                                                           nextOutput );
+                        JFreeChart chart = chartFactory.getDurationDiagramChart( filtered,
+                                                                                 helper.getDurationUnits() );
 
-                    pathsWrittenTo.addAll( finishedPaths );
+                        // Build the output file name
+                        Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
+                                                                                  metadata,
+                                                                                  pathQualifier,
+                                                                                  metricName,
+                                                                                  null );
+
+                        // Write formats
+                        Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
+                                                                               chart,
+                                                                               metricName.getCanonicalName(),
+                                                                               nextOutput );
+
+                        pathsWrittenTo.addAll( finishedPaths );
+                    }
                 }
             }
         }
@@ -179,6 +186,21 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     * Removes any statistics duration diagrams that do not contain any statistics.
+     *
+     * @param diagrams the diagrams
+     * @return the filtered diagrams
+     */
+
+    private static List<DurationDiagramStatisticOuter> filterEmptyStatistics( List<DurationDiagramStatisticOuter> diagrams )
+    {
+        return diagrams.stream().filter( d -> !d.getStatistic()
+                                                .getStatisticsList()
+                                                .isEmpty() )
+                       .toList();
     }
 
     /**

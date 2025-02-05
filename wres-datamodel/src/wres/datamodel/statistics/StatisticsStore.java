@@ -326,7 +326,7 @@ public class StatisticsStore
         }
 
         /**
-         * Adds a an existing set of statistics to the builder.
+         * Adds an existing set of statistics to the builder.
          * 
          * @param project the statistics
          * @return the builder
