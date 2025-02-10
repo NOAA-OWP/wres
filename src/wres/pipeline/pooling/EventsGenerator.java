@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.protobuf.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +147,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                        .name(),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
-                                                                   null );
+                                                                   null,
+                                                                   declaration );
 
                                 innerEvents = this.doEventDetection( details );
                             }
@@ -163,7 +165,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                        .name(),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
-                                                                   null );
+                                                                   null,
+                                                                   declaration );
                                 innerEvents = this.doEventDetection( details );
                             }
                             case BASELINE ->
@@ -179,7 +182,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                        .name(),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
-                                                                   null );
+                                                                   null,
+                                                                   declaration );
                                 innerEvents = this.doEventDetection( details );
                             }
                             case COVARIATE -> throw new IllegalStateException( "Covariate dataset cannot have a "
@@ -203,7 +207,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        null,
                                                        desiredTimeScale,
                                                        this.leftUpscaler(),
-                                                       this.measurementUnit() );
+                                                       this.measurementUnit(),
+                                                       declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
                     this.combineEvents( detectionAttempted, events, innerEvents, combination );
                     detectionAttempted = true;
@@ -220,7 +225,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        null,
                                                        desiredTimeScale,
                                                        this.rightUpscaler(),
-                                                       this.measurementUnit() );
+                                                       this.measurementUnit(),
+                                                       declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
                     this.combineEvents( detectionAttempted, events, innerEvents, combination );
                     detectionAttempted = true;
@@ -237,7 +243,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        null,
                                                        desiredTimeScale,
                                                        this.baselineUpscaler(),
-                                                       this.measurementUnit() );
+                                                       this.measurementUnit(),
+                                                       declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
                     this.combineEvents( detectionAttempted, events, innerEvents, combination );
                     detectionAttempted = true;
@@ -283,17 +290,37 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         }
 
         Set<TimeWindowOuter> events = new TreeSet<>();
-        TimeWindowOuter unbounded = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
         FeatureGroup featureGroup = details.featureGroup();
         Function<FeatureTuple, Feature> featureGetter = details.featureGetter();
         RetrieverFactory<Double, Double, Double> eventRetriever = details.eventRetriever();
+
+        // Get any valid time constraints on retrieval, accounting for the timescale
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
+        EvaluationDeclaration declaration = details.declaration();
+        TimeInterval validDates = declaration.validDates();
+        if ( Objects.nonNull( validDates ) )
+        {
+            Instant minimumInstant = validDates.minimum();
+            Instant maximumInstant = validDates.maximum();
+            Timestamp minimum = MessageUtilities.getTimestamp( minimumInstant );
+            Timestamp maximum = MessageUtilities.getTimestamp( maximumInstant );
+            TimeWindow adjusted = timeWindow.getTimeWindow()
+                                            .toBuilder()
+                                            .setEarliestValidTime( minimum )
+                                            .setLatestValidTime( maximum )
+                                            .build();
+            TimeWindowOuter adjustedOuter = TimeWindowOuter.of( adjusted );
+
+            // Adjust for timescale
+            timeWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( adjustedOuter, details.desiredTimeScale() );
+        }
 
         switch ( details.dataset() )
         {
             case OBSERVED ->
             {
                 Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getLeftRetriever( features )
+                Stream<TimeSeries<Double>> series = eventRetriever.getLeftRetriever( features, timeWindow )
                                                                   .get();
 
                 Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
@@ -310,7 +337,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             case PREDICTED ->
             {
                 Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getRightRetriever( features, unbounded )
+                Stream<TimeSeries<Double>> series = eventRetriever.getRightRetriever( features, timeWindow )
                                                                   .get();
 
                 Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
@@ -327,7 +354,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             case BASELINE ->
             {
                 Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getBaselineRetriever( features, unbounded )
+                Stream<TimeSeries<Double>> series = eventRetriever.getBaselineRetriever( features, timeWindow )
                                                                   .get();
 
                 Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
@@ -345,7 +372,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             {
                 Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
                 Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( features,
-                                                                                          details.covariateName() )
+                                                                                          details.covariateName(),
+                                                                                          timeWindow )
                                                                   .get();
 
                 Set<TimeWindowOuter> innerEvents =
@@ -627,7 +655,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                           details.covariateName(),
                                           details.desiredTimeScale(),
                                           details.upscaler(),
-                                          measurementUnit );
+                                          measurementUnit,
+                                          details.declaration() );
     }
 
     /**
@@ -658,6 +687,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
      * @param desiredTimeScale the desired timescale
      * @param upscaler the upscaler
      * @param measurementUnit the measurement unit
+     * @param declaration the declaration
      */
 
     private record EventDetectionDetails( EventDetectionDataset dataset,
@@ -668,7 +698,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                           String covariateName,
                                           TimeScaleOuter desiredTimeScale,
                                           TimeSeriesUpscaler<Double> upscaler,
-                                          String measurementUnit )
+                                          String measurementUnit,
+                                          EvaluationDeclaration declaration )
     {
     }
 

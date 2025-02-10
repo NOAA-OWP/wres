@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.CovariatePurpose;
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
@@ -41,6 +42,7 @@ import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.Variable;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
@@ -48,12 +50,14 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
+import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.eventdetection.EventDetector;
 import wres.eventdetection.EventDetectorFactory;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
+import wres.io.retrieving.memory.SingleValuedRetrieverFactoryInMemory;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -122,7 +126,7 @@ class EventsGeneratorTest
                                                                              .build();
         EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
                                                                         parameters );
-        String measurementUnit = "foo";
+        String measurementUnit = "qux";
         EventsGenerator generator = new EventsGenerator( upscaler,
                                                          upscaler,
                                                          upscaler,
@@ -141,7 +145,7 @@ class EventsGeneratorTest
                .thenReturn( Stream.of( timeSeriesOne ) );
         Mockito.when( this.rightRetriever.get() )
                .thenReturn( Stream.of( timeSeriesTwo ) );
-        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.leftRetriever );
         Mockito.when( this.retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.rightRetriever );
@@ -158,7 +162,7 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
         GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
@@ -207,7 +211,7 @@ class EventsGeneratorTest
                                                                              .build();
         EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
                                                                         parameters );
-        String measurementUnit = "foo";
+        String measurementUnit = "qux";
         EventsGenerator generator = new EventsGenerator( upscaler,
                                                          upscaler,
                                                          upscaler,
@@ -232,7 +236,7 @@ class EventsGeneratorTest
                .thenReturn( Stream.of( timeSeriesTwo ) );
         Mockito.when( this.baselineRetriever.get() )
                .thenReturn( Stream.of( timeSeriesThree ) );
-        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.leftRetriever );
         Mockito.when( this.retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.rightRetriever );
@@ -252,7 +256,7 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
         GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
@@ -312,7 +316,7 @@ class EventsGeneratorTest
                                                                              .build();
         EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
                                                                         parameters );
-        String measurementUnit = "foo";
+        String measurementUnit = "qux";
         EventsGenerator generator = new EventsGenerator( upscaler,
                                                          upscaler,
                                                          upscaler,
@@ -337,7 +341,7 @@ class EventsGeneratorTest
                .thenReturn( Stream.of( timeSeriesTwo ) );
         Mockito.when( this.baselineRetriever.get() )
                .thenReturn( Stream.of( timeSeriesThree ) );
-        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.leftRetriever );
         Mockito.when( this.retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.rightRetriever );
@@ -357,7 +361,7 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
         GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
@@ -396,7 +400,7 @@ class EventsGeneratorTest
                                                                              .build();
         EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
                                                                         parameters );
-        String measurementUnit = "foo";
+        String measurementUnit = "qux";
         EventsGenerator generator = new EventsGenerator( upscaler,
                                                          upscaler,
                                                          upscaler,
@@ -421,13 +425,15 @@ class EventsGeneratorTest
                .thenReturn( Stream.of( timeSeriesTwo ) );
         Mockito.when( this.covariateRetrieverTwo.get() )
                .thenReturn( Stream.of( timeSeriesThree ) );
-        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.leftRetriever );
         Mockito.when( this.retrieverFactory.getCovariateRetriever( Mockito.anySet(),
-                                                                   ArgumentMatchers.eq( "qux" ) ) )
+                                                                   ArgumentMatchers.eq( "qux" ),
+                                                                   Mockito.any() ) )
                .thenReturn( this.covariateRetrieverOne );
         Mockito.when( this.retrieverFactory.getCovariateRetriever( Mockito.anySet(),
-                                                                   ArgumentMatchers.eq( "quux" ) ) )
+                                                                   ArgumentMatchers.eq( "quux" ),
+                                                                   Mockito.any() ) )
                .thenReturn( this.covariateRetrieverTwo );
 
         // Mock the sufficient elements of a project with three separate datasets for event detection
@@ -483,7 +489,7 @@ class EventsGeneratorTest
                                                                         .covariates( covariateDatasets )
                                                                         .build();
 
-        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
         GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
@@ -542,7 +548,7 @@ class EventsGeneratorTest
                                                                              .build();
         EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
                                                                         parameters );
-        String measurementUnit = "foo";
+        String measurementUnit = "qux";
         EventsGenerator generator = new EventsGenerator( upscaler,
                                                          upscaler,
                                                          upscaler,
@@ -561,7 +567,7 @@ class EventsGeneratorTest
                .thenReturn( Stream.of( timeSeriesOne ) );
         Mockito.when( this.rightRetriever.get() )
                .thenReturn( Stream.of( timeSeriesTwo ) );
-        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.leftRetriever );
         Mockito.when( this.retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( this.rightRetriever );
@@ -578,7 +584,7 @@ class EventsGeneratorTest
                                                                         .eventDetection( eventDeclaration )
                                                                         .build();
 
-        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
         GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
@@ -643,7 +649,7 @@ class EventsGeneratorTest
                                                                              .build();
         EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
                                                                         parameters );
-        String measurementUnit = "foo";
+        String measurementUnit = "qux";
         EventsGenerator generator = new EventsGenerator( upscaler,
                                                          upscaler,
                                                          upscaler,
@@ -652,12 +658,6 @@ class EventsGeneratorTest
                                                          detector );
 
         TimeSeries<Double> timeSeriesOne = this.getTestTimeSeriesWithOffset( Duration.ZERO );
-
-        // Mock a retriever factory
-        Mockito.when( this.leftRetriever.get() )
-               .thenReturn( Stream.of( timeSeriesOne ) );
-        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet() ) )
-               .thenReturn( this.leftRetriever );
 
         // Mock the sufficient elements of a project with two separate datasets for event detection
         EventDetection eventDeclaration = EventDetectionBuilder.builder()
@@ -675,13 +675,27 @@ class EventsGeneratorTest
         Duration latestLead = Duration.ofHours( 79 );
         LeadTimeInterval leadTimes = new LeadTimeInterval( earliestLead, latestLead );
 
+        // Valid time constraints
+        Instant earliestValid = Instant.parse( "2079-10-21T00:00:00Z" );
+        Instant latestValid = Instant.parse( "2079-12-03T06:00:00Z" );
+        TimeInterval validTimes = new TimeInterval( earliestValid, latestValid );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "foo" )
+                                                                  .build() )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
                                                                         .eventDetection( eventDeclaration )
                                                                         .referenceDates( referenceTimes )
                                                                         .leadTimes( leadTimes )
+                                                                        .validDates( validTimes )
                                                                         .build();
 
-        Geometry geometry = MessageUtilities.getGeometry( "foo" );
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
         GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
@@ -692,7 +706,14 @@ class EventsGeneratorTest
         Mockito.when( project.getDeclaration() )
                .thenReturn( declaration );
 
-        Set<TimeWindowOuter> actual = generator.doEventDetection( project, groupOne, this.retrieverFactory );
+        // Create a real retriever factory as this is needed to test filtering
+        TimeSeriesStore store = new TimeSeriesStore.Builder()
+                .addSingleValuedSeries( timeSeriesOne, DatasetOrientation.LEFT )
+                .build();
+
+        SingleValuedRetrieverFactoryInMemory factory = SingleValuedRetrieverFactoryInMemory.of( project, store );
+
+        Set<TimeWindowOuter> actual = generator.doEventDetection( project, groupOne, factory );
 
         Instant startOne = Instant.parse( "2079-12-03T03:00:00Z" );
         Instant endOne = Instant.parse( "2079-12-03T05:00:00Z" );
@@ -708,22 +729,7 @@ class EventsGeneratorTest
                                 .setLatestLeadDuration( MessageUtilities.getDuration( latestLead ) )
                                 .build();
 
-        Instant startTwo = Instant.parse( "2079-12-03T09:00:00Z" );
-        Instant endTwo = Instant.parse( "2079-12-03T10:00:00Z" );
-
-        TimeWindow expectedTwo =
-                MessageUtilities.getTimeWindow()
-                                .toBuilder()
-                                .setEarliestValidTime( MessageUtilities.getTimestamp( startTwo ) )
-                                .setLatestValidTime( MessageUtilities.getTimestamp( endTwo ) )
-                                .setEarliestReferenceTime( MessageUtilities.getTimestamp( earliestReference ) )
-                                .setLatestReferenceTime( MessageUtilities.getTimestamp( latestReference ) )
-                                .setEarliestLeadDuration( MessageUtilities.getDuration( earliestLead ) )
-                                .setLatestLeadDuration( MessageUtilities.getDuration( latestLead ) )
-                                .build();
-
-        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ),
-                                                TimeWindowOuter.of( expectedTwo ) );
+        Set<TimeWindowOuter> expected = Set.of( TimeWindowOuter.of( expectedOne ) );
 
         assertEquals( expected, actual );
     }
