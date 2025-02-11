@@ -84,8 +84,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /** A function to upscale baseline data. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
 
-    /** The upscaler for covariate values. */
-    private final Set<Covariate<L>> covariates;
+    /** The covariates with a filtering role. */
+    private final Set<Covariate<L>> covariateFilters;
 
     /** The pairer, which admits finite value pairs. */
     private final TimeSeriesPairer<L, R> pairer;
@@ -184,8 +184,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         /** A function to upscale baseline data. */
         private TimeSeriesUpscaler<R> baselineUpscaler;
 
-        /** A function to upscale covariate data. */
-        private final Set<Covariate<L>> covariates = new HashSet<>();
+        /** The covariates with a filtering role. */
+        private final Set<Covariate<L>> covariateFilters = new HashSet<>();
 
         /** A transformer that applies value constraints to left-ish values. */
         private UnaryOperator<TimeSeries<L>> leftTransformer = in -> in;
@@ -330,14 +330,14 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         }
 
         /**
-         * @param covariates the covariates
+         * @param covariateFilters the covariates with a filtering role
          * @return the builder
          */
-        Builder<L, R, B> setCovariates( Set<Covariate<L>> covariates )
+        Builder<L, R, B> setCovariateFilters( Set<Covariate<L>> covariateFilters )
         {
-            if ( Objects.nonNull( covariates ) )
+            if ( Objects.nonNull( covariateFilters ) )
             {
-                this.covariates.addAll( covariates );
+                this.covariateFilters.addAll( covariateFilters );
             }
 
             return this;
@@ -701,8 +701,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                 }
 
                 // Add the covariate datasets
-                Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariatesInner = this.getCovariates( nextPool );
-                builder.setCovariates( covariatesInner );
+                Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariatesInner =
+                        this.getCovariateFilters( nextPool );
+                builder.setCovariateFilters( covariatesInner );
 
                 returnMe.add( builder.build() );
             }
@@ -820,14 +821,14 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * Returns the upscalers for covariate data.
+     * Returns the covariate filters.
      *
-     * @return the upscalers for covariate data
+     * @return the covariates with a filtering role
      */
 
-    private Set<Covariate<L>> getCovariates()
+    private Set<Covariate<L>> getCovariateFilters()
     {
-        return this.covariates;
+        return this.covariateFilters;
     }
 
     /**
@@ -1285,12 +1286,12 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      * @return the covariate dataset suppliers
      */
 
-    private Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> getCovariates( PoolRequest nextPool )
+    private Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> getCovariateFilters( PoolRequest nextPool )
     {
         Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> innerCovariates = new HashMap<>();
         TimeWindowOuter timeWindow = nextPool.getMetadata()
                                              .getTimeWindow();
-        for ( Covariate<L> covariate : this.getCovariates() )
+        for ( Covariate<L> covariate : this.getCovariateFilters() )
         {
             Set<Feature> features = this.getCovariateFeatures( covariate.datasetDescription(),
                                                                nextPool.getMetadata() );
@@ -1371,7 +1372,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
         this.baselineUpscaler = builder.baselineUpscaler;
-        this.covariates = Set.copyOf( builder.covariates );
+        this.covariateFilters = Set.copyOf( builder.covariateFilters );
         this.climateAdmissibleValue = builder.climateAdmissibleValue;
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;

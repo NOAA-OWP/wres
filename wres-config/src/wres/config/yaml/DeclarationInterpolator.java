@@ -753,11 +753,10 @@ public class DeclarationInterpolator
      */
     private static void interpolateCovariatePurpose( EvaluationDeclarationBuilder builder )
     {
-        if ( Objects.nonNull( builder.eventDetection() )
-             && builder.covariates()
-                       .stream()
-                       .anyMatch( s -> s.purposes()
-                                        .isEmpty() ) )
+        if ( builder.covariates()
+                    .stream()
+                    .anyMatch( s -> s.purposes()
+                                     .isEmpty() ) )
         {
             LOGGER.debug( "Interpolating the purpose of one or more covariate datasets." );
 

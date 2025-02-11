@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DatasetOrientation;
@@ -172,8 +173,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * TODO: remove this shim when pools support different types of right and baseline data. */
     private final Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
-    /** Covariate data sources. Optional. */
-    private final Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariates;
+    /** Covariate data sources with a filtering role. Optional. */
+    private final Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariateFilters;
 
     /** Left data source. */
     private Supplier<Stream<TimeSeries<L>>> left;
@@ -254,8 +255,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             returnMe = this.createPool( leftData, rightData, finalBaselineData );
         }
 
-        // Filter the pool against each covariate
-        for ( Map.Entry<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariateEntry : this.covariates.entrySet() )
+        // Filter the pool against each covariate that has a filtering role
+        for ( Map.Entry<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariateEntry : this.covariateFilters.entrySet() )
         {
             Covariate<L> covariate = covariateEntry.getKey();
             Supplier<Stream<TimeSeries<L>>> data = covariateEntry.getValue();
@@ -294,8 +295,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     static class Builder<L, R, B>
     {
-        /** Covariate data sources with left-ish values, one for each covariate dataset. Optional. */
-        private final Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariates = new HashMap<>();
+        /** Covariate data sources with left-ish values, one for each covariate dataset that has a filtering role.
+         * Optional. */
+        private final Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariateFilters = new HashMap<>();
 
         /** The climatology. */
         private Supplier<Climatology> climatology;
@@ -426,14 +428,25 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param covariates the covariates
+         * @param covariateFilters the covariates with a filtering role
          * @return the builder
          */
-        Builder<L, R, B> setCovariates( Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariates )
+        Builder<L, R, B> setCovariateFilters( Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariateFilters )
         {
-            if ( Objects.nonNull( covariates ) )
+            if ( Objects.nonNull( covariateFilters ) )
             {
-                this.covariates.putAll( covariates );
+                // Guard
+                if ( !covariateFilters.keySet()
+                                      .stream()
+                                      .allMatch( c -> c.datasetDescription()
+                                                       .purposes()
+                                                       .contains( CovariatePurpose.FILTER ) ) )
+                {
+                    throw new IllegalArgumentException( "Attempted to use a covariate dataset as a filter that is not "
+                                                        + "intended for filtering." );
+                }
+
+                this.covariateFilters.putAll( covariateFilters );
             }
 
             return this;
@@ -822,7 +835,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             int pairCount = PoolSlicer.getEventCount( pool );
 
-            LOGGER.debug( "Finished creating pool, which contains {} time-series and {} pairs "
+            LOGGER.debug( "Finished creating a pool, which contains {} time-series and {} pairs "
                           + "and has this metadata: {}.",
                           pool.get()
                               .size(),
@@ -874,7 +887,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
 
             // If there are no pairs for this feature, warn
-            if ( this.areNoPairs( nextMainPairs ) )
+            if ( LOGGER.isWarnEnabled()
+                 && this.areNoPairs( nextMainPairs ) )
             {
                 Set<Feature> availableFeatures = mainPairs.keySet()
                                                           .stream()
@@ -884,7 +898,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
                 LOGGER.warn( "When evaluating a pool for time window {}, failed to identify any pairs for feature: {}. "
                              + "Pairs were available for these features: {}.",
-                             this.getMetadata().getTimeWindow(),
+                             this.getMetadata()
+                                 .getTimeWindow(),
                              nextFeature.getRight(),
                              availableFeatures );
             }
@@ -914,7 +929,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
                     LOGGER.warn( "When evaluating a pool for time window {}, failed to identify any baseline pairs for "
                                  + "feature: {}. Baseline pairs were available for these features: {}.",
-                                 this.getMetadata().getTimeWindow(),
+                                 this.getMetadata()
+                                     .getTimeWindow(),
                                  nextFeature.getBaseline(),
                                  availableFeatures );
                 }
@@ -2373,7 +2389,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.left = builder.left;
         this.right = builder.right;
         this.baseline = builder.baseline;
-        this.covariates = Map.copyOf( builder.covariates );
+        this.covariateFilters = Map.copyOf( builder.covariateFilters );
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
