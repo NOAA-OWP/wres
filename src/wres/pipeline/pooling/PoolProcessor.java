@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.SamplingUncertainty;
 import wres.datamodel.bootstrap.BootstrapUtilities;
+import wres.datamodel.pools.PoolSlicer;
 import wres.metrics.FunctionFactory;
 import wres.metrics.ScalarSummaryStatisticFunction;
 import wres.metrics.SummaryStatisticsCalculator;
@@ -470,6 +471,21 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                SamplingUncertainty samplingUncertainty,
                                                Function<Pool<TimeSeries<Pair<L, R>>>, Pair<Long, Duration>> blockSizeEstimator )
     {
+        // Short-circuit when there are no pairs: GitHub issue #397
+        int poolEventCount = PoolSlicer.getEventCount( pool );
+
+        if ( poolEventCount == 0 )
+        {
+            LOGGER.debug( "Skipping the generation of statistics for a pool with no pairs: {}", pool.getMetadata() );
+            return List.of();
+        }
+        else
+        {
+            LOGGER.debug( "Creating statistics for a pool that contains {} time-series events: {}",
+                          poolEventCount,
+                          pool.getMetadata() );
+        }
+
         // Compute the statistics
         Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>> processor =
                 this.getStatisticsProcessingTask( this.metricProcessors,

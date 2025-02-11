@@ -3994,7 +3994,8 @@ public class DeclarationValidator
         if ( evaluation.covariates()
                        .isEmpty() )
         {
-            LOGGER.debug( "Not checking the feature authorities of the covariate datasets because none were declared." );
+            LOGGER.debug( "Not checking the feature authorities of the covariate datasets because no covariate "
+                          + "datasets were declared." );
             return List.of();
         }
 

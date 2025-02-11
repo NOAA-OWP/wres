@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -315,11 +317,14 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             timeWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( adjustedOuter, details.desiredTimeScale() );
         }
 
+        Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
+
+        LOGGER.info( "Getting time-series data to perform event detection for the following features: {}", features );
+
         switch ( details.dataset() )
         {
             case OBSERVED ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
                 Stream<TimeSeries<Double>> series = eventRetriever.getLeftRetriever( features, timeWindow )
                                                                   .get();
 
@@ -336,7 +341,6 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case PREDICTED ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
                 Stream<TimeSeries<Double>> series = eventRetriever.getRightRetriever( features, timeWindow )
                                                                   .get();
 
@@ -353,7 +357,6 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case BASELINE ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
                 Stream<TimeSeries<Double>> series = eventRetriever.getBaselineRetriever( features, timeWindow )
                                                                   .get();
 
@@ -370,22 +373,31 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case COVARIATES ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
                 Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( features,
                                                                                           details.covariateName(),
                                                                                           timeWindow )
                                                                   .get();
 
+                // Count the number of time-series
+                AtomicLong seriesCount = new AtomicLong();
+                UnaryOperator<TimeSeries<Double>> counter = s ->
+                {
+                    seriesCount.incrementAndGet();
+                    return s;
+                };
                 Set<TimeWindowOuter> innerEvents =
-                        series.flatMap( s -> this.doEventDetection( s,
+                        series.map( counter )
+                              .flatMap( s -> this.doEventDetection( s,
                                                                     this.getAdjustedDetails( details, s.getMetadata()
                                                                                                        .getUnit() ),
                                                                     this.covariateUpscaler() )
                                                  .stream() )
                               .collect( Collectors.toSet() );
-                LOGGER.info( "Detected {} events in the {} dataset for feature group {} with variable name, '{}'.",
+                LOGGER.info( "Detected {} events in the {} dataset containing {} time-series for feature group {} "
+                             + "with variable name, '{}'.",
                              innerEvents.size(),
                              EventDetectionDataset.COVARIATES,
+                             seriesCount.get(),
                              featureGroup.getName(),
                              details.covariateName() );
                 events.addAll( innerEvents );
