@@ -51,7 +51,7 @@ services:
       networks:
         wres_net:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:REDIS_IMAGE"
+        image: "localhost/wres/redis"
         restart: always
         userns_mode: keep-id
         volumes:
@@ -69,7 +69,7 @@ services:
     tasker:
         ports:
          - "8443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:TASKER_IMAGE"
+        image: "localhost/wres/wres-tasker"
         restart: always
         depends_on:
             broker:
@@ -106,7 +106,7 @@ services:
          - "5671:5671"
          - "15671:15671"
          - "15691:15691"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:BROKER_IMAGE"
+        image: "localhost/wres/wres-broker"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -137,7 +137,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:WORKER_IMAGE"
+        image: "localhost/wres/wres-worker"
         restart: always
         depends_on:
             broker:
@@ -187,7 +187,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:EVENTS_IMAGE"
+        image: "localhost/wres/wres-eventsbroker"
         restart: always
         volumes:
          # For heap-dump files
@@ -215,7 +215,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
+        image: "localhost/wres/wres-graphics"
         restart: always
         volumes:
          # To write graphics outputs
@@ -239,7 +239,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-writing:WRITING_IMAGE"
+        image: "localhost/wres/wres-writing"
         restart: always
         volumes:
          # To write numeric outputs
