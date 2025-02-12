@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -134,6 +135,10 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                         TimeScaleOuter covariateTimeScale =
                                 this.getAdjustedTimeScale( desiredTimeScale, next.rescaleFunction() );
 
+                        String variableName = next.dataset()
+                                                  .variable()
+                                                  .name();
+
                         switch ( next.featureNameOrientation() )
                         {
                             case LEFT ->
@@ -144,9 +149,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                    FeatureTuple::getLeft,
                                                                    eventRetriever,
                                                                    detection,
-                                                                   next.dataset()
-                                                                       .variable()
-                                                                       .name(),
+                                                                   variableName,
+                                                                   project.getCovariateFeatures( variableName ),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
                                                                    null,
@@ -162,9 +166,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                    FeatureTuple::getRight,
                                                                    eventRetriever,
                                                                    detection,
-                                                                   next.dataset()
-                                                                       .variable()
-                                                                       .name(),
+                                                                   variableName,
+                                                                   project.getCovariateFeatures( variableName ),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
                                                                    null,
@@ -179,9 +182,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                    FeatureTuple::getBaseline,
                                                                    eventRetriever,
                                                                    detection,
-                                                                   next.dataset()
-                                                                       .variable()
-                                                                       .name(),
+                                                                   variableName,
+                                                                   project.getCovariateFeatures( variableName ),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
                                                                    null,
@@ -207,6 +209,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        eventRetriever,
                                                        detection,
                                                        null,
+                                                       Set.of(),
                                                        desiredTimeScale,
                                                        this.leftUpscaler(),
                                                        this.measurementUnit(),
@@ -225,6 +228,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        eventRetriever,
                                                        detection,
                                                        null,
+                                                       Set.of(),
                                                        desiredTimeScale,
                                                        this.rightUpscaler(),
                                                        this.measurementUnit(),
@@ -243,6 +247,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        eventRetriever,
                                                        detection,
                                                        null,
+                                                       Set.of(),
                                                        desiredTimeScale,
                                                        this.baselineUpscaler(),
                                                        this.measurementUnit(),
@@ -317,6 +322,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             timeWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( adjustedOuter, details.desiredTimeScale() );
         }
 
+        // Get the features for the dataset orientation, which is one of the main datasets (observed, predicted or
+        // baseline), not a covariate. The covariate features must be further derived by correlating the feature names
+        // whose features have the same feature authority as the covariate dataset, which is a requirement. See below.
         Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
 
         LOGGER.info( "Getting time-series data to perform event detection for the following features: {}", features );
@@ -373,7 +381,17 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case COVARIATES ->
             {
-                Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( features,
+                // Map the features to covariate features based on name correlation
+                Predicate<Feature> contained = feature -> features.stream()
+                                                                  .anyMatch( f -> Objects.equals( f.getName(),
+                                                                                                  feature.getName() ) );
+
+                Set<Feature> innerFeatures = details.covariateFeatures()
+                                                    .stream()
+                                                    .filter( contained )
+                                                    .collect( Collectors.toUnmodifiableSet() );
+
+                Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( innerFeatures,
                                                                                           details.covariateName(),
                                                                                           timeWindow )
                                                                   .get();
@@ -665,6 +683,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                           details.eventRetriever(),
                                           details.detection(),
                                           details.covariateName(),
+                                          details.covariateFeatures(),
                                           details.desiredTimeScale(),
                                           details.upscaler(),
                                           measurementUnit,
@@ -696,6 +715,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
      * @param eventRetriever the time-series retriever factory
      * @param detection the detection parameters
      * @param covariateName the covariate name, required for a covariate dataset
+     * @param covariateFeatures the covariate features
      * @param desiredTimeScale the desired timescale
      * @param upscaler the upscaler
      * @param measurementUnit the measurement unit
@@ -708,6 +728,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                           RetrieverFactory<Double, Double, Double> eventRetriever,
                                           EventDetection detection,
                                           String covariateName,
+                                          Set<Feature> covariateFeatures,
                                           TimeScaleOuter desiredTimeScale,
                                           TimeSeriesUpscaler<Double> upscaler,
                                           String measurementUnit,

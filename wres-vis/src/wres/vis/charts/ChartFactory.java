@@ -2388,7 +2388,8 @@ public class ChartFactory
 
             // Reference times when required
             if ( graphicShape != GraphicShape.ISSUED_DATE_POOLS
-                 && ( !earliestReferenceTime.equals( Instant.MIN ) || !latestReferenceTime.equals( Instant.MAX ) ) )
+                 && ( !earliestReferenceTime.equals( Instant.MIN )
+                      || !latestReferenceTime.equals( Instant.MAX ) ) )
             {
                 legendTitle = legendTitle + "Issued time window [UTC], ";
             }
