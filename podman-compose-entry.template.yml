@@ -31,22 +31,21 @@ services:
     cadvisor:
       image: gcr.io/cadvisor/cadvisor:latest
       container_name: cadvisor
-      runtime: crun
-      group_add:
-        - keep-groups
-      userns_mode: keep-id
+      security_opt:
+        - "label=disable"
       restart: always
       ports:
         - 8080:8080
       volumes:
         - /:/rootfs:ro
+        - /dev/disk/:/dev/disk/:ro
         - /sys:/sys:ro
-        - /var/run/user/${UID}/containers/:/var/lib/containers:ro
+        - $SERVICE_ACCOUNT_CONTAINER_LOCATION:/var/lib/containers:ro
         - /sys/fs/cgroup:/sys/fs/cgroup:ro
-        - /dev/disk:/dev/disk/:ro
-        - /run/user/${UID}/podman/podman.sock:/var/run/podman/podman.sock:rw
+        - $SERVICE_ACCOUNT_SOCKET_LOCATION:/var/run/podman/podman.sock:rw
       command:
         - --disable_metrics=network
+        - --disable_metrics=referenced_memory
       depends_on:
         - worker
       networks:
@@ -54,9 +53,6 @@ services:
     persister:
         image: "${DOCKER_REGISTRY}/wres/wres-redis:REDIS_IMAGE"
         restart: always
-        runtime: crun
-        group_add:
-          - keep-groups
         userns_mode: keep-id
         volumes:
          # For the job data
@@ -74,10 +70,6 @@ services:
         ports:
          - "8443:8443"
         image: "${DOCKER_REGISTRY}/wres/wres-tasker:TASKER_IMAGE"
-        runtime: crun
-        group_add:
-          - keep-groups
-        userns_mode: keep-id
         restart: always
         depends_on:
             broker:
@@ -109,9 +101,6 @@ services:
             wres_net:
     broker:
         hostname: localhost
-        runtime: crun
-        group_add:
-          - keep-groups
         userns_mode: keep-id
         ports:
          - "5671:5671"
@@ -150,10 +139,6 @@ services:
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:WORKER_IMAGE"
         restart: always
-        runtime: crun
-        group_add:
-          - keep-groups
-        userns_mode: keep-id
         depends_on:
             broker:
                 condition: service_healthy
@@ -203,10 +188,6 @@ services:
         ports:
          - 15673:15673
         image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:EVENTS_IMAGE"
-        runtime: crun
-        group_add:
-          - keep-groups
-        userns_mode: keep-id
         restart: always
         volumes:
          # For heap-dump files
@@ -235,10 +216,6 @@ services:
             eventsbroker:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
-        runtime: crun
-        group_add:
-          - keep-groups
-        userns_mode: keep-id
         restart: always
         volumes:
          # To write graphics outputs
@@ -263,10 +240,6 @@ services:
             eventsbroker:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-writing:WRITING_IMAGE"
-        runtime: crun
-        group_add:
-          - keep-groups
-        userns_mode: keep-id
         restart: always
         volumes:
          # To write numeric outputs
