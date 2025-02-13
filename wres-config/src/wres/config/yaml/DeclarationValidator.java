@@ -38,6 +38,7 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.EventDetectionParameters;
@@ -2472,12 +2473,12 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
+        EventDetection detection = declaration.eventDetection();
+        EventDetectionParameters parameters = detection.parameters();
+
         // Parameters undefined for which estimates/defaults are speculative: warn
-        if ( Objects.isNull( declaration.eventDetection()
-                                        .parameters() )
-             || Objects.isNull( declaration.eventDetection()
-                                           .parameters()
-                                           .windowSize() ) )
+        if ( Objects.isNull( parameters )
+             || Objects.isNull( parameters.windowSize() ) )
         {
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
@@ -2491,11 +2492,8 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
         }
-        if ( Objects.isNull( declaration.eventDetection()
-                                        .parameters() )
-             || Objects.isNull( declaration.eventDetection()
-                                           .parameters()
-                                           .halfLife() ) )
+        if ( Objects.isNull( parameters )
+             || Objects.isNull( parameters.halfLife() ) )
         {
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
@@ -2509,12 +2507,8 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
         }
-        if ( Objects.nonNull( declaration.eventDetection()
-                                         .parameters() ) )
+        if ( Objects.nonNull( parameters ) )
         {
-            EventDetectionParameters parameters = declaration.eventDetection()
-                                                             .parameters();
-
             if ( parameters.combination() != EventDetectionCombination.INTERSECTION
                  && Objects.nonNull( parameters.aggregation() ) )
             {
@@ -2535,6 +2529,29 @@ public class DeclarationValidator
                                                                  + "'intersection'. An explicit 'aggregation' method "
                                                                  + "is only valid when the 'operation' is "
                                                                  + "'intersection'." )
+                                               .build();
+                events.add( warn );
+            }
+
+            // Warn if a non-default combination method is declared for a singleton: it will have no effect
+            if ( parameters.combination() != EventDetectionCombination.UNION
+                 && detection.datasets()
+                             .size() == 1
+                 && ( !detection.datasets()
+                                .contains( EventDetectionDataset.COVARIATES )
+                      || declaration.covariates()
+                                    .size() == 1 ) )
+            {
+                EvaluationStatusEvent warn
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "Event detection was declared for a single dataset "
+                                                                 + "with 'combination' parameters, but these "
+                                                                 + "parameters are only applicable when performing "
+                                                                 + "event detection on more than one dataset. The "
+                                                                 + "'combination' parameters are redundant and will "
+                                                                 + "have no effect. For clarity, it would be better to "
+                                                                 + "remove them." )
                                                .build();
                 events.add( warn );
             }

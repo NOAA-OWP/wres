@@ -2856,6 +2856,33 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEventDetectionWithRedundantCombinationProducesWarning()
+    {
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .combination( EventDetectionCombination.INTERSECTION )
+                                               .build();
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .parameters( parameters )
+                                                             .build();
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .eventDetection( eventDetection )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "these parameters are only applicable when performing "
+                                                       + "event detection on more than one dataset",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86
