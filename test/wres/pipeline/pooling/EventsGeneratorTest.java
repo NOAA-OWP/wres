@@ -734,6 +734,72 @@ class EventsGeneratorTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testEventDetectionIgnoresEventAggregationForSingleton()
+    {
+        // GitHub issue #420
+
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        EventDetectionParameters parameters = EventDetectionParametersBuilder.builder()
+                                                                             .windowSize( Duration.ofHours( 6 ) )
+                                                                             .minimumEventDuration( Duration.ZERO )
+                                                                             .halfLife( Duration.ofHours( 2 ) )
+                                                                             .combination( EventDetectionCombination.INTERSECTION )
+                                                                             .aggregation( TimeWindowAggregation.MAXIMUM )
+                                                                             .build();
+        EventDetector detector = EventDetectorFactory.getEventDetector( EventDetectionMethod.REGINA_OGDEN,
+                                                                        parameters );
+        String measurementUnit = "qux";
+        EventsGenerator generator = new EventsGenerator( upscaler,
+                                                         upscaler,
+                                                         upscaler,
+                                                         upscaler,
+                                                         measurementUnit,
+                                                         detector );
+
+        TimeSeries<Double> timeSeriesOne = this.getTestTimeSeriesWithOffset( Duration.ZERO );
+
+        // Shift the series by one hour, which will eliminate the first event upon intersection, leaving two in total
+        // of the four events detected across the two series
+        TimeSeries<Double> timeSeriesTwo = this.getTestTimeSeriesWithOffset( Duration.ofHours( 1 ) );
+
+        // Mock a retriever factory
+        Mockito.when( this.leftRetriever.get() )
+               .thenReturn( Stream.of( timeSeriesOne ) );
+        Mockito.when( this.rightRetriever.get() )
+               .thenReturn( Stream.of( timeSeriesTwo ) );
+        Mockito.when( this.retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
+               .thenReturn( this.leftRetriever );
+        Mockito.when( this.retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )
+               .thenReturn( this.rightRetriever );
+
+        // Mock the sufficient elements of a project with two separate datasets for event detection
+        EventDetection eventDeclaration = EventDetectionBuilder.builder()
+                                                               .method( EventDetectionMethod.REGINA_OGDEN )
+                                                               .parameters( parameters )
+                                                               .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                               .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .eventDetection( eventDeclaration )
+                                                                        .build();
+
+        Geometry geometry = MessageUtilities.getGeometry( "bar" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
+        FeatureGroup groupOne = FeatureGroup.of( geoGroup );
+
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( groupOne ) );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+
+        Set<TimeWindowOuter> actual = generator.doEventDetection( project, groupOne, this.retrieverFactory );
+
+        assertEquals( 2, actual.size() );
+    }
+
     /**
      * Generates a test time-series.
      * @param offset the offset to apply

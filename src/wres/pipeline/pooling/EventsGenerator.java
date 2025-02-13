@@ -113,7 +113,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         Set<TimeWindowOuter> events = new HashSet<>();
         TimeScaleOuter desiredTimeScale = project.getDesiredTimeScale();
 
-        boolean detectionAttempted = false; // Only attempt to combine events when detection has been attempted
+        int detectionAttemptedCount = 0; // Only attempt to combine events when detection has been attempted
         for ( EventDetectionDataset dataset : detection.datasets() )
         {
             switch ( dataset )
@@ -195,8 +195,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                + "orientation." );
                         }
 
-                        this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                        detectionAttempted = true;
+                        this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                        detectionAttemptedCount++;
                     }
                 }
                 case OBSERVED ->
@@ -215,8 +215,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.measurementUnit(),
                                                        declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                    detectionAttempted = true;
+                    this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                    detectionAttemptedCount++;
                 }
                 case PREDICTED ->
                 {
@@ -234,8 +234,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.measurementUnit(),
                                                        declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                    detectionAttempted = true;
+                    this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                    detectionAttemptedCount++;
                 }
                 case BASELINE ->
                 {
@@ -253,8 +253,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        this.measurementUnit(),
                                                        declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                    detectionAttempted = true;
+                    this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                    detectionAttemptedCount++;
                 }
             }
         }
@@ -264,11 +264,15 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                      featureGroup.getName(),
                      combination );
 
-        // Aggregate any intersecting events, as needed
-        Set<TimeWindowOuter> aggregated = this.aggregateEvents( events,
-                                                                detection.parameters()
-                                                                         .aggregation(),
-                                                                featureGroup );
+        // Aggregate any intersecting events, as needed, but only if combination/intersection happened
+        Set<TimeWindowOuter> aggregated = events;
+        if ( detectionAttemptedCount > 1 ) // Combination/intersection happened
+        {
+            aggregated = this.aggregateEvents( events,
+                                               detection.parameters()
+                                                        .aggregation(),
+                                               featureGroup );
+        }
 
         // Adjust the time windows to account for existing time windows and other explicit time constraints
         Set<TimeWindowOuter> declared = TimeWindowSlicer.getTimeWindows( declaration );
@@ -336,9 +340,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                 Stream<TimeSeries<Double>> series = eventRetriever.getLeftRetriever( features, timeWindow )
                                                                   .get();
 
-                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
-                                                                                               details,
-                                                                                               this.leftUpscaler() )
+                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                                              details,
+                                                                                                              this.leftUpscaler() )
                                                                             .stream() )
                                                          .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
@@ -352,9 +356,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                 Stream<TimeSeries<Double>> series = eventRetriever.getRightRetriever( features, timeWindow )
                                                                   .get();
 
-                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
-                                                                                               details,
-                                                                                               this.rightUpscaler() )
+                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                                              details,
+                                                                                                              this.rightUpscaler() )
                                                                             .stream() )
                                                          .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
@@ -368,9 +372,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                 Stream<TimeSeries<Double>> series = eventRetriever.getBaselineRetriever( features, timeWindow )
                                                                   .get();
 
-                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
-                                                                                               details,
-                                                                                               this.baselineUpscaler() )
+                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                                              details,
+                                                                                                              this.baselineUpscaler() )
                                                                             .stream() )
                                                          .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
@@ -405,10 +409,11 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                 };
                 Set<TimeWindowOuter> innerEvents =
                         series.map( counter )
-                              .flatMap( s -> this.doEventDetection( s,
-                                                                    this.getAdjustedDetails( details, s.getMetadata()
-                                                                                                       .getUnit() ),
-                                                                    this.covariateUpscaler() )
+                              .flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                   this.getAdjustedDetails( details,
+                                                                                                            s.getMetadata()
+                                                                                                             .getUnit() ),
+                                                                                   this.covariateUpscaler() )
                                                  .stream() )
                               .collect( Collectors.toSet() );
                 LOGGER.info( "Detected {} events in the {} dataset containing {} time-series for feature group {} "
@@ -603,16 +608,39 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
     }
 
     /**
-     * Performs event detection.
+     * Performs rescaling and filtering of event values, followed by event detection.
      *
      * @param timeSeries the time-series
      * @param details the event detection details
      * @return the time windows, one for each detected event
      */
 
-    private Set<TimeWindowOuter> doEventDetection( TimeSeries<Double> timeSeries,
-                                                   EventDetectionDetails details,
-                                                   TimeSeriesUpscaler<Double> upscaler )
+    private Set<TimeWindowOuter> adjustTimeSeriesAndDetectEvents( TimeSeries<Double> timeSeries,
+                                                                  EventDetectionDetails details,
+                                                                  TimeSeriesUpscaler<Double> upscaler )
+    {
+        // Rescale the time-series if needed
+        TimeSeries<Double> adjusted = this.getRescaledTimeSeries( timeSeries, details, upscaler );
+
+        LOGGER.debug( "Performing event detection of a time-series dataset containing {} events and the following "
+                      + "metadata: {}.", adjusted.getEvents()
+                                                 .size(), adjusted.getMetadata() );
+
+        return this.eventDetector()
+                   .detect( adjusted );
+    }
+
+    /**
+     * Performs rescaling of the input time-series as needed.
+     *
+     * @param timeSeries the time-series
+     * @param details the event detection details
+     * @return the rescaled time-series
+     */
+
+    private TimeSeries<Double> getRescaledTimeSeries( TimeSeries<Double> timeSeries,
+                                                      EventDetectionDetails details,
+                                                      TimeSeriesUpscaler<Double> upscaler )
     {
         // Upscale the time-series if needed
         boolean upscale = Objects.nonNull( details.desiredTimeScale() )
@@ -640,12 +668,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             timeSeries = upscaled.getTimeSeries();
         }
 
-        LOGGER.debug( "Performing event detection of a time-series dataset containing {} events and the following "
-                      + "metadata: {}.", timeSeries.getEvents()
-                                                   .size(), timeSeries.getMetadata() );
-
-        return this.eventDetector()
-                   .detect( timeSeries );
+        return timeSeries;
     }
 
     /**
