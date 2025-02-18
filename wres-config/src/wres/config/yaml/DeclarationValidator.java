@@ -2524,8 +2524,7 @@ public class DeclarationValidator
                                                                              .toString()
                                                                              .toLowerCase()
                                                                  + "', which is not valid. Please remove the "
-                                                                 + "'aggregation' method, declare an 'aggregation' "
-                                                                 + "method of 'none' or change the 'operation' to "
+                                                                 + "'aggregation' method or change the 'operation' to "
                                                                  + "'intersection'. An explicit 'aggregation' method "
                                                                  + "is only valid when the 'operation' is "
                                                                  + "'intersection'." )
