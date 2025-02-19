@@ -18,6 +18,7 @@ import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -25,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.Values;
+import wres.config.yaml.components.ValuesBuilder;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -424,17 +427,17 @@ class SlicerTest
         TimeWindowOuter windowOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
                                                                                         Duration.ofHours(
-                                                                                                              1 ) ) );
+                                                                                                1 ) ) );
 
         TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
                                                                                         Duration.ofHours(
-                                                                                                              2 ) ) );
+                                                                                                2 ) ) );
 
         TimeWindowOuter windowThree = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                           Instant.MAX,
                                                                                           Duration.ofHours(
-                                                                                                                3 ) ) );
+                                                                                                  3 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -527,17 +530,17 @@ class SlicerTest
         TimeWindowOuter windowOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
                                                                                         Duration.ofHours(
-                                                                                                              1 ) ) );
+                                                                                                1 ) ) );
 
         TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
                                                                                         Duration.ofHours(
-                                                                                                              2 ) ) );
+                                                                                                2 ) ) );
 
         TimeWindowOuter windowThree = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                           Instant.MAX,
                                                                                           Duration.ofHours(
-                                                                                                                2 ) ) );
+                                                                                                  2 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -691,12 +694,12 @@ class SlicerTest
         TimeWindowOuter windowOne = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
                                                                                         Duration.ofHours(
-                                                                                                              1 ) ) );
+                                                                                                1 ) ) );
 
         TimeWindowOuter windowTwo = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
                                                                                         Duration.ofHours(
-                                                                                                              2 ) ) );
+                                                                                                2 ) ) );
 
         TimeWindowOuter windowThree = TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                                           Instant.MAX,
@@ -843,4 +846,34 @@ class SlicerTest
 
         assertEquals( Double.NaN, slicer.applyAsDouble( Double.NaN ) );
     }
+
+    @Test
+    void testValueTransformer()
+    {
+        Values valuesOne = ValuesBuilder.builder()
+                                        .maximum( 23.0 )
+                                        .aboveMaximum( 99.0 )
+                                        .build();
+        DoubleUnaryOperator transformerOne = Slicer.getValueTransformer( valuesOne );
+
+        Values valuesTwo = ValuesBuilder.builder()
+                                        .minimum( 17.0 )
+                                        .belowMinimum( 12.0 )
+                                        .build();
+        DoubleUnaryOperator transformerTwo = Slicer.getValueTransformer( valuesTwo );
+
+        Values valuesThree = ValuesBuilder.builder()
+                                          .minimum( 17.0 )
+                                          .belowMinimum( 12.0 )
+                                          .maximum( 23.0 )
+                                          .aboveMaximum( 99.0 )
+                                          .build();
+        DoubleUnaryOperator transformerThree = Slicer.getValueTransformer( valuesThree );
+
+        assertAll( () -> assertEquals( 99.0, transformerOne.applyAsDouble( 24.0 ), 1 ),
+                   () -> assertEquals( 12.0, transformerTwo.applyAsDouble( 16.0 ), 1 ),
+                   () -> assertEquals( 12.0, transformerThree.applyAsDouble( 16.0 ), 1 ),
+                   () -> assertEquals( 99.0, transformerThree.applyAsDouble( 24.0 ), 1 ) );
+    }
+
 }

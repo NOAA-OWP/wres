@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Values;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -490,6 +491,73 @@ public final class Slicer
         return input.stream()
                     .collect( Collectors.groupingBy( pair -> pair.getRight()
                                                                  .size() ) );
+    }
+
+    /**
+     * Returns a transformer for single-valued data.
+     *
+     * @param values the value declaration, possibly null (for identity operator)
+     * @return a transformer
+     */
+
+    public static DoubleUnaryOperator getValueTransformer( Values values )
+    {
+        if ( Objects.isNull( values ) )
+        {
+            return value -> value;
+        }
+
+        double assignToLowMiss = MissingValues.DOUBLE;
+        double assignToHighMiss = MissingValues.DOUBLE;
+
+        double minimum = Double.NEGATIVE_INFINITY;
+        double maximum = Double.POSITIVE_INFINITY;
+
+        if ( Objects.nonNull( values.belowMinimum() ) )
+        {
+            assignToLowMiss = values.belowMinimum();
+        }
+
+        if ( Objects.nonNull( values.aboveMaximum() ) )
+        {
+            assignToHighMiss = values.aboveMaximum();
+        }
+
+        if ( Objects.nonNull( values.minimum() ) )
+        {
+            minimum = values.minimum();
+        }
+
+        if ( Objects.nonNull( values.maximum() ) )
+        {
+            maximum = values.maximum();
+        }
+
+        // Effectively final constants for use
+        // within enclosing scope
+        double assignLow = assignToLowMiss;
+        double assignHigh = assignToHighMiss;
+
+        double low = minimum;
+        double high = maximum;
+
+        return toTransform -> {
+
+            // Low miss
+            if ( toTransform < low )
+            {
+                return assignLow;
+            }
+
+            // High miss
+            if ( toTransform > high )
+            {
+                return assignHigh;
+            }
+
+            // Within bounds
+            return toTransform;
+        };
     }
 
     /**

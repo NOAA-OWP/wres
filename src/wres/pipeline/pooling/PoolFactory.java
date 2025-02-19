@@ -48,7 +48,6 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
-import wres.config.yaml.components.Values;
 import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -627,7 +626,7 @@ public class PoolFactory
                                                                                Map.Entry::getValue ) );
         Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
-        DoubleUnaryOperator valueTransformer = this.getValueTransformer( declaration.values() );
+        DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueTransformer =
                 this.getValueTransformer( leftOffsetGenerator, valueTransformer );
 
@@ -790,7 +789,7 @@ public class PoolFactory
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
 
 
-        DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
+        DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
 
@@ -972,7 +971,7 @@ public class PoolFactory
         Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
 
-        DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
+        DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
 
@@ -1582,73 +1581,6 @@ public class PoolFactory
                                                       ensemble.areSortedMembersCached() );
 
             return Event.of( ensembleEvent.getTime(), convertedEnsemble );
-        };
-    }
-
-    /**
-     * Returns a transformer for single-valued data if required.
-     *
-     * @param values the value declaration
-     * @return a transformer or null
-     */
-
-    private DoubleUnaryOperator getValueTransformer( Values values )
-    {
-        if ( Objects.isNull( values ) )
-        {
-            return value -> value;
-        }
-
-        double assignToLowMiss = MissingValues.DOUBLE;
-        double assignToHighMiss = MissingValues.DOUBLE;
-
-        double minimum = Double.NEGATIVE_INFINITY;
-        double maximum = Double.POSITIVE_INFINITY;
-
-        if ( Objects.nonNull( values.belowMinimum() ) )
-        {
-            assignToLowMiss = values.belowMinimum();
-        }
-
-        if ( Objects.nonNull( values.aboveMaximum() ) )
-        {
-            assignToHighMiss = values.aboveMaximum();
-        }
-
-        if ( Objects.nonNull( values.minimum() ) )
-        {
-            minimum = values.minimum();
-        }
-
-        if ( Objects.nonNull( values.maximum() ) )
-        {
-            maximum = values.maximum();
-        }
-
-        // Effectively final constants for use 
-        // within enclosing scope
-        double assignLow = assignToLowMiss;
-        double assignHigh = assignToHighMiss;
-
-        double low = minimum;
-        double high = maximum;
-
-        return toTransform -> {
-
-            // Low miss
-            if ( toTransform < low )
-            {
-                return assignLow;
-            }
-
-            // High miss
-            if ( toTransform > high )
-            {
-                return assignHigh;
-            }
-
-            // Within bounds
-            return toTransform;
         };
     }
 

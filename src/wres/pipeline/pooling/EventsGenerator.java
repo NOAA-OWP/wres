@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -28,11 +29,13 @@ import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeWindowAggregation;
+import wres.datamodel.Slicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries;
@@ -640,12 +643,30 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         // Rescale the time-series if needed
         TimeSeries<Double> adjusted = this.getRescaledTimeSeries( timeSeries, details, upscaler );
 
-        LOGGER.debug( "Performing event detection of a time-series dataset containing {} events and the following "
-                      + "metadata: {}.", adjusted.getEvents()
-                                                 .size(), adjusted.getMetadata() );
+        // Filter event values, if necessary
+        DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( details.declaration()
+                                                                                  .values() );
+        TimeSeries<Double> transformed = TimeSeriesSlicer.transform( adjusted,
+                                                                     valueTransformer::applyAsDouble,
+                                                                     m -> m );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Following rescaling and filtering by value, discovered {} time-series values for event "
+                          + "detection. The original time-series contained {} values. Value filtering removed {} "
+                          + "values from the rescaled time-series. The time-series metadata is: {}.",
+                          transformed.getEvents()
+                                     .size(),
+                          timeSeries.getEvents()
+                                    .size(),
+                          adjusted.getEvents()
+                                  .size() - transformed.getEvents()
+                                                       .size(),
+                          transformed.getMetadata() );
+        }
 
         return this.eventDetector()
-                   .detect( adjusted );
+                   .detect( transformed );
     }
 
     /**
