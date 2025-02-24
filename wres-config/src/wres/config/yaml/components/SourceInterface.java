@@ -92,19 +92,20 @@ public enum SourceInterface
     NWM_LONG_RANGE_CHANNEL_RT_CONUS( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID ),
     /** nwm short range channel rt alaska. */
     @JsonProperty( "nwm short range channel rt alaska" )
-    NWM_SHORT_RANGE_CHANNEL_RT_CONUS_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID ),
+    NWM_SHORT_RANGE_CHANNEL_RT_CONUS_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ),
+                                             FeatureAuthority.NWM_FEATURE_ID ),
     /** nwm medium range ensemble channel rt alaska. */
     @JsonProperty( "nwm medium range ensemble channel rt alaska" )
     NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_ALASKA( Set.of( DataType.ENSEMBLE_FORECASTS ),
-                                                FeatureAuthority.NWM_FEATURE_ID ),
+                                                 FeatureAuthority.NWM_FEATURE_ID ),
     /** nwm medium range deterministic channel rt alaska. */
     @JsonProperty( "nwm medium range deterministic channel rt alaska" )
     NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ),
-                                                     FeatureAuthority.NWM_FEATURE_ID ),
+                                                      FeatureAuthority.NWM_FEATURE_ID ),
     /** nwm medium range no da deterministic channel rt alaska. */
     @JsonProperty( "nwm medium range no da deterministic channel rt alaska" )
     NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ),
-                                                           FeatureAuthority.NWM_FEATURE_ID ),
+                                                            FeatureAuthority.NWM_FEATURE_ID ),
     /** nwm analysis assim channel rt alaska. */
     @JsonProperty( "nwm analysis assim channel rt alaska" )
     NWM_ANALYSIS_ASSIM_CHANNEL_RT_ALASKA( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID ),
@@ -168,5 +169,18 @@ public enum SourceInterface
     {
         return this.name()
                    .startsWith( "NWM_" );
+    }
+
+    /**
+     * Convenience method that inspects the interface {@link #name()} and returns <code>true</code> when the name
+     * contains 'ANALYSIS_', otherwise <code>false</code>.
+     *
+     * @return whether the source interface is an analysis interface
+     */
+
+    public boolean isAnalysisInterface()
+    {
+        return this.name()
+                   .contains( "ANALYSIS_" );
     }
 }

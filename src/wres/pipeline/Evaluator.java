@@ -682,11 +682,13 @@ public class Evaluator
                                                            .map( FeatureTuple::getGeometryTuple )
                                                            .collect( Collectors.toUnmodifiableSet() );
             Set<FeatureGroup> featureGroups = new TreeSet<>( project.getFeatureGroups() );
+
             Set<FeatureGroup> adjustedFeatureGroups =
                     EvaluationUtilities.adjustFeatureGroupsForSummaryStatistics( featureGroups,
                                                                                  unwrappedFeatures,
                                                                                  declaration.summaryStatistics(),
                                                                                  doNotPublish );
+
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
                                                    adjustedFeatureGroups,
                                                    metricsAndThresholds );

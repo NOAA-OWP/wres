@@ -198,7 +198,7 @@ public class StationaryBootstrapResampler<T>
         // ordering
         List<List<TimeSeries<T>>> groupedBySize = pool.getOrderedTimeSeries();
 
-        // One ResampledIndexes for each time-series, indicating where to obtain the event values for that series
+        // One ResampleIndexes for each time-series, indicating where to obtain the event values for that series
         List<ResampleIndexes> outerIndexes = new ArrayList<>();
         for ( List<TimeSeries<T>> poolSeries : groupedBySize )
         {
@@ -211,8 +211,7 @@ public class StationaryBootstrapResampler<T>
 
                 // Forecast time-series which are probably non-stationary across lead durations, unless they are based
                 // on climatology
-                if ( !nextSeries.getReferenceTimes()
-                                .isEmpty() )
+                if ( pool.hasForecasts() )
                 {
                     nextIndexes = this.generateResampleIndexesForForecastSeries( nextSeries,
                                                                                  i,
@@ -756,6 +755,29 @@ public class StationaryBootstrapResampler<T>
                 Event<T> nextEvent = events.get( j );
                 int[] index = indexes.indexes()
                                      .get( j );
+
+                if ( eventsToSample.size() <= index[0] )
+                {
+                    throw new IndexOutOfBoundsException( "While attempting to resample a time-series at index "
+                                                         + index[0]
+                                                         + ", discovered a maximum time-series index of "
+                                                         + ( eventsToSample.size() - 1 )
+                                                         + ", which is smaller than the required index." );
+                }
+
+                if ( eventsToSample.get( index[0] )
+                                   .size() <= index[1] )
+                {
+                    throw new IndexOutOfBoundsException( "While attempting to resample a time-series event at index "
+                                                         + index[1]
+                                                         + " of the time-series at index "
+                                                         + index[0]
+                                                         + ", discovered a maximum time-series event index of "
+                                                         + ( eventsToSample.get( index[0] )
+                                                                           .size() - 1 )
+                                                         + ", which is smaller than the required index." );
+                }
+
                 Event<T> resampledValue = eventsToSample.get( index[0] )
                                                         .get( index[1] );
                 Event<T> resampled = Event.of( nextEvent.getTime(), resampledValue.getValue() );
