@@ -89,7 +89,7 @@ class BootstrapPool<T>
     /**
      * Returns the time-series with all events present
      *
-     * @return the time-series with at least the number if requested events
+     * @return the time-series with all events
      */
 
     List<List<Event<T>>> getTimeSeriesWithAllEvents()

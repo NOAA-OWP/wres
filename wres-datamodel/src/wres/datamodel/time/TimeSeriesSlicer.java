@@ -1384,7 +1384,8 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( referenceTimeTypes );
 
         return referenceTimeTypes.stream()
-                                 .anyMatch( t -> t == ReferenceTimeType.T0 || t == ReferenceTimeType.ISSUED_TIME );
+                                 .anyMatch( t -> t == ReferenceTimeType.T0
+                                                 || t == ReferenceTimeType.ISSUED_TIME );
     }
 
     /**
