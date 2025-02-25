@@ -169,7 +169,8 @@ class NwmTimeSeries implements Closeable
                          this.readExecutor,
                          abandoned,
                          ie );
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
         }
 
         if ( !this.readExecutor.isShutdown() )
@@ -295,7 +296,8 @@ class NwmTimeSeries implements Closeable
             {
                 LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
                 this.close();
-                Thread.currentThread().interrupt();
+                Thread.currentThread()
+                      .interrupt();
             }
             catch ( ExecutionException ee )
             {
@@ -1369,6 +1371,7 @@ class NwmTimeSeries implements Closeable
         @Override
         public NetcdfFile call() throws IOException
         {
+            LOGGER.debug( "Opening NetCDF resource, '{}'", this.uri );
             return NetcdfFiles.open( this.uri.toString() );
         }
     }
@@ -1912,7 +1915,8 @@ class NwmTimeSeries implements Closeable
                 //Read the features from the netCDF file and clone them to ensure that
                 //we are referring to a fresh copy, and not an internal netCDF copy.
                 LOGGER.debug( "Reading features from {}", netcdfFileName );
-                long[] features = ( long[] ) featureVariable.read().get1DJavaArray( DataType.LONG );
+                long[] features = ( long[] ) featureVariable.read()
+                                                            .get1DJavaArray( DataType.LONG );
                 if ( features == null )
                 {
                     throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );

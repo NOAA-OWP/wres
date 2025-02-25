@@ -497,25 +497,37 @@ public class PoolFactory
                                                                     Set<FeatureGroup> featureGroups,
                                                                     RetrieverFactory<Double, Double, Double> eventRetriever )
     {
-        // Time windows without event detection
-        if ( Objects.isNull( declaration.eventDetection() ) )
-        {
-            // Declared time windows
-            Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
+        // Declared time windows
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
 
-            return featureGroups.stream()
-                                .collect( Collectors.toMap( Function.identity(),
-                                                            g -> timeWindows ) );
-        }
+        LOGGER.debug( "Generated {} declared time windows for evaluation, which will be used across all "
+                      + "geographic features.",
+                      timeWindows.size() );
 
-        // Time windows based on event detection
+        // Generate the feature-specific time-windows, including those associated with event detection, as needed
         Map<FeatureGroup, Set<TimeWindowOuter>> featurefulWindows = new HashMap<>();
         for ( FeatureGroup nextGroup : featureGroups )
         {
-            Set<TimeWindowOuter> events = this.getEventsGenerator()
-                                              .doEventDetection( project, nextGroup, eventRetriever );
+            Set<TimeWindowOuter> allTimeWindows = new TreeSet<>( timeWindows );
 
-            featurefulWindows.put( nextGroup, events );
+            // Event detection
+            if ( Objects.nonNull( declaration.eventDetection() ) )
+            {
+                Set<TimeWindowOuter> events = this.getEventsGenerator()
+                                                  .doEventDetection( project, nextGroup, eventRetriever );
+
+                allTimeWindows.addAll( events );
+
+                LOGGER.debug( "Generated {} time windows from event detection for the evaluation of feature group {}, "
+                              + "which will be added to the {} declared time windows, producing {} time windows in "
+                              + "total for this feature group.",
+                              events.size(),
+                              nextGroup,
+                              timeWindows.size(),
+                              allTimeWindows.size() );
+            }
+
+            featurefulWindows.put( nextGroup, Collections.unmodifiableSet( allTimeWindows ) );
         }
 
         return Collections.unmodifiableMap( featurefulWindows );
