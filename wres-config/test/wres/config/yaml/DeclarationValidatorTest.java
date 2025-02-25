@@ -2660,8 +2660,8 @@ class DeclarationValidatorTest
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "Event detection was declared alongside explicit "
-                                                                        + "time pools, which is not allowed",
-                                                                        StatusLevel.ERROR ) ),
+                                                                        + "time pools, which is allowed",
+                                                                        StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "Event detection was declared alongside lead time "
                                                                         + "pools",

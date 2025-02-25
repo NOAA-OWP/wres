@@ -207,12 +207,12 @@ public class SourceLoader
 
     static <T> CompletableFuture<Object> doAllOrException( final List<CompletableFuture<T>> futures )
     {
-        //Complete when all futures are completed
+        // Complete when all futures are completed
         final CompletableFuture<Void> allDone =
                 CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) );
-        //Complete when any of the underlying futures completes exceptionally
+        // Complete when any of the underlying futures completes exceptionally
         final CompletableFuture<T> oneExceptional = new CompletableFuture<>();
-        //Link the two
+        // Link the two
         for ( final CompletableFuture<T> completableFuture : futures )
         {
             //When one completes exceptionally, propagate
@@ -221,7 +221,7 @@ public class SourceLoader
                 return null;
             } );
         }
-        //Either all done OR one completes exceptionally
+        // Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
@@ -253,6 +253,7 @@ public class SourceLoader
         List<CompletableFuture<List<IngestResult>>> savingSources = new ArrayList<>();
         for ( DataSource source : sources )
         {
+            LOGGER.debug( "Loading source {}.", source );
             List<CompletableFuture<List<IngestResult>>> results = this.loadSource( source );
             savingSources.addAll( results );
         }

@@ -2281,18 +2281,18 @@ public class DeclarationValidator
             events.add( error );
         }
 
-        // Error when also declaring explicit time pools
+        // Warn when also declaring explicit time pools, but allow because a user may want to guarantee an explicit pool
         if ( !declaration.timePools()
                          .isEmpty() )
         {
             EvaluationStatusEvent error
                     = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setStatusLevel( StatusLevel.WARN )
                                            .setEventMessage( "Event detection was declared alongside explicit time "
-                                                             + "pools, which is not allowed because event detection "
-                                                             + "also generates time pools. Please remove the "
-                                                             + "declaration of either 'event_detection' or "
-                                                             + "'time_pools' and try again." )
+                                                             + "pools, which is allowed, but may not be intended as "
+                                                             + "event detection also generates time pools. If this is "
+                                                             + "not intended, please remove the declaration of either "
+                                                             + "'event_detection' or 'time_pools' and try again." )
                                            .build();
             events.add( error );
         }
