@@ -212,6 +212,14 @@ popd
 
 echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
 
+# Build and tag the nginx image
+echo "Building nginx image..."
+pushd nginx
+nginx_image_id=$( podman build --format docker --build-arg --quiet --tag wres/nginx . )
+popd
+
+echo "Built wres/nginx"
+
 echo "Displaying most recent 20 docker images"
 docker image ls | head -n 21
 
