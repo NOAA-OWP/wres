@@ -504,8 +504,14 @@ public class ChartFactory
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        // Use the metadata from the first element, plus the aggregate time window
+        if ( statistics.isEmpty() )
+        {
+            throw new ChartBuildingException( "Could not create the duration diagram charts as none were supplied with "
+                                              + "valid statistics." );
+        }
+
         DurationDiagramStatisticOuter example = statistics.get( 0 );
+
         PoolMetadata metadata = example.getPoolMetadata();
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
@@ -2382,7 +2388,8 @@ public class ChartFactory
 
             // Reference times when required
             if ( graphicShape != GraphicShape.ISSUED_DATE_POOLS
-                 && ( !earliestReferenceTime.equals( Instant.MIN ) || !latestReferenceTime.equals( Instant.MAX ) ) )
+                 && ( !earliestReferenceTime.equals( Instant.MIN )
+                      || !latestReferenceTime.equals( Instant.MAX ) ) )
             {
                 legendTitle = legendTitle + "Issued time window [UTC], ";
             }
@@ -2556,6 +2563,12 @@ public class ChartFactory
     {
         ReferenceTime.ReferenceTimeType type = example.getStatistic()
                                                       .getReferenceTimeType();
+
+        if ( type == ReferenceTime.ReferenceTimeType.UNKNOWN )
+        {
+            return "REFERENCE TIME OF UNKNOWN TYPE [UTC]";
+        }
+
         return type.toString()
                    .replace( "_", " " )
                + " [UTC]";

@@ -16,16 +16,13 @@ import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverUtilities;
 
 /**
- * <p>Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
- * in the pattern expected for treating the nth timestep of each analysis as if
- * it were an event in a timeseries across analyses, sort of like observations.
+ * <p>Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but in the pattern expected for treating
+ * the nth timestep of each analysis as if it were an event in a time-series across analyses, sort of like observations.
  *
- * <p>The reason for separating it from forecast and observation timeseries
- * retrieval is that each analysis has N events in an actual timeseries, but the
- * structure and use of the analyses and origin of analyses differs from both
- * observation and timeseries. The structure of an NWM analysis, for example, is
- * akin to an NWM forecast, with a reference datetime and valid datetimes.
- * However, when using the analyses in an evaluation of forecasts, one event
+ * <p>The reason for separating it from forecast and observation timeseries retrieval is that each analysis has N
+ * events in an actual timeseries, but the structure and use of the analyses and origin of analyses differs from both
+ * observation and timeseries. The structure of an NWM analysis, for example, is akin to an NWM forecast, with a
+ * reference datetime and valid datetimes. However, when using the analyses in an evaluation of forecasts, one event
  * from each analysis is picked out and a broader timeseries is created.
  */
 
@@ -103,7 +100,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
         /**
          * Sets the earliest analysis hour, if not <code>null</null>.
-         * 
+         *
          * @param earliestAnalysisDuration duration
          * @return A builder
          */
@@ -119,7 +116,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
         /**
          * Set the latest analysis hour, if not <code>null</null>.
-         * 
+         *
          * @param latestAnalysisDuration duration
          * @return A builder
          */
@@ -173,7 +170,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the earliest analysis duration or null.
-     * 
+     *
      * @return the earliest analysis duration or null
      */
 
@@ -184,7 +181,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the latest analysis duration or null.
-     * 
+     *
      * @return the latest analysis duration or null
      */
 

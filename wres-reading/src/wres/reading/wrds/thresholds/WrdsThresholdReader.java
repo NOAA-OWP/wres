@@ -720,7 +720,7 @@ public class WrdsThresholdReader implements ThresholdReader
                          "reconciled with features to evaluate. Features without ",
                          "thresholds will be skipped. If the number of features ",
                          "without thresholds is larger than expected, ensure that ",
-                         "the source of feature names (featureNameFrom) is properly ",
+                         "the source of feature names (feature_name_from) is properly ",
                          "declared for the external thresholds. The ",
                          "declared features without thresholds are: ",
                          featureNamesWithoutThresholds,

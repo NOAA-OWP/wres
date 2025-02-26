@@ -38,6 +38,7 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.EventDetectionParameters;
@@ -2280,18 +2281,18 @@ public class DeclarationValidator
             events.add( error );
         }
 
-        // Error when also declaring explicit time pools
+        // Warn when also declaring explicit time pools, but allow because a user may want to guarantee an explicit pool
         if ( !declaration.timePools()
                          .isEmpty() )
         {
             EvaluationStatusEvent error
                     = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setStatusLevel( StatusLevel.WARN )
                                            .setEventMessage( "Event detection was declared alongside explicit time "
-                                                             + "pools, which is not allowed because event detection "
-                                                             + "also generates time pools. Please remove the "
-                                                             + "declaration of either 'event_detection' or "
-                                                             + "'time_pools' and try again." )
+                                                             + "pools, which is allowed, but may not be intended as "
+                                                             + "event detection also generates time pools. If this is "
+                                                             + "not intended, please remove the declaration of either "
+                                                             + "'event_detection' or 'time_pools' and try again." )
                                            .build();
             events.add( error );
         }
@@ -2472,12 +2473,12 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
+        EventDetection detection = declaration.eventDetection();
+        EventDetectionParameters parameters = detection.parameters();
+
         // Parameters undefined for which estimates/defaults are speculative: warn
-        if ( Objects.isNull( declaration.eventDetection()
-                                        .parameters() )
-             || Objects.isNull( declaration.eventDetection()
-                                           .parameters()
-                                           .windowSize() ) )
+        if ( Objects.isNull( parameters )
+             || Objects.isNull( parameters.windowSize() ) )
         {
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
@@ -2491,11 +2492,8 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
         }
-        if ( Objects.isNull( declaration.eventDetection()
-                                        .parameters() )
-             || Objects.isNull( declaration.eventDetection()
-                                           .parameters()
-                                           .halfLife() ) )
+        if ( Objects.isNull( parameters )
+             || Objects.isNull( parameters.halfLife() ) )
         {
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
@@ -2509,12 +2507,8 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
         }
-        if ( Objects.nonNull( declaration.eventDetection()
-                                         .parameters() ) )
+        if ( Objects.nonNull( parameters ) )
         {
-            EventDetectionParameters parameters = declaration.eventDetection()
-                                                             .parameters();
-
             if ( parameters.combination() != EventDetectionCombination.INTERSECTION
                  && Objects.nonNull( parameters.aggregation() ) )
             {
@@ -2530,11 +2524,33 @@ public class DeclarationValidator
                                                                              .toString()
                                                                              .toLowerCase()
                                                                  + "', which is not valid. Please remove the "
-                                                                 + "'aggregation' method, declare an 'aggregation' "
-                                                                 + "method of 'none' or change the 'operation' to "
+                                                                 + "'aggregation' method or change the 'operation' to "
                                                                  + "'intersection'. An explicit 'aggregation' method "
                                                                  + "is only valid when the 'operation' is "
                                                                  + "'intersection'." )
+                                               .build();
+                events.add( warn );
+            }
+
+            // Warn if a non-default combination method is declared for a singleton: it will have no effect
+            if ( parameters.combination() != EventDetectionCombination.UNION
+                 && detection.datasets()
+                             .size() == 1
+                 && ( !detection.datasets()
+                                .contains( EventDetectionDataset.COVARIATES )
+                      || declaration.covariates()
+                                    .size() == 1 ) )
+            {
+                EvaluationStatusEvent warn
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "Event detection was declared for a single dataset "
+                                                                 + "with 'combination' parameters, but these "
+                                                                 + "parameters are only applicable when performing "
+                                                                 + "event detection on more than one dataset. The "
+                                                                 + "'combination' parameters are redundant and will "
+                                                                 + "have no effect. For clarity, it would be better to "
+                                                                 + "remove them." )
                                                .build();
                 events.add( warn );
             }
@@ -2684,10 +2700,6 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> duplication =
                 DeclarationValidator.checkForDuplicationOfMetricsByName( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( duplication );
-        // Time-series metrics require single-valued forecasts
-        List<EvaluationStatusEvent> singleValued =
-                DeclarationValidator.checkSingleValuedDataForTimeSeriesMetrics( declaration );
-        events.addAll( singleValued );
         // Baseline defined for metrics that require one
         List<EvaluationStatusEvent> baselinePresent =
                 DeclarationValidator.checkBaselinePresentForMetricsThatNeedIt( declaration );
@@ -3519,45 +3531,6 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that single-valued datasets are present when declaring time-series metrics.
-     * @param declaration the evaluation declaration
-     * @return the validation events encountered
-     */
-    private static List<EvaluationStatusEvent> checkSingleValuedDataForTimeSeriesMetrics( EvaluationDeclaration declaration )
-    {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        Set<MetricConstants> metrics =
-                DeclarationValidator.getSingleValuedTimeSeriesMetrics( declaration );
-
-        if ( Objects.nonNull( declaration.right() )
-             && Objects.nonNull( declaration.right()
-                                            .type() )
-             && declaration.right()
-                           .type() == DataType.ENSEMBLE_FORECASTS
-             && !metrics.isEmpty() )
-
-        {
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "The declared or inferred data 'type' for the 'predicted' "
-                                                             + "dataset is "
-                                                             + declaration.right()
-                                                                          .type()
-                                                             + ", but the following metrics are not currently "
-                                                             + "supported for this data 'type': "
-                                                             + metrics
-                                                             + ". Please remove these metrics or change the data "
-                                                             + "'type'." )
-                                           .build();
-            events.add( event );
-        }
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
      * Checks that a baseline is declared when metrics are included that require it.
      * @param declaration the evaluation declaration
      * @return the validation events encountered
@@ -3786,20 +3759,6 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * @param declaration the declaration
-     * @return the declared metrics in the specified group, if any
-     */
-
-    private static Set<MetricConstants> getSingleValuedTimeSeriesMetrics( EvaluationDeclaration declaration )
-    {
-        return declaration.metrics()
-                          .stream()
-                          .map( Metric::name )
-                          .filter( next -> next.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
-                          .collect( Collectors.toSet() );
     }
 
     /**
@@ -4051,7 +4010,8 @@ public class DeclarationValidator
         if ( evaluation.covariates()
                        .isEmpty() )
         {
-            LOGGER.debug( "Not checking the feature authorities of the covariate datasets because none were declared." );
+            LOGGER.debug( "Not checking the feature authorities of the covariate datasets because no covariate "
+                          + "datasets were declared." );
             return List.of();
         }
 

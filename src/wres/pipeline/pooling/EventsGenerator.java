@@ -1,15 +1,22 @@
 package wres.pipeline.pooling;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.protobuf.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +26,16 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
 import wres.config.yaml.components.EventDetectionCombination;
 import wres.config.yaml.components.EventDetectionDataset;
+import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeWindowAggregation;
+import wres.datamodel.Slicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeries;
@@ -35,9 +46,11 @@ import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
- * Generates {@link TimeWindowOuter} corresponding to events from {@link TimeSeries}.
+ * Generates {@link TimeWindowOuter} corresponding to events from {@link TimeSeries} and combines them with any declared
+ * time windows and/or time constraints.
  *
  * @param leftUpscaler the upscaler for single-valued time-series with a left orientation
  * @param rightUpscaler the upscaler for single-valued time-series with a right orientation
@@ -82,7 +95,9 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
     }
 
     /**
-     * Performs event detection for one or more declared time-series datasets.
+     * Performs event detection for one or more declared time-series datasets, combining the detected events with any
+     * declared time windows.
+     *
      * @param project the project whose time-series data should be used
      * @param featureGroup the feature group to use for event detection
      * @param eventRetriever the retriever for time-series data
@@ -101,7 +116,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         Set<TimeWindowOuter> events = new HashSet<>();
         TimeScaleOuter desiredTimeScale = project.getDesiredTimeScale();
 
-        boolean detectionAttempted = false; // Only attempt to combine events when detection has been attempted
+        int detectionAttemptedCount = 0; // Only attempt to combine events when detection has been attempted
         for ( EventDetectionDataset dataset : detection.datasets() )
         {
             switch ( dataset )
@@ -123,6 +138,10 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                         TimeScaleOuter covariateTimeScale =
                                 this.getAdjustedTimeScale( desiredTimeScale, next.rescaleFunction() );
 
+                        String variableName = next.dataset()
+                                                  .variable()
+                                                  .name();
+
                         switch ( next.featureNameOrientation() )
                         {
                             case LEFT ->
@@ -133,12 +152,12 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                    FeatureTuple::getLeft,
                                                                    eventRetriever,
                                                                    detection,
-                                                                   next.dataset()
-                                                                       .variable()
-                                                                       .name(),
+                                                                   variableName,
+                                                                   project.getCovariateFeatures( variableName ),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
-                                                                   null );
+                                                                   null,
+                                                                   declaration );
 
                                 innerEvents = this.doEventDetection( details );
                             }
@@ -150,12 +169,12 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                    FeatureTuple::getRight,
                                                                    eventRetriever,
                                                                    detection,
-                                                                   next.dataset()
-                                                                       .variable()
-                                                                       .name(),
+                                                                   variableName,
+                                                                   project.getCovariateFeatures( variableName ),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
-                                                                   null );
+                                                                   null,
+                                                                   declaration );
                                 innerEvents = this.doEventDetection( details );
                             }
                             case BASELINE ->
@@ -166,12 +185,12 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                    FeatureTuple::getBaseline,
                                                                    eventRetriever,
                                                                    detection,
-                                                                   next.dataset()
-                                                                       .variable()
-                                                                       .name(),
+                                                                   variableName,
+                                                                   project.getCovariateFeatures( variableName ),
                                                                    covariateTimeScale,
                                                                    this.covariateUpscaler(),
-                                                                   null );
+                                                                   null,
+                                                                   declaration );
                                 innerEvents = this.doEventDetection( details );
                             }
                             case COVARIATE -> throw new IllegalStateException( "Covariate dataset cannot have a "
@@ -179,8 +198,8 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                                                + "orientation." );
                         }
 
-                        this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                        detectionAttempted = true;
+                        this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                        detectionAttemptedCount++;
                     }
                 }
                 case OBSERVED ->
@@ -193,12 +212,14 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        eventRetriever,
                                                        detection,
                                                        null,
+                                                       Set.of(),
                                                        desiredTimeScale,
                                                        this.leftUpscaler(),
-                                                       this.measurementUnit() );
+                                                       this.measurementUnit(),
+                                                       declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                    detectionAttempted = true;
+                    this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                    detectionAttemptedCount++;
                 }
                 case PREDICTED ->
                 {
@@ -210,12 +231,14 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        eventRetriever,
                                                        detection,
                                                        null,
+                                                       Set.of(),
                                                        desiredTimeScale,
                                                        this.rightUpscaler(),
-                                                       this.measurementUnit() );
+                                                       this.measurementUnit(),
+                                                       declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                    detectionAttempted = true;
+                    this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                    detectionAttemptedCount++;
                 }
                 case BASELINE ->
                 {
@@ -227,25 +250,36 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                        eventRetriever,
                                                        detection,
                                                        null,
+                                                       Set.of(),
                                                        desiredTimeScale,
                                                        this.baselineUpscaler(),
-                                                       this.measurementUnit() );
+                                                       this.measurementUnit(),
+                                                       declaration );
                     Set<TimeWindowOuter> innerEvents = this.doEventDetection( details );
-                    this.combineEvents( detectionAttempted, events, innerEvents, combination );
-                    detectionAttempted = true;
+                    this.combineEvents( detectionAttemptedCount > 0, events, innerEvents, combination );
+                    detectionAttemptedCount++;
                 }
             }
         }
 
-        LOGGER.info( "Detected {} events across all datasets for feature group {} when forming the {}.",
-                     events.size(),
-                     featureGroup.getName(),
-                     combination );
+        // Aggregate any intersecting events, as needed, but only if combination/intersection happened
+        Set<TimeWindowOuter> aggregated = events;
+        if ( detectionAttemptedCount > 1 ) // Combination/intersection happened
+        {
+            LOGGER.info( "Detected {} events across all datasets for feature group {} when forming the {}.",
+                         events.size(),
+                         featureGroup.getName(),
+                         combination );
 
-        return this.aggregateEvents( events,
-                                     detection.parameters()
-                                              .aggregation(),
-                                     featureGroup );
+            aggregated = this.aggregateEvents( events,
+                                               detection.parameters()
+                                                        .aggregation(),
+                                               featureGroup );
+        }
+
+        // Adjust the time windows to account for existing time windows and other explicit time constraints
+        Set<TimeWindowOuter> declared = TimeWindowSlicer.getTimeWindows( declaration );
+        return this.adjustTimeWindows( aggregated, declared, declaration.referenceDates(), declaration.leadTimes() );
     }
 
     /**
@@ -270,24 +304,33 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         }
 
         Set<TimeWindowOuter> events = new TreeSet<>();
-        TimeWindowOuter unbounded = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
         FeatureGroup featureGroup = details.featureGroup();
         Function<FeatureTuple, Feature> featureGetter = details.featureGetter();
         RetrieverFactory<Double, Double, Double> eventRetriever = details.eventRetriever();
+
+        // Get any valid time constraints on retrieval, accounting for the timescale
+        TimeWindowOuter timeWindow = this.getTimeWindow( details.declaration(), details.desiredTimeScale() );
+
+        // Get the features for the dataset orientation, which is one of the main datasets (observed, predicted or
+        // baseline), not a covariate. The covariate features must be further derived by correlating the feature names
+        // whose features have the same feature authority as the covariate dataset, which is a requirement. See below.
+        Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
+
+        LOGGER.debug( "Getting time-series data to perform event detection for the following features: {}", features );
 
         switch ( details.dataset() )
         {
             case OBSERVED ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getLeftRetriever( features )
+                Stream<TimeSeries<Double>> series = eventRetriever.getLeftRetriever( features, timeWindow )
                                                                   .get();
 
-                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
-                                                                                               details,
-                                                                                               this.leftUpscaler() )
-                                                                            .stream() )
-                                                         .collect( Collectors.toSet() );
+                Set<TimeWindowOuter> innerEvents =
+                        series.flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                   details,
+                                                                                   this.leftUpscaler() )
+                                                 .stream() )
+                              .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
                              innerEvents.size(),
                              EventDetectionDataset.OBSERVED,
@@ -296,15 +339,15 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case PREDICTED ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getRightRetriever( features, unbounded )
+                Stream<TimeSeries<Double>> series = eventRetriever.getRightRetriever( features, timeWindow )
                                                                   .get();
 
-                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
-                                                                                               details,
-                                                                                               this.rightUpscaler() )
-                                                                            .stream() )
-                                                         .collect( Collectors.toSet() );
+                Set<TimeWindowOuter> innerEvents =
+                        series.flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                   details,
+                                                                                   this.rightUpscaler() )
+                                                 .stream() )
+                              .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
                              innerEvents.size(),
                              EventDetectionDataset.PREDICTED,
@@ -313,15 +356,15 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case BASELINE ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getBaselineRetriever( features, unbounded )
+                Stream<TimeSeries<Double>> series = eventRetriever.getBaselineRetriever( features, timeWindow )
                                                                   .get();
 
-                Set<TimeWindowOuter> innerEvents = series.flatMap( s -> this.doEventDetection( s,
-                                                                                               details,
-                                                                                               this.baselineUpscaler() )
-                                                                            .stream() )
-                                                         .collect( Collectors.toSet() );
+                Set<TimeWindowOuter> innerEvents =
+                        series.flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                   details,
+                                                                                   this.baselineUpscaler() )
+                                                 .stream() )
+                              .collect( Collectors.toSet() );
                 LOGGER.info( DETECTED_EVENTS_IN_THE_DATASET,
                              innerEvents.size(),
                              EventDetectionDataset.BASELINE,
@@ -330,21 +373,42 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             }
             case COVARIATES ->
             {
-                Set<Feature> features = this.getFeatures( featureGroup.getFeatures(), featureGetter );
-                Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( features,
-                                                                                          details.covariateName() )
+                // Map the features to covariate features based on name correlation
+                Predicate<Feature> contained = feature -> features.stream()
+                                                                  .anyMatch( f -> Objects.equals( f.getName(),
+                                                                                                  feature.getName() ) );
+
+                Set<Feature> innerFeatures = details.covariateFeatures()
+                                                    .stream()
+                                                    .filter( contained )
+                                                    .collect( Collectors.toUnmodifiableSet() );
+
+                Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( innerFeatures,
+                                                                                          details.covariateName(),
+                                                                                          timeWindow )
                                                                   .get();
 
+                // Count the number of time-series
+                AtomicLong seriesCount = new AtomicLong();
+                UnaryOperator<TimeSeries<Double>> counter = s ->
+                {
+                    seriesCount.incrementAndGet();
+                    return s;
+                };
                 Set<TimeWindowOuter> innerEvents =
-                        series.flatMap( s -> this.doEventDetection( s,
-                                                                    this.getAdjustedDetails( details, s.getMetadata()
-                                                                                                       .getUnit() ),
-                                                                    this.covariateUpscaler() )
+                        series.map( counter )
+                              .flatMap( s -> this.adjustTimeSeriesAndDetectEvents( s,
+                                                                                   this.getAdjustedDetails( details,
+                                                                                                            s.getMetadata()
+                                                                                                             .getUnit() ),
+                                                                                   this.covariateUpscaler() )
                                                  .stream() )
                               .collect( Collectors.toSet() );
-                LOGGER.info( "Detected {} events in the {} dataset for feature group {} with variable name, '{}'.",
+                LOGGER.info( "Detected {} events in the {} dataset containing {} time-series for feature group {} "
+                             + "with variable name, '{}'.",
                              innerEvents.size(),
                              EventDetectionDataset.COVARIATES,
+                             seriesCount.get(),
                              featureGroup.getName(),
                              details.covariateName() );
                 events.addAll( innerEvents );
@@ -352,6 +416,121 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
         }
 
         return Collections.unmodifiableSet( events );
+    }
+
+    /**
+     * Returns the time window for retrieval of the time-series data used in event detection, accounting for any valid
+     * time constraints and desired time-scale.
+     *
+     * @param declaration the declaration
+     * @param desiredTimeScale the desired time scale
+     * @return the time window
+     */
+
+    private TimeWindowOuter getTimeWindow( EvaluationDeclaration declaration, TimeScaleOuter desiredTimeScale )
+    {
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageUtilities.getTimeWindow() );
+        TimeInterval validDates = declaration.validDates();
+        if ( Objects.nonNull( validDates ) )
+        {
+            Instant minimumInstant = validDates.minimum();
+            Instant maximumInstant = validDates.maximum();
+            Timestamp minimum = MessageUtilities.getTimestamp( minimumInstant );
+            Timestamp maximum = MessageUtilities.getTimestamp( maximumInstant );
+            TimeWindow adjusted = timeWindow.getTimeWindow()
+                                            .toBuilder()
+                                            .setEarliestValidTime( minimum )
+                                            .setLatestValidTime( maximum )
+                                            .build();
+            TimeWindowOuter adjustedOuter = TimeWindowOuter.of( adjusted );
+
+            // Adjust for timescale
+            timeWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( adjustedOuter, desiredTimeScale );
+        }
+
+        return timeWindow;
+    }
+
+    /**
+     * Adjusts the time windows generated using event detection to reflect any declared time windows or associated
+     * time constraints.
+     *
+     * @param events the detected events
+     * @param declared the declared time windows, if any
+     * @param referenceTimes the declared reference time constraints, if any
+     * @param leadTimes the declared lead time constraints, if any
+     * @return the adjust time windows
+     */
+
+    private Set<TimeWindowOuter> adjustTimeWindows( Set<TimeWindowOuter> events,
+                                                    Set<TimeWindowOuter> declared,
+                                                    TimeInterval referenceTimes,
+                                                    LeadTimeInterval leadTimes )
+    {
+        Set<TimeWindowOuter> returnMe = new HashSet<>();
+
+        // Add any overall reference time or lead time boundaries into the events
+        for ( TimeWindowOuter nextEvent : events )
+        {
+            TimeWindowOuter nextAdjusted = nextEvent;
+
+            // Add the reference times, if required
+            if ( Objects.nonNull( referenceTimes ) )
+            {
+                Instant earliest = referenceTimes.minimum();
+                Instant latest = referenceTimes.maximum();
+                TimeWindow adjusted = nextEvent.getTimeWindow()
+                                               .toBuilder()
+                                               .setEarliestReferenceTime( MessageUtilities.getTimestamp( earliest ) )
+                                               .setLatestReferenceTime( MessageUtilities.getTimestamp( latest ) )
+                                               .build();
+                nextAdjusted = TimeWindowOuter.of( adjusted );
+            }
+
+            // Add the lead times, if required
+            if ( Objects.nonNull( leadTimes ) )
+            {
+                Duration earliest = leadTimes.minimum();
+                Duration latest = leadTimes.maximum();
+                TimeWindow adjusted = nextAdjusted.getTimeWindow()
+                                                  .toBuilder()
+                                                  .setEarliestLeadDuration( MessageUtilities.getDuration( earliest ) )
+                                                  .setLatestLeadDuration( MessageUtilities.getDuration( latest ) )
+                                                  .build();
+                nextAdjusted = TimeWindowOuter.of( adjusted );
+            }
+
+            returnMe.add( nextAdjusted );
+        }
+
+        // Merge any declared time window constraints into the event time windows, which will override any basic
+        // constraints imposed above
+        if ( !declared.isEmpty() )
+        {
+            Set<TimeWindowOuter> adjustedEvents = new HashSet<>();
+            for ( TimeWindowOuter next : returnMe )
+            {
+                for ( TimeWindowOuter adjust : declared )
+                {
+                    TimeWindow adjusted = next.getTimeWindow()
+                                              .toBuilder()
+                                              .setEarliestReferenceTime( adjust.getTimeWindow()
+                                                                               .getEarliestReferenceTime() )
+                                              .setLatestReferenceTime( adjust.getTimeWindow()
+                                                                             .getLatestReferenceTime() )
+                                              .setEarliestLeadDuration( adjust.getTimeWindow()
+                                                                              .getEarliestLeadDuration() )
+                                              .setLatestLeadDuration( adjust.getTimeWindow()
+                                                                            .getLatestLeadDuration() )
+                                              .build();
+                    adjustedEvents.add( TimeWindowOuter.of( adjusted ) );
+                }
+            }
+
+            returnMe = adjustedEvents;
+        }
+
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
@@ -450,16 +629,57 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
     }
 
     /**
-     * Performs event detection.
+     * Performs rescaling and filtering of event values, followed by event detection.
      *
      * @param timeSeries the time-series
      * @param details the event detection details
      * @return the time windows, one for each detected event
      */
 
-    private Set<TimeWindowOuter> doEventDetection( TimeSeries<Double> timeSeries,
-                                                   EventDetectionDetails details,
-                                                   TimeSeriesUpscaler<Double> upscaler )
+    private Set<TimeWindowOuter> adjustTimeSeriesAndDetectEvents( TimeSeries<Double> timeSeries,
+                                                                  EventDetectionDetails details,
+                                                                  TimeSeriesUpscaler<Double> upscaler )
+    {
+        // Rescale the time-series if needed
+        TimeSeries<Double> adjusted = this.getRescaledTimeSeries( timeSeries, details, upscaler );
+
+        // Filter event values, if necessary
+        DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( details.declaration()
+                                                                                  .values() );
+        TimeSeries<Double> transformed = TimeSeriesSlicer.transform( adjusted,
+                                                                     valueTransformer::applyAsDouble,
+                                                                     m -> m );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Following rescaling and filtering by value, discovered {} time-series values for event "
+                          + "detection. The original time-series contained {} values. Value filtering removed {} "
+                          + "values from the rescaled time-series. The time-series metadata is: {}.",
+                          transformed.getEvents()
+                                     .size(),
+                          timeSeries.getEvents()
+                                    .size(),
+                          adjusted.getEvents()
+                                  .size() - transformed.getEvents()
+                                                       .size(),
+                          transformed.getMetadata() );
+        }
+
+        return this.eventDetector()
+                   .detect( transformed );
+    }
+
+    /**
+     * Performs rescaling of the input time-series as needed.
+     *
+     * @param timeSeries the time-series
+     * @param details the event detection details
+     * @return the rescaled time-series
+     */
+
+    private TimeSeries<Double> getRescaledTimeSeries( TimeSeries<Double> timeSeries,
+                                                      EventDetectionDetails details,
+                                                      TimeSeriesUpscaler<Double> upscaler )
     {
         // Upscale the time-series if needed
         boolean upscale = Objects.nonNull( details.desiredTimeScale() )
@@ -487,13 +707,7 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
             timeSeries = upscaled.getTimeSeries();
         }
 
-        LOGGER.debug( "Performing event detection of a time-series dataset containing {} events and the following "
-                      + "metadata: {}.", timeSeries.getEvents()
-                                                   .size(), timeSeries.getMetadata() );
-
-        // Unbounded time window, placeholder
-        return this.eventDetector()
-                   .detect( timeSeries );
+        return timeSeries;
     }
 
     /**
@@ -531,9 +745,11 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                           details.eventRetriever(),
                                           details.detection(),
                                           details.covariateName(),
+                                          details.covariateFeatures(),
                                           details.desiredTimeScale(),
                                           details.upscaler(),
-                                          measurementUnit );
+                                          measurementUnit,
+                                          details.declaration() );
     }
 
     /**
@@ -561,9 +777,11 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
      * @param eventRetriever the time-series retriever factory
      * @param detection the detection parameters
      * @param covariateName the covariate name, required for a covariate dataset
+     * @param covariateFeatures the covariate features
      * @param desiredTimeScale the desired timescale
      * @param upscaler the upscaler
      * @param measurementUnit the measurement unit
+     * @param declaration the declaration
      */
 
     private record EventDetectionDetails( EventDetectionDataset dataset,
@@ -572,9 +790,11 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                           RetrieverFactory<Double, Double, Double> eventRetriever,
                                           EventDetection detection,
                                           String covariateName,
+                                          Set<Feature> covariateFeatures,
                                           TimeScaleOuter desiredTimeScale,
                                           TimeSeriesUpscaler<Double> upscaler,
-                                          String measurementUnit )
+                                          String measurementUnit,
+                                          EvaluationDeclaration declaration )
     {
     }
 

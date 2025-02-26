@@ -108,7 +108,7 @@ public class TimeToPeakError extends TimingError
                 ReferenceTimeType referenceTimeType = referenceTimeAndType.getKey();
 
                 // Set the reference time type
-                builder.setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) );
+                builder.setReferenceTimeType( referenceTimeType );
 
                 if ( LOGGER.isTraceEnabled() )
                 {

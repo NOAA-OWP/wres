@@ -753,11 +753,10 @@ public class DeclarationInterpolator
      */
     private static void interpolateCovariatePurpose( EvaluationDeclarationBuilder builder )
     {
-        if ( Objects.nonNull( builder.eventDetection() )
-             && builder.covariates()
-                       .stream()
-                       .anyMatch( s -> s.purposes()
-                                        .isEmpty() ) )
+        if ( builder.covariates()
+                    .stream()
+                    .anyMatch( s -> s.purposes()
+                                     .isEmpty() ) )
         {
             LOGGER.debug( "Interpolating the purpose of one or more covariate datasets." );
 
@@ -2453,8 +2452,13 @@ public class DeclarationInterpolator
 
         DataType calculatedDataType;
 
-        // Analysis durations present? If so, assume analyses
-        if ( DeclarationUtilities.hasAnalysisTimes( builder ) )
+        // Analysis durations present? If so, assume analyses, unless there is an analysis interface declared for
+        // another side of data
+        if ( DeclarationUtilities.hasAnalysisTimes( builder )
+             && DeclarationInterpolator.noAnalysisInterface( builder.right() )
+             && ( !DeclarationUtilities.hasBaseline( builder )
+                  || DeclarationInterpolator.noAnalysisInterface( builder.baseline()
+                                                                         .dataset() ) ) )
         {
             calculatedDataType = DataType.ANALYSES;
 
@@ -2497,7 +2501,8 @@ public class DeclarationInterpolator
             // Is it consistent with the type inferred from the declaration? If not, we only emit an error if the
             // type inferred from the declaration is ANALYSES because this requires definitive/unique declaration
             // options. Otherwise, we emit a warning.
-            if ( ingestedDataType != calculatedDataType && calculatedDataType == DataType.ANALYSES )
+            if ( ingestedDataType != calculatedDataType
+                 && calculatedDataType == DataType.ANALYSES )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -2505,7 +2510,7 @@ public class DeclarationInterpolator
                                                .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
                                                                  + "for "
                                                                  + article
-                                                                 + "'"
+                                                                 + " '"
                                                                  + orientation
                                                                  + DATASET_WAS
                                                                  + ingestedDataType
@@ -2553,6 +2558,25 @@ public class DeclarationInterpolator
         datasetBuilder.type( typeToUse );
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param dataset the dataset
+     * @return whether the dataset has an analysis interface
+     */
+
+    private static boolean noAnalysisInterface( Dataset dataset )
+    {
+        if ( Objects.isNull( dataset ) )
+        {
+            return true;
+        }
+
+        return dataset.sources()
+                      .stream()
+                      .noneMatch( s -> Objects.nonNull( s.sourceInterface() )
+                                       && s.sourceInterface()
+                                           .isAnalysisInterface() );
     }
 
     /**

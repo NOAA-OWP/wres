@@ -425,7 +425,8 @@ class TestDeclarationGenerator
                                       new Metric( MetricConstants.BIAS_FRACTION, null ),
                                       new Metric( MetricConstants.COEFFICIENT_OF_DETERMINATION, null ),
                                       new Metric( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE, null ),
-                                      new Metric( MetricConstants.ROOT_MEAN_SQUARE_ERROR, null ) );
+                                      new Metric( MetricConstants.ROOT_MEAN_SQUARE_ERROR, null ),
+                                      new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null ) );
 
         EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder( declaration )
                                                                                   .thresholds( Set.of() )

@@ -35,6 +35,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
@@ -47,7 +48,6 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
-import wres.config.yaml.components.Values;
 import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -90,7 +90,6 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeScale;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -501,48 +500,34 @@ public class PoolFactory
         // Declared time windows
         Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
 
-        // Time windows without event detection
-        if ( Objects.isNull( declaration.eventDetection() ) )
-        {
-            return featureGroups.stream()
-                                .collect( Collectors.toMap( Function.identity(),
-                                                            g -> timeWindows ) );
-        }
+        LOGGER.debug( "Generated {} declared time windows for evaluation, which will be used across all "
+                      + "geographic features.",
+                      timeWindows.size() );
 
-        // Time windows based on event detection
+        // Generate the feature-specific time-windows, including those associated with event detection, as needed
         Map<FeatureGroup, Set<TimeWindowOuter>> featurefulWindows = new HashMap<>();
         for ( FeatureGroup nextGroup : featureGroups )
         {
-            Set<TimeWindowOuter> events = this.getEventsGenerator()
-                                              .doEventDetection( project, nextGroup, eventRetriever );
+            Set<TimeWindowOuter> allTimeWindows = new TreeSet<>( timeWindows );
 
-            // Add the lead time and reference date constraints to each event, if defined
-            if ( !timeWindows.isEmpty() )
+            // Event detection
+            if ( Objects.nonNull( declaration.eventDetection() ) )
             {
-                Set<TimeWindowOuter> adjustedEvents = new HashSet<>();
-                for ( TimeWindowOuter next : events )
-                {
-                    for ( TimeWindowOuter adjust : timeWindows )
-                    {
-                        TimeWindow adjusted = next.getTimeWindow()
-                                                  .toBuilder()
-                                                  .setEarliestReferenceTime( adjust.getTimeWindow()
-                                                                                   .getEarliestReferenceTime() )
-                                                  .setLatestReferenceTime( adjust.getTimeWindow()
-                                                                                 .getLatestReferenceTime() )
-                                                  .setEarliestLeadDuration( adjust.getTimeWindow()
-                                                                                  .getEarliestLeadDuration() )
-                                                  .setLatestLeadDuration( adjust.getTimeWindow()
-                                                                                .getLatestLeadDuration() )
-                                                  .build();
-                        adjustedEvents.add( TimeWindowOuter.of( adjusted ) );
-                    }
-                }
+                Set<TimeWindowOuter> events = this.getEventsGenerator()
+                                                  .doEventDetection( project, nextGroup, eventRetriever );
 
-                events = Collections.unmodifiableSet( adjustedEvents );
+                allTimeWindows.addAll( events );
+
+                LOGGER.debug( "Generated {} time windows from event detection for the evaluation of feature group {}, "
+                              + "which will be added to the {} declared time windows, producing {} time windows in "
+                              + "total for this feature group.",
+                              events.size(),
+                              nextGroup,
+                              timeWindows.size(),
+                              allTimeWindows.size() );
             }
 
-            featurefulWindows.put( nextGroup, events );
+            featurefulWindows.put( nextGroup, Collections.unmodifiableSet( allTimeWindows ) );
         }
 
         return Collections.unmodifiableMap( featurefulWindows );
@@ -601,9 +586,9 @@ public class PoolFactory
         TimeSeriesUpscaler<Double> baselineUpscaler = this.getBaselineSingleValuedUpscaler();
         TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
 
-        Set<Covariate<Double>> covariates = this.getCovariates( declaration,
-                                                                covariateUpscaler, this.getProject()
-                                                                                       .getDesiredTimeScale() );
+        Set<Covariate<Double>> covariateFilters = this.getCovariateFilters( declaration,
+                                                                            covariateUpscaler, this.getProject()
+                                                                                                   .getDesiredTimeScale() );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<Feature>, BaselineGenerator<Double>> baselineGenerator = null;
@@ -653,7 +638,7 @@ public class PoolFactory
                                                                                Map.Entry::getValue ) );
         Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
-        DoubleUnaryOperator valueTransformer = this.getValueTransformer( declaration.values() );
+        DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueTransformer =
                 this.getValueTransformer( leftOffsetGenerator, valueTransformer );
 
@@ -733,7 +718,7 @@ public class PoolFactory
                                                                     .setBaselineMissingFilter( missingFilter )
                                                                     .setLeftUpscaler( leftUpscaler )
                                                                     .setRightUpscaler( rightUpscaler )
-                                                                    .setCovariates( covariates )
+                                                                    .setCovariateFilters( covariateFilters )
                                                                     .setBaselineUpscaler( baselineUpscaler )
                                                                     .setLeftTimeShift( leftTimeShift )
                                                                     .setRightTimeShift( rightTimeShift )
@@ -801,9 +786,9 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> baselineUpscaler = this.getBaselineEnsembleUpscaler();
         TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
 
-        Set<Covariate<Double>> covariates = this.getCovariates( declaration,
-                                                                covariateUpscaler, this.getProject()
-                                                                                       .getDesiredTimeScale() );
+        Set<Covariate<Double>> covariateFilters = this.getCovariateFilters( declaration,
+                                                                            covariateUpscaler, this.getProject()
+                                                                                                   .getDesiredTimeScale() );
 
         // Left transformer, which is a composition of several transformations
         Map<GeometryTuple, Offset> offsets = project.getOffsets();
@@ -816,7 +801,7 @@ public class PoolFactory
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
 
 
-        DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
+        DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
 
@@ -913,7 +898,7 @@ public class PoolFactory
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
-                        .setCovariates( covariates )
+                        .setCovariateFilters( covariateFilters )
                         .setLeftFilter( singleValuedFilter )
                         .setRightFilter( ensembleFilter )
                         .setBaselineFilter( ensembleFilter )
@@ -984,9 +969,9 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> baselineUpscaler = this.getBaselineEnsembleUpscaler();
         TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
 
-        Set<Covariate<Double>> covariates = this.getCovariates( declaration,
-                                                                covariateUpscaler, this.getProject()
-                                                                                       .getDesiredTimeScale() );
+        Set<Covariate<Double>> covariateFilters = this.getCovariateFilters( declaration,
+                                                                            covariateUpscaler, this.getProject()
+                                                                                                   .getDesiredTimeScale() );
 
         // Left transformer, which is a composition of several transformations
         Map<GeometryTuple, Offset> offsets = project.getOffsets();
@@ -998,7 +983,7 @@ public class PoolFactory
         Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
 
-        DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
+        DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
 
@@ -1099,7 +1084,7 @@ public class PoolFactory
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
-                        .setCovariates( covariates )
+                        .setCovariateFilters( covariateFilters )
                         .setLeftFilter( singleValuedFilter )
                         .setRightFilter( ensembleFilter )
                         .setBaselineFilter( ensembleFilter )
@@ -1608,73 +1593,6 @@ public class PoolFactory
                                                       ensemble.areSortedMembersCached() );
 
             return Event.of( ensembleEvent.getTime(), convertedEnsemble );
-        };
-    }
-
-    /**
-     * Returns a transformer for single-valued data if required.
-     *
-     * @param values the value declaration
-     * @return a transformer or null
-     */
-
-    private DoubleUnaryOperator getValueTransformer( Values values )
-    {
-        if ( Objects.isNull( values ) )
-        {
-            return value -> value;
-        }
-
-        double assignToLowMiss = MissingValues.DOUBLE;
-        double assignToHighMiss = MissingValues.DOUBLE;
-
-        double minimum = Double.NEGATIVE_INFINITY;
-        double maximum = Double.POSITIVE_INFINITY;
-
-        if ( Objects.nonNull( values.belowMinimum() ) )
-        {
-            assignToLowMiss = values.belowMinimum();
-        }
-
-        if ( Objects.nonNull( values.aboveMaximum() ) )
-        {
-            assignToHighMiss = values.aboveMaximum();
-        }
-
-        if ( Objects.nonNull( values.minimum() ) )
-        {
-            minimum = values.minimum();
-        }
-
-        if ( Objects.nonNull( values.maximum() ) )
-        {
-            maximum = values.maximum();
-        }
-
-        // Effectively final constants for use 
-        // within enclosing scope
-        double assignLow = assignToLowMiss;
-        double assignHigh = assignToHighMiss;
-
-        double low = minimum;
-        double high = maximum;
-
-        return toTransform -> {
-
-            // Low miss
-            if ( toTransform < low )
-            {
-                return assignLow;
-            }
-
-            // High miss
-            if ( toTransform > high )
-            {
-                return assignHigh;
-            }
-
-            // Within bounds
-            return toTransform;
         };
     }
 
@@ -2565,15 +2483,22 @@ public class PoolFactory
      * @param declaration the declaration
      * @param upscaler an upscaler for each covariate dataset by variable name
      * @param desiredTimeScale the desired timescale
-     * @return the covariate upscalers
+     * @return the covariate filters
      */
-    private Set<Covariate<Double>> getCovariates( EvaluationDeclaration declaration,
-                                                  TimeSeriesUpscaler<Double> upscaler,
-                                                  TimeScaleOuter desiredTimeScale )
+    private Set<Covariate<Double>> getCovariateFilters( EvaluationDeclaration declaration,
+                                                        TimeSeriesUpscaler<Double> upscaler,
+                                                        TimeScaleOuter desiredTimeScale )
     {
         Set<Covariate<Double>> covariates = new HashSet<>();
 
-        for ( CovariateDataset covariateDataset : declaration.covariates() )
+        // Covariates that are intended for filtering:
+        List<CovariateDataset> covariateFilters = declaration.covariates()
+                                                             .stream()
+                                                             .filter( c -> c.purposes()
+                                                                            .contains( CovariatePurpose.FILTER ) )
+                                                             .toList();
+
+        for ( CovariateDataset nextFilter : covariateFilters )
         {
             TimeScaleOuter covariateTimeScale = null;
             if ( ( Objects.nonNull( desiredTimeScale ) ) )
@@ -2583,27 +2508,27 @@ public class PoolFactory
                                                                    .toBuilder();
 
                 // Set the intended scale function, if declared
-                if ( Objects.nonNull( covariateDataset.rescaleFunction() ) )
+                if ( Objects.nonNull( nextFilter.rescaleFunction() ) )
                 {
-                    covariateScale.setFunction( covariateDataset.rescaleFunction() );
+                    covariateScale.setFunction( nextFilter.rescaleFunction() );
                 }
 
                 covariateTimeScale = TimeScaleOuter.of( covariateScale.build() );
 
                 LOGGER.debug( "Adjusted the covariate timescale function for variable {} from {} to {}.",
-                              covariateDataset.dataset()
-                                              .variable()
-                                              .name(),
+                              nextFilter.dataset()
+                                        .variable()
+                                        .name(),
                               desiredTimeScale.getFunction(),
                               covariateTimeScale.getFunction() );
             }
 
             // Create a filter
-            Predicate<Double> filter = d -> ( Objects.isNull( covariateDataset.minimum() )
-                                              || d >= covariateDataset.minimum() )
-                                            && ( Objects.isNull( covariateDataset.maximum() )
-                                                 || d <= covariateDataset.maximum() );
-            Covariate<Double> covariate = new Covariate<>( covariateDataset, filter, covariateTimeScale, upscaler );
+            Predicate<Double> filter = d -> ( Objects.isNull( nextFilter.minimum() )
+                                              || d >= nextFilter.minimum() )
+                                            && ( Objects.isNull( nextFilter.maximum() )
+                                                 || d <= nextFilter.maximum() );
+            Covariate<Double> covariate = new Covariate<>( nextFilter, filter, covariateTimeScale, upscaler );
             covariates.add( covariate );
         }
 

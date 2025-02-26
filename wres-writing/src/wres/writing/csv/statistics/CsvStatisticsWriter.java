@@ -785,6 +785,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                       writer,
                                       this.getDurationUnits(),
                                       groupNumber,
+                                      ensembleAverageType,
                                       summaryStatistic );
         }
 
@@ -833,6 +834,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                         writer,
                                         this.getDurationUnits(),
                                         groupNumber,
+                                        ensembleAverageType,
                                         summaryStatistic );
         }
     }
@@ -878,6 +880,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
      * @param summaryStatistic the summary statistic, if any
      * @throws IOException if any of the scores could not be written
      */
@@ -887,6 +890,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                       BufferedOutputStream writer,
                                       ChronoUnit durationUnits,
                                       AtomicInteger groupNumber,
+                                      EnsembleAverageType ensembleAverageType,
                                       SummaryStatistic summaryStatistic )
             throws IOException
     {
@@ -899,7 +903,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( DurationScoreStatistic next : sorted )
         {
-            this.writeDurationScore( poolDescription, next, writer, durationUnits, groupNumber, summaryStatistic );
+            this.writeDurationScore( poolDescription,
+                                     next,
+                                     writer,
+                                     durationUnits,
+                                     groupNumber,
+                                     ensembleAverageType,
+                                     summaryStatistic );
         }
     }
 
@@ -978,6 +988,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
      * @param summaryStatistic the summary statistic, if any
      * @throws IOException if any of the scores could not be written
      */
@@ -987,6 +998,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                         BufferedOutputStream writer,
                                         ChronoUnit durationUnits,
                                         AtomicInteger groupNumber,
+                                        EnsembleAverageType ensembleAverageType,
                                         SummaryStatistic summaryStatistic )
             throws IOException
     {
@@ -999,7 +1011,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( DurationDiagramStatistic next : sorted )
         {
-            this.writeDurationDiagram( poolDescription, next, writer, durationUnits, groupNumber, summaryStatistic );
+            this.writeDurationDiagram( poolDescription,
+                                       next,
+                                       writer,
+                                       durationUnits,
+                                       groupNumber,
+                                       ensembleAverageType,
+                                       summaryStatistic );
         }
     }
 
@@ -1117,7 +1135,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         String qualifier = "";
 
         if ( Objects.nonNull( ensembleAverageType )
-             && metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+             && ( metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+                  || metricName.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
              && ensembleAverageType != EnsembleAverageType.NONE )
         {
             qualifier = "ENSEMBLE " + ensembleAverageType.name();
@@ -1134,6 +1153,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
      * @param summaryStatistic the summary statistic, if any
      * @throws IOException if the score could not be written
      */
@@ -1143,6 +1163,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                      BufferedOutputStream writer,
                                      ChronoUnit durationUnits,
                                      AtomicInteger groupNumber,
+                                     EnsembleAverageType ensembleAverageType,
                                      SummaryStatistic summaryStatistic )
             throws IOException
     {
@@ -1169,7 +1190,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             this.append( joiner, namedMetricComponent.toString(), false );
 
             // Name qualifier
-            this.append( joiner, "", false );
+            String qualifier = this.getMetricComponentQualifier( namedMetric, ensembleAverageType );
+            this.append( joiner, qualifier, false );
 
             // Relative timing errors
             if ( metric.getName() == MetricName.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC )
@@ -1473,6 +1495,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
      * @param summaryStatistic the summary statistic, if any
      * @throws IOException if the score could not be written
      */
@@ -1482,6 +1505,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                        BufferedOutputStream writer,
                                        ChronoUnit durationUnits,
                                        AtomicInteger groupNumber,
+                                       EnsembleAverageType ensembleAverageType,
                                        SummaryStatistic summaryStatistic )
             throws IOException
     {
@@ -1506,7 +1530,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                                                                     .name() );
             this.append( joiner, referenceTimeType.toString(), false );
 
-            // Name qualifier
+            // Name qualifier, none on the time
             this.append( joiner, "", false );
 
             // Units
@@ -1545,7 +1569,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             this.append( joinerTwo, "ERROR", false );
 
             // Name qualifier
-            this.append( joinerTwo, "", false );
+            String qualifier = this.getMetricComponentQualifier( namedMetric, ensembleAverageType );
+            this.append( joinerTwo, qualifier, false );
 
             // Units
             String units = durationUnits.toString()

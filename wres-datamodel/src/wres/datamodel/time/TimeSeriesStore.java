@@ -77,10 +77,10 @@ public class TimeSeriesStore
                               .stream()
                               .filter( next -> features.contains( next.getMetadata()
                                                                       .getFeature() )
-                                               && Objects.isNull( variableName )
-                                               || Objects.equals( next.getMetadata()
-                                                                      .getVariableName(),
-                                                                  variableName ) );
+                                               && ( Objects.isNull( variableName )
+                                                    || Objects.equals( next.getMetadata()
+                                                                           .getVariableName(),
+                                                                       variableName ) ) );
     }
 
     /**
@@ -144,10 +144,10 @@ public class TimeSeriesStore
                               .stream()
                               .filter( next -> features.contains( next.getMetadata()
                                                                       .getFeature() )
-                                               && Objects.isNull( variableName )
-                                               || Objects.equals( next.getMetadata()
-                                                                      .getVariableName(),
-                                                                  variableName ) )
+                                               && ( Objects.isNull( variableName )
+                                                    || Objects.equals( next.getMetadata()
+                                                                           .getVariableName(),
+                                                                       variableName ) ) )
                               .map( next -> TimeSeriesSlicer.filter( next, timeWindow ) );
     }
 
@@ -179,10 +179,10 @@ public class TimeSeriesStore
                               .stream()
                               .filter( next -> features.contains( next.getMetadata()
                                                                       .getFeature() )
-                                               && Objects.isNull( variableName )
-                                               || Objects.equals( next.getMetadata()
-                                                                      .getVariableName(),
-                                                                  variableName ) )
+                                               && ( Objects.isNull( variableName )
+                                                    || Objects.equals( next.getMetadata()
+                                                                           .getVariableName(),
+                                                                       variableName ) ) )
                               .map( next -> TimeSeriesSlicer.filter( next,
                                                                      timeWindow ) );
     }

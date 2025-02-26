@@ -119,6 +119,7 @@ class TimingErrorHelper
         Objects.requireNonNull( timeSeries );
 
         Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes = timeSeries.getReferenceTimes();
+
         if ( !referenceTimes.isEmpty() )
         {
             Map.Entry<ReferenceTime.ReferenceTimeType, Instant> referenceTime = referenceTimes.entrySet()

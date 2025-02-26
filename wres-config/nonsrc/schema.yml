@@ -639,6 +639,8 @@ definitions:
         "$ref": "#/definitions/EventDetectionCombinationEnum"
       aggregation:
         "$ref": "#/definitions/EventDetectionAggregationEnum"
+    required:
+      - operation
 
   CrossPair:
     title: Cross-pairing of time-series for consistency
@@ -1873,15 +1875,14 @@ definitions:
   EventDetectionAggregationEnum:
     title: The method for aggregating events across data sources.
     description: "Identifies the method for aggregating events across different 
-      time-series data sources, such as observed and predicted. The strategy 
-      'none' applies no aggregation. The 'maximum' forms the maximum period 
-      across each set of intersecting events. The 'minimum' forms the minimum 
-      period across each set of intersecting events or the temporal 
-      intersection. The 'average' forms the average of the start datetimes and 
-      the end datetimes for each set of intersecting events."
+      time-series data sources, such as observed and predicted. The 'maximum' 
+      forms the maximum period across each set of intersecting events. The 
+      'minimum' forms the minimum period across each set of intersecting events 
+      or the temporal intersection. The 'average' forms the average of the 
+      start datetimes and the end datetimes for each set of intersecting 
+      events."
     type: string
     enum:
-      - none
       - maximum
       - minimum
       - average
