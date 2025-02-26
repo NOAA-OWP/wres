@@ -32,5 +32,4 @@ VOLUME /container_home
 
 # Should correspond to the port configured in WORKDIR/lib/conf/eventbroker.properties
 EXPOSE 5673
-USER wres_writing_docker
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
