@@ -62,7 +62,7 @@ services:
          # To write user output data:
          - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
          # To read user input data using read-only nfs mount above:
-         - home:/home:ro
+         - /home:/home:ro
          # To read user input data written by tasker:
          - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
          # To read test input data:
@@ -106,7 +106,7 @@ services:
         # To write user output data:
         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
         # To read user input data using read-only nfs mount above:
-        - home:/home:ro
+        - /home:/home:ro
         # To read user input data written by tasker:
         - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
         # To read test input data:
@@ -150,7 +150,7 @@ services:
         # To write user output data:
         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
         # To read user input data using read-only nfs mount above:
-        - home:/home:ro
+        - /home:/home:ro
         # To read user input data written by tasker:
         - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
         # To read test input data:

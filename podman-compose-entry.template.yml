@@ -115,10 +115,10 @@ services:
          # To support durable queues after a cycling down and up.
          - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
          # Persistent log location
-         - /mnt/wres_share/logs/broker/:/mnt/wres_share/logs/broker/
+         #- /mnt/wres_share/logs/broker/:/mnt/wres_share/logs/broker/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
-         - RABBITMQ_LOG_LOCATION=/mnt/wres_share/logs/broker/
+         #- RABBITMQ_LOG_LOCATION=/mnt/wres_share/logs/broker/
          - WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_CERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_KEYFILE=${WRES_RABBITMQ_SSL_OPTIONS_KEYFILE}
@@ -149,7 +149,7 @@ services:
          # To write user output data:
          - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
          # To read user input using read-only nfs mount above:
-         - home:/home:ro
+         - /home:/home:ro
          # To read user input data written by tasker:
          - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
          # To read test input data:
@@ -195,7 +195,7 @@ services:
         # To write user output data:
         - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
         # To read user input using read-only nfs mount above:
-        - home:/home:ro
+        - /home:/home:ro
         # To read user input data written by tasker:
         - /mnt/wres_share/input_data:/mnt/wres_share/input_data:ro
         # To read test input data:
