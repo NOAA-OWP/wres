@@ -161,7 +161,7 @@ echo "Building images..."
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
 echo "Building and tagging worker image..."
-worker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker:$overall_version . )
+worker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
 echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 
 # Build and tag the tasker image which solely contains the tasker.
