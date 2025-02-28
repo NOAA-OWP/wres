@@ -241,12 +241,6 @@ public class ChartFactory
         // Build the source.
         CategoryDataset source = ChartDataFactory.ofDurationScoreSummaryStatistics( statistics );
 
-        String legendTitle = this.getLegendName( metricName,
-                                                 metadata,
-                                                 ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
-                                                 GraphicShape.DEFAULT,
-                                                 durationUnits );
-
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
         Set<TimeWindowOuter> timeWindows = statistics.stream()
@@ -254,6 +248,14 @@ public class ChartFactory
                                                                  .getTimeWindow() )
                                                      .collect( Collectors.toSet() );
         TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        String legendTitle = this.getLegendName( metricName,
+                                                 ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
+                                                 GraphicShape.DEFAULT,
+                                                 durationUnits,
+                                                 timeWindows,
+                                                 metadata.getEvaluation()
+                                                         .getMeasurementUnit() );
 
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
                                                                     aggregateTimeWindow,
@@ -356,7 +358,13 @@ public class ChartFactory
 
         String rangeTitle = rangeDimension + " [" + range.getUnits() + "]";
         String domainTitle = domainDimension + " [" + domain.getUnits() + "]";
-        String legendTitle = this.getLegendName( metricName, metadata, chartType, graphicShape, durationUnits );
+        String legendTitle = this.getLegendName( metricName,
+                                                 chartType,
+                                                 graphicShape,
+                                                 durationUnits,
+                                                 Set.of(),
+                                                 metadata.getEvaluation()
+                                                         .getMeasurementUnit() );
 
         // One chart per key instance
         for ( Object keyInstance : keySetValues )
@@ -525,8 +533,6 @@ public class ChartFactory
         // Build the source.
         XYDataset source = ChartDataFactory.ofDurationDiagramStatistics( statistics );
 
-        String legendTitle = this.getLegendName( metricName, metadata, chartType, GraphicShape.DEFAULT, durationUnits );
-
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
         Set<TimeWindowOuter> timeWindows = statistics.stream()
@@ -534,6 +540,15 @@ public class ChartFactory
                                                                  .getTimeWindow() )
                                                      .collect( Collectors.toSet() );
         TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        String legendTitle = this.getLegendName( metricName,
+                                                 chartType,
+                                                 GraphicShape.DEFAULT,
+                                                 durationUnits,
+                                                 Set.of(),
+                                                 metadata.getEvaluation()
+                                                         .getMeasurementUnit() );
+
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
@@ -943,8 +958,6 @@ public class ChartFactory
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
 
-        String legendTitle = this.getLegendName( metricName, metadata, chartType, graphicShape, durationUnits );
-
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
         Set<TimeWindowOuter> timeWindows = statistics.stream()
@@ -952,6 +965,14 @@ public class ChartFactory
                                                                  .getTimeWindow() )
                                                      .collect( Collectors.toSet() );
         TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
+
+        String legendTitle = this.getLegendName( metricName,
+                                                 chartType,
+                                                 graphicShape,
+                                                 durationUnits,
+                                                 timeWindows,
+                                                 thresholdUnits );
+
         ChartTitleParameters parameters = new ChartTitleParameters( metadata,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, metricComponentName ),
@@ -1684,7 +1705,7 @@ public class ChartFactory
         ChronoUnit durationUnits = parameters.durationUnits();
 
         name += this.getTimeScaleForTitle( metadata, durationUnits );
-        name += this.getTimeWindowForTitle( parameters.timeWindow(), chartType, statisticType, durationUnits );
+        name += this.getTimeWindowForTitle( parameters.timeWindow(), statisticType, durationUnits );
         name += this.getThresholdForTitle( metadata, chartType, statisticType );
         name += this.getCovariateFiltersForTitle( metadata );
         name += this.getQuantilesQualifier( metricName,
@@ -2181,7 +2202,6 @@ public class ChartFactory
      * Uncovers the time window for the plot title.
      *
      * @param timeWindow the time window
-     * @param chartType the chart type
      * @param statisticType the type of statistic
      * @param durationUnits the duration units
      * @return the time window
@@ -2189,19 +2209,10 @@ public class ChartFactory
      */
 
     private String getTimeWindowForTitle( TimeWindowOuter timeWindow,
-                                          ChartType chartType,
                                           StatisticType statisticType,
                                           ChronoUnit durationUnits )
     {
         Objects.requireNonNull( timeWindow );
-
-        // No time window for pooling window plots unless they are diagrams and hence one diagram per time window
-        if ( chartType == ChartType.POOLING_WINDOW
-             && ( statisticType == StatisticType.DOUBLE_SCORE
-                  || statisticType == StatisticType.DURATION_SCORE ) )
-        {
-            return "";
-        }
 
         String timeWindowString = "";
 
@@ -2279,27 +2290,27 @@ public class ChartFactory
     /**
      * Returns a legend name from the inputs.
      * @param metricName the metric name
-     * @param metadata the pool metadata
      * @param chartType the chart type
      * @param graphicShape the graphic shape
      * @param durationUnits the duration units
+     * @param timeWindows the time windows
+     * @param thresholdUnits the threshold measurement units
      * @throws NullPointerException if any input is null
      */
     private String getLegendName( MetricConstants metricName,
-                                  PoolMetadata metadata,
                                   ChartType chartType,
                                   GraphicShape graphicShape,
-                                  ChronoUnit durationUnits )
+                                  ChronoUnit durationUnits,
+                                  Set<TimeWindowOuter> timeWindows,
+                                  String thresholdUnits )
     {
         Objects.requireNonNull( metricName );
-        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( thresholdUnits );
         Objects.requireNonNull( chartType );
         Objects.requireNonNull( graphicShape );
         Objects.requireNonNull( durationUnits );
 
         String legendTitle = "";
-        String thresholdUnits = metadata.getEvaluation()
-                                        .getMeasurementUnit();
 
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
@@ -2324,7 +2335,11 @@ public class ChartFactory
         // Pooling windows
         else if ( chartType == ChartType.POOLING_WINDOW )
         {
-            legendTitle = this.getPoolingWindowLegendName( metricName, metadata, graphicShape, durationUnits );
+            legendTitle = this.getPoolingWindowLegendName( metricName,
+                                                           graphicShape,
+                                                           durationUnits,
+                                                           timeWindows,
+                                                           thresholdUnits );
         }
 
         return legendTitle;
@@ -2333,63 +2348,73 @@ public class ChartFactory
     /**
      * Returns a legend name from the inputs for a chart that displays statistics for each of several pools.
      * @param metricName the metric name
-     * @param metadata the pool metadata
      * @param graphicShape the graphic shape
      * @param durationUnits the duration units
+     * @param timeWindows the time windows
+     * @param thresholdUnits the threshold measurement units
      * @throws NullPointerException if any input is null
      */
     private String getPoolingWindowLegendName( MetricConstants metricName,
-                                               PoolMetadata metadata,
                                                GraphicShape graphicShape,
-                                               ChronoUnit durationUnits )
+                                               ChronoUnit durationUnits,
+                                               Set<TimeWindowOuter> timeWindows,
+                                               String thresholdUnits )
     {
-        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( timeWindows );
         Objects.requireNonNull( graphicShape );
         Objects.requireNonNull( durationUnits );
 
         String legendTitle = "";
-        String thresholdUnits = metadata.getEvaluation()
-                                        .getMeasurementUnit();
 
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
 
-        Duration earliest = metadata.getTimeWindow()
-                                    .getEarliestLeadDuration();
-        Duration latest = metadata.getTimeWindow()
-                                  .getLatestLeadDuration();
-        Instant earliestValidTime = metadata.getTimeWindow()
-                                            .getEarliestValidTime();
-        Instant latestValidTime = metadata.getTimeWindow()
-                                          .getLatestValidTime();
-        Instant earliestReferenceTime = metadata.getTimeWindow()
-                                                .getEarliestReferenceTime();
-        Instant latestReferenceTime = metadata.getTimeWindow()
-                                              .getLatestReferenceTime();
-
-        // Plots for scores contain all pools, so qualify the time components
+        // Plots for scores contain all pools, so qualify the time components if needed
         if ( metricName.isInGroup( StatisticType.DOUBLE_SCORE )
              || metricName.isInGroup( StatisticType.DURATION_SCORE ) )
         {
+            // Only qualify time window dimensions in the legend when the dimension has more than one bookend that differs
+            // across pools, i.e., no singletons because these are qualified in the chart title
             // Lead durations where required
-            if ( !earliest.equals( TimeWindowOuter.DURATION_MIN )
-                 || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+            boolean qualifyLead = timeWindows.stream()
+                                             .map( TimeWindowOuter::getEarliestLeadDuration )
+                                             .collect( Collectors.toSet() )
+                                             .size() > 1
+                                  || timeWindows.stream()
+                                                .map( TimeWindowOuter::getLatestLeadDuration )
+                                                .collect( Collectors.toSet() )
+                                                .size() > 1;
+            if ( qualifyLead )
             {
                 legendTitle = legendTitle + "Lead time window [" + leadUnits + "], ";
             }
 
             // Valid times when required
-            if ( graphicShape != GraphicShape.VALID_DATE_POOLS
-                 && ( !earliestValidTime.equals( Instant.MIN )
-                      || !latestValidTime.equals( Instant.MAX ) ) )
+            boolean qualifyValid = graphicShape != GraphicShape.VALID_DATE_POOLS
+                                   && ( timeWindows.stream()
+                                                   .map( TimeWindowOuter::getEarliestValidTime )
+                                                   .collect( Collectors.toSet() )
+                                                   .size() > 1
+                                        || timeWindows.stream()
+                                                      .map( TimeWindowOuter::getLatestValidTime )
+                                                      .collect( Collectors.toSet() )
+                                                      .size() > 1 );
+            if ( qualifyValid )
             {
                 legendTitle = legendTitle + "Valid time window [UTC], ";
             }
 
             // Reference times when required
-            if ( graphicShape != GraphicShape.ISSUED_DATE_POOLS
-                 && ( !earliestReferenceTime.equals( Instant.MIN )
-                      || !latestReferenceTime.equals( Instant.MAX ) ) )
+            boolean qualifyReference = graphicShape != GraphicShape.ISSUED_DATE_POOLS
+                                       && ( timeWindows.stream()
+                                                       .map( TimeWindowOuter::getEarliestReferenceTime )
+                                                       .collect( Collectors.toSet() )
+                                                       .size() > 1
+                                            || timeWindows.stream()
+                                                          .map( TimeWindowOuter::getLatestReferenceTime )
+                                                          .collect( Collectors.toSet() )
+                                                          .size() > 1 );
+            if ( qualifyReference )
             {
                 legendTitle = legendTitle + "Issued time window [UTC], ";
             }

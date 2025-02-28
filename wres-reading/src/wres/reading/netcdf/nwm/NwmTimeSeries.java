@@ -251,7 +251,7 @@ class NwmTimeSeries implements Closeable
 
         this.featuresNotFound = new HashSet<>( 1 );
 
-        // Open all the relevant files during construction, or fail.        
+        // Open all the relevant files during construction, or fail.
         Set<URI> resourcesNotFound = new HashSet<>();
         for ( URI netcdfUri : netcdfUris )
         {
@@ -322,11 +322,10 @@ class NwmTimeSeries implements Closeable
             if ( this.netcdfFiles.isEmpty() )
             {
                 LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from {}. "
-                             + "Expected {} netCDF resources, but none were found.",
+                             + "No netCDF resources were found.",
                              referenceDatetime,
                              profile,
-                             this.baseUri,
-                             this.netcdfFiles.size() );
+                             this.baseUri );
             }
             // Something missing
             else
@@ -749,8 +748,8 @@ class NwmTimeSeries implements Closeable
     }
 
     /**
-     * Inspects a NWM URI and attempts to determine whether it is a "legacy" NWM version, defined as 1.1 or 1.2, since 
-     * these are supported versions that have a different file structure. Yuck, but better than adding yet more 
+     * Inspects a NWM URI and attempts to determine whether it is a "legacy" NWM version, defined as 1.1 or 1.2, since
+     * these are supported versions that have a different file structure. Yuck, but better than adding yet more
      * interfaces for datasets that are (increasingly) rarely used. See #110992.
      *
      * @param baseUri the base URI to check
@@ -783,7 +782,7 @@ class NwmTimeSeries implements Closeable
     }
 
     /**
-     * Inspects the exception and, if the cause of the exception is a {@link FileNotFoundException}, adds it to the 
+     * Inspects the exception and, if the cause of the exception is a {@link FileNotFoundException}, adds it to the
      * supplied set, otherwise throws an {@link ReadException} indicating that the resource could not be read.
      * @param uri the URI that was attempted
      * @param e the exception to inspect
@@ -1226,12 +1225,12 @@ class NwmTimeSeries implements Closeable
     {
         if ( attributes.has32BitPacking() )
         {
-            return rawValue * attributes.getMultiplier32()
-                   + attributes.getOffsetToAdd32();
+            return rawValue * attributes.multiplier32()
+                   + attributes.offsetToAdd32();
         }
 
-        return rawValue * attributes.getMultiplier64()
-               + attributes.getOffsetToAdd64();
+        return rawValue * attributes.multiplier64()
+               + attributes.offsetToAdd64();
     }
 
 
@@ -1270,95 +1269,16 @@ class NwmTimeSeries implements Closeable
     /**
      * Attributes that have been actually read from a netCDF Variable.
      * The purpose of this class is to help avoid re-reading the same metadata.
+     * @param has32BitPacking  True means use float multiplier and offset, false means double
      */
 
-    private static final class VariableAttributes
+    private record VariableAttributes( int missingValue, int fillValue, boolean has32BitPacking, float multiplier32,
+                                       float offsetToAdd32, double multiplier64, double offsetToAdd64 )
     {
-        private final int missingValue;
-        private final int fillValue;
-
-        /** True means use float multiplier and offset, false means double */
-        private final boolean has32BitPacking;
-        private final float multiplier32;
-        private final float offsetToAdd32;
-        private final double multiplier64;
-        private final double offsetToAdd64;
-
-        VariableAttributes( int missingValue,
-                            int fillValue,
-                            boolean has32BitPacking,
-                            float multiplier32,
-                            float offsetToAdd32,
-                            double multiplier64,
-                            double offsetToAdd64 )
-        {
-            this.missingValue = missingValue;
-            this.fillValue = fillValue;
-            this.has32BitPacking = has32BitPacking;
-            this.multiplier32 = multiplier32;
-            this.offsetToAdd32 = offsetToAdd32;
-            this.multiplier64 = multiplier64;
-            this.offsetToAdd64 = offsetToAdd64;
-        }
-
-        int getMissingValue()
-        {
-            return this.missingValue;
-        }
-
-        int getFillValue()
-        {
-            return this.fillValue;
-        }
-
-        boolean has32BitPacking()
-        {
-            return this.has32BitPacking;
-        }
-
-        float getMultiplier32()
-        {
-            if ( !this.has32BitPacking )
-            {
-                throw new IllegalStateException( "This instance has 64-bit packing, use getMultiplier64()" );
-            }
-
-            return this.multiplier32;
-        }
-
-        float getOffsetToAdd32()
-        {
-            if ( !this.has32BitPacking )
-            {
-                throw new IllegalStateException( "This instance has 64-bit packing, use getOffsetToAdd64()" );
-            }
-
-            return this.offsetToAdd32;
-        }
-
-        double getMultiplier64()
-        {
-            if ( this.has32BitPacking )
-            {
-                throw new IllegalStateException( "This instance has 32-bit packing, use getMultiplier32()" );
-            }
-
-            return this.multiplier64;
-        }
-
-        double getOffsetToAdd64()
-        {
-            if ( this.has32BitPacking )
-            {
-                throw new IllegalStateException( "This instance has 32-bit packing, use getOffsetToAdd32()" );
-            }
-
-            return this.offsetToAdd64;
-        }
     }
 
     /**
-     * Task that performs NetcdfFile.open on given URI.
+     * Task that performs open on given URI.
      */
 
     private record NWMResourceOpener( URI uri ) implements Callable<NetcdfFile>
@@ -1605,8 +1525,8 @@ class NwmTimeSeries implements Closeable
 
             List<EventForNWMFeature<Double>> list = new ArrayList<>( rawVariableValues.length );
 
-            int missingValue = attributes.getMissingValue();
-            int fillValue = attributes.getFillValue();
+            int missingValue = attributes.missingValue();
+            int fillValue = attributes.fillValue();
 
             for ( int i = 0; i < rawVariableValues.length; i++ )
             {
@@ -1945,7 +1865,7 @@ class NwmTimeSeries implements Closeable
                     LOGGER.debug( "Finished setting the features cache using {}",
                                   netcdfFileName );
                 }
-                //Otherwise, just check the read features against the cached 
+                //Otherwise, just check the read features against the cached
                 //features to ensure they are identical.
                 else
                 {
@@ -1993,5 +1913,3 @@ class NwmTimeSeries implements Closeable
     }
 
 }
-
-

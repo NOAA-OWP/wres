@@ -291,7 +291,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
         catch ( InterruptedException e )
         {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
             throw new IngestException( "Interrupted while getting ingest results.", e );
         }
     }
