@@ -195,6 +195,8 @@ public class ChartDataFactory
         // Filter by times if each series should contain issued or valid pools, else do not filter
         SortedSet<Pair<Instant, Instant>> times = new TreeSet<>();
 
+        Pair<Instant, Instant> unboundedTime = Pair.of( Instant.MIN, Instant.MAX );
+
         // Series by issued time 
         if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
         {
@@ -220,7 +222,7 @@ public class ChartDataFactory
         }
         else
         {
-            times.add( Pair.of( Instant.MIN, Instant.MAX ) );
+            times.add( unboundedTime );
         }
 
         // Iterate the durations
@@ -267,11 +269,16 @@ public class ChartDataFactory
                                                           .equals( nextTime.getRight() ) );
                 }
 
+                // Only qualify the label in the legend name if there are multiple unique times
+                Pair<Instant, Instant> lableTime = ChartDataFactory.getTimeLabelForPoolingWindowsLegend( nextTime,
+                                                                                                         times,
+                                                                                                         unboundedTime );
+
                 // Add the next set of series
                 ChartDataFactory.addSeriesForPoolingWindow( returnMe,
                                                             slice,
                                                             nextDuration,
-                                                            nextTime,
+                                                            lableTime,
                                                             graphicShape,
                                                             durationUnits );
             }
@@ -729,7 +736,7 @@ public class ChartDataFactory
      * @param collection the collection to expand
      * @param slice the slice of statistics from which to generate series
      * @param leadDurations the lead durations by which to filter series
-     * @param poolingTimes the times by which to filter series
+     * @param poolingTimes the times by which to name series
      * @param graphicShape the graphic shape
      * @param durationUnits the duration units
      */
@@ -797,7 +804,8 @@ public class ChartDataFactory
         Instant latestTime = poolingTimes.getRight();
 
         // Lead durations
-        if ( !earliest.equals( TimeWindowOuter.DURATION_MIN ) || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+        if ( !earliest.equals( TimeWindowOuter.DURATION_MIN )
+             || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
         {
             // Zero-width interval
             if ( earliest.equals( latest ) )
@@ -816,19 +824,23 @@ public class ChartDataFactory
         }
 
         // Times
-        if ( !earliestTime.equals( Instant.MIN ) || !latestTime.equals( Instant.MAX ) )
+        if ( !earliestTime.equals( Instant.MIN )
+             || !latestTime.equals( Instant.MAX ) )
         {
             // Zero-width interval
             if ( earliestTime.equals( latestTime ) )
             {
-                key = key + latestTime.toString().replace( "Z", "" ) + ","; // Zone in legend title
+                key = key + latestTime.toString()
+                                      .replace( "Z", "" ) + ","; // Zone in legend title
             }
             else
             {
                 key = key + "("
-                      + earliestTime.toString().replace( "Z", "" )
+                      + earliestTime.toString()
+                                    .replace( "Z", "" )
                       + ","
-                      + latestTime.toString().replace( "Z", "" )
+                      + latestTime.toString()
+                                  .replace( "Z", "" )
                       + "], "; // Zone in legend title
             }
         }
@@ -1308,6 +1320,28 @@ public class ChartDataFactory
 
             series.add( xC, xL, xU, yC, yL, yU );
         }
+    }
+
+    /**
+     * Returns the time label for the legend name in pooling window datasets.
+     * @param currentTime the current time
+     * @param uniqueTimes the unique times
+     * @param unboundedTime the unbounded time
+     * @return the time label to use
+     */
+
+    private static Pair<Instant, Instant> getTimeLabelForPoolingWindowsLegend( Pair<Instant, Instant> currentTime,
+                                                                               Set<Pair<Instant, Instant>> uniqueTimes,
+                                                                               Pair<Instant, Instant> unboundedTime )
+    {
+        // Only qualify the label in the legend name if there are multiple unique times
+        Pair<Instant, Instant> lableTime = currentTime;
+        if ( uniqueTimes.size() == 1 )
+        {
+            lableTime = unboundedTime;
+        }
+
+        return lableTime;
     }
 
     /**

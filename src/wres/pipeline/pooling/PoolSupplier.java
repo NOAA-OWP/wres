@@ -1184,7 +1184,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         // Log the number of time-series available for pairing and the number of paired time-series created
-        if ( LOGGER.isDebugEnabled() )
+        if ( LOGGER.isInfoEnabled() )
         {
             PoolMetadata metaToReport = this.getMetadata();
 
@@ -1193,7 +1193,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 metaToReport = this.baselineMetadata;
             }
 
-            LOGGER.debug( "While creating pool {}, discovered {} {} time-series and {} {} time-series from "
+            LOGGER.info( "While creating pool {}, discovered {} {} time-series and {} {} time-series from "
                           + "which to create pairs. Created {} paired time-series from these inputs.",
                           metaToReport,
                           leftSeries.size(),
