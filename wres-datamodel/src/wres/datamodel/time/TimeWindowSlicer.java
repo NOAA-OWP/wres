@@ -451,7 +451,7 @@ public class TimeWindowSlicer
                              .isEmpty()
                   && Objects.isNull( declaration.eventDetection() ) )
         {
-            TimeWindowSlicer.LOGGER.debug( "Building one big time window." );
+            LOGGER.debug( "Building one big time window." );
 
             timeWindows = Collections.singleton( getOneBigTimeWindow( declaration ) );
         }
@@ -459,9 +459,9 @@ public class TimeWindowSlicer
         // Add the explicitly declared time windows
         SortedSet<TimeWindowOuter> finalWindows = new TreeSet<>( timeWindows );
 
-        TimeWindowSlicer.LOGGER.debug( "Added {} explicitly declared time pools to the overall group of time pools.",
-                                       declaration.timePools()
-                                                  .size() );
+        LOGGER.debug( "Added {} explicitly declared time pools to the overall group of time pools.",
+                      declaration.timePools()
+                                 .size() );
 
         finalWindows.addAll( declaration.timePools()
                                         .stream()

@@ -344,7 +344,8 @@ public class ChartDataFactory
         TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
         Set<OneOrTwoThresholds> thresholds =
-                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata()
+                                                         .getThresholds() );
 
         // Filter by threshold
         for ( OneOrTwoThresholds nextSeries : thresholds )
@@ -352,9 +353,15 @@ public class ChartDataFactory
             String noUnits = DataUtilities.toStringWithoutUnits( nextSeries );
             TimeSeries next = new TimeSeries( noUnits );
 
+            // JFreeChart does not currently support an interval series, so omit any resampled quantiles: GitHub 399
             List<DurationDiagramStatisticOuter> filtered =
                     Slicer.filter( statistics,
-                                   data -> data.getPoolMetadata().getThresholds().equals( nextSeries ) );
+                                   data -> data.getPoolMetadata()
+                                               .getThresholds()
+                                               .equals( nextSeries )
+                                           && ( !data.isSummaryStatistic()
+                                                || data.getSummaryStatistic().getDimension()
+                                                   != SummaryStatistic.StatisticDimension.RESAMPLED ) );
 
             // Create a set-view by instant, because JFreeChart cannot handle duplicates
             Set<Instant> instants = new HashSet<>();
