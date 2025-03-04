@@ -704,7 +704,8 @@ public class WrdsThresholdReader implements ThresholdReader
         Set<String> thresholdNamesWithoutFeatures = new TreeSet<>( thresholdFeatureNames );
         thresholdNamesWithoutFeatures.removeAll( featureNames.keySet() );
 
-        if ( ( !featureNamesWithoutThresholds.isEmpty() || !thresholdNamesWithoutFeatures.isEmpty() )
+        if ( ( !featureNamesWithoutThresholds.isEmpty()
+               || !thresholdNamesWithoutFeatures.isEmpty() )
              && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",

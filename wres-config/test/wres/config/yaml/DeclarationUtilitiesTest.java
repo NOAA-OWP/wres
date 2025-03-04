@@ -776,7 +776,7 @@ class DeclarationUtilitiesTest
                   - some_file.csv
                 predicted:
                   - another_file.csv
-                  """;
+                """;
 
         FileSystem fileSystem = FileSystems.getDefault();
         assertFalse( DeclarationUtilities.isReadableFile( fileSystem, path ) );
@@ -1184,6 +1184,9 @@ class DeclarationUtilitiesTest
         Geometry baseline = Geometry.newBuilder()
                                     .setName( "baz" )
                                     .build();
+        Geometry allDataGeometry = Geometry.newBuilder()
+                                           .setName( "qux" )
+                                           .build();
 
         // Tuple foo-bar-baz
         GeometryTuple one = GeometryTuple.newBuilder()
@@ -1203,6 +1206,13 @@ class DeclarationUtilitiesTest
                                            .setRight( baseline )
                                            .setBaseline( left )
                                            .build();
+
+        // Tuple qux
+        GeometryTuple four = GeometryTuple.newBuilder()
+                                          .setLeft( allDataGeometry )
+                                          .setRight( allDataGeometry )
+                                          .setBaseline( allDataGeometry )
+                                          .build();
 
         Threshold threshold = Threshold.newBuilder()
                                        .setLeftThresholdValue( 1 )
@@ -1225,8 +1235,12 @@ class DeclarationUtilitiesTest
                                 .feature( baseline )
                                 .featureNameFrom( DatasetOrientation.BASELINE )
                                 .build();
+        wres.config.yaml.components.Threshold allDataThreshold =
+                ThresholdBuilder.builder( DeclarationUtilities.GENERATED_ALL_DATA_THRESHOLD )
+                                .feature( allDataGeometry )
+                                .build();
 
-        Set<GeometryTuple> geometryTuples = Set.of( one, two, three );
+        Set<GeometryTuple> geometryTuples = Set.of( one, two, three, four );
         Features features = FeaturesBuilder.builder()
                                            .geometries( geometryTuples )
                                            .build();
@@ -1243,7 +1257,8 @@ class DeclarationUtilitiesTest
                                             .featureGroups( featureGroups )
                                             .thresholds( Set.of( wrappedThresholdOne,
                                                                  wrappedThresholdTwo,
-                                                                 wrappedThresholdThree ) )
+                                                                 wrappedThresholdThree,
+                                                                 allDataThreshold ) )
                                             .build();
 
         EvaluationDeclaration actual = DeclarationUtilities.removeFeaturesWithoutThresholds( declaration );
@@ -1263,7 +1278,8 @@ class DeclarationUtilitiesTest
                                                                      .featureGroups( expectedFeatureGroups )
                                                                      .thresholds( Set.of( wrappedThresholdOne,
                                                                                           wrappedThresholdTwo,
-                                                                                          wrappedThresholdThree ) )
+                                                                                          wrappedThresholdThree,
+                                                                                          allDataThreshold ) )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -1274,11 +1290,11 @@ class DeclarationUtilitiesTest
     {
         // Tests GitHub issue #319
         Geometry oneObserved = Geometry.newBuilder()
-                                .setName( "one_observed" )
-                                .build();
+                                       .setName( "one_observed" )
+                                       .build();
         Geometry onePredicted = Geometry.newBuilder()
-                                 .setName( "one_predicted" )
-                                 .build();
+                                        .setName( "one_predicted" )
+                                        .build();
         Geometry twoObserved = Geometry.newBuilder()
                                        .setName( "two_observed" )
                                        .build();

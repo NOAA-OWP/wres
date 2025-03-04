@@ -720,10 +720,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             filename.add( scenarioName );
         }
 
-        // Add latest reference time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
-        if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX ) )
+        // Add the earliest reference time identifier: GitHub #436
+        if ( !timeWindow.getEarliestReferenceTime()
+                        .equals( Instant.MIN ) )
         {
-            String lastTime = timeWindow.getLatestReferenceTime().toString();
+            String lastTime = timeWindow.getEarliestReferenceTime()
+                                        .toString();
             lastTime = lastTime.replace( "-", "" )
                                .replace( ":", "" )
                                .replace( "Z$", "" );
@@ -731,13 +733,38 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             filename.add( lastTime );
         }
 
-        // Add latest valid time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
-        // For backwards compatibility of file names, only qualify when valid dates pooling windows are supplied
-        if ( Objects.nonNull( declaration.validDatePools() )
-             && !timeWindow.getLatestValidTime()
-                           .equals( Instant.MAX ) )
+        // Add latest reference time identifier
+        if ( !timeWindow.getLatestReferenceTime()
+                        .equals( Instant.MAX ) )
         {
-            String lastTime = timeWindow.getLatestValidTime().toString();
+            String lastTime = timeWindow.getLatestReferenceTime()
+                                        .toString();
+            lastTime = lastTime.replace( "-", "" )
+                               .replace( ":", "" )
+                               .replace( "Z$", "" );
+
+            filename.add( lastTime );
+        }
+
+        // Add the earliest valid time identifier: GitHub #436
+        if ( !timeWindow.getEarliestValidTime()
+                        .equals( Instant.MIN ) )
+        {
+            String lastTime = timeWindow.getEarliestValidTime()
+                                        .toString();
+            lastTime = lastTime.replace( "-", "" )
+                               .replace( ":", "" )
+                               .replace( "Z$", "" );
+
+            filename.add( lastTime );
+        }
+
+        // Add latest valid time identifier
+        if ( !timeWindow.getLatestValidTime()
+                        .equals( Instant.MAX ) )
+        {
+            String lastTime = timeWindow.getLatestValidTime()
+                                        .toString();
             lastTime = lastTime.replace( "-", "" )
                                .replace( ":", "" )
                                .replace( "Z$", "" );
