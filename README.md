@@ -1,4 +1,8 @@
+
+
 # Water Resources Evaluation Service (WRES)
+
+![commitChecks](https://github.com/NOAA-OWP/wres/actions/workflow/commitChecks.yml/badge.svg)
 
 The Water Resource Evaluation Service (WRES) is a software tool for evaluating the quality of existing and emerging hydrometeorological models
 and forecasting systems. It may be deployed as a standalone executable or as a web service (with a backend cluster of executables).
