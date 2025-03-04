@@ -73,58 +73,57 @@ public class Scenario652
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv.gz" ),
-                    Path.of( "NWM_Short_Range_20180526T040000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T040000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T040000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T040000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T080000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T080000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T080000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T080000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T120000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T120000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T120000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T120000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T160000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T160000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T160000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T160000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T200000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T200000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T200000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180526T200000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T000000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T000000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T000000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T000000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T040000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T040000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T040000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T040000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T080000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T080000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T080000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T080000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T120000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T120000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T120000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T120000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T160000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T160000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T160000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T160000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T200000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T200000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T200000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180527T200000Z_7200-7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180528T000000Z_10800-10800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180528T000000Z_14400-14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180528T000000Z_3600-3600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_20180528T000000Z_7200-7200_SECONDS.nc" ) );
+                    Path.of( "NWM_Short_Range_20180526T000000Z_20180526T040000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T000000Z_20180526T040000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T000000Z_20180526T040000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T000000Z_20180526T040000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T040000Z_20180526T080000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T040000Z_20180526T080000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T040000Z_20180526T080000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T040000Z_20180526T080000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T080000Z_20180526T120000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T080000Z_20180526T120000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T080000Z_20180526T120000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T080000Z_20180526T120000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T120000Z_20180526T160000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T120000Z_20180526T160000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T120000Z_20180526T160000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T120000Z_20180526T160000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T160000Z_20180526T200000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T160000Z_20180526T200000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T160000Z_20180526T200000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T160000Z_20180526T200000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T200000Z_20180527T000000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T200000Z_20180527T000000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T200000Z_20180527T000000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180526T200000Z_20180527T000000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T000000Z_20180527T040000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T000000Z_20180527T040000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T000000Z_20180527T040000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T000000Z_20180527T040000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T040000Z_20180527T080000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T040000Z_20180527T080000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T040000Z_20180527T080000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T040000Z_20180527T080000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T080000Z_20180527T120000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T080000Z_20180527T120000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T080000Z_20180527T120000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T080000Z_20180527T120000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T120000Z_20180527T160000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T120000Z_20180527T160000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T120000Z_20180527T160000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T120000Z_20180527T160000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T160000Z_20180527T200000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T160000Z_20180527T200000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T160000Z_20180527T200000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T160000Z_20180527T200000Z_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T200000Z_20180528T000000Z_10800-10800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T200000Z_20180528T000000Z_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T200000Z_20180528T000000Z_3600-3600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_20180527T200000Z_20180528T000000Z_7200-7200_SECONDS.nc" ) );
 
-    
     private ScenarioInformation scenarioInfo;
-    
+
     /**
      * Watch for any failed assertions and log them.
      */
@@ -146,9 +145,9 @@ public class Scenario652
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         this.scenarioInfo = new ScenarioInformation( this.getClass()
-                                              .getSimpleName()
-                                              .toLowerCase(),
-                                              ScenarioHelper.getBaseDirectory() );
+                                                         .getSimpleName()
+                                                         .toLowerCase(),
+                                                     ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
@@ -168,12 +167,12 @@ public class Scenario652
         assertEquals( "The actual set of file names does not match the expected set of file names.",
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
+
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
-        
+
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, pathsWritten );
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase() + NEWLINE );
     }
 }
 
