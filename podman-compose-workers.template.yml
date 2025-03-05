@@ -38,13 +38,7 @@ services:
       restart: always
       ports:
         - 8080:8080
-      volumes:
-        - /:/rootfs:ro
-        - /dev/disk/:/dev/disk/:ro
-        - /sys:/sys:ro
-        - $SERVICE_ACCOUNT_CONTAINER_LOCATION:/var/lib/containers:ro
-        - /sys/fs/cgroup:/sys/fs/cgroup:ro
-        - $SERVICE_ACCOUNT_SOCKET_LOCATION:/var/run/podman/podman.sock:rw
+      volumes: ["/:/rootfs:ro", "/sys:/sys:ro", "/sys/fs/cgroup:/sys/fs/cgroup:ro", "/dev/disk/:/dev/disk:ro", PLACEHOLDER_REPLACEMENT]
       command:
         - --disable_metrics=network
         - --disable_metrics=referenced_memory
