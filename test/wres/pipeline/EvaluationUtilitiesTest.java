@@ -1,6 +1,7 @@
 package wres.pipeline;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -125,13 +126,14 @@ class EvaluationUtilitiesTest
         summaryStatistics.add( first );
         summaryStatistics.add( second );
 
-        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .leadTimes( leadTimeInterval )
-                                                                       .leadTimePools( leadTimePools )
-                                                                       .thresholds( valueThresholds )
-                                                                       .classifierThresholds( classifierThresholds )
-                                                                       .summaryStatistics( summaryStatistics )
-                                                                       .build();
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .leadTimes( leadTimeInterval )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .thresholds( valueThresholds )
+                                            .classifierThresholds( classifierThresholds )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
 
         Map<String, List<SummaryStatisticsCalculator>> calculators =
                 EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
@@ -273,12 +275,13 @@ class EvaluationUtilitiesTest
                                                           .geometryGroups( geometryGroups )
                                                           .build();
 
-        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .leadTimes( leadTimeInterval )
-                                                                       .leadTimePools( leadTimePools )
-                                                                       .featureGroups( featureGroups )
-                                                                       .summaryStatistics( summaryStatistics )
-                                                                       .build();
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .leadTimes( leadTimeInterval )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .featureGroups( featureGroups )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
 
         Map<String, List<SummaryStatisticsCalculator>> calculators =
                 EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );

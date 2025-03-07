@@ -433,16 +433,16 @@ public class TimeWindowSlicer
     {
         Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
 
-        TimePools leadDurationPools = declaration.leadTimePools();
-        TimePools referenceDatesPools = declaration.referenceDatePools();
-        TimePools validDatesPools = declaration.validDatePools();
+        Set<TimePools> leadDurationPools = declaration.leadTimePools();
+        Set<TimePools> referenceDatesPools = declaration.referenceDatePools();
+        Set<TimePools> validDatesPools = declaration.validDatePools();
 
         Set<TimeWindowOuter> timeWindows = Set.of();  // Default to none
 
         // Add the time windows generated from a declared sequence
-        if ( Objects.nonNull( leadDurationPools )
-             || Objects.nonNull( referenceDatesPools )
-             || Objects.nonNull( validDatesPools ) )
+        if ( !leadDurationPools.isEmpty()
+             || !referenceDatesPools.isEmpty()
+             || !validDatesPools.isEmpty() )
         {
             timeWindows = TimeWindowSlicer.getTimeWindowsFromPoolSequence( declaration );
         }
@@ -562,7 +562,6 @@ public class TimeWindowSlicer
         return TimeWindowOuter.of( timeWindow );
     }
 
-
     /**
      * Generates time windows from an explicit pool sequence.
      *
@@ -571,54 +570,54 @@ public class TimeWindowSlicer
      */
     private static Set<TimeWindowOuter> getTimeWindowsFromPoolSequence( EvaluationDeclaration declaration )
     {
-        TimePools leadDurationPools = declaration.leadTimePools();
-        TimePools referenceDatesPools = declaration.referenceDatePools();
-        TimePools validDatesPools = declaration.validDatePools();
+        Set<TimePools> leadDurationPools = declaration.leadTimePools();
+        Set<TimePools> referenceDatesPools = declaration.referenceDatePools();
+        Set<TimePools> validDatesPools = declaration.validDatePools();
 
         Set<TimeWindowOuter> timeWindows;
 
         // All dimensions
-        if ( Objects.nonNull( referenceDatesPools )
-             && Objects.nonNull( validDatesPools )
-             && Objects.nonNull( leadDurationPools ) )
+        if ( !referenceDatesPools.isEmpty()
+             && !validDatesPools.isEmpty()
+             && !leadDurationPools.isEmpty() )
         {
             LOGGER.debug( "Building time windows for reference dates and valid dates and lead durations." );
 
             timeWindows = TimeWindowSlicer.getReferenceDatesValidDatesAndLeadDurationTimeWindows( declaration );
         }
         // Reference dates and valid dates
-        else if ( Objects.nonNull( referenceDatesPools )
-                  && Objects.nonNull( validDatesPools ) )
+        else if ( !referenceDatesPools.isEmpty()
+                  && !validDatesPools.isEmpty() )
         {
             LOGGER.debug( "Building time windows for reference dates and valid dates." );
 
             timeWindows = TimeWindowSlicer.getReferenceDatesAndValidDatesTimeWindows( declaration );
         }
         // Reference dates and lead durations
-        else if ( Objects.nonNull( referenceDatesPools )
-                  && Objects.nonNull( leadDurationPools ) )
+        else if ( !referenceDatesPools.isEmpty()
+                  && !leadDurationPools.isEmpty() )
         {
             LOGGER.debug( "Building time windows for reference dates and lead durations." );
 
             timeWindows = TimeWindowSlicer.getReferenceDatesAndLeadDurationTimeWindows( declaration );
         }
         // Valid dates and lead durations
-        else if ( Objects.nonNull( validDatesPools )
-                  && Objects.nonNull( leadDurationPools ) )
+        else if ( !validDatesPools.isEmpty()
+                  && !leadDurationPools.isEmpty() )
         {
             LOGGER.debug( "Building time windows for valid dates and lead durations." );
 
             timeWindows = TimeWindowSlicer.getValidDatesAndLeadDurationTimeWindows( declaration );
         }
         // Reference dates
-        else if ( Objects.nonNull( referenceDatesPools ) )
+        else if ( !referenceDatesPools.isEmpty() )
         {
             LOGGER.debug( "Building time windows for reference dates." );
 
             timeWindows = TimeWindowSlicer.getReferenceDatesTimeWindows( declaration );
         }
         // Lead durations
-        else if ( Objects.nonNull( leadDurationPools ) )
+        else if ( !leadDurationPools.isEmpty() )
         {
             LOGGER.debug( "Building time windows for lead durations." );
 
@@ -661,22 +660,45 @@ public class TimeWindowSlicer
                                 "Cannot determine lead duration time windows without a 'maximum' value for "
                                 + "'lead_times'." );
 
-        TimePools leadTimesPoolingWindow = declaration.leadTimePools();
+        // Create the time windows
+        Set<TimeWindowOuter> timeWindows = new HashSet<>();
 
-        Objects.requireNonNull( leadTimesPoolingWindow,
-                                "Cannot determine lead duration time windows without a 'lead_time_pools'." );
+        for ( TimePools leadTimesPoolingWindow : declaration.leadTimePools() )
+        {
 
-        // Obtain the base window
-        TimeWindowOuter baseWindow = TimeWindowSlicer.getOneBigTimeWindow( declaration );
+            // Obtain the base window
+            TimeWindowOuter baseWindow = TimeWindowSlicer.getOneBigTimeWindow( declaration );
 
+            Set<TimeWindowOuter> leadTimePools = TimeWindowSlicer.getLeadDurationTimeWindows( leadTimesPoolingWindow,
+                                                                                              baseWindow,
+                                                                                              declaration.leadTimes() );
+            timeWindows.addAll( leadTimePools );
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * <p>Generates lead time pooling windows from the inputs.
+     *
+     * @param leadTimesPoolingWindow the lead times pooling window
+     * @param baseWindow the base window from which to start
+     * @param leadTimes the lead times
+     * @return the set of lead duration time windows
+     */
+
+    private static Set<TimeWindowOuter> getLeadDurationTimeWindows( TimePools leadTimesPoolingWindow,
+                                                                    TimeWindowOuter baseWindow,
+                                                                    LeadTimeInterval leadTimes )
+    {
         // Period associated with the leadTimesPoolingWindow
         Duration periodOfLeadTimesPoolingWindow = leadTimesPoolingWindow.period();
 
         // Exclusive lower bound: #56213-104
-        Duration earliestLeadDurationExclusive = leadHours.minimum();
+        Duration earliestLeadDurationExclusive = leadTimes.minimum();
 
         // Inclusive upper bound
-        Duration latestLeadDurationInclusive = leadHours.maximum();
+        Duration latestLeadDurationInclusive = leadTimes.maximum();
 
         // Duration by which to increment. Defaults to the period associated
         // with the leadTimesPoolingWindow, otherwise the frequency.
@@ -757,16 +779,23 @@ public class TimeWindowSlicer
                                            .maximum(),
                                 "Cannot determine reference time windows without the 'maximum' for the "
                                 + "'reference_dates'." );
-        Objects.requireNonNull( declaration.referenceDatePools(),
-                                "Cannot determine reference time windows without 'reference_date_pools'." );
 
         // Base window from which to generate a sequence of windows
         TimeWindowOuter baseWindow = TimeWindowSlicer.getOneBigTimeWindow( declaration );
 
-        return TimeWindowSlicer.getTimeWindowsForDateSequence( declaration.referenceDates(),
-                                                               declaration.referenceDatePools(),
-                                                               baseWindow,
-                                                               true );
+        Set<TimeWindowOuter> timeWindows = new HashSet<>();
+
+        for ( TimePools timePool : declaration.referenceDatePools() )
+        {
+            Set<TimeWindowOuter> nextPools =
+                    TimeWindowSlicer.getTimeWindowsForDateSequence( declaration.referenceDates(),
+                                                                    timePool,
+                                                                    baseWindow,
+                                                                    true );
+            timeWindows.addAll( nextPools );
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
     }
 
     /**
@@ -792,16 +821,23 @@ public class TimeWindowSlicer
                                            .maximum(),
                                 "Cannot determine valid time windows without the 'maximum' for the "
                                 + "'valid_dates'." );
-        Objects.requireNonNull( declaration.validDatePools(),
-                                "Cannot determine valid time windows without 'valid_date_pools'." );
 
         // Base window from which to generate a sequence of windows
         TimeWindowOuter baseWindow = TimeWindowSlicer.getOneBigTimeWindow( declaration );
 
-        return TimeWindowSlicer.getTimeWindowsForDateSequence( declaration.validDates(),
-                                                               declaration.validDatePools(),
-                                                               baseWindow,
-                                                               false );
+        Set<TimeWindowOuter> timeWindows = new HashSet<>();
+
+        for ( TimePools timePool : declaration.validDatePools() )
+        {
+            Set<TimeWindowOuter> nextPools =
+                    TimeWindowSlicer.getTimeWindowsForDateSequence( declaration.validDates(),
+                                                                    timePool,
+                                                                    baseWindow,
+                                                                    false );
+            timeWindows.addAll( nextPools );
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
     }
 
     /**

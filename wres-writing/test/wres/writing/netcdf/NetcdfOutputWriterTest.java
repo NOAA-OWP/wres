@@ -105,8 +105,8 @@ class NetcdfOutputWriterTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         EvaluationDeclaration declaration = Mockito.mock( EvaluationDeclaration.class );
 
-        TimePools pools = new TimePools( java.time.Duration.ofHours( 3 ),
-                                         java.time.Duration.ofHours( 3 ) );
+        Set<TimePools> pools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 3 ),
+                                                                     java.time.Duration.ofHours( 3 ) ) );
         LeadTimeInterval leadHours = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                            java.time.Duration.ofHours( 6 ) );
         Mockito.when( declaration.leadTimePools() )

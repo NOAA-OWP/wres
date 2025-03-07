@@ -6,6 +6,7 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -549,30 +550,31 @@ class DeclarationMigratorTest
                                      .aboveMaximum( 9.0 )
                                      .build();
 
-        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
-                                                                     .left( this.observedDataset )
-                                                                     .right( this.predictedDataset )
-                                                                     .featureService( featureServiceEx )
-                                                                     .features( featuresEx )
-                                                                     .featureGroups( featureGroups )
-                                                                     .unitAliases( unitAliases )
-                                                                     .spatialMask( spatialMask )
-                                                                     .timeScale( timeScaleEx )
-                                                                     .pairFrequency( java.time.Duration.ofHours( 7 ) )
-                                                                     .rescaleLenience( TimeScaleLenience.RIGHT )
-                                                                     .leadTimes( leadTimeInterval )
-                                                                     .validDates( validTimeInterval )
-                                                                     .analysisTimes( analysisTimes )
-                                                                     .referenceDates( referenceTimeInterval )
-                                                                     .validDatePools( validTimePools )
-                                                                     .referenceDatePools( referenceTimePools )
-                                                                     .leadTimePools( leadTimePools )
-                                                                     .season( season )
-                                                                     .values( values )
-                                                                     .crossPair( new CrossPair( CrossPairMethod.FUZZY,
-                                                                                                null ) )
-                                                                     .unit( "dogfish" )
-                                                                     .build();
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .featureService( featureServiceEx )
+                                            .features( featuresEx )
+                                            .featureGroups( featureGroups )
+                                            .unitAliases( unitAliases )
+                                            .spatialMask( spatialMask )
+                                            .timeScale( timeScaleEx )
+                                            .pairFrequency( java.time.Duration.ofHours( 7 ) )
+                                            .rescaleLenience( TimeScaleLenience.RIGHT )
+                                            .leadTimes( leadTimeInterval )
+                                            .validDates( validTimeInterval )
+                                            .analysisTimes( analysisTimes )
+                                            .referenceDates( referenceTimeInterval )
+                                            .validDatePools( Collections.singleton( validTimePools ) )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .season( season )
+                                            .values( values )
+                                            .crossPair( new CrossPair( CrossPairMethod.FUZZY,
+                                                                       null ) )
+                                            .unit( "dogfish" )
+                                            .build();
 
         assertEquals( expected, actual );
     }

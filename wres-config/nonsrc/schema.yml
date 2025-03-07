@@ -110,15 +110,21 @@ definitions:
           - "$ref": "#/definitions/EventDetection"
           - "$ref": "#/definitions/DatasetEnum"
       reference_date_pools:
-        "$ref": "#/definitions/TimePoolSequence"
+        anyOf:
+          - "$ref": "#/definitions/TimePoolSequence"
+          - "$ref": "#/definitions/TimePoolSequences"
       valid_dates:
         "$ref": "#/definitions/Dates"
       valid_date_pools:
-        "$ref": "#/definitions/TimePoolSequence"
+        anyOf:
+          - "$ref": "#/definitions/TimePoolSequence"
+          - "$ref": "#/definitions/TimePoolSequences"
       lead_times:
         "$ref": "#/definitions/LeadTimes"
       lead_time_pools:
-        "$ref": "#/definitions/TimePoolSequence"
+        anyOf:
+          - "$ref": "#/definitions/TimePoolSequence"
+          - "$ref": "#/definitions/TimePoolSequences"
       analysis_times:
         "$ref": "#/definitions/AnalysisTimes"
       time_scale:
@@ -298,7 +304,7 @@ definitions:
         "$ref": "#/definitions/TimeShift"
       time_scale:
         "$ref": "#/definitions/TimeScale"
-      # Workaround because the networknt validator sometimes sees these 
+      # Workaround because the networknt validator sometimes sees these
       # strings as integers, but both are interpreted properly post-validation.
       # This property is also defined per source.
       time_zone_offset:
@@ -319,11 +325,11 @@ definitions:
     # Close this schema to unevaluated properties
     unevaluatedProperties: false
 
-  # The baseline-ish datasets  
+  # The baseline-ish datasets
   Baseline:
     title: Observed or predicted dataset.
     "$ref": "#/definitions/BasicDataset"
-    # Close this schema to unevaluated properties 
+    # Close this schema to unevaluated properties
     unevaluatedProperties: false
     properties:
       method:
@@ -394,7 +400,7 @@ definitions:
     may be used to filter the main variates (observed, predicted and baseline) 
     or conduct event detection."
     "$ref": "#/definitions/BasicDataset"
-    # Close this schema to unevaluated properties 
+    # Close this schema to unevaluated properties
     unevaluatedProperties: false
     properties:
       # The minimum value of the covariate
@@ -675,7 +681,7 @@ definitions:
         - "$ref": "#/definitions/Quantiles"
     minItems: 1
     uniqueItems: true
-  
+
   SummaryStatisticsWithDimensions:
     title: Summary statistics to calculate for one or more explicit dimensions.
     description: "Declares the summary statistics to calculate for one or more 
@@ -1005,6 +1011,17 @@ definitions:
     required:
       - period
       - unit
+
+  TimePoolSequences:
+    title: A list of time pool sequences.
+    description: "The temporal boundaries of one or more pool sequences to 
+    evaluate."
+    additionalProperties: false
+    type: array
+    items:
+      "$ref": "#/definitions/TimePoolSequence"
+    minItems: 1
+    uniqueItems: true
 
   SeasonFilter:
     title: A season filter.

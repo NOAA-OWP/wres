@@ -2,6 +2,7 @@ package wres.pipeline.statistics;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -86,18 +87,19 @@ class TestDeclarationGenerator
         Features features = FeaturesBuilder.builder().geometries( Set.of( geometryTuple ) )
                                            .build();
 
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( left )
-                                                                        .right( right )
-                                                                        .features( features )
-                                                                        .referenceDates( referenceDates )
-                                                                        .referenceDatePools( referenceTimePools )
-                                                                        .unit( "CFS" )
-                                                                        .thresholds( thresholds )
-                                                                        .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
-                                                                        .minimumSampleSize( 0 )
-                                                                        .metrics( Set.of() ) // All valid
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .features( features )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
+                                            .unit( "CFS" )
+                                            .thresholds( thresholds )
+                                            .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                            .minimumSampleSize( 0 )
+                                            .metrics( Set.of() ) // All valid
+                                            .build();
         return DeclarationInterpolator.interpolate( declaration, false );
     }
 

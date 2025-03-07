@@ -2,6 +2,7 @@ package wres.pipeline.pooling;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -78,15 +79,16 @@ class PoolFactoryTest
                                       .variable( VariableBuilder.builder().name( "STREAMFLOW" )
                                                                 .build() )
                                       .build();
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .unit( CFS )
-                                                                        .leadTimes( leadTimes )
-                                                                        .leadTimePools( leadTimePools )
-                                                                        .referenceDates( referenceDates )
-                                                                        .referenceDatePools( referenceTimePools )
-                                                                        .left( left )
-                                                                        .right( right )
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
 
         Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
@@ -138,13 +140,14 @@ class PoolFactoryTest
                                       .variable( VariableBuilder.builder().name( "STREAMFLOW" )
                                                                 .build() )
                                       .build();
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .unit( CFS )
-                                                                        .leadTimes( leadTimes )
-                                                                        .leadTimePools( leadTimePools )
-                                                                        .left( left )
-                                                                        .right( right )
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
 
         Evaluation evaluationDescription = MessageFactory.parse( declaration );
 

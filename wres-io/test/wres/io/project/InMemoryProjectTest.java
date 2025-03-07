@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -180,10 +181,10 @@ class InMemoryProjectTest
                                                      .minimum( Instant.parse( "2000-01-01T00:00:00Z" ) )
                                                      .maximum( Instant.parse( "2040-01-01T00:00:00Z" ) )
                                                      .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
         Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
                                                              .setLeft( Geometry.newBuilder().setName( FEATURE_NAME ) )
                                                              .setRight( Geometry.newBuilder().setName( FEATURE_NAME ) )

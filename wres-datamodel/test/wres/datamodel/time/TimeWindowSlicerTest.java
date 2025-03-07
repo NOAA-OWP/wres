@@ -2,6 +2,7 @@ package wres.datamodel.time;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -487,9 +488,9 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 0 ) )
                                                             .maximum( Duration.ofHours( 24 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 1 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 1 ) )
+                                                                              .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
                                                                         .leadTimePools( leadTimePools )
@@ -575,9 +576,9 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 0 ) )
                                                             .maximum( Duration.ofHours( 48 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 24 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 24 ) )
+                                                                              .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
                                                                         .leadTimePools( leadTimePools )
@@ -619,18 +620,19 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 0 ) )
                                                             .maximum( Duration.ofHours( 40 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 23 ) )
-                                                  .frequency( Duration.ofHours( 17 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 23 ) )
+                                                                              .frequency( Duration.ofHours( 17 ) )
+                                                                              .build() );
+
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( INSTANT_NINE ) )
                                                          .maximum( Instant.parse( INSTANT_TEN ) )
                                                          .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
                                                                         .leadTimePools( leadTimePools )
@@ -775,9 +777,9 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 1 ) )
                                                             .maximum( Duration.ofHours( 48 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 24 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 24 ) )
+                                                                              .build() );
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( INSTANT_NINE ) )
                                                          .maximum( Instant.parse( INSTANT_TEN ) )
@@ -871,17 +873,17 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 0 ) )
                                                             .maximum( Duration.ofHours( 18 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 18 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 18 ) )
+                                                                              .build() );
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( INSTANT_ONE ) )
                                                          .maximum( Instant.parse( INSTANT_TWO ) )
                                                          .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 1 ) )
-                                                       .frequency( Duration.ofHours( 1 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 1 ) )
+                                                                                   .frequency( Duration.ofHours( 1 ) )
+                                                                                   .build() );
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .minimum( Instant.parse( INSTANT_ONE ) )
                                                      .maximum( Instant.parse( INSTANT_THREE ) )
@@ -1140,17 +1142,17 @@ class TimeWindowSlicerTest
                       actualTimeWindows );
 
         // Declare the same version of this test with implicit frequency
-        TimePools referenceTimePoolsNoFreq = TimePoolsBuilder.builder()
-                                                             .period( Duration.ofHours( 1 ) )
-                                                             .build();
-        EvaluationDeclaration declarationNoFreq = EvaluationDeclarationBuilder.builder()
-                                                                              .leadTimes( leadTimes )
-                                                                              .leadTimePools( leadTimePools )
-                                                                              .referenceDates( referenceDates )
-                                                                              .referenceDatePools(
-                                                                                      referenceTimePoolsNoFreq )
-                                                                              .validDates( validDates )
-                                                                              .build();
+        Set<TimePools> referenceTimePoolsNoFreq = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                         .period( Duration.ofHours( 1 ) )
+                                                                                         .build() );
+        EvaluationDeclaration declarationNoFreq =
+                EvaluationDeclarationBuilder.builder()
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( leadTimePools )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( referenceTimePoolsNoFreq )
+                                            .validDates( validDates )
+                                            .build();
 
         // Generate the actual time windows for the implicit test
         Set<TimeWindowOuter> actualTimeWindowsNoFreq = TimeWindowSlicer.getTimeWindows( declarationNoFreq );
@@ -1236,10 +1238,10 @@ class TimeWindowSlicerTest
                                                          .minimum( Instant.parse( INSTANT_NINE ) )
                                                          .maximum( Instant.parse( INSTANT_TEN ) )
                                                          .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
                                                                         .referenceDates( referenceDates )
@@ -1336,9 +1338,9 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 43 ) )
                                                             .maximum( Duration.ofHours( 43 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 0 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ZERO )
+                                                                              .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
                                                                         .leadTimePools( leadTimePools )
@@ -1374,10 +1376,10 @@ class TimeWindowSlicerTest
                                                      .minimum( Instant.parse( INSTANT_ONE ) )
                                                      .maximum( Instant.parse( INSTANT_TWO ) )
                                                      .build();
-        TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( Duration.ofHours( 13 ) )
-                                                   .frequency( Duration.ofHours( 7 ) )
-                                                   .build();
+        Set<TimePools> validTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( Duration.ofHours( 13 ) )
+                                                                               .frequency( Duration.ofHours( 7 ) )
+                                                                               .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .validDates( validDates )
                                                                         .validDatePools( validTimePools )
@@ -1411,18 +1413,18 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 19 ) )
                                                             .maximum( Duration.ofHours( 34 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 8 ) )
-                                                  .frequency( Duration.ofHours( 7 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 8 ) )
+                                                                              .frequency( Duration.ofHours( 7 ) )
+                                                                              .build() );
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .minimum( Instant.parse( INSTANT_ONE ) )
                                                      .maximum( Instant.parse( INSTANT_TWO ) )
                                                      .build();
-        TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( Duration.ofHours( 13 ) )
-                                                   .frequency( Duration.ofHours( 7 ) )
-                                                   .build();
+        Set<TimePools> validTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( Duration.ofHours( 13 ) )
+                                                                               .frequency( Duration.ofHours( 7 ) )
+                                                                               .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .validDates( validDates )
                                                                         .validDatePools( validTimePools )
@@ -1477,26 +1479,26 @@ class TimeWindowSlicerTest
                                                             .minimum( Duration.ofHours( 19 ) )
                                                             .maximum( Duration.ofHours( 34 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 8 ) )
-                                                  .frequency( Duration.ofHours( 7 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 8 ) )
+                                                                              .frequency( Duration.ofHours( 7 ) )
+                                                                              .build() );
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( INSTANT_TWO ) )
                                                          .maximum( Instant.parse( INSTANT_THREE ) )
                                                          .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 17 ) )
-                                                       .frequency( Duration.ofHours( 23 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 17 ) )
+                                                                                   .frequency( Duration.ofHours( 23 ) )
+                                                                                   .build() );
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .minimum( Instant.parse( INSTANT_ONE ) )
                                                      .maximum( Instant.parse( INSTANT_TWO ) )
                                                      .build();
-        TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( Duration.ofHours( 13 ) )
-                                                   .frequency( Duration.ofHours( 7 ) )
-                                                   .build();
+        Set<TimePools> validTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( Duration.ofHours( 13 ) )
+                                                                               .frequency( Duration.ofHours( 7 ) )
+                                                                               .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .validDates( validDates )
                                                                         .validDatePools( validTimePools )
@@ -1544,6 +1546,173 @@ class TimeWindowSlicerTest
                                          .map( TimeWindowOuter::of )
                                          .collect( Collectors.toSet() ),
                       actualTimeWindows );
+    }
+
+    @Test
+    void testGetTimeWindowsWithTwoSequencesOfLeadTimePoolsReturnsFourWindows()
+    {
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 1 ) )
+                                                            .maximum( Duration.ofHours( 5 ) )
+                                                            .build();
+        TimePools leadTimePoolsOne = TimePoolsBuilder.builder()
+                                                     .period( Duration.ofHours( 1 ) )
+                                                     .frequency( Duration.ofHours( 3 ) )
+                                                     .build();
+        TimePools leadTimePoolsTwo = TimePoolsBuilder.builder()
+                                                     .period( Duration.ofHours( 1 ) )
+                                                     .frequency( Duration.ofHours( 2 ) )
+                                                     .build();
+
+        Set<TimePools> leadTimePools = Set.of( leadTimePoolsOne, leadTimePoolsTwo );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .leadTimes( leadTimes )
+                                                                        .leadTimePools( leadTimePools )
+                                                                        .build();
+
+        // Generate the actual windows
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.getTimeWindows( declaration );
+
+        TimeWindow oneExpected = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ), Duration.ofHours( 2 ) );
+        TimeWindow twoExpected = MessageUtilities.getTimeWindow( Duration.ofHours( 3 ), Duration.ofHours( 4 ) );
+        TimeWindow threeExpected = MessageUtilities.getTimeWindow( Duration.ofHours( 4 ), Duration.ofHours( 5 ) );
+
+        Set<TimeWindow> expectedInner = Set.of( oneExpected, twoExpected, threeExpected );
+        Set<TimeWindowOuter> expected = expectedInner.stream()
+                                                     .map( TimeWindowOuter::of )
+                                                     .collect( Collectors.toSet() );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeWindowsWithTwoSequencesOfLeadTimePoolsAndValidDatePoolsReturnsTwelveWindows()
+    {
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 4 ) )
+                                                            .build();
+        TimePools leadTimePoolOne = TimePoolsBuilder.builder()
+                                                    .period( Duration.ofHours( 2 ) )
+                                                    .build();
+        TimePools leadTimePoolTwo = TimePoolsBuilder.builder()
+                                                    .period( Duration.ofHours( 3 ) )
+                                                    .build();
+
+        Set<TimePools> leadTimePools = Set.of( leadTimePoolOne, leadTimePoolTwo );
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( Instant.parse( INSTANT_ONE ) )
+                                                     .maximum( Instant.parse( INSTANT_TWO ) )
+                                                     .build();
+        TimePools validDatePoolOne = TimePoolsBuilder.builder()
+                                                     .period( Duration.ofHours( 10 ) )
+                                                     .build();
+        TimePools validDatePoolTwo = TimePoolsBuilder.builder()
+                                                     .period( Duration.ofHours( 9 ) )
+                                                     .build();
+
+        Set<TimePools> validTimePools = Set.of( validDatePoolOne, validDatePoolTwo );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .validDates( validDates )
+                                                                        .validDatePools( validTimePools )
+                                                                        .leadTimes( leadTimes )
+                                                                        .leadTimePools( leadTimePools )
+                                                                        .build();
+
+        // Generate the actual windows
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.getTimeWindows( declaration );
+
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( INSTANT_ONE ),
+                                                                 Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 2 ) );
+        TimeWindow expectedTwo = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 2 ) );
+        TimeWindow expectedThree = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                   Instant.MAX,
+                                                                   Instant.parse( INSTANT_ONE ),
+                                                                   Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                   Duration.ofHours( 0 ),
+                                                                   Duration.ofHours( 2 ) );
+        TimeWindow expectedFour = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                  Instant.MAX,
+                                                                  Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                  Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                                  Duration.ofHours( 0 ),
+                                                                  Duration.ofHours( 2 ) );
+        TimeWindow expectedFive = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                  Instant.MAX,
+                                                                  Instant.parse( INSTANT_ONE ),
+                                                                  Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                  Duration.ofHours( 2 ),
+                                                                  Duration.ofHours( 4 ) );
+        TimeWindow expectedSix = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 2 ),
+                                                                 Duration.ofHours( 4 ) );
+        TimeWindow expectedSeven = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                   Instant.MAX,
+                                                                   Instant.parse( INSTANT_ONE ),
+                                                                   Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                   Duration.ofHours( 2 ),
+                                                                   Duration.ofHours( 4 ) );
+        TimeWindow expectedEight = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                   Instant.MAX,
+                                                                   Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                   Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                                   Duration.ofHours( 2 ),
+                                                                   Duration.ofHours( 4 ) );
+        TimeWindow expectedNine = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                  Instant.MAX,
+                                                                  Instant.parse( INSTANT_ONE ),
+                                                                  Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                  Duration.ofHours( 0 ),
+                                                                  Duration.ofHours( 3 ) );
+        TimeWindow expectedTen = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                 Instant.MAX,
+                                                                 Instant.parse( "2017-08-08T10:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                 Duration.ofHours( 0 ),
+                                                                 Duration.ofHours( 3 ) );
+        TimeWindow expectedEleven = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                    Instant.MAX,
+                                                                    Instant.parse( INSTANT_ONE ),
+                                                                    Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                    Duration.ofHours( 0 ),
+                                                                    Duration.ofHours( 3 ) );
+        TimeWindow expectedTwelve = MessageUtilities.getTimeWindow( Instant.MIN,
+                                                                    Instant.MAX,
+                                                                    Instant.parse( "2017-08-08T09:00:00Z" ),
+                                                                    Instant.parse( "2017-08-08T18:00:00Z" ),
+                                                                    Duration.ofHours( 0 ),
+                                                                    Duration.ofHours( 3 ) );
+
+        Set<TimeWindow> expectedInner = Set.of( expectedOne,
+                                                expectedTwo,
+                                                expectedThree,
+                                                expectedFour,
+                                                expectedFive,
+                                                expectedSix,
+                                                expectedSeven,
+                                                expectedEight,
+                                                expectedNine,
+                                                expectedTen,
+                                                expectedEleven,
+                                                expectedTwelve );
+
+        Set<TimeWindowOuter> expected = expectedInner.stream()
+                                                     .map( TimeWindowOuter::of )
+                                                     .collect( Collectors.toSet() );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -1602,9 +1771,9 @@ class TimeWindowSlicerTest
     @Test
     void testGetTimeWindowsThrowsNullPointerExceptionWhenLeadTimesExpectedButMissing()
     {
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 18 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 18 ) )
+                                                                              .build() );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimePools( leadTimePools )
@@ -1628,9 +1797,9 @@ class TimeWindowSlicerTest
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .maximum( Duration.ofHours( 40 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 18 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 18 ) )
+                                                                              .build() );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
@@ -1655,9 +1824,9 @@ class TimeWindowSlicerTest
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )
                                                             .build();
-        TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( Duration.ofHours( 18 ) )
-                                                  .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 18 ) )
+                                                                              .build() );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .leadTimes( leadTimes )
@@ -1679,10 +1848,10 @@ class TimeWindowSlicerTest
     @Test
     void testGetTimeWindowsThrowsNullPointerExceptionWhenReferenceDatesExpectedButMissing()
     {
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .referenceDatePools( referenceTimePools )
                                                                         .build();
@@ -1705,10 +1874,10 @@ class TimeWindowSlicerTest
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .maximum( Instant.parse( INSTANT_ONE ) )
                                                          .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .referenceDates( referenceDates )
@@ -1733,10 +1902,10 @@ class TimeWindowSlicerTest
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( INSTANT_ONE ) )
                                                          .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .referenceDates( referenceDates )
@@ -1753,10 +1922,10 @@ class TimeWindowSlicerTest
     @Test
     void testGetTimeWindowsThrowsNullPointerExceptionWhenValidDatesExpectedButMissing()
     {
-        TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( Duration.ofHours( 13 ) )
-                                                   .frequency( Duration.ofHours( 7 ) )
-                                                   .build();
+        Set<TimePools> validTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( Duration.ofHours( 13 ) )
+                                                                               .frequency( Duration.ofHours( 7 ) )
+                                                                               .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .validDatePools( validTimePools )
                                                                         .build();
@@ -1774,10 +1943,10 @@ class TimeWindowSlicerTest
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .maximum( Instant.parse( INSTANT_ONE ) )
                                                      .build();
-        TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( Duration.ofHours( 13 ) )
-                                                   .frequency( Duration.ofHours( 7 ) )
-                                                   .build();
+        Set<TimePools> validTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( Duration.ofHours( 13 ) )
+                                                                               .frequency( Duration.ofHours( 7 ) )
+                                                                               .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .validDates( validDates )
                                                                         .validDatePools( validTimePools )
@@ -1796,10 +1965,10 @@ class TimeWindowSlicerTest
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .minimum( Instant.parse( INSTANT_ONE ) )
                                                      .build();
-        TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( Duration.ofHours( 13 ) )
-                                                   .frequency( Duration.ofHours( 7 ) )
-                                                   .build();
+        Set<TimePools> validTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( Duration.ofHours( 13 ) )
+                                                                               .frequency( Duration.ofHours( 7 ) )
+                                                                               .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .validDates( validDates )
                                                                         .validDatePools( validTimePools )
