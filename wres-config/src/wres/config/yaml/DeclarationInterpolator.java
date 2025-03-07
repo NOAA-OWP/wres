@@ -1115,14 +1115,16 @@ public class DeclarationInterpolator
         Outputs.GraphicFormat.Builder newOptions = options.toBuilder();
 
         // Reference date pools?
-        if ( ( Objects.nonNull( builder.referenceDatePools() )
+        if ( ( !builder.referenceDatePools()
+                       .isEmpty()
                || DeclarationInterpolator.hasExplicitReferenceDatePools( builder.timePools() ) )
              && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS );
         }
         // Valid date pools?
-        else if ( ( Objects.nonNull( builder.validDatePools() )
+        else if ( ( !builder.validDatePools()
+                           .isEmpty()
                     || Objects.nonNull( builder.eventDetection() )
                     || DeclarationInterpolator.hasExplicitValidDatePools( builder.timePools() ) )
                   && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )

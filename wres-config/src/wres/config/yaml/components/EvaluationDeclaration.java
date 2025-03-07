@@ -95,11 +95,11 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonDeserialize( using = TimeWindowDeserializer.class )
                                      @JsonProperty( "time_pools" ) Set<TimeWindow> timePools,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
-                                     @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
+                                     @JsonProperty( "reference_date_pools" ) Set<TimePools> referenceDatePools,
                                      @JsonProperty( "valid_dates" ) TimeInterval validDates,
-                                     @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
+                                     @JsonProperty( "valid_date_pools" ) Set<TimePools> validDatePools,
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
-                                     @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
+                                     @JsonProperty( "lead_time_pools" ) Set<TimePools> leadTimePools,
                                      @JsonProperty( "event_detection" ) EventDetection eventDetection,
                                      @JsonProperty( "analysis_times" ) AnalysisTimes analysisTimes,
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
@@ -189,59 +189,22 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      */
     public EvaluationDeclaration
     {
-        if ( Objects.isNull( metrics ) )
-        {
-            metrics = this.emptyOrUnmodifiableSet( metrics, "metrics" );
-        }
-
-        if ( Objects.isNull( summaryStatistics ) )
-        {
-            summaryStatistics = this.emptyOrUnmodifiableSet( summaryStatistics, "summary statistics" );
-        }
-
-        if ( Objects.isNull( unitAliases ) )
-        {
-            unitAliases = this.emptyOrUnmodifiableSet( unitAliases, "unit aliases" );
-        }
-
-        if ( Objects.isNull( timePools ) )
-        {
-            timePools = this.emptyOrUnmodifiableSet( timePools, "time pools" );
-        }
+        metrics = this.emptyOrUnmodifiableSet( metrics, "metrics" );
+        unitAliases = this.emptyOrUnmodifiableSet( unitAliases, "unit aliases" );
+        timePools = this.emptyOrUnmodifiableSet( timePools, "time pools" );
+        probabilityThresholds = this.emptyOrUnmodifiableSet( probabilityThresholds, "probability thresholds" );
+        thresholds = this.emptyOrUnmodifiableSet( thresholds, "thresholds" );
+        classifierThresholds = this.emptyOrUnmodifiableSet( classifierThresholds, "classifier thresholds" );
+        thresholdSets = this.emptyOrUnmodifiableSet( thresholdSets, "threshold sets" );
+        thresholdSources = this.emptyOrUnmodifiableSet( thresholdSources, "threshold sources" );
+        summaryStatistics = this.emptyOrUnmodifiableSet( summaryStatistics, "summary statistics" );
+        validDatePools = this.emptyOrUnmodifiableSet( validDatePools, "valid date pools" );
+        referenceDatePools = this.emptyOrUnmodifiableSet( referenceDatePools, "reference date pools" );
+        leadTimePools = this.emptyOrUnmodifiableSet( leadTimePools, "lead time pools" );
 
         if ( Objects.isNull( rescaleLenience ) )
         {
             rescaleLenience = TimeScaleLenience.NONE;
-        }
-
-        if ( Objects.isNull( probabilityThresholds ) )
-        {
-            probabilityThresholds = this.emptyOrUnmodifiableSet( probabilityThresholds, "probability thresholds" );
-        }
-
-        if ( Objects.isNull( thresholds ) )
-        {
-            thresholds = this.emptyOrUnmodifiableSet( thresholds, "thresholds" );
-        }
-
-        if ( Objects.isNull( classifierThresholds ) )
-        {
-            classifierThresholds = this.emptyOrUnmodifiableSet( classifierThresholds, "classifier thresholds" );
-        }
-
-        if ( Objects.isNull( thresholdSets ) )
-        {
-            thresholdSets = this.emptyOrUnmodifiableSet( thresholdSets, "threshold sets" );
-        }
-
-        if ( Objects.isNull( thresholdSources ) )
-        {
-            thresholdSources = this.emptyOrUnmodifiableSet( thresholdSources, "threshold sources" );
-        }
-
-        if ( Objects.isNull( summaryStatistics ) )
-        {
-            summaryStatistics = this.emptyOrUnmodifiableSet( summaryStatistics, "summary statistics" );
         }
 
         if ( Objects.isNull( durationFormat ) )

@@ -631,17 +631,17 @@ class DeclarationValidatorTest
                                       .type( DataType.SIMULATIONS )
                                       .build();
 
+        Set<TimePools> pools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
+                                                                     null ) );
         EvaluationDeclaration declaration
                 = EvaluationDeclarationBuilder.builder()
                                               .left( left )
                                               .right( right )
                                               .referenceDates( new TimeInterval( Instant.MIN, Instant.MAX ) )
-                                              .referenceDatePools( new TimePools( java.time.Duration.ofHours( 1 ),
-                                                                                  null ) )
+                                              .referenceDatePools( pools )
                                               .leadTimes( new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                                                 java.time.Duration.ofHours( 1 ) ) )
-                                              .leadTimePools( new TimePools( java.time.Duration.ofHours( 1 ),
-                                                                             null ) )
+                                              .leadTimePools( pools )
                                               .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -935,14 +935,14 @@ class DeclarationValidatorTest
     @Test
     void testMissingTimeIntervalsWithTimePoolsResultsInErrors()
     {
-        TimePools timePool = new TimePools( java.time.Duration.ofHours( 1 ),
-                                            java.time.Duration.ofHours( 1 ) );
+        Set<TimePools> timePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
+                                                                         java.time.Duration.ofHours( 1 ) ) );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
-                                                                        .validDatePools( timePool )
-                                                                        .leadTimePools( timePool )
-                                                                        .referenceDatePools( timePool )
+                                                                        .validDatePools( timePools )
+                                                                        .leadTimePools( timePools )
+                                                                        .referenceDatePools( timePools )
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
@@ -964,8 +964,8 @@ class DeclarationValidatorTest
     @Test
     void testInvalidTimePoolsResultsInErrors()
     {
-        TimePools timePool = new TimePools( java.time.Duration.ofHours( 1 ),
-                                            null );
+        Set<TimePools> timePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
+                                                                         null ) );
         TimeInterval interval = new TimeInterval( Instant.parse( "2047-01-01T00:00:00Z" ),
                                                   Instant.parse( "2047-01-01T00:01:00Z" ) );
         LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofMinutes( 1 ),
@@ -976,9 +976,9 @@ class DeclarationValidatorTest
                                                                         .validDates( interval )
                                                                         .referenceDates( interval )
                                                                         .leadTimes( leadInterval )
-                                                                        .validDatePools( timePool )
-                                                                        .leadTimePools( timePool )
-                                                                        .referenceDatePools( timePool )
+                                                                        .validDatePools( timePools )
+                                                                        .leadTimePools( timePools )
+                                                                        .referenceDatePools( timePools )
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
@@ -1214,16 +1214,16 @@ class DeclarationValidatorTest
     {
         Metric metric = new Metric( MetricConstants.RELIABILITY_DIAGRAM, null );
         Set<Metric> metrics = Set.of( metric );
-        TimePools timePool = new TimePools( java.time.Duration.ofHours( 3 ),
-                                            java.time.Duration.ofHours( 1 ) );
+        Set<TimePools> timePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 3 ),
+                                                                         java.time.Duration.ofHours( 1 ) ) );
         Outputs formats = Outputs.newBuilder()
                                  .setCsv( Outputs.CsvFormat.getDefaultInstance() )
                                  .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
-                                                                        .validDatePools( timePool )
-                                                                        .referenceDatePools( timePool )
+                                                                        .validDatePools( timePools )
+                                                                        .referenceDatePools( timePools )
                                                                         .metrics( metrics )
                                                                         .formats( new Formats( formats ) )
                                                                         .build();
@@ -2636,9 +2636,9 @@ class DeclarationValidatorTest
         EventDetection eventDetection = EventDetectionBuilder.builder()
                                                              .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
                                                              .build();
-        TimePools validDatePools = TimePoolsBuilder.builder()
-                                                   .period( java.time.Duration.ofHours( 1 ) )
-                                                   .build();
+        Set<TimePools> validDatePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                               .period( java.time.Duration.ofHours( 1 ) )
+                                                                               .build() );
         Set<TimeWindow> timePools = Set.of( MessageUtilities.getTimeWindow() );
         EvaluationDeclaration declaration
                 = EvaluationDeclarationBuilder.builder()
@@ -2911,8 +2911,8 @@ class DeclarationValidatorTest
     @Test
     void testCombinationOfExplicitAndGeneratedPoolsProducesWarning()
     {
-        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 1 ),
-                                                 java.time.Duration.ofHours( 2 ) );
+        Set<TimePools> leadTimePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
+                                                                             java.time.Duration.ofHours( 2 ) ) );
 
         TimeWindow timeWindow = TimeWindow.newBuilder()
                                           .build();

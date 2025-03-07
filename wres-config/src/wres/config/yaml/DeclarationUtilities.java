@@ -1262,7 +1262,8 @@ public class DeclarationUtilities
         }
 
         // Reference time pools?
-        if ( Objects.nonNull( builder.referenceDatePools() ) )
+        if (!builder.referenceDatePools()
+                    .isEmpty() )
         {
             forecastDeclaration.add( "Discovered 'reference_date_pools'." );
         }
@@ -1274,7 +1275,8 @@ public class DeclarationUtilities
         }
 
         // Lead time pools?
-        if ( Objects.nonNull( builder.leadTimePools() ) )
+        if ( !builder.leadTimePools()
+                     .isEmpty() )
         {
             forecastDeclaration.add( "Discovered 'lead_time_pool'." );
         }

@@ -2190,34 +2190,38 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> timePoolsAreValid( EvaluationDeclaration declaration )
     {
-        List<EvaluationStatusEvent> validPools = DeclarationValidator.timePoolIsValid( declaration.validDatePools(),
-                                                                                       declaration.validDates(),
-                                                                                       "valid_date_pools",
-                                                                                       "valid_dates" );
+        List<EvaluationStatusEvent> validPools = DeclarationValidator.timePoolsAreValid( declaration.validDatePools(),
+                                                                                         declaration.validDates(),
+                                                                                         "valid_date_pools",
+                                                                                         "valid_dates" );
         List<EvaluationStatusEvent> events = new ArrayList<>( validPools );
 
-        List<EvaluationStatusEvent> referencePools = DeclarationValidator.timePoolIsValid( declaration.validDatePools(),
-                                                                                           declaration.validDates(),
-                                                                                           "reference_date_pools",
-                                                                                           "reference_dates" );
+        List<EvaluationStatusEvent> referencePools =
+                DeclarationValidator.timePoolsAreValid( declaration.validDatePools(),
+                                                        declaration.validDates(),
+                                                        "reference_date_pools",
+                                                        "reference_dates" );
         events.addAll( referencePools );
 
         List<EvaluationStatusEvent> leadTimePools =
-                DeclarationValidator.leadTimePoolIsValid( declaration.leadTimePools(),
-                                                          declaration.leadTimes() );
+                DeclarationValidator.leadTimePoolsAreValid( declaration.leadTimePools(),
+                                                            declaration.leadTimes() );
         events.addAll( leadTimePools );
 
         // Add a warning if a pool sequence is combined with explicitly generated pools
         Set<String> generated = new TreeSet<>();
-        if ( Objects.nonNull( declaration.validDatePools() ) )
+        if ( !declaration.validDatePools()
+                         .isEmpty() )
         {
             generated.add( "'valid_date_pools'" );
         }
-        if ( Objects.nonNull( declaration.referenceDatePools() ) )
+        if ( !declaration.referenceDatePools()
+                         .isEmpty() )
         {
             generated.add( "'reference_date_pools'" );
         }
-        if ( Objects.nonNull( declaration.leadTimePools() ) )
+        if ( !declaration.leadTimePools()
+                         .isEmpty() )
         {
             generated.add( "'lead_time_pools'" );
         }
@@ -2267,7 +2271,8 @@ public class DeclarationValidator
         events.addAll( forecasts );
 
         // Error when also declaring valid date pools
-        if ( Objects.nonNull( declaration.validDatePools() ) )
+        if ( !declaration.validDatePools()
+                         .isEmpty() )
         {
             EvaluationStatusEvent error
                     = EvaluationStatusEvent.newBuilder()
@@ -2335,7 +2340,8 @@ public class DeclarationValidator
         }
 
         // Warning when declaring other types of explicit pool
-        if ( Objects.nonNull( declaration.leadTimePools() ) )
+        if ( !declaration.leadTimePools()
+                         .isEmpty() )
         {
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
@@ -2349,7 +2355,8 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
         }
-        if ( Objects.nonNull( declaration.referenceDatePools() ) )
+        if ( !declaration.referenceDatePools()
+                         .isEmpty() )
         {
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
@@ -3454,8 +3461,10 @@ public class DeclarationValidator
         {
             Outputs outputs = formats.outputs();
             if ( DeclarationValidator.hasNonPoolingWindowGraphicsShape( outputs )
-                 && ( Objects.nonNull( declaration.validDatePools() )
-                      || Objects.nonNull( declaration.referenceDatePools() ) ) )
+                 && ( !declaration.validDatePools()
+                                  .isEmpty()
+                      || !declaration.referenceDatePools()
+                                     .isEmpty() ) )
             {
                 String scope = DeclarationValidator.getScopeOfPoolingDeclaration( declaration );
 
@@ -3515,12 +3524,15 @@ public class DeclarationValidator
      */
     private static String getScopeOfPoolingDeclaration( EvaluationDeclaration declaration )
     {
-        if ( Objects.nonNull( declaration.validDatePools() )
-             && Objects.nonNull( declaration.referenceDatePools() ) )
+        if ( !declaration.validDatePools()
+                         .isEmpty()
+             && !declaration.referenceDatePools()
+                            .isEmpty() )
         {
             return "'valid_date_pools and reference_date_pools'";
         }
-        else if ( Objects.nonNull( declaration.validDatePools() ) )
+        else if ( !declaration.validDatePools()
+                              .isEmpty() )
         {
             return "'valid_date_pools'";
         }
@@ -3725,7 +3737,8 @@ public class DeclarationValidator
                                                       .filter( filter )
                                                       .collect( Collectors.toSet() );
 
-            if ( Objects.nonNull( declaration.validDatePools() ) && !metrics.isEmpty() )
+            if ( !declaration.validDatePools()
+                             .isEmpty() && !metrics.isEmpty() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -3741,7 +3754,8 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            if ( Objects.nonNull( declaration.referenceDatePools() ) && !metrics.isEmpty() )
+            if ( !declaration.referenceDatePools()
+                             .isEmpty() && !metrics.isEmpty() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -4243,20 +4257,20 @@ public class DeclarationValidator
 
     /**
      * Checks that the time pools are valid.
-     * @param pools the time pools
+     * @param timePools the time pools
      * @param interval interval the interval
      * @param poolName the pool name to help with messaging
      * @param intervalName the interval name to help with messaging
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> timePoolIsValid( TimePools pools,
-                                                                TimeInterval interval,
-                                                                String poolName,
-                                                                String intervalName )
+    private static List<EvaluationStatusEvent> timePoolsAreValid( Set<TimePools> timePools,
+                                                                  TimeInterval interval,
+                                                                  String poolName,
+                                                                  String intervalName )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.nonNull( pools ) )
+        for ( TimePools pools : timePools )
         {
             // Time interval must be fully declared
             if ( Objects.isNull( interval )
@@ -4318,16 +4332,16 @@ public class DeclarationValidator
 
     /**
      * Checks that the lead time pools are valid.
-     * @param pools the time pools
+     * @param timePools the time pools
      * @param interval interval the interval
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> leadTimePoolIsValid( TimePools pools,
-                                                                    LeadTimeInterval interval )
+    private static List<EvaluationStatusEvent> leadTimePoolsAreValid( Set<TimePools> timePools,
+                                                                      LeadTimeInterval interval )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.nonNull( pools ) )
+        for ( TimePools pool : timePools )
         {
             // Time interval must be fully declared
             if ( Objects.isNull( interval )
@@ -4348,7 +4362,7 @@ public class DeclarationValidator
             else
             {
                 // Create the elements necessary to increment them
-                Duration period = pools.period();
+                Duration period = pool.period();
                 Duration start = interval.minimum();
                 Duration end = interval.maximum();
 
