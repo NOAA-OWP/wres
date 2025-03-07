@@ -41,14 +41,14 @@
 # Attempt to auto-detect the versions needed.
 all_versions=$( scripts/versions.sh )
 
-overall_version=20250212-84779f9-dev
-tasker_version=20250212-84779f9-dev
+overall_version=$( echo "$all_versions" | grep "^Main version" | cut -d' ' -f3 )
+tasker_version=$( echo "$all_versions" | grep "^wres-tasker version" | cut -d' ' -f3 )
 broker_version=$( echo "$all_versions" | grep "^wres-broker version" | cut -d' ' -f3 )
 redis_version=$( echo "$all_versions" | grep "^wres-redis version" | cut -d' ' -f3 )
-wres_worker_shim_version=20250205-3d690e0-dev
+wres_worker_shim_version=$( echo "$all_versions" | grep "^wres-worker version" | cut -d' ' -f3 )
 eventsbroker_version=$( echo "$all_versions" | grep "^wres-eventsbroker version" | cut -d' ' -f3 )
-graphics_version=20250212-84779f9-dev
-writing_version=20250212-84779f9-dev
+graphics_version=$( echo "$all_versions" | grep "^wres-vis version" | cut -d' ' -f3 )
+writing_version=$( echo "$all_versions" | grep "^wres-writing version" | cut -d' ' -f3 )
 
 # These will be the zip ids, as distinct from the previously-found image ids.
 wres_core_version=$overall_version
