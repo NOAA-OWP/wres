@@ -78,8 +78,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         Objects.requireNonNull( statistics, "Specify non-null input data when writing diagram outputs." );
 
         EvaluationDeclaration declaration = super.getDeclaration();
-        if ( Objects.nonNull( declaration.validDatePools() )
-             || Objects.nonNull( declaration.referenceDatePools() ) )
+        if ( !declaration.validDatePools()
+                         .isEmpty()
+             || !declaration.referenceDatePools()
+                            .isEmpty() )
         {
             LOGGER.warn( "The legacy CSV format does not support diagram metrics alongside pooling window declaration. "
                          + "As such, {} diagram statistics will not be written to the legacy CSV format. Please "
@@ -493,7 +495,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                             List<DiagramStatisticOuter> statistics )
     {
         // Pooling windows
-        if ( Objects.nonNull( declaration.validDatePools() )
+        if ( !declaration.validDatePools()
+                         .isEmpty()
              || Objects.nonNull( declaration.eventDetection() )
              || !declaration.timePools()
                             .isEmpty() )

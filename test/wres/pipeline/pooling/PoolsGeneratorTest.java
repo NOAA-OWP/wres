@@ -2,6 +2,7 @@ package wres.pipeline.pooling;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -99,15 +100,16 @@ class PoolsGeneratorTest
                                       .variable( VariableBuilder.builder().name( "STREAMFLOW" )
                                                                 .build() )
                                       .build();
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .unit( CFS )
-                                                                        .leadTimes( leadTimes )
-                                                                        .leadTimePools( leadTimePools )
-                                                                        .referenceDates( referenceDates )
-                                                                        .referenceDatePools( referenceTimePools )
-                                                                        .left( left )
-                                                                        .right( right )
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
 
         Geometry feature = MessageUtilities.getGeometry( "FAKE2" );
         GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( feature, feature, null );
@@ -200,9 +202,9 @@ class PoolsGeneratorTest
                 EvaluationDeclarationBuilder.builder()
                                             .unit( CFS )
                                             .leadTimes( leadTimes )
-                                            .leadTimePools( leadTimePools )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
                                             .referenceDates( referenceDates )
-                                            .referenceDatePools( referenceTimePools )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
                                             .left( left )
                                             .right( right )
                                             .build();

@@ -399,7 +399,7 @@ public class DeclarationMigrator
         if ( Objects.nonNull( pair.getIssuedDatesPoolingWindow() ) )
         {
             TimePools referenceTimePools = DeclarationMigrator.migrateTimePools( pair.getIssuedDatesPoolingWindow() );
-            builder.referenceDatePools( referenceTimePools );
+            builder.referenceDatePools( Collections.singleton( referenceTimePools ) );
             LOGGER.debug( "Migrated reference time pools: {}.", referenceTimePools );
         }
 
@@ -407,7 +407,7 @@ public class DeclarationMigrator
         if ( Objects.nonNull( pair.getValidDatesPoolingWindow() ) )
         {
             TimePools validTimePools = DeclarationMigrator.migrateTimePools( pair.getValidDatesPoolingWindow() );
-            builder.validDatePools( validTimePools );
+            builder.validDatePools( Collections.singleton( validTimePools ) );
             LOGGER.debug( "Migrated valid time pools: {}.", validTimePools );
         }
 
@@ -426,7 +426,7 @@ public class DeclarationMigrator
         if ( Objects.nonNull( pair.getLeadTimesPoolingWindow() ) )
         {
             TimePools leadTimePools = DeclarationMigrator.migrateTimePools( pair.getLeadTimesPoolingWindow() );
-            builder.leadTimePools( leadTimePools );
+            builder.leadTimePools( Collections.singleton( leadTimePools ) );
             LOGGER.debug( "Migrated lead time pools: {}.", leadTimePools );
         }
 

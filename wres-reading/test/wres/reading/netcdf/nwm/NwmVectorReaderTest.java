@@ -91,10 +91,10 @@ class NwmVectorReaderTest
                                                      .minimum( Instant.parse( "2017-08-07T23:59:59Z" ) )
                                                      .maximum( Instant.parse( "2017-08-09T17:00:00Z" ) )
                                                      .build();
-        TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( Duration.ofHours( 13 ) )
-                                                       .frequency( Duration.ofHours( 7 ) )
-                                                       .build();
+        Set<TimePools> referenceTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                                   .period( Duration.ofHours( 13 ) )
+                                                                                   .frequency( Duration.ofHours( 7 ) )
+                                                                                   .build() );
         Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
                                                              .setLeft( Geometry.newBuilder().setName( "18384141" ) )
                                                              .setRight( Geometry.newBuilder().setName( "18384141" ) )

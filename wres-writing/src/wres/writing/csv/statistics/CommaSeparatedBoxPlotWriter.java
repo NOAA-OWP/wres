@@ -79,8 +79,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         Objects.requireNonNull( statistics, "Specify non-null input data when writing box plot outputs." );
 
         EvaluationDeclaration declaration = super.getDeclaration();
-        if ( Objects.nonNull( declaration.validDatePools() )
-             || Objects.nonNull( declaration.referenceDatePools() ) )
+        if ( !declaration.validDatePools()
+                         .isEmpty()
+             || !declaration.referenceDatePools()
+                            .isEmpty() )
         {
             LOGGER.warn( "The legacy CSV format does not support box plot metrics alongside pooling window "
                          + "declaration. As such, {} diagram statistics will not be written to the legacy CSV format. "
@@ -200,7 +202,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      * @param output the box plot output
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
-     * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
 
@@ -208,7 +209,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                                                      List<BoxplotStatisticOuter> output,
                                                                      Format formatter,
                                                                      ChronoUnit durationUnits )
-            throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -259,7 +259,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      * @param output the box plot output
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
-     * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
 
@@ -267,7 +266,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                                                  List<BoxplotStatisticOuter> output,
                                                                  Format formatter,
                                                                  ChronoUnit durationUnits )
-            throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 

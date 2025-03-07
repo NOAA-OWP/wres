@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1020,17 +1021,92 @@ class DeclarationFactoryTest
         AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
                                                          java.time.Duration.ofHours( 1 ) );
 
-        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
-                                                                     .left( this.observedDataset )
-                                                                     .right( this.predictedDataset )
-                                                                     .referenceDates( referenceDates )
-                                                                     .referenceDatePools( referenceDatePools )
-                                                                     .validDates( validDates )
-                                                                     .validDatePools( validDatePools )
-                                                                     .leadTimes( leadTimeInterval )
-                                                                     .leadTimePools( leadTimePools )
-                                                                     .analysisTimes( analysisTimes )
-                                                                     .build();
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceDatePools ) )
+                                            .validDates( validDates )
+                                            .validDatePools( Collections.singleton( validDatePools ) )
+                                            .leadTimes( leadTimeInterval )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .analysisTimes( analysisTimes )
+                                            .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithTimePoolsList() throws IOException
+    {
+        String yaml = """
+                 observed:
+                   - some_file.csv
+                 predicted:
+                   - another_file.csv
+                 reference_dates:
+                   minimum: 2551-03-17T00:00:00Z
+                   maximum: 2551-03-20T00:00:00Z
+                 reference_date_pools:
+                   - period: 13
+                     frequency: 7
+                     unit: hours
+                 valid_dates:
+                   minimum: 2552-03-17T00:00:00Z
+                   maximum: 2552-03-20T00:00:00Z
+                 valid_date_pools:
+                   - period: 11
+                     frequency: 2
+                     unit: hours
+                 lead_times:
+                   minimum: 0
+                   maximum: 40
+                   unit: hours
+                 lead_time_pools:
+                   - period: 23
+                     frequency: 17
+                     unit: hours
+                 analysis_times:
+                   minimum: 0
+                   maximum: 1
+                   unit: hours
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                        Instant.parse( "2551-03-20T00:00:00Z" ) );
+
+        TimePools referenceDatePools = new TimePools( java.time.Duration.ofHours( 13 ),
+                                                      java.time.Duration.ofHours( 7 ) );
+
+        TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
+                                                    Instant.parse( "2552-03-20T00:00:00Z" ) );
+
+        TimePools validDatePools = new TimePools( java.time.Duration.ofHours( 11 ),
+                                                  java.time.Duration.ofHours( 2 ) );
+
+        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
+                                                                  java.time.Duration.ofHours( 40 ) );
+        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
+                                                 java.time.Duration.ofHours( 17 ) );
+
+        AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
+                                                         java.time.Duration.ofHours( 1 ) );
+
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceDatePools ) )
+                                            .validDates( validDates )
+                                            .validDatePools( Collections.singleton( validDatePools ) )
+                                            .leadTimes( leadTimeInterval )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .analysisTimes( analysisTimes )
+                                            .build();
 
         assertEquals( expected, actual );
     }
@@ -1983,18 +2059,18 @@ class DeclarationFactoryTest
     void testDeserializeWithTimingErrorSummaryStatisticsAndThresholdsPerMetric() throws IOException
     {
         String yaml = """
-                    observed:
-                      - some_file.csv
-                    predicted:
-                      - another_file.csv
-                    metrics:
-                      - name: time to peak error
-                        thresholds:
-                          values: [183.0, 184.0]
-                          apply_to: observed and predicted
-                        summary_statistics:
-                          - mean
-                    """;
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                metrics:
+                  - name: time to peak error
+                    thresholds:
+                      values: [183.0, 184.0]
+                      apply_to: observed and predicted
+                    summary_statistics:
+                      - mean
+                """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
@@ -2687,11 +2763,11 @@ class DeclarationFactoryTest
     void testSerializeWithShortSources() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -2707,13 +2783,13 @@ class DeclarationFactoryTest
     void testSerializeWithShortSourcesAndBaseline() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 baseline:
-                   sources: yet_another_file.csv
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
         Source baselineSource = SourceBuilder.builder()
@@ -2744,14 +2820,14 @@ class DeclarationFactoryTest
     void testSerializeWithPersistenceBaseline() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 baseline:
-                   sources: yet_another_file.csv
-                   method: persistence
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                  method: persistence
+                """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
         Source baselineSource = SourceBuilder.builder()
@@ -2785,16 +2861,16 @@ class DeclarationFactoryTest
     void testSerializeWithClimatologyBaselineAndParameters() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 baseline:
-                   sources: yet_another_file.csv
-                   method:
-                     name: climatology
-                     average: median
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                  method:
+                    name: climatology
+                    average: median
+                """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
         Source baselineSource = SourceBuilder.builder()
@@ -2957,24 +3033,24 @@ class DeclarationFactoryTest
     void testSerializeWithLongMetrics() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 minimum_sample_size: 23
-                 metrics:
-                   - name: mean square error skill score
-                     thresholds: 0.3
-                   - name: pearson correlation coefficient
-                     probability_thresholds:
-                       values: 0.1
-                       operator: greater equal
-                   - name: time to peak error
-                     summary_statistics:
-                       - mean
-                       - median
-                       - minimum
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                minimum_sample_size: 23
+                metrics:
+                  - name: mean square error skill score
+                    thresholds: 0.3
+                  - name: pearson correlation coefficient
+                    probability_thresholds:
+                      values: 0.1
+                      operator: greater equal
+                  - name: time to peak error
+                    summary_statistics:
+                      - mean
+                      - median
+                      - minimum
+                """;
 
         Threshold aValueThreshold = Threshold.newBuilder()
                                              .setLeftThresholdValue( 0.3 )
@@ -3060,16 +3136,16 @@ class DeclarationFactoryTest
     void testSerializeWithFeatureGroup() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 feature_groups:
-                   - name: a group
-                     features:
-                       - {observed: DRRC2, predicted: DRRC2}
-                       - {observed: DOLC2, predicted: DOLC2}
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                feature_groups:
+                  - name: a group
+                    features:
+                      - {observed: DRRC2, predicted: DRRC2}
+                      - {observed: DOLC2, predicted: DOLC2}
+                """;
 
         GeometryTuple first = GeometryTuple.newBuilder()
                                            .setLeft( Geometry.newBuilder().setName( DRRC2 ) )
@@ -3107,16 +3183,16 @@ class DeclarationFactoryTest
     void testSerializeWithFeatureServiceAndSingletonGroup() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 feature_service:
-                   uri: https://foo.service
-                   group: RFC
-                   value: CNRFC
-                   pool: true
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  group: RFC
+                  value: CNRFC
+                  pool: true
+                """;
 
         FeatureServiceGroup featureServiceGroup = FeatureServiceGroupBuilder.builder()
                                                                             .group( "RFC" )
@@ -3143,18 +3219,18 @@ class DeclarationFactoryTest
     void testSerializeWithFeatureServiceAndTwoGroups() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 feature_service:
-                   uri: https://foo.service
-                   groups:
-                     - group: RFC
-                       value: CNRFC
-                     - group: RFC
-                       value: NWRFC
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  groups:
+                    - group: RFC
+                      value: CNRFC
+                    - group: RFC
+                      value: NWRFC
+                """;
 
         FeatureServiceGroup groupOne = FeatureServiceGroupBuilder.builder()
                                                                  .group( "RFC" )
@@ -3191,14 +3267,14 @@ class DeclarationFactoryTest
     void testSerializeWithSpatialMask() throws IOException, ParseException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 spatial_mask:
-                   name: a spatial mask!
-                   wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))"
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                spatial_mask:
+                  name: a spatial mask!
+                  wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))"
+                """;
 
         WKTReader reader = new WKTReader();
         String wkt = "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))";
@@ -3220,40 +3296,40 @@ class DeclarationFactoryTest
     void testSerializeWithTimePools() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 reference_dates:
-                   minimum: 2551-03-17T00:00:00Z
-                   maximum: 2551-03-20T00:00:00Z
-                 reference_date_pools:
-                   period: 13
-                   frequency: 7
-                   unit: hours
-                 valid_dates:
-                   minimum: 2552-03-17T00:00:00Z
-                   maximum: 2552-03-20T00:00:00Z
-                 valid_date_pools:
-                   period: 11
-                   frequency: 2
-                   unit: hours
-                 lead_times:
-                   minimum: 0
-                   maximum: 40
-                   unit: hours
-                 lead_time_pools:
-                   period: 23
-                   frequency: 17
-                   unit: hours
-                 analysis_times:
-                   minimum: 0
-                   maximum: 1
-                   unit: hours
-                 pair_frequency:
-                   period: 3
-                   unit: hours
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                reference_dates:
+                  minimum: 2551-03-17T00:00:00Z
+                  maximum: 2551-03-20T00:00:00Z
+                reference_date_pools:
+                  period: 13
+                  frequency: 7
+                  unit: hours
+                valid_dates:
+                  minimum: 2552-03-17T00:00:00Z
+                  maximum: 2552-03-20T00:00:00Z
+                valid_date_pools:
+                  period: 11
+                  frequency: 2
+                  unit: hours
+                lead_times:
+                  minimum: 0
+                  maximum: 40
+                  unit: hours
+                lead_time_pools:
+                  period: 23
+                  frequency: 17
+                  unit: hours
+                analysis_times:
+                  minimum: 0
+                  maximum: 1
+                  unit: hours
+                pair_frequency:
+                  period: 3
+                  unit: hours
+                """;
 
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                         Instant.parse( "2551-03-20T00:00:00Z" ) );
@@ -3275,18 +3351,19 @@ class DeclarationFactoryTest
         AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
                                                          java.time.Duration.ofHours( 1 ) );
 
-        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .left( this.observedDataset )
-                                                                       .right( this.predictedDataset )
-                                                                       .referenceDates( referenceDates )
-                                                                       .referenceDatePools( referenceDatePools )
-                                                                       .validDates( validDates )
-                                                                       .validDatePools( validDatePools )
-                                                                       .leadTimes( leadTimeInterval )
-                                                                       .leadTimePools( leadTimePools )
-                                                                       .analysisTimes( analysisTimes )
-                                                                       .pairFrequency( java.time.Duration.ofHours( 3 ) )
-                                                                       .build();
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceDatePools ) )
+                                            .validDates( validDates )
+                                            .validDatePools( Collections.singleton( validDatePools ) )
+                                            .leadTimes( leadTimeInterval )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .analysisTimes( analysisTimes )
+                                            .pairFrequency( java.time.Duration.ofHours( 3 ) )
+                                            .build();
 
         String actual = DeclarationFactory.from( evaluation );
 
@@ -3297,15 +3374,15 @@ class DeclarationFactoryTest
     void testSerializeWithTimeScale() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 time_scale:
-                   function: mean
-                   period: 1
-                   unit: hours
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                time_scale:
+                  function: mean
+                  period: 1
+                  unit: hours
+                """;
 
         TimeScale timeScale = TimeScale.newBuilder()
                                        .setPeriod( Duration.newBuilder().setSeconds( 3600 ) )
@@ -3328,17 +3405,17 @@ class DeclarationFactoryTest
     void testSerializeWithUnitAndUnitAliases() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 unit: m3/s
-                 unit_aliases:
-                   - alias: °F
-                     unit: "[degF]"
-                   - alias: °C
-                     unit: "[cel]"
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                unit: m3/s
+                unit_aliases:
+                  - alias: °F
+                    unit: "[degF]"
+                  - alias: °C
+                    unit: "[cel]"
+                """;
 
         UnitAlias one = new UnitAlias( "°F", "[degF]" );
         UnitAlias two = new UnitAlias( "°C", "[cel]" );
@@ -3364,14 +3441,14 @@ class DeclarationFactoryTest
     void testSerializeWithPairFrequency() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 pair_frequency:
-                   period: 12
-                   unit: hours
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                pair_frequency:
+                  period: 12
+                  unit: hours
+                """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -3388,12 +3465,12 @@ class DeclarationFactoryTest
     void testSerializeWithCrossPairExact() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 cross_pair: exact
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                cross_pair: exact
+                """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -3411,14 +3488,14 @@ class DeclarationFactoryTest
     void testSerializeWithCrossPairMethodFuzzyAndScopeWithinFeatures() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 cross_pair:
-                   method: fuzzy
-                   scope: within features
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                cross_pair:
+                  method: fuzzy
+                  scope: within features
+                """;
 
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
@@ -3437,12 +3514,12 @@ class DeclarationFactoryTest
     void testSerializeWithEnsembleAverage() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 ensemble_average: median
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                ensemble_average: median
+                """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -3459,16 +3536,16 @@ class DeclarationFactoryTest
     void testSerializeWithSeasonFilter() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 season:
-                   minimum_day: 1
-                   minimum_month: 4
-                   maximum_day: 31
-                   maximum_month: 7
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                season:
+                  minimum_day: 1
+                  minimum_month: 4
+                  maximum_day: 31
+                  maximum_month: 7
+                """;
 
         Season season = new Season( MonthDay.of( 4, 1 ), MonthDay.of( 7, 31 ) );
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
@@ -3486,16 +3563,16 @@ class DeclarationFactoryTest
     void testSerializeWithValuesFilter() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 values:
-                   minimum: 12.1
-                   maximum: 23.2
-                   below_minimum: 0.0
-                   above_maximum: 27.0
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                values:
+                  minimum: 12.1
+                  maximum: 23.2
+                  below_minimum: 0.0
+                  above_maximum: 27.0
+                """;
 
         Values values = new Values( 12.1, 23.2, 0.0, 27.0 );
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
@@ -3756,14 +3833,14 @@ class DeclarationFactoryTest
     void testSerializeWithBaselineAndSeparateMetrics() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 baseline:
-                   sources: another_file.csv
-                   separate_metrics: true
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: another_file.csv
+                  separate_metrics: true
+                """;
 
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( this.predictedDataset )
@@ -3785,18 +3862,18 @@ class DeclarationFactoryTest
     void testSerializeWithThresholdSources() throws IOException
     {
         String expected = """
-                 observed:
-                   sources: some_file.csv
-                 predicted:
-                   sources: another_file.csv
-                 threshold_sources:
-                   uri: https://foo
-                   parameter: moon
-                   unit: qux
-                   provider: bar
-                   rating_provider: baz
-                   missing_value: -9999999.0
-                 """;
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                  parameter: moon
+                  unit: qux
+                  provider: bar
+                  rating_provider: baz
+                  missing_value: -9999999.0
+                """;
 
         ThresholdSource thresholdSource = ThresholdSourceBuilder.builder()
                                                                 .uri( URI.create( "https://foo" ) )
