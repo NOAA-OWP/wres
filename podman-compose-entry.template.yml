@@ -36,7 +36,7 @@ services:
       restart: always
       ports:
         - 8080:8080
-      volumes: ["/:/rootfs:ro", "/sys:/sys:ro", "/sys/fs/cgroup:/sys/fs/cgroup:ro", "/dev/disk/:/dev/disk:ro", PLACEHOLDER_REPLACEMENT]
+      volumes: ["/:/rootfs:ro", "/sys:/sys:ro", "/sys/fs/cgroup:/sys/fs/cgroup:ro", "/dev/disk/:/dev/disk:ro"]
       command:
         - --disable_metrics=network
         - --disable_metrics=referenced_memory
