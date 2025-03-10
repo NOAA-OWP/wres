@@ -369,10 +369,20 @@ public class WrdsAhpsReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = WrdsAhpsReader.getByteStreamFromUri( dataSource.getUri() );
-                             Stream<TimeSeriesTuple> seriesStream = AHPS_READER.read( dataSource, inputStream ) )
+                       try ( InputStream inputStream = WrdsAhpsReader.getByteStreamFromUri( dataSource.getUri() ) )
                        {
-                           return seriesStream.toList(); // Terminal
+                           if ( Objects.isNull( inputStream ) )
+                           {
+                               LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.",
+                                            dataSource.getUri() );
+
+                               return List.of();
+                           }
+
+                           try ( Stream<TimeSeriesTuple> seriesStream = AHPS_READER.read( dataSource, inputStream ) )
+                           {
+                               return seriesStream.toList(); // Terminal
+                           }
                        }
                    } );
     }
