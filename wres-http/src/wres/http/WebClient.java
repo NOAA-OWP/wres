@@ -218,6 +218,9 @@ public class WebClient
                         LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
                                      uri,
                                      httpResponse.code() );
+
+                        // Close the response, ready for retry: GitHub #228
+                        httpResponse.close();
                     }
 
                     Thread.sleep( sleepMillis );
