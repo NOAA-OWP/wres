@@ -6,8 +6,8 @@ networks:
         ipam:
             driver: default
             config:
-                - subnet: 172.19.254.128/26
-                  gateway: 172.19.254.129
+                - subnet: 172.19.254.64/26
+                  gateway: 172.19.254.65
 volumes:
     home:
         driver_opts:
