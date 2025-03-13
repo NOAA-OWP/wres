@@ -241,7 +241,9 @@ project(':wres-system') {
         implementation 'org.apache.commons:commons-lang3:3.17.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation('org.postgresql:postgresql:42.7.5') {
+        // Bumping this past this version causes massive slowdowns, see this ticket for more information
+        // https://github.com/NOAA-OWP/wres/issues/454
+        implementation('org.postgresql:postgresql:42.7.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -362,7 +364,9 @@ project(':wres-io') {
         implementation 'com.google.guava:guava:33.4.0-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation('org.postgresql:postgresql:42.7.5') {
+        // Bumping this past this version causes massive slowdowns, see this ticket for more information
+        // https://github.com/NOAA-OWP/wres/issues/454
+        implementation('org.postgresql:postgresql:42.7.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -389,7 +393,9 @@ project(':wres-io') {
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
-        implementation 'org.liquibase:liquibase-core:4.31.0'
+        // Bumping this past this version causes massive slowdowns, see this ticket for more information
+        // https://github.com/NOAA-OWP/wres/issues/454
+        implementation 'org.liquibase:liquibase-core:4.29.2'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -611,7 +617,9 @@ project(':wres-reading') {
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.5.0-M3'
 
-        implementation 'org.liquibase:liquibase-core:4.31.0'
+        // Bumping this past this version causes massive slowdowns, see this ticket for more information
+        // https://github.com/NOAA-OWP/wres/issues/454
+        implementation 'org.liquibase:liquibase-core:4.29.2'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
