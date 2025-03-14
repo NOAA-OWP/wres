@@ -31,10 +31,8 @@ services:
     cadvisor:
       image: gcr.io/cadvisor/cadvisor:latest
       container_name: cadvisor
-      runtime: crun
-      group_add:
-        - keep-groups
-      userns_mode: keep-id
+      security_opt:
+        - "label=disable"
       restart: always
       ports:
         - 8080:8080
