@@ -9,10 +9,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -829,7 +829,7 @@ class WrdsAhpsReaderTest
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
             Geometry geometry = MessageUtilities.getGeometry( FEATURE_NAME,
                                                               "Front Royal",
@@ -1123,4 +1123,68 @@ class WrdsAhpsReaderTest
 
     }
 
+    @Test
+    void testReadProducesHttp404ErrorAndNoNullPointerException()
+    {
+        // GitHub issue #444
+
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( FORECAST_PATH_V2 )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.notFoundResponse() );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + FORECAST_PATH_V2 );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_AHPS )
+                                                    .build();
+
+        Dataset fakeDataset = DatasetBuilder.builder()
+                                            .sources( List.of( fakeDeclarationSource ) )
+                                            .build();
+
+        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
+                                               fakeDeclarationSource,
+                                               fakeDataset,
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               DatasetOrientation.RIGHT,
+                                               null );
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2018-01-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2021-01-01T00:00:00Z" ) )
+                                                   .build();
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( FEATURE_NAME )
+                                    .build();
+        GeometryTuple geometryTuple = GeometryTuple.newBuilder()
+                                                   .setLeft( geometry )
+                                                   .build();
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Set.of( geometryTuple ) )
+                                           .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .validDates( interval )
+                                            .features( features )
+                                            .build();
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            Assertions.assertDoesNotThrow( () -> tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                            .toList() );
+        }
+    }
 }
