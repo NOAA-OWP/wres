@@ -668,10 +668,22 @@ public class TimeWindowSlicer
 
             // Obtain the base window
             TimeWindowOuter baseWindow = TimeWindowSlicer.getOneBigTimeWindow( declaration );
+            Set<TimeWindowOuter> leadTimePools;
 
-            Set<TimeWindowOuter> leadTimePools = TimeWindowSlicer.getLeadDurationTimeWindows( leadTimesPoolingWindow,
-                                                                                              baseWindow,
-                                                                                              declaration.leadTimes() );
+            // Counting backwards from the maximum? GitHub #451
+            if ( leadTimesPoolingWindow.reverse() )
+            {
+                leadTimePools = TimeWindowSlicer.getLeadDurationTimeWindowsReverse( leadTimesPoolingWindow,
+                                                                                    baseWindow,
+                                                                                    declaration.leadTimes() );
+            }
+            else
+            {
+                leadTimePools = TimeWindowSlicer.getLeadDurationTimeWindowsForwards( leadTimesPoolingWindow,
+                                                                                     baseWindow,
+                                                                                     declaration.leadTimes() );
+            }
+
             timeWindows.addAll( leadTimePools );
         }
 
@@ -687,9 +699,9 @@ public class TimeWindowSlicer
      * @return the set of lead duration time windows
      */
 
-    private static Set<TimeWindowOuter> getLeadDurationTimeWindows( TimePools leadTimesPoolingWindow,
-                                                                    TimeWindowOuter baseWindow,
-                                                                    LeadTimeInterval leadTimes )
+    private static Set<TimeWindowOuter> getLeadDurationTimeWindowsForwards( TimePools leadTimesPoolingWindow,
+                                                                            TimeWindowOuter baseWindow,
+                                                                            LeadTimeInterval leadTimes )
     {
         // Period associated with the leadTimesPoolingWindow
         Duration periodOfLeadTimesPoolingWindow = leadTimesPoolingWindow.period();
@@ -749,6 +761,83 @@ public class TimeWindowSlicer
                 // Increment from left-to-right: #56213-104
                 earliestExclusive = earliestExclusive.plus( increment );
                 latestInclusive = latestInclusive.plus( increment );
+            }
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * <p>Generates lead time pooling windows from the inputs.
+     *
+     * @param leadTimesPoolingWindow the lead times pooling window
+     * @param baseWindow the base window from which to start
+     * @param leadTimes the lead times
+     * @return the set of lead duration time windows
+     */
+
+    private static Set<TimeWindowOuter> getLeadDurationTimeWindowsReverse( TimePools leadTimesPoolingWindow,
+                                                                           TimeWindowOuter baseWindow,
+                                                                           LeadTimeInterval leadTimes )
+    {
+        // Period associated with the leadTimesPoolingWindow
+        Duration periodOfLeadTimesPoolingWindow = leadTimesPoolingWindow.period();
+
+        // Exclusive lower bound: #56213-104
+        Duration earliestLeadDurationExclusive = leadTimes.minimum();
+
+        // Inclusive upper bound
+        Duration latestLeadDurationInclusive = leadTimes.maximum();
+
+        // Duration by which to increment. Defaults to the period associated
+        // with the leadTimesPoolingWindow, otherwise the frequency.
+        Duration increment = periodOfLeadTimesPoolingWindow;
+        if ( Objects.nonNull( leadTimesPoolingWindow.frequency() ) )
+        {
+            increment = leadTimesPoolingWindow.frequency();
+        }
+
+        // Lower bound of the current window
+        Duration earliestExclusive = latestLeadDurationInclusive.minus( periodOfLeadTimesPoolingWindow );
+
+        // Upper bound of the current window
+        Duration latestInclusive = latestLeadDurationInclusive;
+
+        // Create the time windows
+        Set<TimeWindowOuter> timeWindows = new HashSet<>();
+
+        // Increment right-to-right and stop when the left bound extends past the
+        // earliestLeadDurationExclusive
+        // Window increments are zero?
+        if ( Duration.ZERO.equals( increment ) )
+        {
+            com.google.protobuf.Duration earliest = MessageUtilities.getDuration( earliestExclusive );
+            com.google.protobuf.Duration latest = MessageUtilities.getDuration( latestInclusive );
+            TimeWindow window = baseWindow.getTimeWindow()
+                                          .toBuilder()
+                                          .setEarliestLeadDuration( earliest )
+                                          .setLatestLeadDuration( latest )
+                                          .build();
+            timeWindows.add( TimeWindowOuter.of( window ) );
+        }
+        // Create as many windows as required at the prescribed increment
+        else
+        {
+            while ( earliestExclusive.compareTo( earliestLeadDurationExclusive ) > 0 )
+            {
+                // Add the current time window
+                com.google.protobuf.Duration earliest = MessageUtilities.getDuration( earliestExclusive );
+                com.google.protobuf.Duration latest = MessageUtilities.getDuration( latestInclusive );
+                TimeWindow window = baseWindow.getTimeWindow()
+                                              .toBuilder()
+                                              .setEarliestLeadDuration( earliest )
+                                              .setLatestLeadDuration( latest )
+                                              .build();
+                timeWindows.add( TimeWindowOuter.of( window ) );
+
+                // Increment right-to-left
+                earliestExclusive = earliestExclusive.minus( increment );
+                latestInclusive = latestInclusive.minus( increment );
             }
         }
 
@@ -877,30 +966,59 @@ public class TimeWindowSlicer
             increment = pools.frequency();
         }
 
-        // Lower bound of the current window
-        Instant earliestExclusive = earliestInstantExclusive;
-
-        // Upper bound of the current window
-        Instant latestInclusive = earliestExclusive.plus( periodOfPoolingWindow );
-
         // Create the time windows
         Set<TimeWindowOuter> timeWindows = new HashSet<>();
 
+        // Increment right-to-left and stop when the left bound
+        // extends past the earliestInstantInclusive: GitHub #451
+        if ( pools.reverse() )
+        {
+            // Lower bound of the current window
+            Instant earliestExclusive = latestInstantInclusive.minus( periodOfPoolingWindow );
+
+            // Upper bound of the current window
+            Instant latestInclusive = latestInstantInclusive;
+
+            while ( earliestExclusive.compareTo( earliestInstantExclusive ) > 0 )
+            {
+                TimeWindowOuter timeWindow = TimeWindowSlicer.getTimeWindowFromDates( earliestExclusive,
+                                                                                      latestInclusive,
+                                                                                      baseWindow,
+                                                                                      areReferenceTimes );
+
+                // Add the current time window
+                timeWindows.add( timeWindow );
+
+                // Increment right-to-left
+                earliestExclusive = earliestExclusive.minus( increment );
+                latestInclusive = latestInclusive.minus( increment );
+            }
+        }
+
         // Increment left-to-right and stop when the right bound
         // extends past the latestInstantInclusive: #56213-104
-        while ( latestInclusive.compareTo( latestInstantInclusive ) <= 0 )
+        else
         {
-            TimeWindowOuter timeWindow = TimeWindowSlicer.getTimeWindowFromDates( earliestExclusive,
-                                                                                  latestInclusive,
-                                                                                  baseWindow,
-                                                                                  areReferenceTimes );
+            // Lower bound of the current window
+            Instant earliestExclusive = earliestInstantExclusive;
 
-            // Add the current time window
-            timeWindows.add( timeWindow );
+            // Upper bound of the current window
+            Instant latestInclusive = earliestExclusive.plus( periodOfPoolingWindow );
 
-            // Increment left-to-right: #56213-104
-            earliestExclusive = earliestExclusive.plus( increment );
-            latestInclusive = latestInclusive.plus( increment );
+            while ( latestInclusive.compareTo( latestInstantInclusive ) <= 0 )
+            {
+                TimeWindowOuter timeWindow = TimeWindowSlicer.getTimeWindowFromDates( earliestExclusive,
+                                                                                      latestInclusive,
+                                                                                      baseWindow,
+                                                                                      areReferenceTimes );
+
+                // Add the current time window
+                timeWindows.add( timeWindow );
+
+                // Increment left-to-right: #56213-104
+                earliestExclusive = earliestExclusive.plus( increment );
+                latestInclusive = latestInclusive.plus( increment );
+            }
         }
 
         return Collections.unmodifiableSet( timeWindows );

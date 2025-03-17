@@ -1716,6 +1716,78 @@ class TimeWindowSlicerTest
     }
 
     @Test
+    void testGetTimeWindowsWithValidDatesAndValidDatePoolsInReverseReturnsTwoWindows()
+    {
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( Instant.parse( INSTANT_ONE ) )
+                                                     .maximum( Instant.parse( INSTANT_TWO ) )
+                                                     .build();
+        TimePools validDatePoolOne = TimePoolsBuilder.builder()
+                                                     .period( Duration.ofHours( 10 ) )
+                                                     .reverse( true )
+                                                     .build();
+
+        Set<TimePools> validTimePools = Set.of( validDatePoolOne );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .validDates( validDates )
+                                                                        .validDatePools( validTimePools )
+                                                                        .build();
+
+        // Generate the actual windows
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.getTimeWindows( declaration );
+
+        TimeWindow expectedOne = MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                 Instant.parse( INSTANT_TWO ) );
+
+        TimeWindow expectedTwo = MessageUtilities.getTimeWindow( Instant.parse( "2017-08-08T03:00:00Z" ),
+                                                                 Instant.parse( "2017-08-08T13:00:00Z" ) );
+
+        Set<TimeWindow> expectedInner = Set.of( expectedOne, expectedTwo );
+
+        Set<TimeWindowOuter> expected = expectedInner.stream()
+                                                     .map( TimeWindowOuter::of )
+                                                     .collect( Collectors.toSet() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeWindowsWithLeadTimesAndLeadTimePoolsInReverseReturnsThreeWindows()
+    {
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 24 ) )
+                                                            .build();
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( Duration.ofHours( 7 ) )
+                                                                              .reverse( true )
+                                                                              .build() );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .leadTimes( leadTimes )
+                                                                        .leadTimePools( leadTimePools )
+                                                                        .build();
+
+        // Generate the expected windows
+        Set<TimeWindow> expectedTimeWindows = new HashSet<>( 3 );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 3 ),
+                                                                 Duration.ofHours( 10 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 10 ),
+                                                                 Duration.ofHours( 17 ) ) );
+        expectedTimeWindows.add( MessageUtilities.getTimeWindow( Duration.ofHours( 17 ),
+                                                                 Duration.ofHours( 24 ) ) );
+
+        Set<TimeWindowOuter> expected = expectedTimeWindows.stream()
+                                                           .map( TimeWindowOuter::of )
+                                                           .collect( Collectors.toSet() );
+
+        // Generate the actual windows
+        Set<TimeWindowOuter> actual = TimeWindowSlicer.getTimeWindows( declaration );
+
+        // Assert that the expected and actual are equal
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testAggregateTimeWindowsWithMaximum()
     {
         Set<TimeWindowOuter> timeWindows = this.getTimeWindowsForAggregationTesting();

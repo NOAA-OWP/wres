@@ -978,8 +978,11 @@ definitions:
 
   TimePool:
     title: Explicitly declared time pool.
-    description: "The declaration of an explicit time pools. Each pool contains an interval of 
-    times whose corresponding pairs will be pooled together when calculating statistics."
+    description: "The declaration of an explicit time pools. Each pool contains 
+    an interval of times whose corresponding pairs will be pooled together when 
+    calculating statistics. By default, the pools move forwards from the 
+    minimum evaluation time in a relevant context. However, to move backwards 
+    from the maximum evaluation time, set the reverse parameter to true."
     type: object
     additionalProperties: false
     properties:
@@ -1008,6 +1011,8 @@ definitions:
         minimum: 1
       unit:
         "$ref": "#/definitions/DurationEnum"
+      reverse:
+        type: boolean
     required:
       - period
       - unit

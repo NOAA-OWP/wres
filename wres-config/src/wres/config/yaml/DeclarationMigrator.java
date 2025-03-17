@@ -113,6 +113,7 @@ import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
@@ -1561,7 +1562,10 @@ public class DeclarationMigrator
             frequency = Duration.of( poolingWindow.getFrequency(), unit );
         }
 
-        return new TimePools( period, frequency );
+        return TimePoolsBuilder.builder()
+                               .period( period )
+                               .frequency( frequency )
+                               .build();
     }
 
     /**

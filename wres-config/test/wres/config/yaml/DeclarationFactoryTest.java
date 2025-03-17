@@ -47,6 +47,7 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EnsembleFilterBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeWindowAggregation;
 import wres.config.yaml.components.EventDetectionBuilder;
 import wres.config.yaml.components.EventDetectionCombination;
@@ -978,6 +979,7 @@ class DeclarationFactoryTest
                    period: 13
                    frequency: 7
                    unit: hours
+                   reverse: true
                  valid_dates:
                    minimum: 2552-03-17T00:00:00Z
                    maximum: 2552-03-20T00:00:00Z
@@ -1004,19 +1006,26 @@ class DeclarationFactoryTest
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                         Instant.parse( "2551-03-20T00:00:00Z" ) );
 
-        TimePools referenceDatePools = new TimePools( java.time.Duration.ofHours( 13 ),
-                                                      java.time.Duration.ofHours( 7 ) );
+        TimePools referenceDatePools = TimePoolsBuilder.builder()
+                                                       .period( java.time.Duration.ofHours( 13 ) )
+                                                       .frequency( java.time.Duration.ofHours( 7 ) )
+                                                       .reverse( true )
+                                                       .build();
 
         TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
                                                     Instant.parse( "2552-03-20T00:00:00Z" ) );
 
-        TimePools validDatePools = new TimePools( java.time.Duration.ofHours( 11 ),
-                                                  java.time.Duration.ofHours( 2 ) );
+        TimePools validDatePools = TimePoolsBuilder.builder()
+                                                   .period( java.time.Duration.ofHours( 11 ) )
+                                                   .frequency( java.time.Duration.ofHours( 2 ) )
+                                                   .build();
 
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                                   java.time.Duration.ofHours( 40 ) );
-        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
-                                                 java.time.Duration.ofHours( 17 ) );
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( java.time.Duration.ofHours( 23 ) )
+                                                  .frequency( java.time.Duration.ofHours( 17 ) )
+                                                  .build();
 
         AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
                                                          java.time.Duration.ofHours( 1 ) );
@@ -1078,19 +1087,25 @@ class DeclarationFactoryTest
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                         Instant.parse( "2551-03-20T00:00:00Z" ) );
 
-        TimePools referenceDatePools = new TimePools( java.time.Duration.ofHours( 13 ),
-                                                      java.time.Duration.ofHours( 7 ) );
+        TimePools referenceDatePools = TimePoolsBuilder.builder()
+                                                       .period( java.time.Duration.ofHours( 13 ) )
+                                                       .frequency( java.time.Duration.ofHours( 7 ) )
+                                                       .build();
 
         TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
                                                     Instant.parse( "2552-03-20T00:00:00Z" ) );
 
-        TimePools validDatePools = new TimePools( java.time.Duration.ofHours( 11 ),
-                                                  java.time.Duration.ofHours( 2 ) );
+        TimePools validDatePools = TimePoolsBuilder.builder()
+                                                   .period( java.time.Duration.ofHours( 11 ) )
+                                                   .frequency( java.time.Duration.ofHours( 2 ) )
+                                                   .build();
 
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                                   java.time.Duration.ofHours( 40 ) );
-        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
-                                                 java.time.Duration.ofHours( 17 ) );
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( java.time.Duration.ofHours( 23 ) )
+                                                  .frequency( java.time.Duration.ofHours( 17 ) )
+                                                  .build();
 
         AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
                                                          java.time.Duration.ofHours( 1 ) );
@@ -3334,19 +3349,25 @@ class DeclarationFactoryTest
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                         Instant.parse( "2551-03-20T00:00:00Z" ) );
 
-        TimePools referenceDatePools = new TimePools( java.time.Duration.ofHours( 13 ),
-                                                      java.time.Duration.ofHours( 7 ) );
+        TimePools referenceDatePools = TimePoolsBuilder.builder()
+                                                       .period( java.time.Duration.ofHours( 13 ) )
+                                                       .frequency( java.time.Duration.ofHours( 7 ) )
+                                                       .build();
 
         TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
                                                     Instant.parse( "2552-03-20T00:00:00Z" ) );
 
-        TimePools validDatePools = new TimePools( java.time.Duration.ofHours( 11 ),
-                                                  java.time.Duration.ofHours( 2 ) );
+        TimePools validDatePools = TimePoolsBuilder.builder()
+                                                   .period( java.time.Duration.ofHours( 11 ) )
+                                                   .frequency( java.time.Duration.ofHours( 2 ) )
+                                                   .build();
 
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                                   java.time.Duration.ofHours( 40 ) );
-        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
-                                                 java.time.Duration.ofHours( 17 ) );
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( java.time.Duration.ofHours( 23 ) )
+                                                  .frequency( java.time.Duration.ofHours( 17 ) )
+                                                  .build();
 
         AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
                                                          java.time.Duration.ofHours( 1 ) );

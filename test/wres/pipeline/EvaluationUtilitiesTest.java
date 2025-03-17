@@ -24,6 +24,7 @@ import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -51,8 +52,10 @@ class EvaluationUtilitiesTest
         // Create the declaration
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                                   java.time.Duration.ofHours( 40 ) );
-        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
-                                                 java.time.Duration.ofHours( 17 ) );
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( java.time.Duration.ofHours( 23 ) )
+                                                  .frequency( java.time.Duration.ofHours( 17 ) )
+                                                  .build();
 
         Threshold pOneValue = Threshold.newBuilder()
                                        .setLeftThresholdValue( 5 )
@@ -210,8 +213,10 @@ class EvaluationUtilitiesTest
         // Create the declaration
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                                   java.time.Duration.ofHours( 40 ) );
-        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
-                                                 java.time.Duration.ofHours( 17 ) );
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( java.time.Duration.ofHours( 23 ) )
+                                                  .frequency( java.time.Duration.ofHours( 17 ) )
+                                                  .build();
 
         // Add some summary statistics
         SummaryStatistic first = SummaryStatistic.newBuilder()

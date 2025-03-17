@@ -31,6 +31,7 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -105,8 +106,10 @@ class NetcdfOutputWriterTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         EvaluationDeclaration declaration = Mockito.mock( EvaluationDeclaration.class );
 
-        Set<TimePools> pools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 3 ),
-                                                                     java.time.Duration.ofHours( 3 ) ) );
+        Set<TimePools> pools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                      .period( java.time.Duration.ofHours( 3 ) )
+                                                                      .frequency( java.time.Duration.ofHours( 3 ) )
+                                                                      .build() );
         LeadTimeInterval leadHours = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
                                                            java.time.Duration.ofHours( 6 ) );
         Mockito.when( declaration.leadTimePools() )
