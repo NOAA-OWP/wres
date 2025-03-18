@@ -55,6 +55,7 @@ wres_worker_shim_version=$( echo "$all_versions" | grep "^wres-worker version" |
 
 eventsbroker_version=$( echo "$all_versions" | grep "^wres-eventsbroker version" | cut -d' ' -f3 )
 graphics_version=$( echo "$all_versions" | grep "^wres-vis version" | cut -d' ' -f3 )
+wres_writing_version=$( echo "$all_versions" | grep "^wres-writing version" | cut -d' ' -f3 )
 # These will be the zip ids, as distinct from the previously-found image ids.
 wres_core_version=$overall_version
 wres_tasker_version=$tasker_version
@@ -70,13 +71,13 @@ echo "Building images..."
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
 echo "Building and tagging worker image..."
-worker_image_id=$( docker build --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker:$overall_version . )
+worker_image_id=$( docker build -f Poderfile --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
 echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 
 # Build and tag the tasker image which solely contains the tasker.
 echo "Building tasker image..."
 pushd wres-tasker
-tasker_image_id=$( docker build --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker:$tasker_version . )
+tasker_image_id=$( docker build -f Poderfile --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker . )
 popd
 
 echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
@@ -84,7 +85,7 @@ echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
 # Build and tag the broker image
 echo "Building broker image..."
 pushd wres-broker
-broker_image_id=$( docker build --pull --build-arg version=$broker_version --quiet --tag wres/wres-broker:$broker_version . )
+broker_image_id=$( docker build -f Poderfile --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker . )
 popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
@@ -92,7 +93,7 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 # Build and tag the redis image
 echo "Building redis image..."
 pushd wres-redis
-redis_image_id=$( docker build --pull --build-arg version=$redis_version --quiet --tag wres/wres-redis:$redis_version . )
+redis_image_id=$( docker build -f Poderfile --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis . )
 popd
 
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
@@ -100,7 +101,7 @@ echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 # Build and tag the eventsbroker image
 echo "Building events broker image..."
 pushd wres-eventsbroker
-eventsbroker_image_id=$( docker build --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker:$eventsbroker_version . )
+eventsbroker_image_id=$( docker build -f Poderfile --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker . )
 popd
 
 echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_id"
@@ -108,10 +109,25 @@ echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_
 # Build and tag the graphics image
 echo "Building graphics image..."
 pushd wres-vis
-graphics_image_id=$( docker build --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics:$graphics_version . )
+graphics_image_id=$( docker build -f Poderfile --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics . )
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
+
+# Build and tag the writing image
+echo "Building writing image..."
+pushd wres-writing
+writing_image_id=$( docker build -f Poderfile --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing . )
+popd
+echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
+
+# Build and tag the nginx image
+echo "Building nginx image..."
+pushd nginx
+nginx_image_id=$( docker build --build-arg --quiet --tag wres/nginx . )
+popd
+
+echo "Built wres/nginx"
 
 echo "Displaying most recent 20 docker images"
 docker image ls | head -n 21
@@ -124,16 +140,17 @@ docker image ls | head -n 21
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #=============================================================
 
-cp compose-entry.template.yml compose-entry-windows.yml
+cp podman-compose-entry.template.yml compose-entry-windows.yml
 sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-entry-windows.yml
 sed -i "s/BROKER_IMAGE/${broker_version}/" compose-entry-windows.yml
 sed -i "s/REDIS_IMAGE/${redis_version}/" compose-entry-windows.yml
 sed -i "s/WORKER_IMAGE/${overall_version}/" compose-entry-windows.yml  # By design... The tag for the worker image is the "overall_version".
 sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-entry-windows.yml
 sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-entry-windows.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" compose-entry-windows.yml
 sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-entry-windows.yml
 
-cp compose-workers.template.yml compose-workers-windows.yml
+cp podman-compose-workers.template.yml compose-workers-windows.yml
 sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-workers-windows.yml
 sed -i "s/BROKER_IMAGE/${broker_version}/" compose-workers-windows.yml
 sed -i "s/REDIS_IMAGE/${redis_version}/" compose-workers-windows.yml
