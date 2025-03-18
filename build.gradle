@@ -88,6 +88,14 @@ plugins {
     id 'jacoco-report-aggregation'
 }
 
+//Add CSV output to eh Jacoco report.
+testCodeCoverageReport {
+    reports {
+        csv.required = true
+    }
+}
+
+
 repositories {
     mavenCentral()
     maven {
