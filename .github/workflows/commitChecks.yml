@@ -8,8 +8,11 @@ on:
 jobs:
   Build:
     runs-on: ubuntu-latest
+
+    # pull-requests write permission needed for Jacoco report in PR comment.
     permissions:
       contents: read
+      pull-requests: write  
 
     steps:
     - uses: actions/checkout@v1
@@ -33,6 +36,25 @@ jobs:
       run: |
         ./gradlew build
         ./gradlew distZip testCodeCoverageReport javadoc
+
+    # Add a Jacoco report to the action output using badging tool.
+    # The badges can be added readily; see a comment in #419. 
+    # However, we have no way to view them in the README.md.
+    - name: Generate Jacoco coverage report in Action
+      uses: cicirello/jacoco-badge-generator@v2
+      with:
+        jacoco-csv-file: build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.csv
+
+    # Add coverage report to the pull request as comment.
+    # Basic coverage checks are implemented.
+    - name: Add Jacoco coverage report in PR comment
+      id: jacoco
+      uses: madrapps/jacoco-report@v1.7.1
+      with:
+        paths: build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 50
+        min-coverage-changed-files: 60
 
     # Confirm the test code inside wres-external-services-tests zip compiles
     - name: Compile external-services-tests
