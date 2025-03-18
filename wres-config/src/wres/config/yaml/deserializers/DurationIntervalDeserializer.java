@@ -9,14 +9,15 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Custom deserializer for a pair of {@link Duration} that represents an interval.
+ * Custom deserializer for a pair of {@link Duration} that represents an interval, together with an indicator about
+ * whether the interval is forwards looking with respect to a minimum datetime or backwards looking with respect to a
+ * maximum.
  *
  * @author James Brown
  */
-public class DurationIntervalDeserializer extends JsonDeserializer<Pair<Duration, Duration>>
+public class DurationIntervalDeserializer extends JsonDeserializer<DurationInterval>
 {
     /** The name of the first duration within the interval. */
     private final String firstName;
@@ -25,7 +26,7 @@ public class DurationIntervalDeserializer extends JsonDeserializer<Pair<Duration
     private final String secondName;
 
     @Override
-    public Pair<Duration, Duration> deserialize( JsonParser jp, DeserializationContext context )
+    public DurationInterval deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
     {
         Objects.requireNonNull( jp );
@@ -35,7 +36,9 @@ public class DurationIntervalDeserializer extends JsonDeserializer<Pair<Duration
         Duration first = DurationDeserializer.getDuration( mapper, node, this.firstName, "unit" );
         Duration second = DurationDeserializer.getDuration( mapper, node, this.secondName, "unit" );
 
-        return Pair.of( first, second );
+        return new DurationInterval( first, second, node.has( "reverse" )
+                                                    && node.get( "reverse" )
+                                                           .asBoolean() );
     }
 
     /**

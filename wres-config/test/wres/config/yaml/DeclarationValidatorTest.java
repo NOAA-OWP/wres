@@ -631,8 +631,9 @@ class DeclarationValidatorTest
                                       .type( DataType.SIMULATIONS )
                                       .build();
 
-        Set<TimePools> pools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
-                                                                     null ) );
+        Set<TimePools> pools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                      .period( java.time.Duration.ofHours( 1 ) )
+                                                                      .build() );
         EvaluationDeclaration declaration
                 = EvaluationDeclarationBuilder.builder()
                                               .left( left )
@@ -935,8 +936,10 @@ class DeclarationValidatorTest
     @Test
     void testMissingTimeIntervalsWithTimePoolsResultsInErrors()
     {
-        Set<TimePools> timePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
-                                                                         java.time.Duration.ofHours( 1 ) ) );
+        Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                          .period( java.time.Duration.ofHours( 1 ) )
+                                                                          .frequency( java.time.Duration.ofHours( 1 ) )
+                                                                          .build() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -964,8 +967,9 @@ class DeclarationValidatorTest
     @Test
     void testInvalidTimePoolsResultsInErrors()
     {
-        Set<TimePools> timePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
-                                                                         null ) );
+        Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                          .period( java.time.Duration.ofHours( 1 ) )
+                                                                          .build() );
         TimeInterval interval = new TimeInterval( Instant.parse( "2047-01-01T00:00:00Z" ),
                                                   Instant.parse( "2047-01-01T00:01:00Z" ) );
         LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofMinutes( 1 ),
@@ -1214,8 +1218,10 @@ class DeclarationValidatorTest
     {
         Metric metric = new Metric( MetricConstants.RELIABILITY_DIAGRAM, null );
         Set<Metric> metrics = Set.of( metric );
-        Set<TimePools> timePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 3 ),
-                                                                         java.time.Duration.ofHours( 1 ) ) );
+        Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                          .period( java.time.Duration.ofHours( 3 ) )
+                                                                          .frequency( java.time.Duration.ofHours( 1 ) )
+                                                                          .build() );
         Outputs formats = Outputs.newBuilder()
                                  .setCsv( Outputs.CsvFormat.getDefaultInstance() )
                                  .build();
@@ -2911,8 +2917,10 @@ class DeclarationValidatorTest
     @Test
     void testCombinationOfExplicitAndGeneratedPoolsProducesWarning()
     {
-        Set<TimePools> leadTimePools = Collections.singleton( new TimePools( java.time.Duration.ofHours( 1 ),
-                                                                             java.time.Duration.ofHours( 2 ) ) );
+        Set<TimePools> leadTimePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                              .period( java.time.Duration.ofHours( 1 ) )
+                                                                              .frequency( java.time.Duration.ofHours( 2 ) )
+                                                                              .build() );
 
         TimeWindow timeWindow = TimeWindow.newBuilder()
                                           .build();
