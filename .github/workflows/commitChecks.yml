@@ -6,13 +6,14 @@ on:
   pull_request:
 
 jobs:
+
+  # ========================================================
+  # Build and unit test code.
+  # ========================================================
   Build:
     runs-on: ubuntu-latest
-
-    # pull-requests write permission needed for Jacoco report in PR comment.
     permissions:
       contents: read
-      pull-requests: write  
 
     steps:
     - uses: actions/checkout@v1
@@ -36,25 +37,6 @@ jobs:
       run: |
         ./gradlew build
         ./gradlew distZip testCodeCoverageReport javadoc
-
-    # Add a Jacoco report to the action output using badging tool.
-    # The badges can be added readily; see a comment in #419. 
-    # However, we have no way to view them in the README.md.
-    - name: Generate Jacoco coverage report in Action
-      uses: cicirello/jacoco-badge-generator@v2
-      with:
-        jacoco-csv-file: build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.csv
-
-    # Add coverage report to the pull request as comment.
-    # Basic coverage checks are implemented.
-    - name: Add Jacoco coverage report in PR comment
-      id: jacoco
-      uses: madrapps/jacoco-report@v1.7.1
-      with:
-        paths: build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
-        token: ${{ secrets.GITHUB_TOKEN }}
-        min-coverage-overall: 50
-        min-coverage-changed-files: 60
 
     # Confirm the test code inside wres-external-services-tests zip compiles
     - name: Compile external-services-tests
@@ -90,11 +72,56 @@ jobs:
         name: build-artifacts
         path: |
           checksum.txt
+          build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.csv
+          build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
           build/distributions/wres-*.zip
           wres-*/build/distributions/wres-*-*.zip
           systests/build/distributions/systests-*.zip
           scripts/build/distributions/wres-admin-scripts-*.zip
 
+  # ========================================================
+  # Generate the code coverage reports. 
+  # ========================================================
+  codeCoverageReport:
+    needs: Build
+    runs-on: ubuntu-latest
+    
+    # pull-requests write permission needed for Jacoco report in PR comment.
+    permissions:
+      contents: read
+      pull-requests: write  
+
+    steps:
+
+    # Download and unpackage artifacts from previous step
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        github-token: ${{ github.token }}
+
+    # Add a Jacoco report to the action output using badging tool.
+    # The badges can be added readily; see a comment in #419.
+    # However, we have no way to view them in the README.md.
+    - name: Generate Jacoco coverage report in Action
+      uses: cicirello/jacoco-badge-generator@v2
+      with:
+        jacoco-csv-file: build-artifacts/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.csv
+
+    # Add coverage report to the pull request as comment.
+    # Basic coverage checks are implemented. The 1.7.1 needs 
+    # to be fully specified; v1 does not work (as of 3/18/25).
+    - name: Add Jacoco coverage report in PR comment
+      id: jacoco
+      uses: madrapps/jacoco-report@v1.7.1
+      with:
+        paths: build-artifacts/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 50
+        min-coverage-changed-files: 60
+
+  # ========================================================
+  # Execute scaled down system tests.
+  # ========================================================
   systests:
     needs: Build
     runs-on: ubuntu-latest
@@ -134,10 +161,10 @@ jobs:
 
     # Run systests
     - name: System tests in memory zero externalization
-      run: | 
+      run: |
         echo "Starting the system tests in memory zero externalization..."
 
-        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues).
         # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
         sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.useDatabase=false -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=false -Duser.timezone=UTC -Dwres.externalGraphics=false -Dwres.externalNumerics=false -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
         sed -i "s/testJvmSystemPropertiesGraphics =.*/testJvmSystemPropertiesGraphics = -Djava.io.tmpdir=. -Dwres.startBroker=true -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
@@ -152,20 +179,20 @@ jobs:
         mv wres_evaluation_* outputs
         mv outputs zero_external_test_results
         mv systests-*/build/reports/tests/test/* zero_external_test_results
-        mv systests-*/build/*.log zero_external_test_results       
+        mv systests-*/build/*.log zero_external_test_results      
 
     # Run systests
     - name: System tests with external graphics and numerics writing
-      run: | 
+      run: |
         echo "Starting the system tests with external graphics and numerics writing..."
 
-        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues).
         # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
         sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.useDatabase=true -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=true -Dwres.externalNumerics=true -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
         sed -i "s/testJvmSystemPropertiesGraphics =.*/testJvmSystemPropertiesGraphics = -Djava.io.tmpdir=. -Dwres.startBroker=true -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
         sed -i "s/testJvmSystemPropertiesWriting =.*/testJvmSystemPropertiesWriting = -Djava.io.tmpdir=. -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
 
-        # Run the tests using a separate graphics and writing process 
+        # Run the tests using a separate graphics and writing process
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario514 --tests=Scenario720 --tests=Scenario721
 
         # Save the test results
@@ -178,16 +205,16 @@ jobs:
 
     # Run systests
     - name: System tests with an H2 in-memory database
-      run: | 
+      run: |
         echo "Starting the system tests with an H2 in-memory database..."
-        
-        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+       
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues).
         # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
         sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=false -Dwres.externalNumerics=false/g" $systests_dir/gradle.properties
-        
+       
         # Run the tests again using a self-contained graphics/eventsbroker process
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario514 --tests=Scenario720 --tests=Scenario721
-        
+       
         # Save the test results
         mkdir -p h2_in_memory_test_results
         mkdir -p outputs
@@ -197,16 +224,16 @@ jobs:
 
     # Run systests
     - name: System tests with the legacy XML evaluation language
-      run: | 
+      run: |
         echo "Starting the system tests with the legacy XML evaluation language..."
 
-        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues).
         # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
         sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=false -Dwres.externalNumerics=false -Dwres.xml=true/g" $systests_dir/gradle.properties
-        
+       
         # Run the tests again using a self-contained graphics/eventsbroker process
         $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario720 --tests=Scenario721
-        
+       
         # Save the test results
         mkdir -p legacy_xml_results
         mkdir -p outputs
