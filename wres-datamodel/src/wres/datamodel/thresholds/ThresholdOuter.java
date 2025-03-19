@@ -253,6 +253,118 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                             .build();
     }
 
+    @Override
+    public boolean equals( final Object o )
+    {
+        if ( o == this )
+        {
+            return true;
+        }
+
+        if ( !( o instanceof final ThresholdOuter in ) )
+        {
+            return false;
+        }
+
+        return in.getThreshold().equals( this.getThreshold() )
+               && Objects.equals( in.getType(), this.getType() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getThreshold(), this.getType() );
+    }
+
+    @Override
+    public String toString()
+    {
+        // Label not used for all data
+        if ( this.isAllDataThreshold() )
+        {
+            return "All data";
+        }
+
+        String append = "";
+        if ( this.hasLabel() )
+        {
+            append = " (" + this.getLabel() + ")";
+        }
+
+        final String conditionString = this.getConditionString();
+
+        String stringUnits = "";
+        if ( this.hasUnits() )
+        {
+            stringUnits = " " + this.getUnits().toString();
+        }
+
+        // Quantile
+        if ( this.isQuantile() )
+        {
+            return this.getQuantileString( conditionString, stringUnits, append );
+        }
+        // Real value only
+        else if ( this.hasValues() )
+        {
+            return this.getValueString( conditionString, stringUnits, append );
+        }
+        // Probability only
+        else
+        {
+            return this.getProbabilityString( conditionString, append );
+        }
+    }
+
+    @Override
+    public int compareTo( ThresholdOuter o )
+    {
+        int result = MessageUtilities.compare( this.getThreshold(), o.getThreshold() );
+
+        if ( result != 0 )
+        {
+            return result;
+        }
+
+        return Comparator.nullsFirst( Comparator.comparing( ThresholdOuter::getType ) )
+                         .compare( this, o );
+    }
+
+    @Override
+    public boolean test( double t )
+    {
+        Double lowerBound;
+        Double upperBound;
+
+        // Ordinary values are canonical
+        if ( hasValues() )
+        {
+            lowerBound = this.getValues()
+                             .first();
+            upperBound = this.getValues()
+                             .second();
+        }
+        else
+        {
+            lowerBound = this.getProbabilities()
+                             .first();
+            upperBound = this.getProbabilities()
+                             .second();
+        }
+
+        wres.config.yaml.components.ThresholdOperator operator = this.getOperator();
+
+        return switch ( operator )
+        {
+            case GREATER -> t > lowerBound;
+            case LESS -> t < lowerBound;
+            case GREATER_EQUAL -> t >= lowerBound;
+            case LESS_EQUAL -> t <= lowerBound;
+            case BETWEEN -> t > lowerBound && t <= upperBound;
+            case EQUAL -> Math.abs( t - lowerBound ) < .00000001;
+        };
+    }
+
     /**
      * Returns <code>true</code> if the threshold contains one or more ordinary (non-probability) values, otherwise
      * <code>false</code>.
@@ -492,114 +604,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         // Identity equals, followed by content equals
         return ThresholdOuter.ALL_DATA == this || ThresholdOuter.ALL_DATA.equals( this );
-    }
-
-    @Override
-    public boolean equals( final Object o )
-    {
-        if ( o == this )
-        {
-            return true;
-        }
-
-        if ( !( o instanceof final ThresholdOuter in ) )
-        {
-            return false;
-        }
-
-        return in.getThreshold().equals( this.getThreshold() )
-               && Objects.equals( in.getType(), this.getType() );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( this.getThreshold(), this.getType() );
-    }
-
-    @Override
-    public String toString()
-    {
-        // Label not used for all data
-        if ( this.isAllDataThreshold() )
-        {
-            return "All data";
-        }
-
-        String append = "";
-        if ( this.hasLabel() )
-        {
-            append = " (" + this.getLabel() + ")";
-        }
-
-        final String conditionString = this.getConditionString();
-
-        String stringUnits = "";
-        if ( this.hasUnits() )
-        {
-            stringUnits = " " + this.getUnits().toString();
-        }
-
-        // Quantile
-        if ( this.isQuantile() )
-        {
-            return this.getQuantileString( conditionString, stringUnits, append );
-        }
-        // Real value only
-        else if ( this.hasValues() )
-        {
-            return this.getValueString( conditionString, stringUnits, append );
-        }
-        // Probability only
-        else
-        {
-            return this.getProbabilityString( conditionString, append );
-        }
-    }
-
-    @Override
-    public int compareTo( ThresholdOuter o )
-    {
-        int result = MessageUtilities.compare( this.getThreshold(), o.getThreshold() );
-
-        if ( result != 0 )
-        {
-            return result;
-        }
-
-        return Comparator.nullsFirst( Comparator.comparing( ThresholdOuter::getType ) )
-                         .compare( this, o );
-    }
-
-    @Override
-    public boolean test( double t )
-    {
-        Double lowerBound;
-        Double upperBound;
-
-        // Ordinary values are canonical
-        if ( hasValues() )
-        {
-            lowerBound = this.getValues().first();
-            upperBound = this.getValues().second();
-        }
-        else
-        {
-            lowerBound = this.getProbabilities().first();
-            upperBound = this.getProbabilities().second();
-        }
-
-        wres.config.yaml.components.ThresholdOperator operator = this.getOperator();
-
-        return switch ( operator )
-        {
-            case GREATER -> t > lowerBound;
-            case LESS -> t < lowerBound;
-            case GREATER_EQUAL -> t >= lowerBound;
-            case LESS_EQUAL -> t <= lowerBound;
-            case BETWEEN -> t >= lowerBound && t < upperBound;
-            case EQUAL -> Math.abs( t - lowerBound ) < .00000001;
-        };
     }
 
     /**
@@ -885,12 +889,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     void validateOneSidedThreshold()
     {
 
-        if ( this.hasValues() && Objects.nonNull( this.getValues().second() ) )
+        if ( this.hasValues() && Objects.nonNull( this.getValues()
+                                                      .second() ) )
         {
             throw new ThresholdException( "Specify a null upper threshold or define an appropriate "
                                           + "BETWEEN condition." );
         }
-        if ( this.hasProbabilities() && Objects.nonNull( this.getProbabilities().second() ) )
+        if ( this.hasProbabilities() && Objects.nonNull( this.getProbabilities()
+                                                             .second() ) )
         {
             throw new ThresholdException( "Specify a non-null upper threshold probability or define an "
                                           + "appropriate BETWEEN condition." );
@@ -909,8 +915,11 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         OneOrTwoDoubles probabilities = this.getProbabilities();
 
         //Do not allow a partially defined pair of thresholds/probabilities          
-        if ( ( this.hasProbabilities() && !this.getProbabilities().hasTwo() )
-             || ( this.hasValues() && !this.getValues().hasTwo() ) )
+        if ( ( this.hasProbabilities()
+               && !this.getProbabilities().hasTwo() )
+             || ( this.hasValues()
+                  && !this.getValues()
+                          .hasTwo() ) )
         {
             throw new ThresholdException( "When constructing a BETWEEN condition, thresholds must be defined "
                                           + "in pairs." );
@@ -981,29 +990,40 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         if ( this.hasBetweenCondition() )
         {
-            if ( !this.getValues().first().isNaN() && !this.getValues().second().isNaN() )
+            if ( !this.getValues()
+                      .first()
+                      .isNaN() &&
+                 !this.getValues()
+                      .second()
+                      .isNaN() )
             {
-                return ">= " + this.getValues().first()
+                return "> " + this.getValues()
+                                  .first()
                        + stringUnits
                        + common
-                       + this.getProbabilities().first()
-                       + "] AND < "
-                       + this.getValues().second()
+                       + this.getProbabilities()
+                             .first()
+                       + "] AND <= "
+                       + this.getValues()
+                             .second()
                        + stringUnits
                        + common
-                       + this.getProbabilities().second()
+                       + this.getProbabilities()
+                             .second()
                        + "]"
                        + append;
             }
 
-            return ">= Pr = "
+            return "> Pr = "
                    + this.getProbabilities().first()
-                   + " AND < Pr = "
+                   + " AND <= Pr = "
                    + this.getProbabilities().second()
                    + append;
         }
 
-        if ( !this.getValues().first().isNaN() )
+        if ( !this.getValues()
+                  .first()
+                  .isNaN() )
         {
             return conditionString + this.getValues().first()
                    + stringUnits
@@ -1030,9 +1050,9 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         if ( this.hasBetweenCondition() && !this.getValues().first().isNaN() && !this.getValues().second().isNaN() )
         {
-            return ">= " + this.getValues().first()
+            return "> " + this.getValues().first()
                    + stringUnits
-                   + " AND < "
+                   + " AND <= "
                    + this.getValues().second()
                    + stringUnits
                    + append;
@@ -1055,11 +1075,15 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         if ( this.hasBetweenCondition() )
         {
-            return "Pr >= " + this.getProbabilities().first()
-                   + " AND < "
+            return "Pr > " + this.getProbabilities().first()
+                   + " AND <= "
                    + this.getProbabilities().second()
                    + append;
         }
-        return "Pr " + conditionString + this.getProbabilities().first() + append;
+        return "Pr "
+               + conditionString
+               + this.getProbabilities()
+                     .first()
+               + append;
     }
 }

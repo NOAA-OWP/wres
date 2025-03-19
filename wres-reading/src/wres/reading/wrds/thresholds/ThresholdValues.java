@@ -20,7 +20,7 @@ class ThresholdValues implements Serializable
     private static final long serialVersionUID = 6437416253818226237L;
 
     /** Threshold values. */
-    private final Map<String, Double> thresholdValues = new LinkedHashMap<>();
+    private final Map<String, Double> values = new LinkedHashMap<>();
 
     /** Ratings curve. */
     @JsonProperty( "rating_curve" )
@@ -32,7 +32,7 @@ class ThresholdValues implements Serializable
     @JsonAnyGetter
     Map<String, Double> getThresholdValues()
     {
-        return thresholdValues;
+        return values;
     }
 
     /**
@@ -43,7 +43,7 @@ class ThresholdValues implements Serializable
     @JsonAnySetter
     void add( String key, Double value )
     {
-        thresholdValues.put( key, value );
+        values.put( key, value );
     }
 
     /**

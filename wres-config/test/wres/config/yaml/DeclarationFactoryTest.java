@@ -1691,6 +1691,74 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithFeaturefulThresholdsAndPredictedOrientationAndBetweenCondition() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                features:
+                  - observed: DRRC2
+                    predicted: FOO
+                  - observed: DOLC2
+                    predicted: BAR
+                thresholds:
+                  name: MAJOR FLOOD
+                  values:
+                    - { value: 23.0, feature: FOO }
+                    - { value: 27.0, feature: BAR }
+                    - { value: 25.0, feature: FOO }
+                    - { value: 29.0, feature: BAR }
+                  operator: between
+                  apply_to: predicted
+                  feature_name_from: predicted
+                """;
+
+        EvaluationDeclaration actualEvaluation = DeclarationFactory.from( yaml );
+
+        Threshold vOne = Threshold.newBuilder()
+                                  .setLeftThresholdValue( 23.0 )
+                                  .setRightThresholdValue( 25.0 )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+
+        Threshold vTwo = Threshold.newBuilder()
+                                  .setLeftThresholdValue( 27.0 )
+                                  .setRightThresholdValue( 29.0 )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "FOO" )
+                                                                                              .build() )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vTwo )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "BAR" )
+                                                                                              .build() )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> expected = Set.of( vOneWrapped, vTwoWrapped );
+
+        Set<wres.config.yaml.components.Threshold> actual = actualEvaluation.thresholds();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithMultipleSetsOfthresholds() throws IOException
     {
         String yaml = """
@@ -1807,6 +1875,158 @@ class DeclarationFactoryTest
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
                                                                      .probabilityThresholds( thresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithMultipleThresholdsInThresholdArrayAndBetweenOperator() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                thresholds:
+                  values: [0.1,0.2]
+                  operator: between
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdValue( 0.1 )
+                                                              .setRightThresholdValue( 0.2 )
+                                                              .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( vOneWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .thresholds( thresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSingletonInProbabilityThresholdArrayAndBetweenOperator() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                probability_thresholds:
+                  values: [0.1]
+                  operator: between
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdProbability( 0.1 )
+                                                              .setRightThresholdProbability( 1.0 )
+                                                              .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( vOneWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .probabilityThresholds( thresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSingletonProbabilityThresholdAndBetweenOperator() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                probability_thresholds:
+                  values: 0.1
+                  operator: between
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdProbability( 0.1 )
+                                                              .setRightThresholdProbability( 1.0 )
+                                                              .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( vOneWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .probabilityThresholds( thresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSingletonInThresholdArrayAndBetweenOperator() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                thresholds:
+                  values: [0.1]
+                  operator: between
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdValue( 0.1 )
+                                                              .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                                              .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( vOneWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .thresholds( thresholds )
                                                                      .build();
 
         assertEquals( expected, actual );

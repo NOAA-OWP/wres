@@ -2,9 +2,14 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -167,15 +172,27 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             builder = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
         }
 
-        // Preserve insertion order
-        double value = thresholdNode.asDouble();
+        double lowerValue = thresholdNode.asDouble();
+
+        if ( builder.getOperator() == ThresholdOperator.BETWEEN )
+        {
+            if ( type.isProbability() )
+            {
+                builder.setRightThresholdProbability( 1.0 );
+            }
+            else
+            {
+                builder.setRightThresholdValue( Double.POSITIVE_INFINITY );
+            }
+        }
+
         if ( type.isProbability() )
         {
-            builder.setLeftThresholdProbability( value );
+            builder.setLeftThresholdProbability( lowerValue );
         }
         else
         {
-            builder.setLeftThresholdValue( value );
+            builder.setLeftThresholdValue( lowerValue );
         }
 
         wres.statistics.generated.Threshold nextThreshold = builder.build();
@@ -245,8 +262,9 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             JsonNode valuesNode = thresholdNode.get( VALUES );
 
             // Embellished thresholds
-            if ( !valuesNode.isEmpty() && valuesNode.get( 0 )
-                                                    .has( VALUE ) )
+            if ( !valuesNode.isEmpty()
+                 && valuesNode.get( 0 )
+                              .has( VALUE ) )
             {
                 Set<Threshold> embellishedThresholds = this.getEmbellishedThresholds( reader,
                                                                                       valuesNode,
@@ -358,7 +376,161 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             thresholds.add( nextThreshold );
         }
 
-        return Collections.unmodifiableSet( thresholds );
+        return this.mergeBetweenThresholds( Collections.unmodifiableSet( thresholds ) );
+    }
+
+    /**
+     * Collects together all ordered thresholds (by value) that have a BETWEEN operator and merges them.
+     *
+     * @param thresholds the thresholds
+     * @return the merged thresholds, where applicable
+     */
+
+    private Set<Threshold> mergeBetweenThresholds( Set<Threshold> thresholds )
+    {
+        // Short-circuit
+        if ( thresholds.stream()
+                       .noneMatch( t -> t.threshold()
+                                         .getOperator() == ThresholdOperator.BETWEEN ) )
+        {
+            return thresholds;
+        }
+
+        Map<Geometry, Set<Threshold>> betweenThresholds = this.getBetweenThresholdsByGeometry( thresholds );
+
+        Set<Threshold> returnMe = new LinkedHashSet<>();
+
+        for ( Set<Threshold> next : betweenThresholds.values() )
+        {
+            if ( next.size() == 1 )
+            {
+                Threshold threshold = next.iterator()
+                                          .next();
+                Threshold addMe = this.getBetweenThresholdWithUpperBound( threshold );
+                returnMe.add( addMe );
+            }
+            else
+            {
+                Iterator<Threshold> iterator = next.iterator();
+                Threshold last = null;
+                while ( iterator.hasNext() )
+                {
+                    Threshold current = iterator.next();
+                    if ( Objects.isNull( last ) )
+                    {
+                        last = current;
+                    }
+                    else
+                    {
+                        Threshold addMe = this.getBetweenThreshold( last, current );
+                        returnMe.add( addMe );
+                    }
+                }
+            }
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Maps the thresholds with a BETWEEN operator by {@link Geometry}.
+     * @param thresholds the thresholds
+     * @return the mapped thresholds
+     */
+
+    private Map<Geometry, Set<Threshold>> getBetweenThresholdsByGeometry( Set<Threshold> thresholds )
+    {
+        // Map the BETWEEN thresholds by common geometry. Note that all thresholds are BETWEEN at this stage because
+        // all thresholds have a single operator
+        Map<Geometry, Set<Threshold>> betweenThresholds = new LinkedHashMap<>();
+
+        for ( Threshold t : thresholds )
+        {
+            if ( betweenThresholds.containsKey( t.feature() ) )
+            {
+                betweenThresholds.get( t.feature() )
+                                 .add( t );
+            }
+            else
+            {
+                Set<Threshold> ordered = new TreeSet<>( Comparator.comparingDouble( a -> a.threshold()
+                                                                                          .getLeftThresholdValue() ) );
+                ordered.add( t );
+                betweenThresholds.put( t.feature(), ordered );
+            }
+        }
+
+        return Collections.unmodifiableMap( betweenThresholds );
+    }
+
+    /**
+     * Adds the upper bound to a threshold with a BETWEEN operator.
+     * @param threshold the threshold
+     * @return the threshold with the upper bound
+     */
+
+    private Threshold getBetweenThresholdWithUpperBound( Threshold threshold )
+    {
+        if ( threshold.type()
+                      .isProbability() )
+        {
+            wres.statistics.generated.Threshold nextThreshold = threshold.threshold()
+                                                                         .toBuilder()
+                                                                         .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                                                         .build();
+            return ThresholdBuilder.builder( threshold )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+        else
+        {
+            wres.statistics.generated.Threshold nextThreshold = threshold.threshold()
+                                                                         .toBuilder()
+                                                                         .setRightThresholdProbability( 1.0 )
+                                                                         .build();
+            return ThresholdBuilder.builder( threshold )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+    }
+
+    /**
+     * Generates a threshold with a BETWEEN operator using the last and current thresholds in an iteration, merging the
+     * two.
+     *
+     * @param last the last threshold
+     * @param current the current threshold
+     * @return the merged threshold
+     */
+
+    private Threshold getBetweenThreshold( Threshold last,
+                                           Threshold current )
+    {
+        if ( last.type()
+                 .isProbability() )
+        {
+            wres.statistics.generated.Threshold nextThreshold =
+                    last.threshold()
+                        .toBuilder()
+                        .setRightThresholdProbability( current.threshold()
+                                                              .getLeftThresholdProbability() )
+                        .build();
+            return ThresholdBuilder.builder( last )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+        else
+        {
+            wres.statistics.generated.Threshold nextThreshold =
+                    last.threshold()
+                        .toBuilder()
+                        .setRightThresholdValue( current.threshold()
+                                                        .getLeftThresholdValue() )
+                        .build();
+            return ThresholdBuilder.builder( last )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
     }
 
     /**
@@ -383,15 +555,44 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         // Threshold values are validated at schema validation time
         double[] values = reader.readValue( thresholdsNode, double[].class );
 
-        for ( double nextValue : values )
+        for ( int i = 0; i < values.length; i++ )
         {
+            double lowerValue = values[i];
+
+            // Between operator, bounded to positive infinity if there is one threshold, otherwise in pairs
+            if ( thresholdBuilder.getOperator() == ThresholdOperator.BETWEEN )
+            {
+                // Set the default
+                double upperValue = this.getDefaultUpperLimit( type );
+
+                if ( i > 0 )
+                {
+                    lowerValue = values[i - 1];
+                    upperValue = values[i];
+                }
+                else if ( values.length > 1 )  // && i==0
+                {
+                    // Skip this value
+                    continue;
+                }
+
+                if ( type.isProbability() )
+                {
+                    thresholdBuilder.setRightThresholdProbability( upperValue );
+                }
+                else
+                {
+                    thresholdBuilder.setRightThresholdValue( upperValue );
+                }
+            }
+
             if ( type.isProbability() )
             {
-                thresholdBuilder.setLeftThresholdProbability( nextValue );
+                thresholdBuilder.setLeftThresholdProbability( lowerValue );
             }
             else
             {
-                thresholdBuilder.setLeftThresholdValue( nextValue );
+                thresholdBuilder.setLeftThresholdValue( lowerValue );
             }
 
             wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();
@@ -403,6 +604,22 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         }
 
         return Collections.unmodifiableSet( thresholds );
+    }
+
+    /**
+     * Returns the upper limit on a threshold.
+     * @param type the type of threshold
+     * @return the upper limit
+     */
+
+    private double getDefaultUpperLimit( ThresholdType type )
+    {
+        if ( type.isProbability() )
+        {
+            return 1.0;
+        }
+
+        return Double.POSITIVE_INFINITY;
     }
 
 }

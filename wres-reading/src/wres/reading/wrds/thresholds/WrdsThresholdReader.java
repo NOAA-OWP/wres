@@ -460,7 +460,8 @@ public class WrdsThresholdReader implements ThresholdReader
                                                                          WebClientUtils.getDefaultRetryStates() ) )
         {
 
-            if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )
+            if ( response.getStatusCode() >= 400
+                 && response.getStatusCode() < 500 )
             {
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              response.getStatusCode(),
