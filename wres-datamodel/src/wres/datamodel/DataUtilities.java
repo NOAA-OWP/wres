@@ -118,6 +118,7 @@ public final class DataUtilities
         safe = safe.replace( "]", "" );
         safe = safe.replace( "(", "" );
         safe = safe.replace( ")", "" );
+        safe = safe.replace( "&", "AND" );
 
         // Any others, replace with empty
         safe = safe.replaceAll( "[^a-zA-Z0-9_.]", "" );

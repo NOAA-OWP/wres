@@ -1003,7 +1003,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                        + common
                        + this.getProbabilities()
                              .first()
-                       + "] AND <= "
+                       + "] & <= "
                        + this.getValues()
                              .second()
                        + stringUnits
@@ -1016,7 +1016,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
             return "> Pr = "
                    + this.getProbabilities().first()
-                   + " AND <= Pr = "
+                   + " & <= Pr = "
                    + this.getProbabilities().second()
                    + append;
         }
@@ -1052,7 +1052,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             return "> " + this.getValues().first()
                    + stringUnits
-                   + " AND <= "
+                   + " & <= "
                    + this.getValues().second()
                    + stringUnits
                    + append;
@@ -1076,7 +1076,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         if ( this.hasBetweenCondition() )
         {
             return "Pr > " + this.getProbabilities().first()
-                   + " AND <= "
+                   + " & <= "
                    + this.getProbabilities().second()
                    + append;
         }

@@ -287,9 +287,9 @@ final class DataUtilitiesTest
                                                 .setUnits( MeasurementUnit.of( "CMS" ) )
                                                 .build();
 
-        assertEquals( "> 0.0 CMS [Pr = 0.0] AND <= 0.5 CMS [Pr = 0.7] (a threshold)", threshold.toString() );
+        assertEquals( "> 0.0 CMS [Pr = 0.0] & <= 0.5 CMS [Pr = 0.7] (a threshold)", threshold.toString() );
 
-        assertEquals( "> 0.0 [Pr = 0.0] AND <= 0.5 [Pr = 0.7] (a threshold)",
+        assertEquals( "> 0.0 [Pr = 0.0] & <= 0.5 [Pr = 0.7] (a threshold)",
                       DataUtilities.toStringWithoutUnits( threshold ) );
     }
 

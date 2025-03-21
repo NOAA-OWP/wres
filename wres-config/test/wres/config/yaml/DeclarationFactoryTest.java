@@ -1691,7 +1691,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithFeaturefulThresholdsAndPredictedOrientationAndBetweenCondition() throws IOException
+    void testDeserializeWithFeaturefulThresholdsAndPredictedOrientationAndBetweenOperator() throws IOException
     {
         String yaml = """
                 observed:

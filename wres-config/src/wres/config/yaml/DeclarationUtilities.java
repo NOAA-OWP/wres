@@ -12,7 +12,10 @@ import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1046,6 +1049,58 @@ public class DeclarationUtilities
     }
 
     /**
+     * Collects together all ordered thresholds (by value) that have a BETWEEN operator and merges them.
+     *
+     * @param thresholds the thresholds
+     * @return the merged thresholds, where applicable
+     */
+
+    public static Set<Threshold> mergeBetweenThresholds( Set<Threshold> thresholds )
+    {
+        // Short-circuit
+        if ( thresholds.stream()
+                       .noneMatch( t -> t.threshold()
+                                         .getOperator()
+                                        == wres.statistics.generated.Threshold.ThresholdOperator.BETWEEN ) )
+        {
+            return thresholds;
+        }
+
+        Map<Geometry, Set<Threshold>> betweenThresholds =
+                DeclarationUtilities.getBetweenThresholdsByGeometry( thresholds );
+
+        Set<Threshold> returnMe = new LinkedHashSet<>();
+
+        for ( Set<wres.config.yaml.components.Threshold> next : betweenThresholds.values() )
+        {
+            if ( next.size() == 1 )
+            {
+                Threshold threshold = next.iterator()
+                                          .next();
+                Threshold addMe = DeclarationUtilities.getBetweenThresholdWithUpperBound( threshold );
+                returnMe.add( addMe );
+            }
+            else
+            {
+                Iterator<Threshold> iterator = next.iterator();
+                wres.config.yaml.components.Threshold last = null;
+                while ( iterator.hasNext() )
+                {
+                    Threshold current = iterator.next();
+                    if ( Objects.nonNull( last ) )
+                    {
+                        Threshold addMe = DeclarationUtilities.getBetweenThreshold( last, current );
+                        returnMe.add( addMe );
+                    }
+                    last = current;
+                }
+            }
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
      * @param builder the builder
      * @return whether a baseline dataset has been declared
      * @throws NullPointerException if the input is null
@@ -1262,8 +1317,8 @@ public class DeclarationUtilities
         }
 
         // Reference time pools?
-        if (!builder.referenceDatePools()
-                    .isEmpty() )
+        if ( !builder.referenceDatePools()
+                     .isEmpty() )
         {
             forecastDeclaration.add( "Discovered 'reference_date_pools'." );
         }
@@ -1722,6 +1777,145 @@ public class DeclarationUtilities
         }
 
         return builder.build();
+    }
+
+    /**
+     * Maps the thresholds with a BETWEEN operator by {@link Geometry}.
+     * @param thresholds the thresholds
+     * @return the mapped thresholds
+     */
+
+    private static Map<Geometry, Set<Threshold>> getBetweenThresholdsByGeometry( Set<Threshold> thresholds )
+    {
+        // Map the BETWEEN thresholds by common geometry. Note that all thresholds are BETWEEN at this stage because
+        // all thresholds have a single operator
+        Map<Geometry, Set<Threshold>> betweenThresholds = new LinkedHashMap<>();
+
+        for ( Threshold t : thresholds )
+        {
+            if ( betweenThresholds.containsKey( t.feature() ) )
+            {
+                betweenThresholds.get( t.feature() )
+                                 .add( t );
+            }
+            else
+            {
+                Set<Threshold> ordered = new TreeSet<>( Comparator.comparingDouble( a -> a.threshold()
+                                                                                          .getLeftThresholdValue() ) );
+                ordered.add( t );
+                betweenThresholds.put( t.feature(), ordered );
+            }
+        }
+
+        return Collections.unmodifiableMap( betweenThresholds );
+    }
+
+    /**
+     * Adds the upper bound to a threshold with a BETWEEN operator.
+     * @param threshold the threshold
+     * @return the threshold with the upper bound
+     */
+
+    private static Threshold getBetweenThresholdWithUpperBound( Threshold threshold )
+    {
+        if ( threshold.type()
+                      .isProbability() )
+        {
+            wres.statistics.generated.Threshold nextThreshold = threshold.threshold()
+                                                                         .toBuilder()
+                                                                         .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                                                         .build();
+            return ThresholdBuilder.builder( threshold )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+        else
+        {
+            wres.statistics.generated.Threshold nextThreshold = threshold.threshold()
+                                                                         .toBuilder()
+                                                                         .setRightThresholdProbability( 1.0 )
+                                                                         .build();
+            return ThresholdBuilder.builder( threshold )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+    }
+
+    /**
+     * Generates a threshold with a BETWEEN operator using the last and current thresholds in an iteration, merging the
+     * two.
+     *
+     * @param last the last threshold
+     * @param current the current threshold
+     * @return the merged threshold
+     */
+
+    private static Threshold getBetweenThreshold( Threshold last,
+                                                  Threshold current )
+    {
+        String mergedName = DeclarationUtilities.getMergedNameForBetweenThreshold( last, current );
+
+        if ( last.type()
+                 .isProbability() )
+        {
+            wres.statistics.generated.Threshold nextThreshold =
+                    last.threshold()
+                        .toBuilder()
+                        .setRightThresholdProbability( current.threshold()
+                                                              .getLeftThresholdProbability() )
+                        .setName( mergedName )
+                        .build();
+            return ThresholdBuilder.builder( last )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+        else
+        {
+            wres.statistics.generated.Threshold nextThreshold =
+                    last.threshold()
+                        .toBuilder()
+                        .setRightThresholdValue( current.threshold()
+                                                        .getLeftThresholdValue() )
+                        .setName( mergedName )
+                        .build();
+            return ThresholdBuilder.builder( last )
+                                   .threshold( nextThreshold )
+                                   .build();
+        }
+    }
+
+    /**
+     * Returns a merged threshold name from two thresholds with a BETWEEN operator.
+     *
+     * @param last the last threshold
+     * @param current the current threshold
+     * @return a merged name
+     */
+
+    private static String getMergedNameForBetweenThreshold( Threshold last, Threshold current )
+    {
+        String start = last.threshold()
+                           .getName();
+        String end = current.threshold()
+                            .getName();
+
+        if ( !current.threshold()
+                     .getName()
+                     .isEmpty()
+             && !Objects.equals( start, end ) )
+        {
+            if ( !start.isEmpty() )
+            {
+                start = "> "
+                        + start
+                        + " & <= ";
+            }
+
+            return start + current.threshold()
+                                  .getName();
+        }
+
+        return start;
     }
 
     /**
