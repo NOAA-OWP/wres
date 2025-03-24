@@ -1800,6 +1800,7 @@ public class DeclarationUtilities
             }
             else
             {
+                // Arrange in ascending order of magnitude
                 Set<Threshold> ordered = new TreeSet<>( Comparator.comparingDouble( a -> a.threshold()
                                                                                           .getLeftThresholdValue() ) );
                 ordered.add( t );
@@ -1823,7 +1824,7 @@ public class DeclarationUtilities
         {
             wres.statistics.generated.Threshold nextThreshold = threshold.threshold()
                                                                          .toBuilder()
-                                                                         .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                                                         .setRightThresholdProbability( 1.0 )
                                                                          .build();
             return ThresholdBuilder.builder( threshold )
                                    .threshold( nextThreshold )
@@ -1831,10 +1832,11 @@ public class DeclarationUtilities
         }
         else
         {
-            wres.statistics.generated.Threshold nextThreshold = threshold.threshold()
-                                                                         .toBuilder()
-                                                                         .setRightThresholdProbability( 1.0 )
-                                                                         .build();
+            wres.statistics.generated.Threshold nextThreshold =
+                    threshold.threshold()
+                             .toBuilder()
+                             .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                             .build();
             return ThresholdBuilder.builder( threshold )
                                    .threshold( nextThreshold )
                                    .build();

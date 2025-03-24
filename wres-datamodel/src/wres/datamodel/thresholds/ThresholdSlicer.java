@@ -850,13 +850,15 @@ public class ThresholdSlicer
 
         if ( values.size() == 1 )
         {
-            builder.setValues( values.iterator().next() );
+            builder.setValues( values.iterator()
+                                     .next() );
             set = true;
         }
 
         if ( probabilities.size() == 1 )
         {
-            builder.setProbabilities( probabilities.iterator().next() );
+            builder.setProbabilities( probabilities.iterator()
+                                                   .next() );
             set = true;
         }
 
@@ -864,11 +866,29 @@ public class ThresholdSlicer
         {
             if ( probabilities.size() > 1 )
             {
-                builder.setProbabilities( OneOrTwoDoubles.of( Double.NaN ) );
+                // BETWEEN operator
+                if ( probabilities.stream()
+                                  .anyMatch( OneOrTwoDoubles::hasTwo ) )
+                {
+                    builder.setProbabilities( OneOrTwoDoubles.of( Double.NaN, Double.NaN ) );
+                }
+                else
+                {
+                    builder.setProbabilities( OneOrTwoDoubles.of( Double.NaN ) );
+                }
             }
             else if ( values.size() > 1 )
             {
-                builder.setValues( OneOrTwoDoubles.of( Double.NaN ) );
+                // BETWEEN operator
+                if ( values.stream()
+                           .anyMatch( OneOrTwoDoubles::hasTwo ) )
+                {
+                    builder.setValues( OneOrTwoDoubles.of( Double.NaN, Double.NaN ) );
+                }
+                else
+                {
+                    builder.setValues( OneOrTwoDoubles.of( Double.NaN ) );
+                }
             }
         }
     }

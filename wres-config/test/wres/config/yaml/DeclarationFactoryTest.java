@@ -1759,6 +1759,72 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithFeaturefulThresholdsAndBetweenOperatorWithUnlimitedUpperBound() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                features:
+                  - observed: DRRC2
+                    predicted: FOO
+                  - observed: DOLC2
+                    predicted: BAR
+                thresholds:
+                  name: MAJOR FLOOD
+                  values:
+                    - { value: 23.0, feature: FOO }
+                    - { value: 27.0, feature: BAR }
+                  operator: between
+                  apply_to: predicted
+                  feature_name_from: predicted
+                """;
+
+        EvaluationDeclaration actualEvaluation = DeclarationFactory.from( yaml );
+
+        Threshold vOne = Threshold.newBuilder()
+                                  .setLeftThresholdValue( 23.0 )
+                                  .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+
+        Threshold vTwo = Threshold.newBuilder()
+                                  .setLeftThresholdValue( 27.0 )
+                                  .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "FOO" )
+                                                                                              .build() )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vTwo )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "BAR" )
+                                                                                              .build() )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> expected = Set.of( vOneWrapped, vTwoWrapped );
+
+        Set<wres.config.yaml.components.Threshold> actual = actualEvaluation.thresholds();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithMultipleSetsOfthresholds() throws IOException
     {
         String yaml = """

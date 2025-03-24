@@ -2,6 +2,9 @@ package wres.datamodel.types;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 /**
  * Immutable store of one or two double values.
  * 
@@ -124,6 +127,15 @@ public class OneOrTwoDoubles implements Comparable<OneOrTwoDoubles>
     public int hashCode()
     {
         return Objects.hash( first(), second() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                .append( "first", this.first() )
+                .append( "second", this.second() )
+                .build();
     }
 
     /**

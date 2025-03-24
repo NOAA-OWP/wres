@@ -327,7 +327,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
             JsonNode nextNode = valuesNode.get( i );
 
-            // Threshold value
+            // Threshold value. Set all as left. Any BETWEEN thresholds are constructed by merging later
             if ( nextNode.has( VALUE ) )
             {
                 JsonNode valueNode = nextNode.get( VALUE );
