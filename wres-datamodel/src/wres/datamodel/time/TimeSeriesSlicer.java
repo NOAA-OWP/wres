@@ -158,12 +158,14 @@ public final class TimeSeriesSlicer
             for ( Event<Pair<S, S>> next : times.getEvents() )
             {
                 // Condition is met on either side at any point within the series
-                if ( predicate.test( next.getValue().getLeft() ) )
+                if ( predicate.test( next.getValue()
+                                         .getLeft() ) )
                 {
                     left = true;
                 }
 
-                if ( predicate.test( next.getValue().getRight() ) )
+                if ( predicate.test( next.getValue()
+                                         .getRight() ) )
                 {
                     right = true;
                 }

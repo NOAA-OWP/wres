@@ -1847,6 +1847,7 @@ definitions:
       - greater equal
       - less
       - less equal
+      - between
 
   SummaryStatisticDimensionsEnum:
     type: string

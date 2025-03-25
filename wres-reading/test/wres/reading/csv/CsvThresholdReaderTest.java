@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
@@ -612,7 +613,112 @@ class CsvThresholdReaderTest
                 Files.delete( csvPath );
             }
         }
+    }
 
+    @Test
+    void testValueThresholdsWithBetweenOperator() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new csv file to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
+            Path csvPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( csvPath ) )
+            {
+                writer.append( "DRRC2, 3.0, 7.0, 15.0\n" )
+                      .append( "DOLC2, 23.0, 12.0, 99.7\n" );
+            }
+
+            URI uri = csvPath.toUri();
+
+            ThresholdSource source = ThresholdSourceBuilder.builder()
+                                                           .uri( uri )
+                                                           .missingValue( -999.0 )
+                                                           .unit( UNIT_STRING )
+                                                           .featureNameFrom( DatasetOrientation.LEFT )
+                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                           .applyTo( ThresholdOrientation.LEFT )
+                                                           .operator( ThresholdOperator.BETWEEN )
+                                                           .build();
+
+            CsvThresholdReader reader = CsvThresholdReader.of();
+            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+                                                                             Set.of( "DRRC2", "DOLC2" ),
+                                                                             null );
+
+            // Build the expectation
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdValue( 3.0 )
+                                     .setRightThresholdValue( 7.0 )
+                                     .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdValue( 7.0 )
+                                     .setRightThresholdValue( 15.0 )
+                                     .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdValue( 12.0 )
+                                       .setRightThresholdValue( 23.0 )
+                                       .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
+            Threshold four = Threshold.newBuilder()
+                                      .setLeftThresholdValue( 23.0 )
+                                      .setRightThresholdValue( 99.7 )
+                                      .setOperator( Threshold.ThresholdOperator.BETWEEN )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+
+            Geometry expectedFeatureOne = Geometry.newBuilder()
+                                                  .setName( "DRRC2" )
+                                                  .build();
+            Geometry expectedFeatureTwo = Geometry.newBuilder()
+                                                  .setName( "DOLC2" )
+                                                  .build();
+
+            wres.config.yaml.components.Threshold oneWrapped =
+                    ThresholdBuilder.builder()
+                                    .threshold( one )
+                                    .featureNameFrom( DatasetOrientation.LEFT )
+                                    .feature( expectedFeatureOne )
+                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                    .build();
+            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+                                                                               .threshold( two )
+                                                                               .build();
+            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+                                                                                 .feature( expectedFeatureTwo )
+                                                                                 .threshold( three )
+                                                                                 .build();
+            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
+                                                                                .feature( expectedFeatureTwo )
+                                                                                .threshold( four )
+                                                                                .build();
+
+            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+                                                                          twoWrapped,
+                                                                          threeWrapped,
+                                                                          fourWrapped );
+
+            // Compare
+            Assertions.assertEquals( expected, actual );
+
+            // Clean up
+            if ( Files.exists( csvPath ) )
+            {
+                Files.delete( csvPath );
+            }
+        }
     }
 
     @Test
