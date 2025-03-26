@@ -32,6 +32,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.ThresholdBuilder;
@@ -253,10 +254,14 @@ public class WrdsThresholdReader implements ThresholdReader
         // Validate the thresholds acquired from WRDS in relation to the features for which thresholds were required
         WrdsThresholdReader.validate( serviceUri, mappedAndAdjustedFeatureNames, thresholdMapping, featureAuthority );
 
-        return WrdsThresholdReader.getFeaturefulThresholds( thresholdMapping,
-                                                            orientation,
-                                                            mappedAndAdjustedFeatureNames,
-                                                            featureAuthority );
+        Set<wres.config.yaml.components.Threshold> featureful =
+                WrdsThresholdReader.getFeaturefulThresholds( thresholdMapping,
+                                                             orientation,
+                                                             mappedAndAdjustedFeatureNames,
+                                                             featureAuthority );
+
+        // Merge any thresholds that use the BETWEEN operator, as needed
+        return DeclarationUtilities.mergeBetweenThresholds( featureful );
     }
 
     /**
@@ -460,7 +465,8 @@ public class WrdsThresholdReader implements ThresholdReader
                                                                          WebClientUtils.getDefaultRetryStates() ) )
         {
 
-            if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )
+            if ( response.getStatusCode() >= 400
+                 && response.getStatusCode() < 500 )
             {
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              response.getStatusCode(),

@@ -615,7 +615,7 @@ final class ThresholdOuterTest
                 .setOrientation( ThresholdOrientation.LEFT )
                 .build();
 
-        assertEquals( "Pr >= 0.0 AND < 0.5", twoProb.toString() );
+        assertEquals( "Pr > 0.0 & <= 0.5", twoProb.toString() );
 
         // Pair of value thresholds
         ThresholdOuter twoVal = new Builder()
@@ -624,7 +624,7 @@ final class ThresholdOuterTest
                 .setOrientation( ThresholdOrientation.LEFT )
                 .build();
 
-        assertEquals( ">= 0.0 AND < 0.5", twoVal.toString() );
+        assertEquals( "> 0.0 & <= 0.5", twoVal.toString() );
 
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -635,7 +635,7 @@ final class ThresholdOuterTest
                                                 .setUnits( MeasurementUnit.of( "CMS" ) )
                                                 .build();
 
-        assertEquals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)", threshold.toString() );
+        assertEquals( "> 0.0 CMS [Pr = 0.0] & <= 0.5 CMS [Pr = 0.7] (a threshold)", threshold.toString() );
 
         // Test additional conditions
         ThresholdOuter less = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
@@ -689,7 +689,7 @@ final class ThresholdOuterTest
                                                          .setLabel( "FOO" )
                                                          .build();
 
-        assertEquals( ">= Pr = 0.1 AND < Pr = 0.3 (FOO)", quantileBetweenNaN.toString() );
+        assertEquals( "> Pr = 0.1 & <= Pr = 0.3 (FOO)", quantileBetweenNaN.toString() );
 
         ThresholdOuter quantileNaN = new Builder().setValues( OneOrTwoDoubles.of( Double.NaN ) )
                                                   .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
@@ -715,8 +715,10 @@ final class ThresholdOuterTest
                                                .build();
 
         assertTrue( realVals.test( 0.25 ) );
+        assertTrue( realVals.test( 0.5 ) );
         assertFalse( realVals.test( 0.55 ) );
         assertFalse( realVals.test( -0.1 ) );
+        assertFalse( realVals.test( 0.0 ) );
 
         // BETWEEN probabilities
         ThresholdOuter probs = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -725,8 +727,10 @@ final class ThresholdOuterTest
                                             .build();
 
         assertTrue( probs.test( 0.25 ) );
+        assertTrue( probs.test( 0.5 ) );
         assertFalse( probs.test( 0.55 ) );
         assertFalse( probs.test( -0.1 ) );
+        assertFalse( probs.test( 0.0 ) );
 
         // GREATER
         ThresholdOuter greater = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -773,7 +777,6 @@ final class ThresholdOuterTest
 
         assertTrue( equal.test( -0.0 ) );
         assertFalse( equal.test( -0.1 ) );
-
     }
 
     /**

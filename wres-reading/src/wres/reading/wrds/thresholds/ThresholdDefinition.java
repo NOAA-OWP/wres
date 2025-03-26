@@ -223,7 +223,8 @@ class ThresholdDefinition implements Serializable
         {
             if ( this.getStageValues() != null )
             {
-                originalThresholds = getStageValues().getThresholdValues();
+                originalThresholds = getStageValues()
+                        .getThresholdValues();
                 originalUnits = this.getMetadata()
                                     .getStageUnits();
             }
@@ -232,7 +233,8 @@ class ThresholdDefinition implements Serializable
         {
             if ( this.getFlowValues() != null )
             {
-                originalThresholds = getFlowValues().getThresholdValues();
+                originalThresholds = getFlowValues()
+                        .getThresholdValues();
                 originalUnits = this.getMetadata()
                                     .getFlowUnits();
             }

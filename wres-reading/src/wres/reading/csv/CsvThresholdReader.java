@@ -24,6 +24,7 @@ import com.opencsv.exceptions.CsvValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.ThresholdBuilder;
@@ -105,13 +106,21 @@ public class CsvThresholdReader implements ThresholdReader
                 Geometry feature = Geometry.newBuilder()
                                            .setName( featureName )
                                            .build();
-                // Add all thresholds to the overall set of thresholds
-                nextRawThresholds.forEach( n -> thresholds.add( ThresholdBuilder.builder()
+
+                // Create the wrapped thresholds
+                Set<wres.config.yaml.components.Threshold> wrapped = new HashSet<>();
+                nextRawThresholds.forEach( n -> wrapped.add( ThresholdBuilder.builder()
                                                                                 .threshold( n )
                                                                                 .feature( feature )
                                                                                 .featureNameFrom( orientation )
                                                                                 .type( type )
                                                                                 .build() ) );
+
+                // Merge thresholds that have a BETWEEN operator, as needed
+                Set<wres.config.yaml.components.Threshold> adjustedThresholds =
+                        DeclarationUtilities.mergeBetweenThresholds( wrapped );
+
+                thresholds.addAll( adjustedThresholds );
             }
         }
 

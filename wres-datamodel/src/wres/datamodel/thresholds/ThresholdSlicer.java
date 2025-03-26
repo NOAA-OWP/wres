@@ -94,7 +94,8 @@ public class ThresholdSlicer
 
                 if ( mappedThresholds.containsKey( noProbs ) )
                 {
-                    mappedThresholds.get( noProbs ).add( next );
+                    mappedThresholds.get( noProbs )
+                                    .add( next );
                 }
                 else
                 {
@@ -175,8 +176,10 @@ public class ThresholdSlicer
                  && another.first()
                            .hasLabel() )
             {
-                return Objects.compare( one.first().getLabel(),
-                                        another.first().getLabel(),
+                return Objects.compare( one.first()
+                                           .getLabel(),
+                                        another.first()
+                                               .getLabel(),
                                         Comparator.naturalOrder() );
             }
 
@@ -187,8 +190,10 @@ public class ThresholdSlicer
                  && another.first()
                            .hasProbabilities() )
             {
-                return Objects.compare( one.first().getProbabilities(),
-                                        another.first().getProbabilities(),
+                return Objects.compare( one.first()
+                                           .getProbabilities(),
+                                        another.first()
+                                               .getProbabilities(),
                                         Comparator.naturalOrder() );
             }
 
@@ -317,7 +322,8 @@ public class ThresholdSlicer
         // Operator and data type are required
         if ( operators.size() == 1 )
         {
-            builder.setOperator( operators.iterator().next() );
+            builder.setOperator( operators.iterator()
+                                          .next() );
         }
         else
         {
@@ -344,12 +350,14 @@ public class ThresholdSlicer
 
         if ( names.size() == 1 )
         {
-            builder.setLabel( names.iterator().next() );
+            builder.setLabel( names.iterator()
+                                   .next() );
         }
 
         if ( measurementUnits.size() == 1 )
         {
-            builder.setUnits( measurementUnits.iterator().next() );
+            builder.setUnits( measurementUnits.iterator()
+                                              .next() );
         }
 
         return builder.build();
@@ -395,7 +403,8 @@ public class ThresholdSlicer
             {
                 Feature leftFeature = nextFeature.getLeft();
 
-                if ( Objects.isNull( climatology ) || climatology.hasNoClimatology( leftFeature ) )
+                if ( Objects.isNull( climatology )
+                     || climatology.hasNoClimatology( leftFeature ) )
                 {
                     throw new ThresholdException( "Quantiles were required for feature tuple '"
                                                   + nextFeature.toStringShort()
@@ -841,13 +850,15 @@ public class ThresholdSlicer
 
         if ( values.size() == 1 )
         {
-            builder.setValues( values.iterator().next() );
+            builder.setValues( values.iterator()
+                                     .next() );
             set = true;
         }
 
         if ( probabilities.size() == 1 )
         {
-            builder.setProbabilities( probabilities.iterator().next() );
+            builder.setProbabilities( probabilities.iterator()
+                                                   .next() );
             set = true;
         }
 
@@ -855,11 +866,29 @@ public class ThresholdSlicer
         {
             if ( probabilities.size() > 1 )
             {
-                builder.setProbabilities( OneOrTwoDoubles.of( Double.NaN ) );
+                // BETWEEN operator
+                if ( probabilities.stream()
+                                  .anyMatch( OneOrTwoDoubles::hasTwo ) )
+                {
+                    builder.setProbabilities( OneOrTwoDoubles.of( Double.NaN, Double.NaN ) );
+                }
+                else
+                {
+                    builder.setProbabilities( OneOrTwoDoubles.of( Double.NaN ) );
+                }
             }
             else if ( values.size() > 1 )
             {
-                builder.setValues( OneOrTwoDoubles.of( Double.NaN ) );
+                // BETWEEN operator
+                if ( values.stream()
+                           .anyMatch( OneOrTwoDoubles::hasTwo ) )
+                {
+                    builder.setValues( OneOrTwoDoubles.of( Double.NaN, Double.NaN ) );
+                }
+                else
+                {
+                    builder.setValues( OneOrTwoDoubles.of( Double.NaN ) );
+                }
             }
         }
     }
