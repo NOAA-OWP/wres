@@ -129,28 +129,6 @@ tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
 writing_file=wres-writing-${wres_writing_version}.zip
 
-# Ensure the distribution zip files are present for successful podman build --format docker
-#if [[ ! -f ./build/distributions/$wres_core_file || \
-#         ! -f ./wres-worker/build/distributions/$worker_shim_file || \
-#         ! -f ./wres-tasker/build/distributions/$tasker_file || \
-#         ! -f ./wres-writing/build/distributions/$writing_file || \
-#         ! -f ./wres-vis/build/distributions/$vis_file  ]]
-#then
-#    echo ""
-#    echo "It appears you are not an automated build server (or something went wrong if you are)."
-#    echo ""
-#    echo "You do not have one of the required files, check the bellow exist"
-#    echo ""
-#    echo "./build/distributions/$wres_core_file"
-#    echo "./wres-worker/build/distributions/$worker_shim_file"
-#    echo "./wres-tasker/build/distributions/$tasker_file"
-#    echo "./wres-writing/build/distributions/$writing_file"
-#    echo "./wres-vis/build/distributions/$vis_file"
- #   echo ""
- #   echo ""
-#    exit 3
-#fi
-
 
 #=============================================================
 # Build the images

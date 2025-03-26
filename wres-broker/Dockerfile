@@ -1,7 +1,7 @@
 FROM rabbitmq:3.13.7-management-alpine
 
 # Wish we could do the following, but busybox does not support long gids:
-RUN addgroup -g 1370800073 wres && adduser -D -u 498 -g 1370800073 wres_docker
+# RUN addgroup -g 1370800073 wres && adduser -D -u 498 -g 1370800073 wres_docker
 
 # Instead, very manually create user and group:
 RUN echo "wres_docker:x:498:1370800073::/home/wres_docker:" >> /etc/passwd \
