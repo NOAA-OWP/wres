@@ -37,6 +37,8 @@ WORKDIR /opt/wres-worker-${worker_version}
 # In order to set umask for file sharing, use a wrapper script, see #56790
 COPY ./scripts/docker-entrypoint.sh .
 
+ENV user.home = /mnt/wres_share
+
 
 CMD [ "./docker-entrypoint.sh" ]
 
