@@ -168,6 +168,7 @@ services:
          # Override the broker address and port in the binding URL of the event.properties.
          - INNER_JAVA_OPTS=-Xmx8192m -Xms8192m -Dwres.maxPoolSize=13 -Dlogback.configurationFile=/opt/inner_logback.xml -Dwres.startBroker=false -Dwres.enableServerCache=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.externalNumerics=true -Dwres.featureBatchSize=1 -Dwres.useDatabase=true -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.wrdsCertificateFileToTrust=${WRDS_CA_FILE} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=1280m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME/ -XX:+CrashOnOutOfMemoryError -Dtruststore=${DSTORE_TRUST_STORE} -Dtruststorepassword=${DSTORE_TRUST_STORE_PASS}
          - LANG=C.UTF-8
+         - log.location=/mnt/wres_share/
         # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
         mem_limit: 12288m
         cap_drop:
@@ -214,6 +215,7 @@ services:
         # Override the broker address and port in the binding URL of the event.properties.
         - INNER_JAVA_OPTS=-Xmx8192m -Xms8192m -Dwres.maxPoolSize=13 -Dlogback.configurationFile=/opt/inner_logback.xml -Dwres.startBroker=false -Dwres.enableServerCache=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.externalNumerics=true -Dwres.featureBatchSize=1 -Dwres.useDatabase=true -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.wrdsCertificateFileToTrust=${WRDS_CA_FILE} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=1280m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME/ -XX:+CrashOnOutOfMemoryError -Dtruststore=${DSTORE_TRUST_STORE} -Dtruststorepassword=${DSTORE_TRUST_STORE_PASS}
         - LANG=C.UTF-8
+        - log.location=/mnt/wres_share/
       # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
       mem_limit: 12288m
       cap_drop:
