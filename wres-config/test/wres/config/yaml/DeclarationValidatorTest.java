@@ -2942,6 +2942,29 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testNwmSourceWithHttpSchemeProducesWarning()
+    {
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.NWM_LONG_RANGE_CHANNEL_RT_CONUS )
+                                     .uri( URI.create( "http://foo.bar" ) )
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "you should declare this source with the 'cdms3' scheme",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException  // NOSONAR
     {
         // #57969-86

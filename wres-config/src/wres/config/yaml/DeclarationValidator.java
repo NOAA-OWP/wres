@@ -130,6 +130,8 @@ public class DeclarationValidator
     private static final String TRY_AGAIN = "try again.";
     /** Re-used string. */
     private static final String AND_TRY_AGAIN = "and " + TRY_AGAIN;
+    /** Re-used string. */
+    private static final String DISCOVERED_ONE_OR_MORE = "Discovered one or more '";
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation if there are no schema
@@ -3853,8 +3855,8 @@ public class DeclarationValidator
         if ( Objects.nonNull( declaration.left() ) )
         {
             Set<SourceInterface> leftRequireFeatures =
-                    DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.left()
-                                                                                         .sources() );
+                    DeclarationValidator.getNwmSourceInterfaces( declaration.left()
+                                                                            .sources() );
             if ( !leftRequireFeatures.isEmpty() )
             {
                 eventBuilder.setEventMessage( start + OBSERVED + middle + leftRequireFeatures + end );
@@ -3866,8 +3868,8 @@ public class DeclarationValidator
         if ( Objects.nonNull( declaration.right() ) )
         {
             Set<SourceInterface> rightRequireFeatures =
-                    DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.right()
-                                                                                         .sources() );
+                    DeclarationValidator.getNwmSourceInterfaces( declaration.right()
+                                                                            .sources() );
             if ( !rightRequireFeatures.isEmpty() )
             {
                 eventBuilder.setEventMessage( start + PREDICTED + middle + rightRequireFeatures + end );
@@ -3879,9 +3881,9 @@ public class DeclarationValidator
         if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             Set<SourceInterface> baselineRequireFeatures =
-                    DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.baseline()
-                                                                                         .dataset()
-                                                                                         .sources() );
+                    DeclarationValidator.getNwmSourceInterfaces( declaration.baseline()
+                                                                            .dataset()
+                                                                            .sources() );
             if ( !baselineRequireFeatures.isEmpty() )
             {
                 eventBuilder.setEventMessage( start + BASELINE + middle + baselineRequireFeatures + end );
@@ -4245,13 +4247,12 @@ public class DeclarationValidator
      * @return a set of source interfaces that begin with the specified characters
      */
 
-    private static Set<SourceInterface> getSourceInterfacesThatBeginWithNwm( List<Source> sources )
+    private static Set<SourceInterface> getNwmSourceInterfaces( List<Source> sources )
     {
         return sources.stream()
                       .map( Source::sourceInterface )
-                      .filter( next -> Objects.nonNull( next ) && next.toString()
-                                                                      .toLowerCase()
-                                                                      .startsWith( "nwm" ) )
+                      .filter( next -> Objects.nonNull( next )
+                                       && next.isNwmInterface() )
                       .collect( Collectors.toSet() );
     }
 
@@ -4946,10 +4947,9 @@ public class DeclarationValidator
                                                                 String orientation,
                                                                 String article )
     {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
         int index = 1;
         List<Integer> invalid = new ArrayList<>();
+        Set<EvaluationStatusEvent> oneOf = new HashSet<>();
         for ( Source source : sources )
         {
             // Identify any source whose URI failed to deserialize
@@ -4968,14 +4968,42 @@ public class DeclarationValidator
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
                                              .setStatusLevel( StatusLevel.WARN )
-                                             .setEventMessage( "Discovered one or more '"
+                                             .setEventMessage( DISCOVERED_ONE_OR_MORE
                                                                + orientation
                                                                + "' data sources for which a 'time_zone_offset' "
                                                                + "was declared. This information is generally not "
                                                                + "required and will be ignored if the data source "
                                                                + "itself contains a time zone offset." )
                                              .build();
-                events.add( event );
+                oneOf.add( event );
+            }
+
+            // Warn about the use of the http/s scheme for sources that declare an nwm interface. The cdms3 scheme
+            // may be much quicker as this leverages the S3 or GCS APIs to make byte-range requests: see GitHub #75
+            if ( Objects.nonNull( source.uri() )
+                 && source.uri()
+                          .toString()
+                          .startsWith( "http" )
+                 && Objects.nonNull( source.sourceInterface() )
+                 && source.sourceInterface()
+                          .isNwmInterface() )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( DISCOVERED_ONE_OR_MORE
+                                                               + orientation
+                                                               + "' data sources from a web source with an interface "
+                                                               + "of '"
+                                                               + source.sourceInterface()
+                                                               + "', which uses the 'http' scheme. If this source "
+                                                               + "originates from a web service that implements the S3 "
+                                                               + "or Google Cloud Services (GCS) interfaces, then "
+                                                               + "you should declare this source with the 'cdms3' "
+                                                               + "scheme, rather than the 'http' scheme, as this "
+                                                               + "should be much more performant." )
+                                             .build();
+                oneOf.add( event );
             }
 
             // Warn about unit
@@ -4984,18 +5012,21 @@ public class DeclarationValidator
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
                                              .setStatusLevel( StatusLevel.WARN )
-                                             .setEventMessage( "Discovered one or more '"
+                                             .setEventMessage( DISCOVERED_ONE_OR_MORE
                                                                + orientation
                                                                + "' data sources for which a 'unit' was declared. "
                                                                + "This information is generally not required and "
                                                                + "will be ignored if the data source itself "
                                                                + "contains a measurement unit." )
                                              .build();
-                events.add( event );
+                oneOf.add( event );
             }
 
             index++;
         }
+
+        // Add the singleton instances
+        List<EvaluationStatusEvent> events = new ArrayList<>( oneOf );
 
         if ( !invalid.isEmpty() )
         {

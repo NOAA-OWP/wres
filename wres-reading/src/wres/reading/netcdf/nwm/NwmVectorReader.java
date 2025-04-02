@@ -14,8 +14,10 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.collections4.ListUtils;
@@ -28,6 +30,7 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.time.TimeSeries;
@@ -99,15 +102,35 @@ public class NwmVectorReader implements TimeSeriesReader
                       featureBlocks,
                       referenceTimes );
 
-        // Read the time-series
+        // Read the time-series, counting missings
+        AtomicInteger missingCount = new AtomicInteger();
+        AtomicInteger totalCount = new AtomicInteger();
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource,
                                                                          referenceTimes,
-                                                                         featureBlocks );
+                                                                         featureBlocks,
+                                                                         missingCount,
+                                                                         totalCount );
 
         return Stream.generate( supplier )
                      // Finite stream, proceeds while a time-series is returned
                      .takeWhile( Objects::nonNull )
-                     .onClose( () -> LOGGER.debug( "Detected a stream close event." ) );
+                     .onClose( () -> {
+                         LOGGER.debug( "Detected a stream close event." );
+                         if ( missingCount.get() == totalCount.get() )
+                         {
+                             throw new ReadException( "Failed to read any data from the declared NetCDF resources. "
+                                                      + "Please check that the base URI is correct ("
+                                                      + dataSource.getUri()
+                                                      + ") and that "
+                                                      + "data should be expected for the declared source interfaces ("
+                                                      + dataSource.getContext()
+                                                                  .sources()
+                                                                  .stream()
+                                                                  .map( Source::sourceInterface )
+                                                                  .collect( Collectors.toSet() )
+                                                      + "), geographic features, time periods etc.)." );
+                         }
+                     } );
     }
 
     @Override
@@ -227,12 +250,16 @@ public class NwmVectorReader implements TimeSeriesReader
      * @param dataSource the data source
      * @param referenceTimes the reference times to read
      * @param featureBlocks the feature blocks to read
+     * @param missingCount a record of the time-series with no data
+     * @param totalCount a record of the total number of time-series read
      * @return a time-series supplier
      */
 
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
                                                              Set<Instant> referenceTimes,
-                                                             List<SortedSet<Long>> featureBlocks )
+                                                             List<SortedSet<Long>> featureBlocks,
+                                                             AtomicInteger missingCount,
+                                                             AtomicInteger totalCount )
     {
         SourceInterface interfaceShortHand = dataSource.getSource()
                                                        .sourceInterface();
@@ -248,7 +275,9 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                                  dataSource,
                                                                                  referenceTimes,
                                                                                  referenceTimeType,
-                                                                                 featureBlocks );
+                                                                                 featureBlocks,
+                                                                                 missingCount,
+                                                                                 totalCount );
 
         // The current supplier
         AtomicReference<Supplier<TimeSeriesTuple>> supplier = new AtomicReference<>();
@@ -309,6 +338,8 @@ public class NwmVectorReader implements TimeSeriesReader
      * @param referenceTimes the reference times to read
      * @param referenceTimeType the type of reference time
      * @param featureBlocks the feature blocks to read
+     * @param missingCount a record of the time-series with no data
+     * @param totalCount a record of the total number of time-series read
      * @return the time-series suppliers
      */
 
@@ -316,7 +347,9 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                     DataSource dataSource,
                                                                     Set<Instant> referenceTimes,
                                                                     ReferenceTimeType referenceTimeType,
-                                                                    List<SortedSet<Long>> featureBlocks )
+                                                                    List<SortedSet<Long>> featureBlocks,
+                                                                    AtomicInteger missingCount,
+                                                                    AtomicInteger totalCount )
     {
         // Create the smaller suppliers, one per reference time
         List<Supplier<TimeSeriesTuple>> suppliers = new ArrayList<>();
@@ -328,7 +361,9 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                                  dataSource,
                                                                                  nextReferenceTime,
                                                                                  referenceTimeType,
-                                                                                 featureBlocks );
+                                                                                 featureBlocks,
+                                                                                 missingCount,
+                                                                                 totalCount );
             suppliers.add( nextSupplier );
         }
 
@@ -344,6 +379,8 @@ public class NwmVectorReader implements TimeSeriesReader
      * @param referenceTime the reference time to read
      * @param referenceTimeType the type of reference time
      * @param featureBlocks the feature blocks to read
+     * @param missingCount a record of the time-series with no data
+     * @param totalCount a record of the total number of time-series read
      * @return a time-series supplier
      */
 
@@ -351,7 +388,9 @@ public class NwmVectorReader implements TimeSeriesReader
                                                              DataSource dataSource,
                                                              Instant referenceTime,
                                                              ReferenceTimeType referenceTimeType,
-                                                             List<SortedSet<Long>> featureBlocks )
+                                                             List<SortedSet<Long>> featureBlocks,
+                                                             AtomicInteger missingCount,
+                                                             AtomicInteger totalCount )
     {
         List<TimeSeriesTuple> cachedSeries = new ArrayList<>();
         List<SortedSet<Long>> mutableFeatureBlocks = new ArrayList<>( featureBlocks );
@@ -380,6 +419,7 @@ public class NwmVectorReader implements TimeSeriesReader
             while ( !mutableFeatureBlocks.isEmpty() )
             {
                 NwmTimeSeries currentTimeSeries = nwmTimeSeries.get();
+
                 SortedSet<Long> nextFeatureBlock = mutableFeatureBlocks.remove( 0 );
 
                 // No blobs open? Create a new opener and expose it for future iterations.
@@ -394,6 +434,8 @@ public class NwmVectorReader implements TimeSeriesReader
 
                     nwmTimeSeries.set( currentTimeSeries );
                 }
+
+                this.incrementMissingCount( currentTimeSeries, missingCount );
 
                 List<TimeSeriesTuple> nextSeries = this.getTimeSeries( dataSource,
                                                                        nextFeatureBlock,
@@ -422,11 +464,29 @@ public class NwmVectorReader implements TimeSeriesReader
             // Close the time-series
             this.closeTimeSeries( nwmTimeSeries );
 
+            // Increment total series count
+            totalCount.incrementAndGet();
+
             LOGGER.debug( "Exiting the time-series supplier for reference time {}.", referenceTime );
 
             // Null sentinel
             return null;
         };
+    }
+
+    /**
+     * Increments the missing count, if needed.
+     *
+     * @param currentTimeSeries the current time-series
+     * @param missingCount the missing count
+     */
+
+    private void incrementMissingCount( NwmTimeSeries currentTimeSeries, AtomicInteger missingCount )
+    {
+        if ( currentTimeSeries.isAllMissing() )
+        {
+            missingCount.incrementAndGet();
+        }
     }
 
     /**
@@ -494,8 +554,7 @@ public class NwmVectorReader implements TimeSeriesReader
         String variableName = dataSource.getVariable()
                                         .name()
                                         .strip();
-        String unitName = nwmTimeSeries.readAttributeAsString( variableName,
-                                                               "units" );
+        String unitName = nwmTimeSeries.readAttributeAsString( variableName );
 
         long[] featureBlockInts = featureBlock.stream()
                                               .mapToLong( Long::longValue )
@@ -590,8 +649,9 @@ public class NwmVectorReader implements TimeSeriesReader
 
         List<List<Long>> tempListOfLists = ListUtils.partition( featureNwmIds, FEATURE_BLOCK_SIZE );
         List<SortedSet<Long>> featureBlocks = tempListOfLists.stream()
-                .map( t -> Collections.unmodifiableSortedSet( new TreeSet<>( t ) ) )
-                .toList();
+                                                             .map( t -> Collections.unmodifiableSortedSet( new TreeSet<>(
+                                                                     t ) ) )
+                                                             .toList();
 
         if ( LOGGER.isDebugEnabled() )
         {
