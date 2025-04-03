@@ -1,0 +1,30 @@
+observed:
+  sources:
+  - interface: usgs nwis
+    uri: https://nwis.waterservices.usgs.gov/nwis/iv
+  variable: '00060'
+predicted:
+  sources:
+  - interface: nwm medium range deterministic channel rt conus hourly
+    uri: cdms3://storage.googleapis.com/national-water-model
+  variable: streamflow
+unit: ft3/s
+valid_dates:
+  minimum: '2025-02-21T06:00:00Z'
+  maximum: '2025-02-21T11:00:00Z'
+reference_dates:
+  minimum: '2025-02-21T06:00:00Z'
+  maximum: '2025-02-21T06:00:00Z'
+lead_times:
+  minimum: 0
+  maximum: 5
+  unit: hours
+features:
+- observed: '01631000'
+  predicted: '5907079'
+metrics:
+- bias fraction
+- sample size
+output_formats:
+- csv2
+- pairs

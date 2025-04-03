@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import lombok.Getter;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -87,6 +88,8 @@ class NwmTimeSeries implements Closeable
     private static final int POOL_OBJECT_LIFESPAN = 30000;
     private static final String ATTRIBUTE_FOUND_FOR_VARIABLE = "' attribute found for variable '";
     private static final String IN_NET_CDF_DATA = " in netCDF data.";
+    private static final String UNABLE_TO_CONVERT_ATTRIBUTE = "Unable to convert attribute '";
+    private static final String NWM_DOT = "nwm.";
 
     private final NwmProfile profile;
 
@@ -99,26 +102,21 @@ class NwmTimeSeries implements Closeable
     /** The base URI from where to find the members of this forecast */
     private final URI baseUri;
 
-    /**
-     * The netCDF resources managed by this instance, opened on construction
-     * and closed on close().
-     */
+    /** The netCDF resources managed by this instance, opened on construction and closed on close(). */
     private final Set<NetcdfFile> netcdfFiles;
 
-    /**
-     * The cache holding NWM feature ids for this whole set of NWM resources
-     */
+    /** The cache holding NWM feature ids for this whole set of NWM resources. */
     private final NWMFeatureCache featureCache;
 
-    /**
-     * To parallelize requests for data from netCDF resources.
-     */
+    /** To parallelize requests for data from netCDF resources. */
     private final ThreadPoolExecutor readExecutor;
 
-    /**
-     * List of features requested that were not found in this NWM TimeSeries
-     */
+    /** List of features requested that were not found in this NWM TimeSeries. */
     private final Set<Long> featuresNotFound;
+
+    /** Indicates whether no resources could be identified with data present, i.e., everything was missing. */
+    @Getter
+    private final boolean isAllMissing;
 
     @Override
     public String toString()
@@ -244,66 +242,11 @@ class NwmTimeSeries implements Closeable
                                                     nwmReaderQueue,
                                                     nwmReaderThreadFactory );
         this.readExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
-        BlockingQueue<Pair<URI, Future<NetcdfFile>>> openBlobQueue =
-                new ArrayBlockingQueue<>( CONCURRENT_READS );
-        CountDownLatch startGettingResults =
-                new CountDownLatch( CONCURRENT_READS );
 
         this.featuresNotFound = new HashSet<>( 1 );
 
         // Open all the relevant files during construction, or fail.
-        Set<URI> resourcesNotFound = new HashSet<>();
-        for ( URI netcdfUri : netcdfUris )
-        {
-            NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
-            Future<NetcdfFile> futureBlob = this.readExecutor.submit( opener );
-            Pair<URI, Future<NetcdfFile>> futureBlobPair = Pair.of( netcdfUri, futureBlob );
-            openBlobQueue.add( futureBlobPair );
-            startGettingResults.countDown();
-
-            if ( startGettingResults.getCount() <= 0 )
-            {
-                try
-                {
-                    NetcdfFile netcdfFile = openBlobQueue.take()
-                                                         .getRight()
-                                                         .get();
-                    this.netcdfFiles.add( netcdfFile );
-                }
-                catch ( InterruptedException ie )
-                {
-                    LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
-                    this.close();
-                    Thread.currentThread().interrupt();
-                }
-                catch ( ExecutionException ee )
-                {
-                    this.allowFileNotFoundOrThrowReadException( netcdfUri, ee, resourcesNotFound );
-                }
-            }
-        }
-
-        // Finish getting the remainder of netCDF resources being opened.
-        for ( Pair<URI, Future<NetcdfFile>> opening : openBlobQueue )
-        {
-            try
-            {
-                NetcdfFile netcdfFile = opening.getRight()
-                                               .get();
-                this.netcdfFiles.add( netcdfFile );
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
-                this.close();
-                Thread.currentThread()
-                      .interrupt();
-            }
-            catch ( ExecutionException ee )
-            {
-                this.allowFileNotFoundOrThrowReadException( opening.getLeft(), ee, resourcesNotFound );
-            }
-        }
+        Set<URI> resourcesNotFound = this.openNetcdfFilesForReading( netcdfUris, this.readExecutor );
 
         this.featureCache = new NWMFeatureCache( this.netcdfFiles );
 
@@ -338,6 +281,9 @@ class NwmTimeSeries implements Closeable
                              resourcesNotFound );
             }
         }
+
+        // If everything is missing, flag and expose so that caller can track/handle
+        this.isAllMissing = this.netcdfFiles.isEmpty();
     }
 
     /**
@@ -364,7 +310,6 @@ class NwmTimeSeries implements Closeable
                       referenceDatetime,
                       baseUri );
         Set<URI> uris = new TreeSet<>();
-        final String NWM_DOT = "nwm.";
 
         // Formatter cannot handle Instant
         OffsetDateTime referenceOffsetDateTime = OffsetDateTime.ofInstant( referenceDatetime,
@@ -374,7 +319,8 @@ class NwmTimeSeries implements Closeable
 
         // Append a path separator to the base URI if one does not exist: #100561
         String baseUriString = baseUri.toString();
-        if ( !baseUriString.endsWith( "/" ) && !baseUriString.endsWith( "\\" ) )
+        if ( !baseUriString.endsWith( "/" )
+             && !baseUriString.endsWith( "\\" ) )
         {
             baseUri = URI.create( baseUriString.concat( "/" ) );
         }
@@ -385,7 +331,8 @@ class NwmTimeSeries implements Closeable
         {
             String directoryName = profile.getNwmSubdirectoryPrefix();
 
-            if ( profile.isEnsembleLike() && !NwmTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
+            if ( profile.isEnsembleLike()
+                 && NwmTimeSeries.isNotLegacyNwmVersion( baseUri ) ) // Yuck: #110992
             {
                 directoryName += "_mem" + i;
             }
@@ -394,77 +341,8 @@ class NwmTimeSeries implements Closeable
 
             for ( short j = 1; j <= profile.getBlobCount(); j++ )
             {
-                String ncFilePartOne = NWM_DOT + "t"
-                                       + NWM_HOUR_FORMATTER.format( referenceOffsetDateTime )
-                                       + "z."
-                                       + profile.getNwmConfiguration()
-                                       + "."
-                                       + profile.getNwmOutputType();
-
-                // Ensemble number appended if greater than one member present.
-                if ( profile.isEnsembleLike() && !NwmTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
-                {
-                    ncFilePartOne += "_" + i;
-                }
-
-                String ncFilePartTwo = "." + profile.getTimeLabel();
-
-                Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
-                Duration oneHour = Duration.ofHours( 1 );
-                boolean subHourly = validDatetimeStep.compareTo( oneHour ) < 0;
-                Duration duration = validDatetimeStep.multipliedBy( j );
-                long hours = duration.toHours();
-
-                if ( profile.getTimeLabel()
-                            .equals( NwmProfile.TimeLabel.F ) )
-                {
-                    if ( !subHourly )
-                    {
-                        String forecastLabel = String.format( "%03d", hours );
-                        ncFilePartTwo += forecastLabel;
-                    }
-                    else
-                    {
-                        // More-frequent-than-hourly means use 3-digit hour then
-                        // two digit minute
-                        long minutes = duration.minusHours( hours )
-                                               .toMinutes();
-                        String forecastLabel = String.format( "%03d%02d",
-                                                              hours,
-                                                              minutes );
-                        ncFilePartTwo += forecastLabel;
-                    }
-                }
-                else if ( profile.getTimeLabel()
-                                 .equals( NwmProfile.TimeLabel.TM ) )
-                {
-                    if ( !subHourly )
-                    {
-                        long hourLabel = duration.minus( validDatetimeStep )
-                                                 .toHours();
-                        // Analysis files go back in valid datetime as j increases.
-                        String analysisLabel = String.format( "%02d", hourLabel );
-                        ncFilePartTwo += analysisLabel;
-                    }
-                    else
-                    {
-                        long analysisHour = duration.minus( validDatetimeStep )
-                                                    .toHours();
-                        long analysisMinute = duration.minusHours( hours )
-                                                      .toMinutes();
-                        String analysisLabel = String.format( "%02d%02d",
-                                                              analysisHour,
-                                                              analysisMinute );
-                        ncFilePartTwo += analysisLabel;
-                    }
-                }
-
-                String ncFilePartThree = "." + profile.getNwmLocationLabel()
-                                         + ".nc";
-                String ncFile = ncFilePartOne + ncFilePartTwo + ncFilePartThree;
-                LOGGER.trace( "Built a netCDF filename: {}", ncFile );
-
-                URI fullUri = uriWithDirectory.resolve( ncFile );
+                URI fullUri =
+                        NwmTimeSeries.getNetcdfUri( profile, baseUri, uriWithDirectory, referenceOffsetDateTime, i, j );
                 uris.add( fullUri );
             }
         }
@@ -486,13 +364,13 @@ class NwmTimeSeries implements Closeable
     /**
      * Read the first value for a given variable name attribute from the netCDF
      * files.
+     *
      * @param variableName The NWM variable name.
-     * @param attributeName The attribute associated with the variable.
      * @return The String representation of the value of attribute of variable.
      * @throws IllegalStateException if the NetCDF data could not be accessed
      */
 
-    String readAttributeAsString( String variableName, String attributeName )
+    String readAttributeAsString( String variableName )
     {
         if ( !this.getNetcdfFiles()
                   .isEmpty() )
@@ -501,7 +379,7 @@ class NwmTimeSeries implements Closeable
             Variable variableVariable;
             NetcdfFile netcdfFile = this.getNetcdfFiles()
                                         .iterator()
-                                        .next();
+                                        .next();  // Do not close here
             variableVariable = netcdfFile.findVariable( variableName );
 
             if ( variableVariable == null )
@@ -527,7 +405,7 @@ class NwmTimeSeries implements Closeable
                                                     + "evaluate." );
             }
 
-            return NwmTimeSeries.readAttributeAsString( variableVariable, attributeName );
+            return NwmTimeSeries.readAttributeAsString( variableVariable );
         }
         else
         {
@@ -756,9 +634,104 @@ class NwmTimeSeries implements Closeable
      * @return whether the path is consistent with a legacy 1.1 or 1.2 model version
      */
 
-    private static boolean isLegacyNwmVersion( URI baseUri )
+    private static boolean isNotLegacyNwmVersion( URI baseUri )
     {
-        return baseUri.getPath().contains( "1.1" ) || baseUri.getPath().contains( "1.2" );
+        return !baseUri.getPath()
+                       .contains( "1.1" )
+               && !baseUri.getPath()
+                          .contains( "1.2" );
+    }
+
+    /**
+     * Returns a NetCDF URI from the inputs.
+     * @param profile the profile
+     * @param baseUri the base URI
+     * @param uriWithDirectory the URI with the directory
+     * @param referenceOffsetDateTime the offset reference time
+     * @param memberIndex the member index
+     * @param blobIndex the blob index
+     * @return the URI
+     */
+
+    private static URI getNetcdfUri( NwmProfile profile,
+                                     URI baseUri,
+                                     URI uriWithDirectory,
+                                     OffsetDateTime referenceOffsetDateTime,
+                                     int memberIndex,
+                                     int blobIndex )
+    {
+        String ncFilePartOne = NWM_DOT + "t"
+                               + NWM_HOUR_FORMATTER.format( referenceOffsetDateTime )
+                               + "z."
+                               + profile.getNwmConfiguration()
+                               + "."
+                               + profile.getNwmOutputType();
+
+        // Ensemble number appended if greater than one member present.
+        if ( profile.isEnsembleLike()
+             && NwmTimeSeries.isNotLegacyNwmVersion( baseUri ) ) // Yuck: #110992
+        {
+            ncFilePartOne += "_" + memberIndex;
+        }
+
+        String ncFilePartTwo = "." + profile.getTimeLabel();
+
+        Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
+        Duration oneHour = Duration.ofHours( 1 );
+        boolean subHourly = validDatetimeStep.compareTo( oneHour ) < 0;
+        Duration duration = validDatetimeStep.multipliedBy( blobIndex );
+        long hours = duration.toHours();
+
+        if ( profile.getTimeLabel()
+                    .equals( NwmProfile.TimeLabel.F ) )
+        {
+            if ( !subHourly )
+            {
+                String forecastLabel = String.format( "%03d", hours );
+                ncFilePartTwo += forecastLabel;
+            }
+            else
+            {
+                // More-frequent-than-hourly means use 3-digit hour then
+                // two digit minute
+                long minutes = duration.minusHours( hours )
+                                       .toMinutes();
+                String forecastLabel = String.format( "%03d%02d",
+                                                      hours,
+                                                      minutes );
+                ncFilePartTwo += forecastLabel;
+            }
+        }
+        else if ( profile.getTimeLabel()
+                         .equals( NwmProfile.TimeLabel.TM ) )
+        {
+            if ( !subHourly )
+            {
+                long hourLabel = duration.minus( validDatetimeStep )
+                                         .toHours();
+                // Analysis files go back in valid datetime as j increases.
+                String analysisLabel = String.format( "%02d", hourLabel );
+                ncFilePartTwo += analysisLabel;
+            }
+            else
+            {
+                long analysisHour = duration.minus( validDatetimeStep )
+                                            .toHours();
+                long analysisMinute = duration.minusHours( hours )
+                                              .toMinutes();
+                String analysisLabel = String.format( "%02d%02d",
+                                                      analysisHour,
+                                                      analysisMinute );
+                ncFilePartTwo += analysisLabel;
+            }
+        }
+
+        String ncFilePartThree = "." + profile.getNwmLocationLabel()
+                                 + ".nc";
+        String ncFile = ncFilePartOne + ncFilePartTwo + ncFilePartThree;
+        LOGGER.trace( "Built a netCDF filename: {}", ncFile );
+
+        return NwmTimeSeries.getUriForScheme( uriWithDirectory, ncFile );
     }
 
     private Instant getReferenceDatetime()
@@ -782,6 +755,78 @@ class NwmTimeSeries implements Closeable
     }
 
     /**
+     * Opens the supplied NetCDF URIs, reading for reading.
+     *
+     * @param netcdfUris the uris to NetCDF blobs
+     * @param readExecutor the read executor
+     * @return any resources not found
+     */
+
+    private Set<URI> openNetcdfFilesForReading( Set<URI> netcdfUris,
+                                                ThreadPoolExecutor readExecutor )
+    {
+        BlockingQueue<Pair<URI, Future<NetcdfFile>>> openBlobQueue =
+                new ArrayBlockingQueue<>( CONCURRENT_READS );
+        CountDownLatch startGettingResults =
+                new CountDownLatch( CONCURRENT_READS );
+
+        Set<URI> resourcesNotFound = new HashSet<>();
+        for ( URI netcdfUri : netcdfUris )
+        {
+            NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
+            Future<NetcdfFile> futureBlob = readExecutor.submit( opener );
+            Pair<URI, Future<NetcdfFile>> futureBlobPair = Pair.of( netcdfUri, futureBlob );
+            openBlobQueue.add( futureBlobPair );
+            startGettingResults.countDown();
+
+            if ( startGettingResults.getCount() <= 0 )
+            {
+                try
+                {
+                    NetcdfFile netcdfFile = openBlobQueue.take()
+                                                         .getRight()
+                                                         .get();
+                    this.netcdfFiles.add( netcdfFile );
+                }
+                catch ( InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
+                    this.close();
+                    Thread.currentThread().interrupt();
+                }
+                catch ( ExecutionException ee )
+                {
+                    this.allowFileNotFoundOrThrowReadException( netcdfUri, ee, resourcesNotFound );
+                }
+            }
+        }
+
+        // Finish getting the remainder of netCDF resources being opened.
+        for ( Pair<URI, Future<NetcdfFile>> opening : openBlobQueue )
+        {
+            try
+            {
+                NetcdfFile netcdfFile = opening.getRight()
+                                               .get();
+                this.netcdfFiles.add( netcdfFile );
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while opening netCDF resources.", ie );
+                this.close();
+                Thread.currentThread()
+                      .interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                this.allowFileNotFoundOrThrowReadException( opening.getLeft(), ee, resourcesNotFound );
+            }
+        }
+
+        return Collections.unmodifiableSet( resourcesNotFound );
+    }
+
+    /**
      * Inspects the exception and, if the cause of the exception is a {@link FileNotFoundException}, adds it to the
      * supplied set, otherwise throws an {@link ReadException} indicating that the resource could not be read.
      * @param uri the URI that was attempted
@@ -797,6 +842,8 @@ class NwmTimeSeries implements Closeable
         if ( Objects.nonNull( cause )
              && cause instanceof FileNotFoundException )
         {
+            LOGGER.debug( "Failed to open NetCDF resource, '{}', because it could not be found: {}",
+                          uri, e.getMessage() );
             resourcesNotFound.add( uri );
         }
         else
@@ -871,23 +918,21 @@ class NwmTimeSeries implements Closeable
 
     /**
      * @param ncVariable The NWM variable.
-     * @param attributeName The attribute associated with the variable.
      * @return The String representation of the value of attribute of variable.
      */
 
-    private static String readAttributeAsString( Variable ncVariable,
-                                                 String attributeName )
+    private static String readAttributeAsString( Variable ncVariable )
     {
         for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getName()
-                          .equalsIgnoreCase( attributeName.toLowerCase() ) )
+                          .equalsIgnoreCase( "units" ) )
             {
                 return attribute.getStringValue();
             }
         }
 
-        throw new IllegalStateException( "No '" + attributeName
+        throw new IllegalStateException( "No 'units"
                                          + ATTRIBUTE_FOUND_FOR_VARIABLE
                                          + ncVariable
                                          + IN_NET_CDF_DATA );
@@ -914,12 +959,12 @@ class NwmTimeSeries implements Closeable
 
                 if ( type.equals( DataType.DOUBLE ) )
                 {
-                    return attribute.getNumericValue()
-                                    .doubleValue();
+                    return Objects.requireNonNull( attribute.getNumericValue() )
+                                  .doubleValue();
                 }
                 else
                 {
-                    throw new CastMayCauseBadConversionException( "Unable to convert attribute '"
+                    throw new CastMayCauseBadConversionException( UNABLE_TO_CONVERT_ATTRIBUTE
                                                                   + attributeName
                                                                   + "' to double because it is type "
                                                                   + type );
@@ -953,13 +998,13 @@ class NwmTimeSeries implements Closeable
 
                 if ( type.equals( DataType.FLOAT ) )
                 {
-                    return attribute.getNumericValue()
-                                    .floatValue();
+                    return Objects.requireNonNull( attribute.getNumericValue() )
+                                  .floatValue();
                 }
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
+                            UNABLE_TO_CONVERT_ATTRIBUTE
                             + attributeName
                             + "' to float because it is type "
                             + type );
@@ -1000,13 +1045,13 @@ class NwmTimeSeries implements Closeable
                 {
                     // No loss of precision nor out of bounds possibility when
                     // promoting byte, ubyte, short, ushort, int to int.
-                    return attribute.getNumericValue()
-                                    .intValue();
+                    return Objects.requireNonNull( attribute.getNumericValue() )
+                                  .intValue();
                 }
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
+                            UNABLE_TO_CONVERT_ATTRIBUTE
                             + attributeName
                             + "' to integer because it is type "
                             + type );
@@ -1185,7 +1230,8 @@ class NwmTimeSeries implements Closeable
         }
 
         // Write the values to the result array. Skip past unrequested values.
-        for ( int i = 0, lastRawIndex = -1; i < indices.length; i++ )
+        int lastRawIndex = -1;
+        for ( int i = 0; i < indices.length; i++ )
         {
             if ( i == 0 )
             {
@@ -1203,14 +1249,14 @@ class NwmTimeSeries implements Closeable
             }
         }
 
-        LOGGER.debug(
-                "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
-                variableName,
-                minIndex,
-                maxIndex,
-                indices,
-                rawValues.length,
-                result );
+        LOGGER.debug( "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, "
+                      + "distilled to {}",
+                      variableName,
+                      minIndex,
+                      maxIndex,
+                      indices,
+                      rawValues.length,
+                      result );
         return result;
     }
 
@@ -1292,7 +1338,9 @@ class NwmTimeSeries implements Closeable
         public NetcdfFile call() throws IOException
         {
             LOGGER.debug( "Opening NetCDF resource, '{}'", this.uri );
-            return NetcdfFiles.open( this.uri.toString() );
+            NetcdfFile file = NetcdfFiles.open( this.uri.toString() );
+            LOGGER.debug( "Opened NetCDF resource, '{}'", this.uri );
+            return file;
         }
     }
 
@@ -1435,41 +1483,16 @@ class NwmTimeSeries implements Closeable
                 ncEnsembleMember = this.readEnsembleNumber( profile, netcdfFile );
             }
 
-            List<FeatureIdWithItsIndex> features = new ArrayList<>( featureIds.length );
-
             // Discover the minimum and maximum indexes requested while getting
             // them from the featureCache in order to know the nc range to read.
             // Initialize to extreme values to detect when nothing was found
             // and to have some assurance that "less than" and "greater than"
             // will work from the start of the loop.
-            int minIndex = Integer.MAX_VALUE;
-            int maxIndex = Integer.MIN_VALUE;
-
-            for ( long featureId : featureIds )
-            {
-                FeatureIdWithItsIndex feature;
-                int indexOfFeature = featureCache.findFeatureIndex( profile,
-                                                                    netcdfFile,
-                                                                    featureId );
-                feature = new FeatureIdWithItsIndex( featureId, indexOfFeature );
-                features.add( feature );
-
-                if ( !feature.found() )
-                {
-                    this.featuresNotFound.add( feature.featureId() );
-                    continue;
-                }
-
-                if ( feature.index() < minIndex )
-                {
-                    minIndex = feature.index();
-                }
-
-                if ( feature.index() > maxIndex )
-                {
-                    maxIndex = feature.index();
-                }
-            }
+            FeatureDetails featureDetails = this.getFeatureDetails( profile, netcdfFile, featureIds, featureCache );
+            List<FeatureIdWithItsIndex> features = featureDetails.features();
+            int minIndex = featureDetails.minIndex();
+            int maxIndex = featureDetails.maxIndex();
+            this.featuresNotFound.addAll( featureDetails.featuresNotFound() );
 
             if ( minIndex == Integer.MAX_VALUE
                  || maxIndex == Integer.MIN_VALUE )
@@ -1497,29 +1520,12 @@ class NwmTimeSeries implements Closeable
                                                .toArray();
 
             Variable variableVariable = netcdfFile.findVariable( variableName );
-            int[] rawVariableValues;
-
-
-            // Preserve the context of which netCDF blob is read with try/catch.
-            // (The readRawInts method does not need the netCDF blob.)
-            try
-            {
-                rawVariableValues = NwmTimeSeries.readRawInts( variableVariable,
-                                                               indicesOfFeatures,
-                                                               minIndex,
-                                                               maxIndex );
-                LOGGER.debug( "Read integer values {} corresponding to feature ids {} at indices {} from {}",
-                              rawVariableValues,
-                              companionFeatures,
-                              indicesOfFeatures,
-                              netcdfFile.getLocation() );
-            }
-            catch ( PreReadException pie )
-            {
-                throw new PreReadException( "While reading netCDF data at "
-                                            + netcdfFile.getLocation(),
-                                            pie );
-            }
+            int[] rawVariableValues = this.getRawVariableValues( variableVariable,
+                                                                 indicesOfFeatures,
+                                                                 companionFeatures,
+                                                                 minIndex,
+                                                                 maxIndex,
+                                                                 netcdfFile );
 
             VariableAttributes attributes = NwmTimeSeries.readVariableAttributes( variableVariable );
 
@@ -1535,15 +1541,15 @@ class NwmTimeSeries implements Closeable
                 if ( rawVariableValues[i] == missingValue
                      || rawVariableValues[i] == fillValue )
                 {
-                    LOGGER.debug(
-                            "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
-                            rawVariableValues[i],
-                            missingValue,
-                            fillValue,
-                            i,
-                            companionFeatures[i],
-                            variableName,
-                            netcdfFile.getLocation() );
+                    LOGGER.debug( "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of "
+                                  + "netCDF {}",
+                                  rawVariableValues[i],
+                                  missingValue,
+                                  fillValue,
+                                  i,
+                                  companionFeatures[i],
+                                  variableName,
+                                  netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
@@ -1584,6 +1590,105 @@ class NwmTimeSeries implements Closeable
         }
 
         /**
+         * Reads the raw variable values from the inputs.
+         *
+         * @param variableVariable the variable value
+         * @param indicesOfFeatures the feature indexes
+         * @param companionFeatures the companion features
+         * @param minIndex the minimum feature index
+         * @param maxIndex the maximum feature index
+         * @param netcdfFile the NetCDF file
+         * @return the raw variable values
+         */
+
+        private int[] getRawVariableValues( Variable variableVariable,
+                                            int[] indicesOfFeatures,
+                                            long[] companionFeatures,
+                                            int minIndex,
+                                            int maxIndex,
+                                            NetcdfFile netcdfFile )
+        {
+            int[] rawVariableValues;
+
+
+            // Preserve the context of which netCDF blob is read with try/catch.
+            // (The readRawInts method does not need the netCDF blob.)
+            try
+            {
+                rawVariableValues = NwmTimeSeries.readRawInts( variableVariable,
+                                                               indicesOfFeatures,
+                                                               minIndex,
+                                                               maxIndex );
+                LOGGER.debug( "Read integer values {} corresponding to feature ids {} at indices {} from {}",
+                              rawVariableValues,
+                              companionFeatures,
+                              indicesOfFeatures,
+                              netcdfFile.getLocation() );
+
+                return rawVariableValues;
+            }
+            catch ( PreReadException pie )
+            {
+                throw new PreReadException( "While reading netCDF data at "
+                                            + netcdfFile.getLocation(),
+                                            pie );
+            }
+        }
+
+        /**
+         * Returns the feature details.
+         * @param profile the profile
+         * @param netcdfFile the NetCDF file
+         * @param featureIds the feature IDs
+         * @param featureCache the feature cache
+         * @return the feature details
+         */
+
+        private FeatureDetails getFeatureDetails( NwmProfile profile,
+                                                  NetcdfFile netcdfFile,
+                                                  long[] featureIds,
+                                                  NWMFeatureCache featureCache )
+        {
+            // Discover the minimum and maximum indexes requested while getting
+            // them from the featureCache in order to know the nc range to read.
+            // Initialize to extreme values to detect when nothing was found
+            // and to have some assurance that "less than" and "greater than"
+            // will work from the start of the loop.
+            int minIndex = Integer.MAX_VALUE;
+            int maxIndex = Integer.MIN_VALUE;
+
+            List<FeatureIdWithItsIndex> features = new ArrayList<>( featureIds.length );
+            Set<Long> notFound = new HashSet<>();
+            for ( long featureId : featureIds )
+            {
+                FeatureIdWithItsIndex feature;
+                int indexOfFeature = featureCache.findFeatureIndex( profile,
+                                                                    netcdfFile,
+                                                                    featureId );
+                feature = new FeatureIdWithItsIndex( featureId, indexOfFeature );
+                features.add( feature );
+
+                if ( !feature.found() )
+                {
+                    notFound.add( feature.featureId() );
+                    continue;
+                }
+
+                if ( feature.index() < minIndex )
+                {
+                    minIndex = feature.index();
+                }
+
+                if ( feature.index() > maxIndex )
+                {
+                    maxIndex = feature.index();
+                }
+            }
+
+            return new FeatureDetails( minIndex, maxIndex, features, notFound );
+        }
+
+        /**
          * <p>Reads and validates the ensemble number from an NWM netCDF resource.
          *
          * <p>Assumes that NWM netCDF resources only have one ensemble number in
@@ -1613,8 +1718,8 @@ class NwmTimeSeries implements Closeable
                 if ( globalAttribute.getName()
                                     .equals( memberNumberAttributeName ) )
                 {
-                    ncEnsembleNumber = globalAttribute.getNumericValue()
-                                                      .intValue();
+                    ncEnsembleNumber = Objects.requireNonNull( globalAttribute.getNumericValue() )
+                                              .intValue();
                     break;
                 }
             }
@@ -1876,11 +1981,10 @@ class NwmTimeSeries implements Closeable
                     // exception if they differ (by content).
                     if ( !Arrays.equals( features, this.originalFeatures ) )
                     {
-                        throw new PreReadException(
-                                "Non-homogeneous NWM data found. The features from "
-                                + netcdfFile.getLocation()
-                                + " do not match those found in a previously read "
-                                + "netCDF resource in the same NWM timeseries." );
+                        throw new PreReadException( "Non-homogeneous NWM data found. The features from "
+                                                    + netcdfFile.getLocation()
+                                                    + " do not match those found in a previously read "
+                                                    + "netCDF resource in the same NWM timeseries." );
                     }
                     LOGGER.debug( "Finished comparing {} to the features cache",
                                   netcdfFileName );
@@ -1901,6 +2005,30 @@ class NwmTimeSeries implements Closeable
     }
 
     /**
+     * Returns a URI from a base URI and resource name separated with a character that depends on the URI scheme. For
+     * the cdsm3 scheme, uses a '?' character, otherwise a '/' character. The cdms3 scheme is used by the Unidata
+     * NetCDF library to read data from a cloud bucket via the S3 or GCS APIs, which requires a resource key.  The
+     * resource key is separated with a '?' character.
+     *
+     * @param baseUri the base uri
+     * @param resourceName the resource name
+     * @return the separator character
+     */
+
+    private static URI getUriForScheme( URI baseUri, String resourceName )
+    {
+        if ( "cdms3".equalsIgnoreCase( baseUri.getScheme() ) )
+        {
+            String resourceUri = baseUri.toString()
+                                        .replaceAll( "/$", "?" + resourceName );
+
+            return URI.create( resourceUri );
+        }
+
+        return baseUri.resolve( resourceName );
+    }
+
+    /**
      * @param featureId the feature identifier
      * @param index the index
      */
@@ -1911,5 +2039,18 @@ class NwmTimeSeries implements Closeable
             return this.index >= 0;
         }
     }
+
+    /**
+     * Feature details.
+     *
+     * @param minIndex the minimum index
+     * @param maxIndex the maximum index
+     * @param features the features found
+     * @param featuresNotFound the features not found
+     */
+    private record FeatureDetails( int minIndex,
+                                   int maxIndex,
+                                   List<FeatureIdWithItsIndex> features,
+                                   Set<Long> featuresNotFound ) {}
 
 }

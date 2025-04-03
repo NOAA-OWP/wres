@@ -88,6 +88,7 @@ public class RetrieverUtilities
     }
 
     /**
+     * Adjusts the time window for the analysis durations, if required.
      *
      * @param timeWindow the time window, required
      * @param dataType the data type, required
