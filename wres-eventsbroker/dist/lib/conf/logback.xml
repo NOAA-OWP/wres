@@ -11,7 +11,7 @@
                  interleaving multiple users running wres at same time.
                  Does not prevent multiple instances of wres from interleaving. -->
             <!-- Roll over when a new day starts. -->
-            <fileNamePattern>${user.home}/eventsbroker/${hostname}/wres-eventsbroker.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${user.home}/wres_logs/eventsbroker/${hostname}/wres-eventsbroker.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- Keep at most 10 years of rolled files (see next comment) -->
             <maxHistory>3653</maxHistory>
 
