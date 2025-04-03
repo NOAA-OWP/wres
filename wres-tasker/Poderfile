@@ -1,0 +1,34 @@
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1088
+
+RUN dnf install -y \
+    java-17-openjdk-headless-1:17.0.14.0.7-3.el8.x86_64 \
+    unzip-6.0-47.el8_10.x86_64 \
+    procps-ng-3.3.15-14.el8 \
+    iproute-6.2.0-6.el8_10.x86_64 \
+    hostname-3.20-6.el8 \
+    && dnf clean all
+
+ARG version
+WORKDIR /opt
+COPY ./build/distributions/wres-tasker-${version}.zip .
+RUN unzip wres-tasker-${version}.zip \
+    && rm wres-tasker-${version}.zip \
+    && find . -type d -exec chmod u+rwx,g+rx,g-w,o+rx,o-w {} \; \
+    && find . -type f -exec chmod u+rw,g+r,g-w,o+r,o-w {} \;
+ 
+
+WORKDIR /opt/wres-tasker-${version}
+
+# Use an entrypoint script
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+
+EXPOSE 8443
+
+# Remember, to exec into a container and open a shell, use: 
+# docker run -ti --entrypoint /bin/bash container_id
+# Without the --entrypoint, the entrypoint script below will run
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
+
+VOLUME /wres_secrets
+

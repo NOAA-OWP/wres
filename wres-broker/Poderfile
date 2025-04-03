@@ -1,0 +1,14 @@
+FROM rabbitmq:3.13.7-management-alpine
+
+# Enable authentication with x509 client certificates (requires some conf too):
+RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
+RUN rabbitmq-plugins enable --offline rabbitmq_management
+
+WORKDIR /etc/rabbitmq
+COPY nonsrc/rabbitmq.conf .
+COPY nonsrc/definitions.json .
+COPY docker-healthcheck /usr/local/bin/
+
+VOLUME /wres_secrets
+
+HEALTHCHECK CMD ["docker-healthcheck"]
