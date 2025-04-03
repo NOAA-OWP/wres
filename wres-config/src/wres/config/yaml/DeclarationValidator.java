@@ -1920,7 +1920,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events
                 = new ArrayList<>( DeclarationValidator.timeIntervalIsValid( declaration.referenceDates(),
                                                                              REFERENCE_DATES ) );
-        List<EvaluationStatusEvent> validDates = DeclarationValidator.timeIntervalIsValid( declaration.referenceDates(),
+        List<EvaluationStatusEvent> validDates = DeclarationValidator.timeIntervalIsValid( declaration.validDates(),
                                                                                            VALID_DATES );
         events.addAll( validDates );
 
@@ -4393,6 +4393,7 @@ public class DeclarationValidator
 
     /**
      * Checks that the date interval is valid.
+     *
      * @param timeInterval the time interval
      * @param context the context for the interval to help with messaging
      * @return the validation events encountered
@@ -4403,23 +4404,37 @@ public class DeclarationValidator
 
         if ( Objects.nonNull( timeInterval )
              && Objects.nonNull( timeInterval.minimum() )
-             && Objects.nonNull( timeInterval.maximum() )
-             && ( timeInterval.maximum()
-                              .isBefore( timeInterval.minimum() )
-                  || timeInterval.minimum()
-                                 .equals( timeInterval.maximum() ) ) )
+             && Objects.nonNull( timeInterval.maximum() ) )
         {
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "The "
-                                                             + context
-                                                             + " interval is invalid because the 'minimum' value is "
-                                                             + "greater than or equal to the 'maximum' value. Please "
-                                                             + "adjust the 'minimum' to occur before the 'maximum' and "
-                                                             + "try " + AGAIN )
-                                           .build();
-            events.add( event );
+            if ( timeInterval.maximum()
+                             .isBefore( timeInterval.minimum() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The "
+                                                                 + context
+                                                                 + " interval is invalid because the 'minimum' value is "
+                                                                 + "greater than or equal to the 'maximum' value. Please "
+                                                                 + "adjust the 'minimum' to occur before the 'maximum' and "
+                                                                 + "try " + AGAIN )
+                                               .build();
+                events.add( event );
+            }
+            else if ( Objects.equals( timeInterval.minimum(), timeInterval.maximum() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The "
+                                                                 + context
+                                                                 + " interval is suspicious because the 'minimum' "
+                                                                 + "value is equal to the 'maximum' value. If a "
+                                                                 + "zero-wide interval was intended, no action is "
+                                                                 + "required." )
+                                               .build();
+                events.add( event );
+            }
         }
 
         return Collections.unmodifiableList( events );

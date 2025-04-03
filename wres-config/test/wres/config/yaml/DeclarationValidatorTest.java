@@ -1888,6 +1888,94 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testMinimumValidTimeLaterThanMaximumValidTimeProducesError()
+    {
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2022-04-23T00:00:00Z" ) )
+                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .validDates( validInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'valid_dates' interval is invalid because the "
+                                                       + "'minimum' value is greater than",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMinimumReferenceTimeLaterThanMaximumReferenceTimeProducesError()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2022-04-23T00:00:00Z" ) )
+                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'reference_dates' interval is invalid because the "
+                                                       + "'minimum' value is greater than",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMinimumValidTimeEqualToMaximumValidTimeProducesWarning()
+    {
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .validDates( validInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'valid_dates' interval is suspicious because the "
+                                                       + "'minimum' value is equal to the 'maximum' value",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testMinimumReferenceTimeEqualToMaximumReferenceTimeProducesWarning()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'reference_dates' interval is suspicious because "
+                                                       + "the 'minimum' value is equal to the 'maximum' value",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testMaximumValidTimeLaterThanMinimumReferenceTimePlusMinimumLeadTimeProducesError()
     {
         TimeInterval referenceInterval = TimeIntervalBuilder.builder()

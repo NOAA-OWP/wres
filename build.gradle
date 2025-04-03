@@ -2066,10 +2066,10 @@ distributions {
         contents {
             from {
                 // Note: to have files land in the distributed zip files,
-                // must put inside lib directory inside below directory.
-                // Must also add the new directory to classpath under
-                // startScripts below. For each module that adds to dist,
-                // add here for now until we can make it grab all of em.
+                // must put inside lib directory. Must also add the lib
+                // directory to classpath under startScripts below. For each
+                // module that adds to dist, add here for now until we can make
+                // it grab all of em.
                 ['dist', 'wres-io/dist', 'wres-statistics/dist', 'LICENSE']
             }
 
