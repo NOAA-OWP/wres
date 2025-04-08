@@ -129,28 +129,6 @@ tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
 writing_file=wres-writing-${wres_writing_version}.zip
 
-# Ensure the distribution zip files are present for successful podman build --format docker
-if [[ ! -f ./build/distributions/$wres_core_file || \
-         ! -f ./wres-worker/build/distributions/$worker_shim_file || \
-         ! -f ./wres-tasker/build/distributions/$tasker_file || \
-         ! -f ./wres-writing/build/distributions/$writing_file || \
-         ! -f ./wres-vis/build/distributions/$vis_file  ]]
-then
-    echo ""
-    echo "It appears you are not an automated build server (or something went wrong if you are)."
-    echo ""
-    echo "You do not have one of the required files, check the bellow exist"
-    echo ""
-    echo "./build/distributions/$wres_core_file"
-    echo "./wres-worker/build/distributions/$worker_shim_file"
-    echo "./wres-tasker/build/distributions/$tasker_file"
-    echo "./wres-writing/build/distributions/$writing_file"
-    echo "./wres-vis/build/distributions/$vis_file"
-    echo ""
-    echo ""
-    exit 3
-fi
-
 
 #=============================================================
 # Build the images
@@ -161,13 +139,13 @@ echo "Building images..."
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
 echo "Building and tagging worker image..."
-worker_image_id=$( podman build --format docker --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker:$overall_version . )
+worker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
 echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 
 # Build and tag the tasker image which solely contains the tasker.
 echo "Building tasker image..."
 pushd wres-tasker
-tasker_image_id=$( podman build --format docker --build-arg version=$wres_tasker_version --tag wres/wres-tasker:$tasker_version . )
+tasker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker . )
 popd
 
 echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
@@ -175,7 +153,7 @@ echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
 # Build and tag the broker image
 echo "Building broker image..."
 pushd wres-broker
-broker_image_id=$( podman build --format docker --pull --no-cache  --build-arg version=$broker_version --tag wres/wres-broker:$broker_version . )
+broker_image_id=$( podman build --format docker -f Poderfile --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker . )
 popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
@@ -183,7 +161,7 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 # Build and tag the redis image
 echo "Building redis image..."
 pushd wres-redis
-redis_image_id=$( podman build --format docker --pull --no-cache --build-arg version=$redis_version --tag wres/wres-redis:$redis_version . )
+redis_image_id=$( podman build --format docker -f Poderfile --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis . )
 popd
 
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
@@ -191,7 +169,7 @@ echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 # Build and tag the eventsbroker image
 echo "Building events broker image..."
 pushd wres-eventsbroker
-eventsbroker_image_id=$( podman build --format docker --no-cache --build-arg version=$eventsbroker_version --tag wres/wres-eventsbroker:$eventsbroker_version . )
+eventsbroker_image_id=$( podman build --format docker -f Poderfile --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker . )
 popd
 
 echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_id"
@@ -199,7 +177,7 @@ echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_
 # Build and tag the graphics image
 echo "Building graphics image..."
 pushd wres-vis
-graphics_image_id=$( podman build --format docker --build-arg version=$wres_vis_version --tag wres/wres-graphics:$graphics_version . )
+graphics_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics . )
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
@@ -207,10 +185,18 @@ echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
 # Build and tag the writing image
 echo "Building writing image..."
 pushd wres-writing
-writing_image_id=$( podman build --format docker --build-arg version=$wres_writing_version --tag wres/wres-writing:$writing_version . )
+writing_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing . )
 popd
 
 echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
+
+# Build and tag the nginx image
+echo "Building nginx image..."
+pushd nginx
+nginx_image_id=$( podman build --format docker --build-arg --quiet --tag wres/nginx . )
+popd
+
+echo "Built wres/nginx"
 
 echo "Displaying most recent 20 docker images"
 docker image ls | head -n 21
@@ -246,82 +232,41 @@ then
             exit 2
         fi
 
-        primary_image_dev_status=$( echo ${overall_version} | grep "dev" )
 
-        if [[ "$primary_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push primary docker image version ${overall_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
-            podman tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-	          podman push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-        fi
+        echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
+        podman tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+        podman push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
 
-        tasker_image_dev_status=$( echo ${tasker_version} | grep "dev" )
 
-        if [[ "$tasker_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push tasker docker image version ${tasker_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
-	          podman tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
-            podman push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
-        fi
+        echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
+        podman tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        podman push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
 
-        broker_image_dev_status=$( echo ${broker_version} | grep "dev" )
 
-        if [[ "$broker_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push broker docker image version ${broker_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
-            podman tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
-            podman push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
-        fi
+        echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
+        podman tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        podman push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
 
-        redis_image_dev_status=$( echo ${redis_version} | grep "dev" )
 
-        if [[ "$redis_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push redis docker image version ${redis_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
-            podman tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
-            podman push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
-        fi
+        echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
+        podman tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        podman push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
 
-        eventsbroker_image_dev_status=$( echo ${eventsbroker_version} | grep "dev" )
 
-        if [[ "$eventsbroker_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push eventsbroker docker image version ${eventsbroker_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
-            podman tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
-            podman push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
-        fi
+        echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
+        podman tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+        podman push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
 
-        graphics_image_dev_status=$( echo ${graphics_version} | grep "dev" )
 
-        if [[ "$graphics_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push graphics docker image version ${graphics_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
-            podman tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
-            podman push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
-        fi
+        echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
+        podman tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+        podman push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
 
-        writing_image_dev_status=$( echo ${writing_version} | grep "dev" )
 
-        if [[ "$writing_image_dev_status" != "" ]]
-        then
-            echo "Refusing to tag and push writing docker image version ${writing_version} because its Dockerfile has not been committed to the repository yet."
-        else
-            echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
-            podman tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
-            podman push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
-        fi
+        echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
+        podman tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        podman push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+
 
         echo "Tagging and pushing wres/nginx as wres/nginx..."
         podman tag wres/nginx $DOCKER_REGISTRY/wres/nginx

@@ -1,5 +1,27 @@
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+        <prudent>true</prudent>
+        <define name="hostname"
+                class="ch.qos.logback.core.property.CanonicalHostNamePropertyDefiner"/>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+
+            <!-- Store in a consistent location relative to user.
+                 Odds are the user has write access to user.home, also avoids
+                 interleaving multiple users running wres at same time.
+                 Does not prevent multiple instances of wres from interleaving. -->
+            <!-- Roll over when a new day starts. -->
+            <fileNamePattern>${user.home}/wres_logs/eventsbroker/${hostname}/wres-eventsbroker.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- Keep at most 10 years of rolled files (see next comment) -->
+            <maxHistory>3653</maxHistory>
+
+            <!-- When size of all rolled files exceeds 2GiB, delete oldest files,
+                 requires the maxHistory to be set to work. The idea is that
+                 totalSizeCap will be hit more frequently than maxHistory. -->
+            <totalSizeCap>2048MB</totalSizeCap>
+            <cleanHistoryOnStart> true </cleanHistoryOnStart>
+        </rollingPolicy>
+
         <encoder>
 
             <!-- %exception{full}: full stacktrace for each exception -->
