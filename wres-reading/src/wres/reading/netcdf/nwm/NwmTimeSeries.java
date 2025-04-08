@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.map.primitive.LongIntMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -118,6 +120,10 @@ class NwmTimeSeries implements Closeable
     @Getter
     private final boolean isAllMissing;
 
+    /** The geographic features to read. */
+    @Getter
+    private final long[] featureIds;
+
     @Override
     public String toString()
     {
@@ -182,6 +188,7 @@ class NwmTimeSeries implements Closeable
 
     /**
      * @param profile the profile
+     * @param featureIds the features to read
      * @param referenceDatetime the reference time
      * @param baseUri the base uri
      * @throws NullPointerException When any argument is null.
@@ -190,6 +197,7 @@ class NwmTimeSeries implements Closeable
      */
 
     NwmTimeSeries( NwmProfile profile,
+                   long[] featureIds,
                    Instant referenceDatetime,
                    ReferenceTimeType referenceTimeType,
                    URI baseUri )
@@ -198,10 +206,12 @@ class NwmTimeSeries implements Closeable
         Objects.requireNonNull( referenceDatetime );
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( referenceTimeType );
+        Objects.requireNonNull( featureIds );
 
         this.profile = profile;
         this.referenceDatetime = referenceDatetime;
         this.referenceTimeType = referenceTimeType;
+        this.featureIds = featureIds;
 
         // Require an absolute URI
         if ( baseUri.isAbsolute() )
@@ -219,7 +229,8 @@ class NwmTimeSeries implements Closeable
                                                            referenceDatetime,
                                                            this.baseUri );
 
-        LOGGER.debug( "Created a NWM time-series reader with these {} URIs to read: {}.",
+        LOGGER.debug( "Created a NWM time-series reader for {} features with these {} URIs to read: {}.",
+                      featureIds.length,
                       netcdfUris.size(),
                       netcdfUris );
 
@@ -248,7 +259,7 @@ class NwmTimeSeries implements Closeable
         // Open all the relevant files during construction, or fail.
         Set<URI> resourcesNotFound = this.openNetcdfFilesForReading( netcdfUris, this.readExecutor );
 
-        this.featureCache = new NWMFeatureCache( this.netcdfFiles );
+        this.featureCache = new NWMFeatureCache( this.netcdfFiles, this.getFeatureIds() );
 
         // Nothing missing
         if ( netcdfUris.size() == this.netcdfFiles.size() )
@@ -326,6 +337,7 @@ class NwmTimeSeries implements Closeable
         }
 
         URI uriWithDate = baseUri.resolve( nwmDatePath + "/" );
+        Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
 
         for ( short i = 1; i <= profile.getMemberCount(); i++ )
         {
@@ -341,8 +353,13 @@ class NwmTimeSeries implements Closeable
 
             for ( short j = 1; j <= profile.getBlobCount(); j++ )
             {
-                URI fullUri =
-                        NwmTimeSeries.getNetcdfUri( profile, baseUri, uriWithDirectory, referenceOffsetDateTime, i, j );
+                Duration duration = validDatetimeStep.multipliedBy( j );
+                URI fullUri = NwmTimeSeries.getNetcdfUri( profile,
+                                                          baseUri,
+                                                          uriWithDirectory,
+                                                          referenceOffsetDateTime,
+                                                          duration,
+                                                          i );
                 uris.add( fullUri );
             }
         }
@@ -414,16 +431,17 @@ class NwmTimeSeries implements Closeable
     }
 
     /**
-     * Read TimeSerieses from across several netCDF single-valid datetime files.
-     * @param featureIds The NWM feature IDs to read.
+     * Read time-series from across several NetCDF single-valid datetime files.
+     *
      * @param variableName The NWM variable name.
+     * @param featureIds the feature IDs
      * @param unitName The unit of all variable values.
      * @return a map of feature id to TimeSeries containing the events, may be
      * empty when no feature ids given were found in the NWM Data.
      */
 
-    Map<Long, TimeSeries<Double>> readSingleValuedTimeSerieses( long[] featureIds,
-                                                                String variableName,
+    Map<Long, TimeSeries<Double>> readSingleValuedTimeSerieses( String variableName,
+                                                                long[] featureIds,
                                                                 String unitName )
             throws InterruptedException, ExecutionException
     {
@@ -448,7 +466,7 @@ class NwmTimeSeries implements Closeable
         {
             NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
                                                           netcdfFile,
-                                                          featureIds.clone(),
+                                                          featureIds,
                                                           variableName,
                                                           this.getReferenceDatetime(),
                                                           this.featureCache,
@@ -523,8 +541,18 @@ class NwmTimeSeries implements Closeable
         return Collections.unmodifiableMap( allTimeSerieses );
     }
 
-    Map<Long, TimeSeries<Ensemble>> readEnsembleTimeSerieses( long[] featureIds,
-                                                              String variableName,
+    /**
+     * Read ensemble time-series from across several NetCDF single-valid datetime files.
+     *
+     * @param variableName The NWM variable name.
+     * @param featureIds the feature IDs
+     * @param unitName The unit of all variable values.
+     * @return a map of feature id to TimeSeries containing the events, may be
+     * empty when no feature ids given were found in the NWM Data.
+     */
+
+    Map<Long, TimeSeries<Ensemble>> readEnsembleTimeSerieses( String variableName,
+                                                              long[] featureIds,
                                                               String unitName )
             throws InterruptedException, ExecutionException
     {
@@ -648,8 +676,8 @@ class NwmTimeSeries implements Closeable
      * @param baseUri the base URI
      * @param uriWithDirectory the URI with the directory
      * @param referenceOffsetDateTime the offset reference time
+     * @param duration the duration (e.g., lead duration)
      * @param memberIndex the member index
-     * @param blobIndex the blob index
      * @return the URI
      */
 
@@ -657,8 +685,8 @@ class NwmTimeSeries implements Closeable
                                      URI baseUri,
                                      URI uriWithDirectory,
                                      OffsetDateTime referenceOffsetDateTime,
-                                     int memberIndex,
-                                     int blobIndex )
+                                     Duration duration,
+                                     int memberIndex )
     {
         String ncFilePartOne = NWM_DOT + "t"
                                + NWM_HOUR_FORMATTER.format( referenceOffsetDateTime )
@@ -679,7 +707,6 @@ class NwmTimeSeries implements Closeable
         Duration validDatetimeStep = profile.getDurationBetweenValidDatetimes();
         Duration oneHour = Duration.ofHours( 1 );
         boolean subHourly = validDatetimeStep.compareTo( oneHour ) < 0;
-        Duration duration = validDatetimeStep.multipliedBy( blobIndex );
         long hours = duration.toHours();
 
         if ( profile.getTimeLabel()
@@ -1153,7 +1180,7 @@ class NwmTimeSeries implements Closeable
 
 
     /**
-     * <p>ctually read nc data from a variable, targeted to given indices.
+     * <p>Actually read nc data from a variable, targeted to given indices.
      *
      * <p>It is OK for indices to be unsorted, e.g. for minIndex to appear anywhere
      * in indices and maxIndex to appear anywhere in indices.
@@ -1221,12 +1248,12 @@ class NwmTimeSeries implements Closeable
 
         if ( rawValues.length != countOfRawValuesToRead )
         {
-            throw new PreReadException(
-                    "Expected to read exactly " + countOfRawValuesToRead
-                    + " values from variable "
-                    + variableName
-                    + " instead got "
-                    + rawValues.length );
+            throw new PreReadException( "Expected to read exactly "
+                                        + countOfRawValuesToRead
+                                        + " values from variable "
+                                        + variableName
+                                        + " instead got "
+                                        + rawValues.length );
         }
 
         // Write the values to the result array. Skip past unrequested values.
@@ -1750,61 +1777,45 @@ class NwmTimeSeries implements Closeable
 
             return ncEnsembleNumber;
         }
-
     }
 
-
     /**
-     * Cache that stores a single copy of a feature array for a Set of netCDFs.
-     * But also compares the feature array once for each netCDF resource to
-     * validate that it is in fact an exact copy.
+     * Cache of mappings between feature names and index positions within each blob. The blobs are verified homogeneous
+     * with respect to the subset of features to be read.
      */
 
     private static final class NWMFeatureCache
     {
-        /**
-         * <p>The contents of the feature variable for a given netCDF resource.
-         *
-         * <p>This is a performance optimization (avoid re-reading the features).
-         * GuardedBy featureCacheGuard
-         *
-         * <p>This is kept in int[] form in order to validate new netCDF resources.
-         */
-        private long[] originalFeatures;
-
-        /**
-         * <p>Whether the features stored is sorted. Allows binary search if true.
-         *
-         * <p>Only one Thread should write this value after construction, the rest
-         * read it.
-         *
-         * <p>This is a performance optimization (avoid linear search of features).
-         *
-         * <p>Not certain that this needs to be volatile, but just in case...
-         *
-         * <p>GuardedBy {@link #featureCacheGuard}
-         */
-        private volatile boolean isSorted = false;
-
-        /**
-         * <p>First Thread to set to true wins
-         * and gets to write to the featureCache. Everyone else reads.
-         */
+        /** First thread to set to true wins and gets to write to the cache. Everyone else reads. */
         private final AtomicBoolean featureCacheRaceResolver = new AtomicBoolean( false );
 
-        /**
-         * <p>Guards featureCache variable.
-         */
+        /** Guards feature cache. */
         private final CountDownLatch featureCacheGuard = new CountDownLatch( 1 );
 
-        /**
-         * Tracks which netCDF resoruces have had their features validated.
-         */
+        /** Tracks which netCDF resources have had their features validated. */
         private final Map<NetcdfFile, AtomicBoolean> validatedFeatures;
 
-        NWMFeatureCache( Set<NetcdfFile> netcdfUris )
+        /** The features to read. */
+        private final long[] featuresToRead;
+
+        /** The mapping of features to read to indices within the NetCDF blobs, which are (verified) homogeneous for
+         * these features. */
+        private final LongIntHashMap featureMap;
+
+        /** The sorted features from the first blob, to compare with all other blobs. */
+        private long[] validationFeatures;
+
+        /**
+         * Creates an instance.
+         * @param netcdfUris the URIs to read
+         * @param featuresToRead the features to read
+         */
+
+        NWMFeatureCache( Set<NetcdfFile> netcdfUris, long[] featuresToRead )
         {
             this.validatedFeatures = new HashMap<>( netcdfUris.size() );
+            this.featuresToRead = featuresToRead;
+            this.featureMap = new LongIntHashMap( featuresToRead.length );
 
             for ( NetcdfFile netcdfFile : netcdfUris )
             {
@@ -1827,28 +1838,8 @@ class NwmTimeSeries implements Closeable
                                       NetcdfFile netcdfFile,
                                       long featureId )
         {
-            long[] features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
-                                                                               netcdfFile );
-
-            if ( this.isSorted )
-            {
-                return Arrays.binarySearch( features, featureId );
-            }
-            else
-            {
-                LOGGER.debug( "Doing linear search of NWM features cache." );
-
-                for ( int i = 0; i < features.length; i++ )
-                {
-                    if ( features[i] == featureId )
-                    {
-                        return i;
-                    }
-                }
-
-                // Could not find, return a negative number.
-                return -1;
-            }
+            LongIntMap cached = this.readFeaturesAndCacheOrGetFromCache( profile, netcdfFile );
+            return cached.get( featureId );
         }
 
         /**
@@ -1866,12 +1857,10 @@ class NwmTimeSeries implements Closeable
                                                                   TimeUnit.SECONDS );
                 if ( timedOut )
                 {
-                    throw new PreReadException(
-                            "While reading "
-                            + netcdfFileName,
-                            new TimeoutException(
-                                    "Timed out waiting for feature cache after "
-                                    + timeout ) );
+                    throw new PreReadException( "While reading "
+                                                + netcdfFileName,
+                                                new TimeoutException( "Timed out waiting for feature cache after "
+                                                                      + timeout ) );
                 }
             }
             catch ( InterruptedException ie )
@@ -1886,16 +1875,13 @@ class NwmTimeSeries implements Closeable
          * avoid multiple reads of same data.
          * @param profile the profile
          * @param netcdfFile the netCDF file
-         * @return the raw 1D integer array of features, in original positions.
-         * Performs safe publication of an internal map, assumes internal
-         * caller, assumes that internal caller will not publish the map,
-         * assumes internal caller will only read from the map.
+         * @return the mapping between feature names and positions within the NetCDF resource
          * @throws PreReadException From the waitForCache method, will be
          * thrown if the wait times out.
          */
 
-        private long[] readFeaturesAndCacheOrGetFeaturesFromCache( NwmProfile profile,
-                                                                   NetcdfFile netcdfFile )
+        private LongIntMap readFeaturesAndCacheOrGetFromCache( NwmProfile profile,
+                                                               NetcdfFile netcdfFile )
         {
             String netcdfFileName = netcdfFile.getLocation();
 
@@ -1907,8 +1893,8 @@ class NwmTimeSeries implements Closeable
             {
                 LOGGER.trace( "Already read netCDF resource {}, returning cached.",
                               netcdfFileName );
-                waitForCache( netcdfFileName );
-                return this.originalFeatures;
+                this.waitForCache( netcdfFileName );
+                return this.featureMap;
             }
             else
             {
@@ -1930,77 +1916,110 @@ class NwmTimeSeries implements Closeable
                 // Discover if this Thread is responsible for setting featureCache
                 boolean previouslySet = this.featureCacheRaceResolver.getAndSet( true );
 
-                //If this Thread is not setting the cache, then wait until the cache
-                //is set.
+                // If this Thread is not setting the cache, then wait until the cache
+                // is set.
                 if ( previouslySet )
                 {
-                    waitForCache( netcdfFileName );
+                    this.waitForCache( netcdfFileName );
                 }
 
-                //Read the features from the netCDF file and clone them to ensure that
-                //we are referring to a fresh copy, and not an internal netCDF copy.
-                LOGGER.debug( "Reading features from {}", netcdfFileName );
-                long[] features = ( long[] ) featureVariable.read()
-                                                            .get1DJavaArray( DataType.LONG );
-                if ( features == null )
-                {
-                    throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );
-                }
-                features = features.clone();
-
-                //Set the cache if this Thread is responsible for it.
+                // Set the cache if this thread is responsible for it.
                 if ( !previouslySet )
                 {
+                    // Read the features from the NetCDF blob.
+                    LOGGER.debug( "Reading features from {}", netcdfFileName );
+                    long[] features = ( long[] ) featureVariable.read()
+                                                                .get1DJavaArray( DataType.LONG );
+
+                    if ( features == null )
+                    {
+                        throw new IllegalStateException( "The NetCDF library returned a null array when looking for "
+                                                         + "NWM features." );
+                    }
+
                     LOGGER.debug( "About to set the features cache using {}",
                                   netcdfFileName );
 
-                    // In charge of setting the feature cache, do so.
-                    this.originalFeatures = features.clone();
-
-                    // Sort the local features, compare to see if identical and
-                    // set isSorted.
-                    Arrays.sort( features );
-                    if ( Arrays.equals( features, this.originalFeatures ) )
+                    // Find the index of each feature
+                    for ( long nextFeature : this.featuresToRead )
                     {
-                        this.isSorted = true;
+                        int index = this.getFeatureIndex( features, nextFeature );
+                        this.featureMap.put( nextFeature, index );
                     }
+
+                    this.validationFeatures = features;
 
                     // Tell waiting Threads that featureCache hath been written.
                     this.featureCacheGuard.countDown();
                     LOGGER.debug( "Finished setting the features cache using {}",
                                   netcdfFileName );
                 }
-                //Otherwise, just check the read features against the cached
-                //features to ensure they are identical.
+                // Otherwise, read the features at the earlier indices to check the mapping
                 else
                 {
-                    LOGGER.debug( "About to read the features cache to compare {}",
+                    LOGGER.debug( "About to read the features to compare to the cache for {}",
                                   netcdfFileName );
 
-                    // Compare the existing features with those just read, throw an
-                    // exception if they differ (by content).
-                    if ( !Arrays.equals( features, this.originalFeatures ) )
+                    // Note that reading and validating only the subset of features used in this evaluation
+                    // individually is wildly inefficient when compared to reading and validating a block of features.
+                    // This is probably related to the underlying storage/iteration margins for these NWM data, so we
+                    // read all features. Even reading the subset of features within the overall minimum and maximum
+                    // indices of all features appears to be less efficient. Reading all features costs some memory,
+                    // but apparently saves a lot of CPU cycles. See GitHub #156
+                    long[] actual =
+                            ( long[] ) featureVariable.read()
+                                                      .get1DJavaArray( DataType.LONG );
+
+                    Arrays.sort( actual );
+
+                    if ( !Arrays.equals( this.validationFeatures, actual ) )
                     {
-                        throw new PreReadException( "Non-homogeneous NWM data found. The features from "
+                        throw new PreReadException( "Non-homogeneous NWM data found. The features in "
                                                     + netcdfFile.getLocation()
-                                                    + " do not match those found in a previously read "
-                                                    + "netCDF resource in the same NWM timeseries." );
+                                                    + " are different from those discovered in another "
+                                                    + "NetCDF resource for the same NWM timeseries." );
                     }
-                    LOGGER.debug( "Finished comparing {} to the features cache",
-                                  netcdfFileName );
+
+                    LOGGER.debug( "Finished comparing {} to the features cache for {} features.",
+                                  netcdfFileName,
+                                  this.featureMap.size() );
                 }
 
                 validated.set( true );
 
                 // Assumes caller will only perform reads, will not publish.
-                return this.originalFeatures;
+                return this.featureMap;
             }
-            catch ( IOException ioe )
+            catch ( IOException e )
             {
                 throw new PreReadException( "Failed to read features from "
                                             + netcdfFileName,
-                                            ioe );
+                                            e );
             }
+        }
+
+        /**
+         * Performs a linear search of the feature index.
+         *
+         * @param features features
+         * @param feature the feature
+         * @return the feature index
+         */
+
+        private int getFeatureIndex( long[] features, long feature )
+        {
+            LOGGER.debug( "Doing linear search of NWM features." );
+
+            for ( int i = 0; i < features.length; i++ )
+            {
+                if ( features[i] == feature )
+                {
+                    return i;
+                }
+            }
+
+            // Could not find, return a negative number.
+            return -1;
         }
     }
 

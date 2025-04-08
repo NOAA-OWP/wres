@@ -181,7 +181,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
 
             if ( this.featureGroupsForSummaryStatistics.isEmpty() )
             {
-                LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time "
+                LOGGER.info( "Statistics were created for {} pools, which included {} feature groups and {} time "
                              + "windows. The time elapsed between the completion of the first and last pools was: {}."
                              + " The feature groups were: {}. The time windows were: {}.",
                              successfulPoolsToReport.size(),
@@ -194,7 +194,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
             }
             else
             {
-                LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time "
+                LOGGER.info( "Statistics were created for {} pools, which included {} feature groups and {} time "
                              + "windows. In addition, {} feature groups were evaluated for summary statistics only. "
                              + "The time elapsed between the completion of the first and last pools was: {}. The "
                              + "feature groups were: {}. The time windows were: {}. The feature groups for summary "

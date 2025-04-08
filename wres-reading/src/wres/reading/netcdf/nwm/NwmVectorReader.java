@@ -416,16 +416,26 @@ public class NwmVectorReader implements TimeSeriesReader
                 return next;
             }
 
+            long[] allFeatures = featureBlocks.stream()
+                                              .flatMapToLong( s -> s.stream()
+                                                                    .mapToLong( Long::longValue ) )
+                                              .toArray();
+
             while ( !mutableFeatureBlocks.isEmpty() )
             {
                 NwmTimeSeries currentTimeSeries = nwmTimeSeries.get();
 
                 SortedSet<Long> nextFeatureBlock = mutableFeatureBlocks.remove( 0 );
 
+                long[] featureBlockUnwrapped = nextFeatureBlock.stream()
+                                                               .mapToLong( Long::longValue )
+                                                               .toArray();
+
                 // No blobs open? Create a new opener and expose it for future iterations.
                 if ( Objects.isNull( currentTimeSeries ) )
                 {
                     currentTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                           allFeatures,
                                                            referenceTime,
                                                            referenceTimeType,
                                                            dataSource.getUri() );
@@ -438,9 +448,9 @@ public class NwmVectorReader implements TimeSeriesReader
                 this.incrementMissingCount( currentTimeSeries, missingCount );
 
                 List<TimeSeriesTuple> nextSeries = this.getTimeSeries( dataSource,
-                                                                       nextFeatureBlock,
                                                                        currentTimeSeries,
-                                                                       nwmProfile );
+                                                                       nwmProfile,
+                                                                       featureBlockUnwrapped );
                 cachedSeries.addAll( nextSeries );
 
                 // Is there a time-series to return?
@@ -533,16 +543,16 @@ public class NwmVectorReader implements TimeSeriesReader
      * blobs.
      *
      * @param dataSource the data source
-     * @param featureBlock the feature block
      * @param nwmTimeSeries the NWM time-series
      * @param nwmProfile the NWM profile
+     * @param featureBlock the feature block for which time-series should be read
      * @return the time-series
      */
 
     private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
-                                                 SortedSet<Long> featureBlock,
                                                  NwmTimeSeries nwmTimeSeries,
-                                                 NwmProfile nwmProfile )
+                                                 NwmProfile nwmProfile,
+                                                 long[] featureBlock )
     {
         if ( nwmTimeSeries.countOfNetcdfFiles() <= 0 )
         {
@@ -556,18 +566,14 @@ public class NwmVectorReader implements TimeSeriesReader
                                         .strip();
         String unitName = nwmTimeSeries.readAttributeAsString( variableName );
 
-        long[] featureBlockInts = featureBlock.stream()
-                                              .mapToLong( Long::longValue )
-                                              .toArray();
-
         try
         {
             // Single-valued series
             if ( nwmProfile.getMemberCount() == 1 )
             {
                 Map<Long, TimeSeries<Double>> values =
-                        nwmTimeSeries.readSingleValuedTimeSerieses( featureBlockInts,
-                                                                    variableName,
+                        nwmTimeSeries.readSingleValuedTimeSerieses( variableName,
+                                                                    featureBlock,
                                                                     unitName );
 
                 return values.values()
@@ -580,8 +586,8 @@ public class NwmVectorReader implements TimeSeriesReader
             else if ( nwmProfile.getMemberCount() > 1 )
             {
                 Map<Long, TimeSeries<Ensemble>> values =
-                        nwmTimeSeries.readEnsembleTimeSerieses( featureBlockInts,
-                                                                variableName,
+                        nwmTimeSeries.readEnsembleTimeSerieses( variableName,
+                                                                featureBlock,
                                                                 unitName );
                 return values.values()
                              .stream()
