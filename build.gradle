@@ -64,7 +64,8 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '10.0.2'
+    // needed to change this to     id 'org.owasp.dependencycheck' version '12.1.1' for the test to run
+    id 'org.owasp.dependencycheck' version '12.1.1'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -1435,7 +1436,7 @@ project(':wres-tasker') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.115.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -1586,7 +1587,7 @@ project(':wres-eventsbroker') {
         }
 
         // Because of CVE-2024-47535. TODO: Remove when Artemis catches up.
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.115.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
 
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:33.4.7-jre'
@@ -1659,7 +1660,7 @@ project(':wres-events') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.115.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
 
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
@@ -1968,7 +1969,7 @@ dependencies {
     }
 
     // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-    implementation group: 'io.netty', name: 'netty-all', version: '4.1.115.Final'
+    implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
 
     implementation('edu.ucar:cdm-core:5.7.0') {
         // Because we use slf4j, not jcl:
