@@ -99,7 +99,7 @@ testCodeCoverageReport {
 repositories {
     mavenCentral()
     maven {
-        url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/" //
+        url "https://artifacts.unidata.ucar.edu/repository/unidata-releases/"
     }
 }
 
@@ -188,8 +188,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven {
-            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/" //
-
+            url "https://artifacts.unidata.ucar.edu/repository/unidata-releases/"
         }
     }
 
@@ -358,7 +357,7 @@ project(':wres-io') {
         // Java Flight Recorder statistics for JDBC
         implementation 'com.github.marschall:jfr-jdbc:0.4.0'
 
-        implementation('edu.ucar:cdm-core:5.4.2') {
+        implementation('edu.ucar:cdm-core:5.7.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -404,6 +403,8 @@ project(':wres-io') {
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
         // https://github.com/NOAA-OWP/wres/issues/454
         implementation 'org.liquibase:liquibase-core:4.29.2'
+
+        implementation 'commons-codec:commons-codec:1.18.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -535,7 +536,7 @@ project(':wres-writing') {
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        implementation('edu.ucar:cdm-core:5.4.2') {
+        implementation('edu.ucar:cdm-core:5.7.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -594,7 +595,7 @@ project(':wres-reading') {
         // For Java 8 java.time support
         implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
 
-        implementation('edu.ucar:cdm-core:5.4.2') {
+        implementation('edu.ucar:cdm-core:5.7.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -609,12 +610,16 @@ project(':wres-reading') {
 
         implementation 'org.apache.commons:commons-compress:1.27.1'
 
+        // CDM-S3 dependency for reading NetCDF from S3/GCS
+        implementation 'edu.ucar:cdm-s3:5.7.0'
+
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
+        implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:2.9.2'
-
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -1962,7 +1967,7 @@ dependencies {
     // Because of CVE-2022-24823. TODO: remove when Redisson catches up
     implementation group: 'io.netty', name: 'netty-all', version: '4.1.115.Final'
 
-    implementation('edu.ucar:cdm-core:5.4.2') {
+    implementation('edu.ucar:cdm-core:5.7.0') {
         // Because we use slf4j, not jcl:
         exclude group: 'commons-logging', module: 'commons-logging'
         // CVE-2021-33813
@@ -2061,10 +2066,10 @@ distributions {
         contents {
             from {
                 // Note: to have files land in the distributed zip files,
-                // must put inside lib directory inside below directory.
-                // Must also add the new directory to classpath under
-                // startScripts below. For each module that adds to dist,
-                // add here for now until we can make it grab all of em.
+                // must put inside lib directory. Must also add the lib
+                // directory to classpath under startScripts below. For each
+                // module that adds to dist, add here for now until we can make
+                // it grab all of em.
                 ['dist', 'wres-io/dist', 'wres-statistics/dist', 'LICENSE']
             }
 

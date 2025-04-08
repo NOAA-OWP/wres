@@ -410,7 +410,8 @@ public class SourceLoader
             LOGGER.debug( "Checking gridded features for {} to determine whether loading is necessary.",
                           source.getUri() );
 
-            try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri().toString() ) )
+            try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri()
+                                                           .toString() ) )
             {
                 this.getGriddedFeatures()
                     .addFeatures( ncf );

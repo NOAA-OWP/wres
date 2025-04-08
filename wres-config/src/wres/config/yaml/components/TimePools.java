@@ -28,6 +28,7 @@ public record TimePools( Duration period,
      * Sets the default values.
      * @param period the period
      * @param frequency the frequency
+     * @param reverse is true to count backwards from the maximum time bound, false to count forwards from the minimum
      */
     public TimePools
     {

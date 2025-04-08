@@ -541,9 +541,11 @@ public class ReaderUtilities
     public static boolean isWebSource( URI uri )
     {
         return Objects.nonNull( uri.getScheme() )
-               && uri.getScheme()
-                     .toLowerCase()
-                     .startsWith( "http" );
+               && ( uri.getScheme()
+                       .toLowerCase()
+                       .startsWith( "http" ) || uri.getScheme()
+                                                   .toLowerCase()
+                                                   .startsWith( "cdms3" ) );
     }
 
     /**
