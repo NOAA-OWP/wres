@@ -28,7 +28,7 @@ RUN apk --no-cache add tar && \
 # Final image
 #############
 
-FROM registry.access.redhat.com/ubi8/ubi:8.10-1132
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1184.1741863532
 
 RUN dnf install -y \
     java-17-openjdk-headless-1:17.0.14.0.7-3.el8.x86_64 \
