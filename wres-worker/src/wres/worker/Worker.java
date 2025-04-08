@@ -40,9 +40,11 @@ public class Worker
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
 
+    /** Path to client certificate bundle. */
     public static final String PATH_TO_CLIENT_P12_PNAME = "wres.workerPathToClientP12Bundle";
-    public static final String PASSWORD_TO_CLIENT_P12 = "wres.workerPathToClientP12Password";
 
+    /** Password system property for client certificate bundle. */
+    public static final String PASSWORD_TO_CLIENT_P12 = "wres.workerPathToClientP12Password";
 
     /**
      * This code is used to signal something happened to the worker-server mid-evaluation.

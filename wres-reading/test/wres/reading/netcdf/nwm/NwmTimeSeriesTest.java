@@ -505,6 +505,7 @@ public class NwmTimeSeriesTest
                                                 Duration.ZERO );
 
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] {},
                                                                Instant.parse( "2019-10-23T02:00:00Z" ),
                                                                ReferenceTimeType.ANALYSIS_START_TIME,
                                                                URI.create(
@@ -538,16 +539,17 @@ public class NwmTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
+        long featureId = 18384141;
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] { featureId },
                                                                Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create(
                                                                        "https://example.gov/pub/data/nccf/com/nwm/prod/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long featureId = 18384141;
             TimeSeries<?> timeSeries =
-                    nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
+                    nwmTimeSeries.readSingleValuedTimeSerieses( STREAMFLOW, new long[] { featureId }, CMS )
                                  .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -578,15 +580,16 @@ public class NwmTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
+        long featureId = 18384141;
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] { featureId },
                                                                Instant.parse( T2019_10_06T02_00_00Z ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long featureId = 18384141;
             TimeSeries<?> timeSeries =
-                    nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
+                    nwmTimeSeries.readSingleValuedTimeSerieses( STREAMFLOW, new long[] { featureId }, CMS )
                                  .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -616,15 +619,16 @@ public class NwmTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
+        long featureId = 18384141;
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] { featureId },
                                                                Instant.parse( "2018-05-06T04:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long featureId = 18384141;
             TimeSeries<?> timeSeries =
-                    nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
+                    nwmTimeSeries.readSingleValuedTimeSerieses( STREAMFLOW, new long[] { featureId }, CMS )
                                  .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -654,15 +658,18 @@ public class NwmTimeSeriesTest
                                                 Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
+
+        long featureId = 18384141;
+
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] { featureId },
                                                                Instant.parse( "2017-10-06T17:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long featureId = 18384141;
             TimeSeries<?> timeSeries =
-                    nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
+                    nwmTimeSeries.readSingleValuedTimeSerieses( STREAMFLOW, new long[] { featureId }, CMS )
                                  .get( featureId );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -692,15 +699,17 @@ public class NwmTimeSeriesTest
                                                 Duration.ZERO );
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
+        long featureId = 18384141;
+
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] { featureId },
                                                                Instant.parse( "2016-10-18T17:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long featureId = 18384141;
             TimeSeries<?> timeSeries =
-                    nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
+                    nwmTimeSeries.readSingleValuedTimeSerieses( STREAMFLOW, new long[] { featureId }, CMS )
                                  .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -729,15 +738,17 @@ public class NwmTimeSeriesTest
                                                 Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
+
+        long featureId = 18384141;
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               new long[] { featureId },
                                                                Instant.parse( T2019_10_06T02_00_00Z ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "H:/netcdf_data/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long featureId = 18384141;
             TimeSeries<?> timeSeries =
-                    nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
+                    nwmTimeSeries.readSingleValuedTimeSerieses( STREAMFLOW, new long[] { featureId }, CMS )
                                  .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -769,15 +780,17 @@ public class NwmTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
+        long[] featureIds = new long[] { 18384141, 18696047, 942030011 };
+
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               featureIds,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long[] featureIds = new long[] { 18384141, 18696047, 942030011 };
-            Map<Long, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds,
-                                                                                                   STREAMFLOW,
+            Map<Long, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( STREAMFLOW,
+                                                                                                   featureIds,
                                                                                                    CMS );
             TimeSeries<Ensemble> timeSeries1 = timeSerieses.get( featureIds[0] );
             LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );
@@ -818,15 +831,17 @@ public class NwmTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
+        long[] featureIds = new long[] { 18384141, 18696047, 942030011 };
+
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
+                                                               featureIds,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "C:/nwm_data/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            long[] featureIds = new long[] { 18384141, 18696047, 942030011 };
-            Map<Long, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds,
-                                                                                                   STREAMFLOW,
+            Map<Long, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( STREAMFLOW,
+                                                                                                   featureIds,
                                                                                                    CMS );
             TimeSeries<Ensemble> timeSeries1 = timeSerieses.get( featureIds[0] );
             LOGGER.info( "Here is timeSeries 1: {}", timeSeries1 );

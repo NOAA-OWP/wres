@@ -634,6 +634,8 @@ project(':wres-reading') {
         // https://github.com/NOAA-OWP/wres/issues/454
         implementation 'org.liquibase:liquibase-core:4.29.2'
 
+        implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '11.1.0'
+
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
 
