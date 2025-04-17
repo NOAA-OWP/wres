@@ -670,75 +670,12 @@ public class ReaderUtilities
     }
 
     /**
-     * Get an SSLContext for use with Water Resources Data Service (WRDS) services. It looks for the 
-     * system property. If found, it tries to load the file from the file system first, and then the
-     * class path. If the file is not found, or it is found but cannot be used, then its an exception.
-     * If no property is supplied, then it uses the JDK default trusted CAs. 
-     * @return the resulting SSLContext or the default SSLContext if not found.
-     * @throws PreReadException if the context and trust manager cannot be built for any reason
+     * @return Returns a pair of the default, JDK SSL context and trust manager.
+     * @throws PreReadException Thrown if any exceptions occur in the process of creating the
+     * default context and trust manager.
      */
-    public static Pair<SSLContext, X509TrustManager> getSslContextForWrds()
+    private static Pair<SSLContext, X509TrustManager> getDefaultSSLContext() throws PreReadException
     {
-        // Look for a system property first: #106160. If its there, then use it and it must be valid.
-        String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
-        String passwordForInternalTrustStore = System.getProperty( "wres.wrdsInternalTrustStorePassword" );
-        if ( Objects.nonNull( pathToTrustFile ) )
-        {
-            LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
-                          pathToTrustFile );
-
-            Path path = Paths.get( pathToTrustFile );
-
-            //Attempt to open and read the file from the file system.
-            if ( Files.exists( path ) && Files.isReadable( path ) )
-            {
-                try ( InputStream trustStream = Files.newInputStream( path ) )
-                {
-                    SSLStuffThatTrustsOneCertificate sslGoo =
-                            new SSLStuffThatTrustsOneCertificate( trustStream, passwordForInternalTrustStore );
-                    return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
-                }
-                catch ( IOException e )
-                {
-                    throw new PreReadException( "The file "
-                                                + pathToTrustFile
-                                                + " supplied via system property, wres.wrdsCertificateFileToTrust, "
-                                                + "for obtaining data from WRDS services was found on the file "
-                                                + "system, but could not be processed.",
-                                                e );
-                }
-            }
-            //Otherwise, try to find it via the classpath.
-            else
-            {
-                try ( InputStream inputStream = ReaderUtilities.class.getClassLoader()
-                                                                     .getResourceAsStream( pathToTrustFile ) )
-                {
-                    //We didn't find it on the file system nor on the classpath. That's an error.
-                    if ( inputStream == null )
-                    {
-                        throw new PreReadException( "The file "
-                                                    + pathToTrustFile
-                                                    + " supplied via system property, wres.wrdsCertificateFileToTrust, "
-                                                    + "for obtaining data afrom WRDS services was neither found on the "
-                                                    + "file system nor the class path." );
-                    }
-
-                    //Input stream was opened. Try to use it.
-                    SSLStuffThatTrustsOneCertificate sslGoo =
-                            new SSLStuffThatTrustsOneCertificate( inputStream, passwordForInternalTrustStore );
-                    return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
-                }
-                catch ( IOException ioe )
-                {
-                    throw new PreReadException( "The file "
-                                                + pathToTrustFile
-                                                + " was found on the classpath in but an attempt to add it to the"
-                                                + " trusted certificate list for requests made to WRDS services failed.",
-                                                ioe );
-                }
-            }
-        }
 
         // No path to trust file. Try to set up a default ssl context using JDK certs.
         try
@@ -782,6 +719,70 @@ public class ReaderUtilities
         }
     }
 
+    /**
+     * Get an SSLContext for use with Water Resources Data Service (WRDS) services. It looks for the 
+     * system property. If found, it tries to load the file from the file system first, and then the
+     * class path. If the file is not found, or it is found but cannot be used, then its an exception.
+     * If no property is supplied, then it uses the JDK default trusted CAs. 
+     * @return The resulting SSLContext and X509TrustManager to use for authenticating WRDS.
+     * @throws PreReadException if the context and trust manager cannot be built for any reason
+     */
+    public static Pair<SSLContext, X509TrustManager> getSslContextForWrds()
+    {
+        // Look for a system property first: #106160. If its there, then use it and it must be valid.
+        String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
+        String passwordForInternalTrustStore = System.getProperty( "wres.wrdsInternalTrustStorePassword" );
+        if ( Objects.nonNull( pathToTrustFile ) )
+        {
+            LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
+                          pathToTrustFile );
+
+            Path path = Paths.get( pathToTrustFile );
+            InputStream inputStream = null;
+            try
+            {
+                // If the file exists, setup the input stream to point to it. IOException is handled below.
+                if ( Files.exists( path ) && Files.isReadable( path ) )
+                {
+                    inputStream = Files.newInputStream( path );
+                }
+                // Otherwise, try to find it on the classpath. Again, IOException is handled below, while
+                // a null return is handled via if-clause and implies the file was not found anywhere.
+                else
+                {
+                    inputStream = ReaderUtilities.class.getClassLoader()
+                                                                   .getResourceAsStream( pathToTrustFile );
+                    if ( inputStream == null )
+                    {
+                        throw new PreReadException( "The file "
+                                                    + pathToTrustFile
+                                                    + " supplied via system property, wres.wrdsCertificateFileToTrust, "
+                                                    + "for obtaining data afrom WRDS services was neither found on the "
+                                                    + "file system nor the class path." );
+                    }
+                }
+                
+                //With the stream established, setup the SSLContext.
+                SSLStuffThatTrustsOneCertificate sslGoo =
+                        new SSLStuffThatTrustsOneCertificate( inputStream,
+                                                              passwordForInternalTrustStore );
+                inputStream.close(); //Stream should not be null when I reach here. 
+                return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
+            }
+            catch ( IOException ioe )
+            {
+                throw new PreReadException( "The file "
+                                            + pathToTrustFile
+                                            + " was found on the file system or classpath but an attempt to add it to "
+                                            + "the trusted certificate list for requests made to WRDS services failed.",
+                                            ioe );
+
+            }
+        }
+
+        //Otherwise, just return the default JDK context.
+        return getDefaultSSLContext();
+    }
 
     /**
      * Get a URI based on prescribed URI and a parameter set.
@@ -1133,4 +1134,3 @@ public class ReaderUtilities
     {
     }
 }
-
