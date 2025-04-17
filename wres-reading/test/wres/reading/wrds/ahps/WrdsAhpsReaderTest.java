@@ -780,6 +780,8 @@ class WrdsAhpsReaderTest
     @BeforeEach
     void startServer()
     {
+        System.setProperty("wres.wrdsCertificateFileToTrust", "org/mockserver/socket/CertificateAuthorityCertificate.pem");
+//        System.setProperty("wres.wrdsCertificateFileToTrust", "/ised/wres/hank.herr/git/wres/testcert.pem");
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
@@ -797,7 +799,7 @@ class WrdsAhpsReaderTest
                                          .withMethod( GET ) )
                        .respond( HttpResponse.response( FORECAST_RESPONSE_V2 ) );
 
-        URI fakeUri = URI.create( "http://localhost:"
+        URI fakeUri = URI.create( "https://localhost:"
                                   + this.mockServer.getLocalPort()
                                   + FORECAST_PATH_V2 );
 

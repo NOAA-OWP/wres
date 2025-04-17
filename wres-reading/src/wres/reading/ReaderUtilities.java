@@ -1,5 +1,7 @@
 package wres.reading;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -7,7 +9,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -512,9 +517,9 @@ public class ReaderUtilities
         }
 
         LOGGER.debug(
-                "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                + "begin with a case-insensitive 'NWM_' designation.",
-                dataSource );
+                      "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
+                      + "begin with a case-insensitive 'NWM_' designation.",
+                      dataSource );
 
         return false;
     }
@@ -543,9 +548,10 @@ public class ReaderUtilities
         return Objects.nonNull( uri.getScheme() )
                && ( uri.getScheme()
                        .toLowerCase()
-                       .startsWith( "http" ) || uri.getScheme()
-                                                   .toLowerCase()
-                                                   .startsWith( "cdms3" ) );
+                       .startsWith( "http" )
+                    || uri.getScheme()
+                          .toLowerCase()
+                          .startsWith( "cdms3" ) );
     }
 
     /**
@@ -664,94 +670,118 @@ public class ReaderUtilities
     }
 
     /**
-     * Get an SSLContext that has a dod intermediate certificate trusted for use with Water Resources Data Service 
-     * (WRDS) services.
-     * Looks for a system property first, then a pem on the classpath, then a default trust manager.
+     * Get an SSLContext for use with Water Resources Data Service (WRDS) services. It looks for the 
+     * system property. If found, it tries to load the file from the file system first, and then the
+     * class path. If the file is not found, or it is found but cannot be used, then its an exception.
+     * If no property is supplied, then it uses the JDK default trusted CAs. 
      * @return the resulting SSLContext or the default SSLContext if not found.
      * @throws PreReadException if the context and trust manager cannot be built for any reason
      */
-    public static Pair<SSLContext, X509TrustManager> getSslContextTrustingDodSignerForWrds()
+    public static Pair<SSLContext, X509TrustManager> getSslContextForWrds()
     {
-        // Look for a system property first: #106160
+        // Look for a system property first: #106160. If its there, then use it and it must be valid.
         String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
         String passwordForInternalTrustStore = System.getProperty( "wres.wrdsInternalTrustStorePassword" );
         if ( Objects.nonNull( pathToTrustFile ) )
-        {
+        {   
             LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
                           pathToTrustFile );
 
             Path path = Paths.get( pathToTrustFile );
-            try ( InputStream trustStream = Files.newInputStream( path ) )
+            
+            //Attempt to open and read the file from the file system.
+            if ( Files.exists( path ) && Files.isReadable( path ))
             {
-                SSLStuffThatTrustsOneCertificate sslGoo =
-                        new SSLStuffThatTrustsOneCertificate( trustStream, passwordForInternalTrustStore );
-                return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
-            }
-            catch ( IOException e )
-            {
-                throw new PreReadException( "Unable to read "
-                                            + pathToTrustFile
-                                            + " from the supplied system property, wres.wrdsCertificateFileToTrust, "
-                                            + "in order to add it to trusted certificate list for requests made to "
-                                            + "WRDS services.",
-                                            e );
-            }
-        }
-
-        // Try classpath
-        String trustFileOnClassPath = "DODSWCA_60.pem";
-        try ( InputStream inputStream = ReaderUtilities.class.getClassLoader()
-                                                             .getResourceAsStream( trustFileOnClassPath ) )
-        {
-            // Avoid sending null, log a warning instead, use default.
-            if ( inputStream == null )
-            {
-                LOGGER.warn( "Failed to load {} from classpath. Using default SSLContext.",
-                             trustFileOnClassPath );
-
-                X509TrustManager theTrustManager = null;
-                for ( TrustManager manager : TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() )
-                                                                .getTrustManagers() )
+                try ( InputStream trustStream = Files.newInputStream( path ) )
                 {
-                    if ( manager instanceof X509TrustManager m )
+                    SSLStuffThatTrustsOneCertificate sslGoo =
+                            new SSLStuffThatTrustsOneCertificate( trustStream, passwordForInternalTrustStore );
+                    return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
+                }
+                catch ( IOException e )
+                {
+                    throw new PreReadException( "The file "
+                                                + pathToTrustFile
+                                                + " supplied via system property, wres.wrdsCertificateFileToTrust, "
+                                                + "for obtaining data from WRDS services was found on the file "
+                                                + "system, but could not be processed.",
+                                                e );
+                }
+            }
+            //Otherwise, try to find it via the classpath.
+            else
+            {
+                try ( InputStream inputStream = ReaderUtilities.class.getClassLoader()
+                                                     .getResourceAsStream( pathToTrustFile ) )
+                {
+                    //We didn't find it on the file system nor on the classpath. That's an error.
+                    if ( inputStream == null )
                     {
-                        LOGGER.warn( "Failed to load {} from classpath. Using this X509TrustManager: {}",
-                                     trustFileOnClassPath,
-                                     manager );
-                        theTrustManager = m;
+                        throw new PreReadException( "The file " 
+                                                    + pathToTrustFile
+                                                    + " supplied via system property, wres.wrdsCertificateFileToTrust, "
+                                                    + "for obtaining data afrom WRDS services was neither found on the "
+                                                    + "file system nor the class path." );
                     }
+
+                    //Input stream was opened. Try to use it.
+                    SSLStuffThatTrustsOneCertificate sslGoo =
+                            new SSLStuffThatTrustsOneCertificate( inputStream, passwordForInternalTrustStore );
+                    return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
                 }
-                if ( Objects.isNull( theTrustManager ) )
+                catch ( IOException ioe )
                 {
-                    throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
+                    throw new PreReadException( "The file "
+                                                + pathToTrustFile
+                                                + " was found on the classpath in but an attempt to add it to the"
+                                                + " trusted certificate list for requests made to WRDS services failed.",
+                                                ioe );
                 }
-                return Pair.of( SSLContext.getDefault(), theTrustManager );
             }
-            SSLStuffThatTrustsOneCertificate sslGoo =
-                    new SSLStuffThatTrustsOneCertificate( inputStream, passwordForInternalTrustStore );
-            return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
         }
-        catch ( IOException ioe )
+
+        // No path to trust file. Try to set up a default ssl context using JDK certs.
+        try
         {
-            throw new PreReadException( "Unable to read "
-                                        + trustFileOnClassPath
-                                        + " from classpath in order to add it"
-                                        + " to trusted certificate list for "
-                                        + "requests made to WRDS services.",
-                                        ioe );
+            //Load the keyStore from the JDK default.
+            KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+            String cacertsPath = System.getProperty( "java.home" ) + "/lib/security/cacerts";
+            FileInputStream fis = new FileInputStream( cacertsPath );
+            String password = "changeit";
+            keyStore.load( fis, password.toCharArray() );
+            fis.close();
+
+            //Initialize the factory for use.
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+            tmf.init( keyStore );
+
+            //Get the trust manager. This will use the last one found.
+            X509TrustManager theTrustManager = null;
+            for ( TrustManager manager : tmf.getTrustManagers() )
+            {
+                if ( manager instanceof X509TrustManager m )
+                {
+                    LOGGER.warn( "No system property wres.wrdsCertificateFileToTrust provided. Using the default X509TrustManager: {}",
+                                 manager );
+                    theTrustManager = m;
+                }
+            }
+            if ( Objects.isNull( theTrustManager ) )
+            {
+                throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
+            }
+
+            //Return the default context with the JDK-default certs trusted.
+            return Pair.of( SSLContext.getDefault(), theTrustManager );
         }
-        catch ( NoSuchAlgorithmException nsae )
+        catch ( NoSuchAlgorithmException | KeyStoreException | CertificateException | IOException e )
         {
-            throw new PreReadException( "Unable to find "
-                                        + trustFileOnClassPath
-                                        + " on classpath in order to add it"
-                                        + " to trusted certificate list for "
-                                        + "requests made to WRDS services "
-                                        + "and furthermore could not get the "
-                                        + "default SSLContext.",
-                                        nsae );
+            throw new PreReadException( "No system property was provided and we could not get the "
+                                        + "default SSLContext from the JDK to support reading data from WRDS.",
+                                        e );
         }
     }
+
 
     /**
      * Get a URI based on prescribed URI and a parameter set.
@@ -1071,7 +1101,8 @@ public class ReaderUtilities
         Pair<Instant, Instant> range = Pair.of( specifiedEarliest, specifiedLatest );
 
         LOGGER.debug( "When building a reader for time-series data from a web source, received a complete pair "
-                      + "declaration, which will be used to chunk requests by feature and time range: {}.", range );
+                      + "declaration, which will be used to chunk requests by feature and time range: {}.",
+                      range );
 
         return range;
     }
@@ -1089,7 +1120,7 @@ public class ReaderUtilities
                || ( DeclarationUtilities.hasBaseline( declaration )
                     && declaration.baseline()
                                   .dataset()
-                                  .sources()  // #121751
+                                  .sources() // #121751
                                   .equals( dataSource.getContext()
                                                      .sources() ) );
     }
@@ -1102,3 +1133,4 @@ public class ReaderUtilities
     {
     }
 }
+
