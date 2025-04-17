@@ -27,12 +27,10 @@ distributions
         {
             from('.')
             {
-                include 'cacerts/*.pem'
-                include 'deprecated/pg_dump_wres.sh'
-                include 'deprecated/pg_restore_wres.sh'
-                include 'operational/wres_http_migrate_dbs_v2.sh'
+                include 'operational/pg_dump_wres.sh'
+                include 'operational/pg_restore_wres.sh'
+                include 'operational/wres_http_migrate_dbs_V2.sh'
                 include 'operational/wres_http_cleandatabase.sh'
-                exclude 'scenario*/output'
             }
         }
     }
