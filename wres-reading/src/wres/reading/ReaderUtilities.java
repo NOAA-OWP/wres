@@ -683,14 +683,14 @@ public class ReaderUtilities
         String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
         String passwordForInternalTrustStore = System.getProperty( "wres.wrdsInternalTrustStorePassword" );
         if ( Objects.nonNull( pathToTrustFile ) )
-        {   
+        {
             LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
                           pathToTrustFile );
 
             Path path = Paths.get( pathToTrustFile );
-            
+
             //Attempt to open and read the file from the file system.
-            if ( Files.exists( path ) && Files.isReadable( path ))
+            if ( Files.exists( path ) && Files.isReadable( path ) )
             {
                 try ( InputStream trustStream = Files.newInputStream( path ) )
                 {
@@ -712,12 +712,12 @@ public class ReaderUtilities
             else
             {
                 try ( InputStream inputStream = ReaderUtilities.class.getClassLoader()
-                                                     .getResourceAsStream( pathToTrustFile ) )
+                                                                     .getResourceAsStream( pathToTrustFile ) )
                 {
                     //We didn't find it on the file system nor on the classpath. That's an error.
                     if ( inputStream == null )
                     {
-                        throw new PreReadException( "The file " 
+                        throw new PreReadException( "The file "
                                                     + pathToTrustFile
                                                     + " supplied via system property, wres.wrdsCertificateFileToTrust, "
                                                     + "for obtaining data afrom WRDS services was neither found on the "
