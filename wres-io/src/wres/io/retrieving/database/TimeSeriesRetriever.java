@@ -1719,7 +1719,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         if ( this.features.isEmpty() )
         {
-            throw new IllegalArgumentException( validationStart + " set of one or more features." );
+            throw new IllegalArgumentException( validationStart + "set of one or more features." );
         }
 
         // Log missing information

@@ -42,6 +42,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeSeriesStore;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
@@ -741,11 +742,16 @@ public class Evaluator
             boolean clearThresholdValues =
                     EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( metricsAndThresholds );
 
+            // Get the time windows, which may originate from event detection and hence may not be declared
+            Set<TimeWindowOuter> timeWindows = EvaluationUtilities.getTimeWindows( poolRequests );
+
             // Create the summary statistics calculators to increment with raw statistics
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
                     EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                                                                         timeWindows,
                                                                          poolCount,
                                                                          clearThresholdValues );
+
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
@@ -754,6 +760,7 @@ public class Evaluator
             {
                 summaryStatsCalculatorsForBaseline =
                         EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                                                                             timeWindows,
                                                                              poolCount,
                                                                              clearThresholdValues );
             }

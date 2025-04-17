@@ -1096,7 +1096,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             {
                 String variableName = nominal.getName()
                                       + "_"
-                                      + summaryStatistic.getDimension()
+                                      + summaryStatistic.getDimensionList()
                                       + "_"
                                       + summaryStatistic.getStatistic();
                 if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
@@ -1726,7 +1726,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             {
                 SummaryStatistic summaryStatistic = score.getSummaryStatistic();
                 qualifier = "_"
-                            + summaryStatistic.getDimension()
+                            + summaryStatistic.getDimensionList()
                             + "_"
                             + summaryStatistic.getStatistic();
 
@@ -1737,7 +1737,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                            .getProbability();
                     Map<Double, String> quantileNames;
 
-                    if ( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
+                    if ( summaryStatistic.getDimensionList()
+                                         .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
                     {
                         quantileNames = this.outputWriter.getStandardQuantileNamesForSamplingUncertainty();
                     }

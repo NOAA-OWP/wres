@@ -54,7 +54,8 @@ public class SummaryStatisticsDeserializer
             JsonNode metricsNode = node.get( "statistics" );
             this.readStatisticsFromArrayNode( metricsNode, summaryStatistics, mapper, template );
 
-            // Create one summary statistic for each qualified dimension
+            // Create one summary statistic for each qualified dimension. The logic surrounding how dimensions are
+            // combined is deferred until evaluation time, i.e., keep things simple at deserialization
             if ( node.has( "dimensions" ) )
             {
                 JsonNode dimensionsNode = node.get( "dimensions" );
@@ -77,7 +78,7 @@ public class SummaryStatisticsDeserializer
                             SummaryStatistic.StatisticDimension.valueOf( enumName );
 
                     summaryStatistics.forEach( n -> dimensionedStatistics.add( n.toBuilder()
-                                                                                .setDimension( dimension )
+                                                                                .addDimension( dimension )
                                                                                 .build() ) );
                 }
 

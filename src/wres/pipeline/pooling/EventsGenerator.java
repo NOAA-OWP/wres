@@ -383,6 +383,21 @@ record EventsGenerator( TimeSeriesUpscaler<Double> leftUpscaler,
                                                     .filter( contained )
                                                     .collect( Collectors.toUnmodifiableSet() );
 
+                if ( innerFeatures.isEmpty() )
+                {
+                    Set<String> covariateNames = details.covariateFeatures()
+                                                        .stream()
+                                                        .map( Feature::getName )
+                                                        .collect( Collectors.toSet() );
+                    Set<String> primaryNames = features.stream()
+                                                       .map( Feature::getName )
+                                                       .collect( Collectors.toSet() );
+                    throw new IllegalStateException( "Failed to identify any covariate features whose names are "
+                                                     + "correlated with the names of features in a primary dataset. The "
+                                                     + "covariate feature names are: " + covariateNames + ". "
+                                                     + "The feature names for comparison are: " + primaryNames );
+                }
+
                 Stream<TimeSeries<Double>> series = eventRetriever.getCovariateRetriever( innerFeatures,
                                                                                           details.covariateName(),
                                                                                           timeWindow )

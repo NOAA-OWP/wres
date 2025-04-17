@@ -2549,18 +2549,22 @@ class DeclarationFactoryTest
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
         SummaryStatistic mean = SummaryStatistic.newBuilder()
                                                 .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                 .build();
 
         SummaryStatistic stdev = SummaryStatistic.newBuilder()
                                                  .setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                                 .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                  .build();
 
         SummaryStatistic meanFeatureGroups = mean.toBuilder()
-                                                 .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                 .clearDimension()
+                                                 .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                  .build();
 
         SummaryStatistic stdevFeatureGroups = stdev.toBuilder()
-                                                   .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                   .clearDimension()
+                                                   .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                    .build();
 
         summaryStatistics.add( mean );
@@ -2573,6 +2577,7 @@ class DeclarationFactoryTest
                                                                      .right( this.predictedDataset )
                                                                      .summaryStatistics( summaryStatistics )
                                                                      .build();
+
         assertEquals( expected, actual );
     }
 
@@ -3395,7 +3400,7 @@ class DeclarationFactoryTest
         // Preserve insertion order
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
         SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+                                                            .addDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
         SummaryStatistic mean = template.setStatistic( SummaryStatistic.StatisticName.MEAN )
                                         .build();
         SummaryStatistic median = template.setStatistic( SummaryStatistic.StatisticName.MEDIAN )

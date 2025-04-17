@@ -499,6 +499,9 @@ class EventsGeneratorTest
                .thenReturn( Set.of( groupOne ) );
         Mockito.when( project.getDeclaration() )
                .thenReturn( declaration );
+        Mockito.when( project.getCovariateFeatures( Mockito.any() ) )
+               .thenReturn( Set.of( Feature.of( geometry ) ) );
+
 
         Set<TimeWindowOuter> actual = generator.doEventDetection( project, groupOne, this.retrieverFactory );
 

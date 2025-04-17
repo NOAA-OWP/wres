@@ -1904,7 +1904,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
             this.append( joiner, units, false );
 
-            String statisticDimension = summaryStatistic.getDimension()
+            String statisticDimension = summaryStatistic.getDimensionList()
                                                         .toString()
                                                         .replace( "_", " " );
             this.append( joiner, statisticDimension, false );
@@ -1992,7 +1992,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     {
         return Objects.nonNull( summaryStatistic )
                && summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE
-               && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED;
+               && !summaryStatistic.getDimensionList()
+                                   .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
     }
 
     /**
@@ -2002,7 +2003,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     private boolean hasQuantileSamplingUncertainty( SummaryStatistic summaryStatistic )
     {
         return Objects.nonNull( summaryStatistic )
-               && summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED
+               && !summaryStatistic.getDimensionList()
+                                   .contains( SummaryStatistic.StatisticDimension.RESAMPLED )
                && summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE;
     }
 

@@ -10,6 +10,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.text.DecimalFormat;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +39,6 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.bootstrap.BootstrapUtilities;
-import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
@@ -54,6 +55,7 @@ import wres.events.EvaluationMessager;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
 import wres.writing.csv.pairs.EnsemblePairsWriter;
 import wres.metrics.BoxplotSummaryStatisticFunction;
@@ -201,9 +203,10 @@ class EvaluationUtilities
     }
 
     /**
-     * Generates a collection of {@link SummaryStatisticsCalculator} from an {@link EvaluationDeclaration}. Currently,
-     * supports only {@link wres.statistics.generated.SummaryStatistic.StatisticDimension#FEATURES}.
+     * Generates a collection of {@link SummaryStatisticsCalculator} from an {@link EvaluationDeclaration}.
+     *
      * @param declaration the evaluation declaration
+     * @param timeWindows the time windows
      * @param poolCount the number of pools for which raw (non-summary) statistics are required
      * @param clearThresholdValues is true to clear event threshold values from the summary statistics, false otherwise
      * @return the summary statistics calculators
@@ -212,6 +215,7 @@ class EvaluationUtilities
      */
 
     static Map<String, List<SummaryStatisticsCalculator>> getSummaryStatisticsCalculators( EvaluationDeclaration declaration,
+                                                                                           Set<TimeWindowOuter> timeWindows,
                                                                                            long poolCount,
                                                                                            boolean clearThresholdValues )
     {
@@ -226,18 +230,20 @@ class EvaluationUtilities
             return Map.of();
         }
 
-        // Collect the geographic feature dimensions to aggregate, which are the only supported dimensions
+        // Collect the supported feature dimensions to aggregate
         // Note that clearing threshold values is linked to these aggregation dimensions.
         Set<SummaryStatistic.StatisticDimension> dimensions =
                 declaration.summaryStatistics()
                            .stream()
-                           .map( SummaryStatistic::getDimension )
-                           .filter( d -> d == SummaryStatistic.StatisticDimension.FEATURE_GROUP
-                                         || d == SummaryStatistic.StatisticDimension.FEATURES )
+                           .flatMap( s -> s.getDimensionList()
+                                           .stream() )
+                           .filter( d -> d != SummaryStatistic.StatisticDimension.RESAMPLED
+                                         && d != SummaryStatistic.StatisticDimension.TIMING_ERRORS )
                            .collect( Collectors.toSet() );
 
         return EvaluationUtilities.getSummaryStatisticsCalculators( declaration,
                                                                     dimensions,
+                                                                    timeWindows,
                                                                     poolCount,
                                                                     clearThresholdValues );
     }
@@ -603,7 +609,8 @@ class EvaluationUtilities
         // Summary statistics across geographic features?
         // No, do not add an all-feature group
         if ( summaryStatistics.stream()
-                              .noneMatch( n -> n.getDimension() == SummaryStatistic.StatisticDimension.FEATURES ) )
+                              .noneMatch( n -> n.getDimensionList()
+                                                .contains( SummaryStatistic.StatisticDimension.FEATURES ) ) )
         {
             LOGGER.debug( "No summary statistics across features that require an extra feature group." );
         }
@@ -644,7 +651,8 @@ class EvaluationUtilities
         boolean byGroup =
                 declaration.summaryStatistics()
                            .stream()
-                           .anyMatch( g -> g.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP );
+                           .anyMatch( g -> g.getDimensionList()
+                                            .contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) );
 
         for ( FeatureGroup next : featureGroups )
         {
@@ -712,6 +720,29 @@ class EvaluationUtilities
         }
 
         return retrieverFactory;
+    }
+
+    /**
+     * Retrieves the time windows from the pool requests.
+     *
+     * @param poolRequests the pool requests
+     * @return the time windows
+     */
+
+    static Set<TimeWindowOuter> getTimeWindows( List<PoolRequest> poolRequests )
+    {
+        Set<TimeWindowOuter> timeWindows = poolRequests.stream()
+                                                       .map( n -> n.getMetadata()
+                                                                   .getTimeWindow() )
+                                                       .collect( Collectors.toCollection( HashSet::new ) );
+        Set<TimeWindowOuter> timeWindowsBaseline = poolRequests.stream()
+                                                               .filter( PoolRequest::hasBaseline )
+                                                               .map( n -> n.getMetadataForBaseline()
+                                                                           .getTimeWindow() )
+                                                               .collect( Collectors.toCollection( HashSet::new ) );
+        timeWindows.addAll( timeWindowsBaseline );
+
+        return Collections.unmodifiableSet( timeWindows );
     }
 
     /**
@@ -1380,16 +1411,18 @@ class EvaluationUtilities
      * Generates a collection of {@link SummaryStatisticsCalculator}.
      *
      * @param declaration the evaluation declaration
-     * @param dimensions the feature dimensions over which to perform aggregation
-     * @return the summary statistics calculators
+     * @param dimensions the dimensions over which to perform aggregation
+     * @param timeWindows the time windows
      * @param poolCount the number of pools for which raw (non-summary) statistics are required
      * @param clearThresholdValues is true to clear event threshold values, false otherwise
+     * @return the summary statistics calculators
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the dimension is unsupported
      */
 
     private static Map<String, List<SummaryStatisticsCalculator>> getSummaryStatisticsCalculators( EvaluationDeclaration declaration,
                                                                                                    Set<SummaryStatistic.StatisticDimension> dimensions,
+                                                                                                   Set<TimeWindowOuter> timeWindows,
                                                                                                    long poolCount,
                                                                                                    boolean clearThresholdValues )
     {
@@ -1424,11 +1457,47 @@ class EvaluationUtilities
         // Summary statistics across all geographic features in a single feature group
         if ( dimensions.contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
         {
+            // Part of declaration validation to ensure the groups exist in this context
             List<FeatureGroupFilterAdapter> filters =
-                    EvaluationUtilities.getFeatureGroupForSummaryStatistics( declaration,
+                    EvaluationUtilities.getFeatureGroupForSummaryStatistics( declaration.featureGroups()
+                                                                                        .geometryGroups(),
                                                                              separateMetricsForBaseline );
             featureFilters.addAll( filters );
             LOGGER.debug( "Created {} filters for geographic feature groups.", filters.size() );
+        }
+
+        // No pooling over geographic features implies a time dimension only, so insert a spatial no-op
+        if ( !dimensions.contains( SummaryStatistic.StatisticDimension.FEATURES )
+             && !dimensions.contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+        {
+            List<FeatureGroupFilterAdapter> filters =
+                    EvaluationUtilities.getNoOpFeatureFiltersForSummaryStatistics( declaration,
+                                                                                   separateMetricsForBaseline );
+            featureFilters.addAll( filters );
+            LOGGER.debug( "Created {} no-op filters for geographic features and feature groups.", filters.size() );
+        }
+
+        // Pooling over valid date pools
+        if ( dimensions.contains( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS ) )
+        {
+            // Create a comparator that checks for equality, absent the valid date times
+            timeWindowComparator = ( a, b ) ->
+            {
+                Objects.requireNonNull( a );
+                Objects.requireNonNull( b );
+
+                TimeWindow adjustedFirst = a.toBuilder()
+                                            .clearEarliestValidTime()
+                                            .clearLatestValidTime()
+                                            .build();
+
+                TimeWindow adjustedSecond = b.toBuilder()
+                                             .clearEarliestValidTime()
+                                             .clearLatestValidTime()
+                                             .build();
+
+                return Objects.equals( adjustedFirst, adjustedSecond );
+            };
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -1441,13 +1510,12 @@ class EvaluationUtilities
             LOGGER.debug( "Creating filters for the following geographic feature groups: {}.", featureGroups );
         }
 
-        // Get the time window filters from the time window comparator and combine with threshold filters
-        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( declaration );
         Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
         List<TimeWindowAndThresholdFilterAdapter> timeWindowAndThresholdFilters =
                 EvaluationUtilities.getTimeWindowAndThresholdFilters( timeWindows,
                                                                       timeWindowComparator,
                                                                       thresholds,
+                                                                      dimensions,
                                                                       separateMetricsForBaseline,
                                                                       clearThresholdValues );
 
@@ -1533,21 +1601,24 @@ class EvaluationUtilities
             Predicate<Statistics> featureFilter = nextOuterFilter.filter();
             BinaryOperator<Statistics> featureAdapter = nextOuterFilter.adapter();
 
-            // The feature dimension for which statistics are required
+            // The dimension for which statistics are required
             SummaryStatistic.StatisticDimension dimension = nextOuterFilter.dimension();
 
             // Filter the statistics by dimension
-            Set<ScalarSummaryStatisticFunction> nextScalar = scores.stream()
-                                                                   .filter( n -> n.statistic()
-                                                                                  .getDimension() == dimension )
-                                                                   .collect( Collectors.toUnmodifiableSet() );
+            Set<ScalarSummaryStatisticFunction> nextScore = scores.stream()
+                                                                  .filter( n -> n.statistic()
+                                                                                 .getDimensionList()
+                                                                                 .contains( dimension ) )
+                                                                  .collect( Collectors.toUnmodifiableSet() );
             Set<DiagramSummaryStatisticFunction> nextDiagrams = diagrams.stream()
                                                                         .filter( n -> n.statistic()
-                                                                                       .getDimension() == dimension )
+                                                                                       .getDimensionList()
+                                                                                       .contains( dimension ) )
                                                                         .collect( Collectors.toUnmodifiableSet() );
             Set<BoxplotSummaryStatisticFunction> nextBoxplots = boxplots.stream()
                                                                         .filter( n -> n.statistic()
-                                                                                       .getDimension() == dimension )
+                                                                                       .getDimensionList()
+                                                                                       .contains( dimension ) )
                                                                         .collect( Collectors.toUnmodifiableSet() );
 
             List<SummaryStatisticsCalculator> nextCalculators = new ArrayList<>();
@@ -1567,7 +1638,7 @@ class EvaluationUtilities
                 BinaryOperator<Statistics> metadataAdapter = ( p, q ) ->
                         poolNumberAdapter.apply( featureAdapter.apply( thresholdAdapter.apply( p ), q ), q );
 
-                SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( nextScalar,
+                SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( nextScore,
                                                                                          nextDiagrams,
                                                                                          nextBoxplots,
                                                                                          filter,
@@ -1775,20 +1846,21 @@ class EvaluationUtilities
 
             Statistics.Builder adjusted = existing.toBuilder();
 
-            wres.statistics.generated.Pool.Builder existingPool =
+            // Get the appropriate mutable builder, which will adjust the adjusted pool
+            wres.statistics.generated.Pool.Builder mutableBuilder =
                     isBaselinePool ? adjusted.getBaselinePoolBuilder() : adjusted.getPoolBuilder();
 
             // Clear the threshold values unless they are equal across statistics or represent all data
-            if ( existingPool.hasEventThreshold()
-                 && !ThresholdOuter.of( existingPool.getEventThreshold() )
+            if ( mutableBuilder.hasEventThreshold()
+                 && !ThresholdOuter.of( mutableBuilder.getEventThreshold() )
                                    .isAllDataThreshold()
                  && clearThresholds )
             {
                 // Set to missing rather than clearing: #126545
-                Threshold.Builder builder = existingPool.getEventThresholdBuilder()
-                                                        .setLeftThresholdValue( MissingValues.DOUBLE );
-                if ( existingPool.getEventThreshold()
-                                 .getOperator() == Threshold.ThresholdOperator.BETWEEN )
+                Threshold.Builder builder = mutableBuilder.getEventThresholdBuilder()
+                                                          .setLeftThresholdValue( MissingValues.DOUBLE );
+                if ( mutableBuilder.getEventThreshold()
+                                   .getOperator() == Threshold.ThresholdOperator.BETWEEN )
                 {
                     builder.setRightThresholdValue( MissingValues.DOUBLE );
                 }
@@ -1796,6 +1868,50 @@ class EvaluationUtilities
 
             return adjusted.build();
         };
+    }
+
+    /**
+     * Creates a metadata adapter that removes time window information for the time dimensions that are being
+     * aggregated.
+     *
+     * @param dimensions the aggregation dimensions
+     * @return the metadata adapter
+     */
+
+    private static UnaryOperator<Statistics> getMetadataAdapterForTimeWindows( Set<SummaryStatistic.StatisticDimension> dimensions )
+    {
+        if ( dimensions.contains( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS ) )
+        {
+            return existing ->
+            {
+                boolean isBaselinePool = !existing.hasPool()
+                                         && existing.hasBaselinePool();
+
+                Statistics.Builder adjusted = existing.toBuilder();
+
+                // Get the appropriate mutable builder, which will adjust the adjusted pool
+                wres.statistics.generated.Pool.Builder mutableBuilder =
+                        isBaselinePool ? adjusted.getBaselinePoolBuilder() : adjusted.getPoolBuilder();
+
+                // Set the valid times to default
+                if ( mutableBuilder.hasTimeWindow() )
+                {
+                    Timestamp minimum = MessageUtilities.getTimestamp( Instant.MIN );
+                    Timestamp maximum = MessageUtilities.getTimestamp( Instant.MAX );
+                    TimeWindow adjustedWindow = mutableBuilder.getTimeWindow()
+                                                              .toBuilder()
+                                                              .setEarliestValidTime( minimum )
+                                                              .setLatestValidTime( maximum )
+                                                              .build();
+                    mutableBuilder.setTimeWindow( adjustedWindow );
+                }
+
+                return adjusted.build();
+            };
+        }
+
+        // No op
+        return a -> a;
     }
 
     /**
@@ -1913,36 +2029,108 @@ class EvaluationUtilities
     }
 
     /**
-     * Generates a filter for {@link Statistics} from each supplied {@link GeometryGroup}.
+     * Return as many filters a singleton geographic features and feature groups, each one representing a filter for
+     * that feature or feature group. This is effectively a no-op spatial summary whereby summary statistics are
+     * not calculated from a geographic feature dimension, but from other dimensions.
+     *
      * @param declaration the declaration
+     * @param separateMetricsForBaseline whether separate metrics are required for the baseline
+     * @return the no-op feature filters
+     */
+
+    private static List<FeatureGroupFilterAdapter> getNoOpFeatureFiltersForSummaryStatistics( EvaluationDeclaration declaration,
+                                                                                              boolean separateMetricsForBaseline )
+    {
+        List<FeatureGroupFilterAdapter> filterAdapters = new ArrayList<>();
+
+        if ( Objects.nonNull( declaration.features() ) )
+        {
+            BinaryOperator<Statistics> geospatialAdapter = ( a, b ) -> a; // No op
+
+            int groupCount = 1;
+            for ( GeometryTuple nextSingleton : declaration.features()
+                                                           .geometries() )
+            {
+                Predicate<Statistics> nextFilter = s -> s.hasPool()
+                                                        && s.getPool()
+                                                            .hasGeometryGroup()
+                                                        && s.getPool()
+                                                            .getGeometryGroup()
+                                                            .getGeometryTuplesList()
+                                                            .equals( Collections.singletonList( nextSingleton ) );
+                GeometryGroup group = GeometryGroup.newBuilder()
+                                                   .addGeometryTuples( nextSingleton )
+                                                   .build();
+
+                // No geospatial filtering and only one time filter currently supported, so it must be that one
+                FeatureGroupFilterAdapter adapter = new FeatureGroupFilterAdapter( group,
+                                                                                   nextFilter,
+                                                                                   geospatialAdapter,
+                                                                                   SummaryStatistic.StatisticDimension.VALID_DATE_POOLS,
+                                                                                   groupCount );
+                filterAdapters.add( adapter );
+                groupCount++;
+            }
+
+            if ( separateMetricsForBaseline )
+            {
+                int baselineGroupCount = 1;
+                for ( GeometryTuple nextSingleton : declaration.features()
+                                                               .geometries() )
+                {
+                    Predicate<Statistics> nextFilter = s -> s.hasBaselinePool()
+                                                            && s.getBaselinePool()
+                                                                .hasGeometryGroup()
+                                                            && s.getBaselinePool()
+                                                                .getGeometryGroup()
+                                                                .getGeometryTuplesList()
+                                                                .equals( Collections.singletonList( nextSingleton ) );
+                    GeometryGroup group = GeometryGroup.newBuilder()
+                                                       .addGeometryTuples( nextSingleton )
+                                                       .build();
+
+                    // No geospatial filtering and only one time filter currently supported, so it must be that one
+                    FeatureGroupFilterAdapter adapter = new FeatureGroupFilterAdapter( group,
+                                                                                       nextFilter,
+                                                                                       geospatialAdapter,
+                                                                                       SummaryStatistic.StatisticDimension.VALID_DATE_POOLS,
+                                                                                       baselineGroupCount );
+                    filterAdapters.add( adapter );
+                    baselineGroupCount++;
+                }
+            }
+        }
+
+        return Collections.unmodifiableList( filterAdapters );
+    }
+
+    /**
+     * Generates a filter for {@link Statistics} from each supplied {@link GeometryGroup}.
+     * @param geometryGroups the geometry groups
      * @param separateMetricsForBaseline whether to generate a separate filter for baseline data
      * @return the filters
      */
-    private static List<FeatureGroupFilterAdapter> getFeatureGroupForSummaryStatistics( EvaluationDeclaration declaration,
+    private static List<FeatureGroupFilterAdapter> getFeatureGroupForSummaryStatistics( Set<GeometryGroup> geometryGroups,
                                                                                         boolean separateMetricsForBaseline )
     {
         List<FeatureGroupFilterAdapter> filters = new ArrayList<>();
 
-        if ( Objects.nonNull( declaration.featureGroups() ) )
+        int groupCount = 1;
+        for ( GeometryGroup group : geometryGroups )
         {
-            int groupCount = 1;
-            for ( GeometryGroup group : declaration.featureGroups()
-                                                   .geometryGroups() )
-            {
-                FeatureGroupFilterAdapter filter =
-                        EvaluationUtilities.getMainFeatureGroupForSummaryStatistics( group, groupCount );
-                filters.add( filter );
-                groupCount++;
+            FeatureGroupFilterAdapter filter =
+                    EvaluationUtilities.getMainFeatureGroupForSummaryStatistics( group, groupCount );
+            filters.add( filter );
+            groupCount++;
 
-                // Separate metrics for baseline?
-                if ( separateMetricsForBaseline )
-                {
-                    FeatureGroupFilterAdapter
-                            baselineFilter =
-                            EvaluationUtilities.getBaselineFeatureGroupForSummaryStatistics( group, groupCount );
-                    filters.add( baselineFilter );
-                    groupCount++;
-                }
+            // Separate metrics for baseline?
+            if ( separateMetricsForBaseline )
+            {
+                FeatureGroupFilterAdapter
+                        baselineFilter =
+                        EvaluationUtilities.getBaselineFeatureGroupForSummaryStatistics( group, groupCount );
+                filters.add( baselineFilter );
+                groupCount++;
             }
         }
 
@@ -2020,6 +2208,7 @@ class EvaluationUtilities
      * @param timeWindows the time windows
      * @param timeWindowEquality the test for equality of time windows
      * @param thresholds the thresholds
+     * @param dimensions the aggregation dimensions
      * @param separateMetricsForBaseline whether separate metrics are required for a baseline dataset
      * @param clearThresholdValues is true to clear event threshold values, false otherwise
      * @return the filters
@@ -2027,6 +2216,7 @@ class EvaluationUtilities
     private static List<TimeWindowAndThresholdFilterAdapter> getTimeWindowAndThresholdFilters( Set<TimeWindowOuter> timeWindows,
                                                                                                BiPredicate<TimeWindow, TimeWindow> timeWindowEquality,
                                                                                                Set<wres.config.yaml.components.Threshold> thresholds,
+                                                                                               Set<SummaryStatistic.StatisticDimension> dimensions,
                                                                                                boolean separateMetricsForBaseline,
                                                                                                boolean clearThresholdValues )
     {
@@ -2036,8 +2226,16 @@ class EvaluationUtilities
                                                           timeWindowEquality,
                                                           separateMetricsForBaseline );
 
-        UnaryOperator<Statistics> adapter =
+        // Get the metadata adapter for time windows
+        UnaryOperator<Statistics> timeWindowAdapter =
+                EvaluationUtilities.getMetadataAdapterForTimeWindows( dimensions );
+
+        // Get the metadata adapter for thresholds
+        UnaryOperator<Statistics> thresholdAdapter =
                 EvaluationUtilities.getMetadataAdapterForThresholds( clearThresholdValues );
+
+        // Combine the adapters
+        UnaryOperator<Statistics> adapter = a -> timeWindowAdapter.apply( thresholdAdapter.apply( a ) );
 
         LOGGER.debug( "Discovered {} time windows, which produced {} filters.",
                       timeWindows.size(),
@@ -2187,7 +2385,7 @@ class EvaluationUtilities
     }
 
     /**
-     * A collection of filters/adapters to support summary statistics calculation for a geographic feature group..
+     * A collection of filters/adapters to support summary statistics calculation for a geographic feature group.
      * @param geometryGroup the geometry group
      * @param filter the filter
      * @param adapter the metadata adapter

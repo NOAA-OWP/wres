@@ -453,7 +453,8 @@ public class PoolFactory
         // because the raw statistics are not generated for pooled pairs
         if ( declaration.summaryStatistics()
                         .stream()
-                        .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+                        .anyMatch( s -> s.getDimensionList()
+                                         .contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) ) )
         {
             LOGGER.warn( "Discovered declaration for summary statistics across feature groups. By default, the "
                          + "pooling of pairs across these feature groups will be suppressed." );

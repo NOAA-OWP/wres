@@ -2439,7 +2439,7 @@ class DeclarationValidatorTest
     void testSummaryStatisticsAcrossFeaturesWithoutFeatureDeclarationProducesError()
     {
         SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                            .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                             .setStatistic( SummaryStatistic.StatisticName.MEAN )
                                                             .build();
 
@@ -2462,10 +2462,37 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testSummaryStatisticsAcrossValidDatePoolsWithoutValidDatePoolsProducesError()
+    {
+        SummaryStatistic summaryStatistic =
+                SummaryStatistic.newBuilder()
+                                .addDimension( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS )
+                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                .build();
+
+        Set<SummaryStatistic> summaryStatistics = Set.of( summaryStatistic );
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "across valid date pools, but the declaration does not "
+                                                       + "contain any pools with qualified valid dates",
+                                                       StatusLevel.ERROR ) );
+
+    }
+
+    @Test
     void testSummaryStatisticsQuantilesWithoutMedianAndWithDiagramMetricAndGraphicsProducesWarning()
     {
         SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                            .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                             .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
                                                             .setProbability( 0.4 )
                                                             .build();
@@ -2499,7 +2526,7 @@ class DeclarationValidatorTest
     void testSummaryStatisticsAcrossFeatureGroupsWithoutFeatureGroupsProducesError()
     {
         SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                            .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                             .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
                                                             .build();
 
@@ -2525,7 +2552,7 @@ class DeclarationValidatorTest
     {
         // #124265-44
         SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                            .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                             .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
                                                             .build();
 
@@ -2553,7 +2580,7 @@ class DeclarationValidatorTest
     {
         // #124265-44
         SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                            .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                             .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
                                                             .build();
 

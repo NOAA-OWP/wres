@@ -78,15 +78,15 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.1 );
 
         SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.5 );
 
         SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
@@ -187,15 +187,15 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.1 );
 
         SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.5 );
 
         SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
@@ -300,15 +300,15 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.1 );
 
         SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.5 );
 
         SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
@@ -403,15 +403,15 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.1 );
 
         SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.5 );
 
         SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
@@ -533,7 +533,7 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.5 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
@@ -702,15 +702,15 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.1 );
 
         SummaryStatistic q2 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.5 );
 
         SummaryStatistic q3 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.QUANTILE,
-                                                                    SummaryStatistic.StatisticDimension.RESAMPLED,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.RESAMPLED ),
                                                                     0.9 );
 
         ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
@@ -927,7 +927,7 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic mean = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
-                                                                      SummaryStatistic.StatisticDimension.FEATURES,
+                                                                      Set.of( SummaryStatistic.StatisticDimension.FEATURES ),
                                                                       null );
 
         ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
@@ -991,7 +991,7 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic sd = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
-                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.FEATURES ),
                                                                     null );
 
         ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofScalarSummaryStatistic( sd );
@@ -1090,7 +1090,7 @@ class SummaryStatisticsCalculatorTest
                                    .build();
 
         SummaryStatistic mean = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
-                                                                      SummaryStatistic.StatisticDimension.FEATURES,
+                                                                      Set.of( SummaryStatistic.StatisticDimension.FEATURES ),
                                                                       null );
 
         ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
@@ -1150,13 +1150,13 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic mean = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
-                                                                      SummaryStatistic.StatisticDimension.FEATURES,
+                                                                      Set.of( SummaryStatistic.StatisticDimension.FEATURES ),
                                                                       null );
 
         ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
         SummaryStatistic sd = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
-                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.FEATURES ),
                                                                     null );
 
         ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofScalarSummaryStatistic( sd );
@@ -1245,7 +1245,7 @@ class SummaryStatisticsCalculatorTest
                                        .build();
 
         SummaryStatistic q1 = MessageUtilities.getSummaryStatistic( SummaryStatistic.StatisticName.BOX_PLOT,
-                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    Set.of( SummaryStatistic.StatisticDimension.FEATURES ),
                                                                     null );
 
         BoxplotSummaryStatisticFunction q1f = FunctionFactory.ofBoxplotSummaryStatistic( q1 );

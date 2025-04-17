@@ -313,7 +313,7 @@ public class FunctionFactory
         SummaryStatistic statistic = SummaryStatistic.newBuilder()
                                                      .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
                                                      .setProbability( probability )
-                                                     .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                     .addDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
                                                      .build();
         return new ScalarSummaryStatisticFunction( statistic, quantile );
     }

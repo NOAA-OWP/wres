@@ -1292,6 +1292,7 @@ class DeclarationInterpolatorTest
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
         SummaryStatistic mean = SummaryStatistic.newBuilder()
                                                 .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                 .build();
         summaryStatistics.add( mean );
 
@@ -1327,17 +1328,74 @@ class DeclarationInterpolatorTest
 
         SummaryStatistic expectedFirst = SummaryStatistic.newBuilder()
                                                          .setStatistic( SummaryStatistic.StatisticName.MEAN )
-                                                         .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                         .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                          .build();
 
         SummaryStatistic expectedSecond = SummaryStatistic.newBuilder()
                                                           .setStatistic( SummaryStatistic.StatisticName.MEAN )
-                                                          .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
+                                                          .addDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
                                                           .build();
 
         assertAll( () -> assertEquals( Set.of( expectedFirst ), actualOne ),
                    () -> assertEquals( Set.of( expectedSecond ), actualTwo ) );
 
+    }
+
+    @Test
+    void testInterpolateCombinedDimensionsForSummaryStatistics()
+    {
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic meanFeatures = SummaryStatistic.newBuilder()
+                                                        .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                        .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                        .build();
+
+        SummaryStatistic meanValidTime = SummaryStatistic.newBuilder()
+                                                         .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                         .addDimension( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS )
+                                                         .build();
+        SummaryStatistic stdevFeatures = SummaryStatistic.newBuilder()
+                                                         .setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                                         .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                         .build();
+
+        SummaryStatistic stdevValidTime = SummaryStatistic.newBuilder()
+                                                          .setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                                          .addDimension( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS )
+                                                          .build();
+
+        summaryStatistics.add( meanValidTime );
+        summaryStatistics.add( meanFeatures );
+        summaryStatistics.add( stdevFeatures );
+        summaryStatistics.add( stdevValidTime );
+
+        // Add summary statistics in two separate contexts
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( evaluation, false );
+
+        Set<SummaryStatistic> actual = interpolated.summaryStatistics();
+
+        SummaryStatistic expectedFirst = SummaryStatistic.newBuilder()
+                                                         .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                         .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                         .addDimension( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS )
+                                                         .build();
+
+        SummaryStatistic expectedSecond = SummaryStatistic.newBuilder()
+                                                          .setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                                          .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                          .addDimension( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS )
+                                                          .build();
+
+        Set<SummaryStatistic> expected = Set.of( expectedFirst, expectedSecond );
+
+        assertEquals( expected, actual );
     }
 
     @Test
