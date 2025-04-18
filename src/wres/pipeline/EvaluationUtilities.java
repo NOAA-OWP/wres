@@ -253,12 +253,14 @@ class EvaluationUtilities
      * @param netcdfWriters the writers
      * @param featureGroups the feature groups
      * @param metricsAndThresholds the metrics and thresholds
+     * @param timeWindows the time windows
      * @throws IOException if the blobs could not be written for any reason
      */
 
     static void createNetcdfBlobs( List<NetcdfOutputWriter> netcdfWriters,
                                    Set<FeatureGroup> featureGroups,
-                                   Set<MetricsAndThresholds> metricsAndThresholds ) throws IOException
+                                   Set<MetricsAndThresholds> metricsAndThresholds,
+                                   Set<TimeWindowOuter> timeWindows ) throws IOException
     {
         if ( !netcdfWriters.isEmpty() )
         {
@@ -267,7 +269,8 @@ class EvaluationUtilities
             for ( NetcdfOutputWriter writer : netcdfWriters )
             {
                 writer.createBlobsForWriting( featureGroups,
-                                              metricsAndThresholds );
+                                              metricsAndThresholds,
+                                              timeWindows );
             }
 
             LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
@@ -726,10 +729,12 @@ class EvaluationUtilities
      * Retrieves the time windows from the pool requests.
      *
      * @param poolRequests the pool requests
+     * @param declaration the declaration
      * @return the time windows
      */
 
-    static Set<TimeWindowOuter> getTimeWindows( List<PoolRequest> poolRequests )
+    static Set<TimeWindowOuter> getTimeWindows( List<PoolRequest> poolRequests,
+                                                EvaluationDeclaration declaration )
     {
         Set<TimeWindowOuter> timeWindows = poolRequests.stream()
                                                        .map( n -> n.getMetadata()
@@ -741,6 +746,21 @@ class EvaluationUtilities
                                                                            .getTimeWindow() )
                                                                .collect( Collectors.toCollection( HashSet::new ) );
         timeWindows.addAll( timeWindowsBaseline );
+
+        // Summary statistics across valid date pools? If so, we need to add all the evaluation time windows without
+        // valid dates. NetCDF blob writing needs the complete structure upfront. Yuck. See GitHub #422
+        if ( declaration.summaryStatistics()
+                        .stream()
+                        .anyMatch( s -> s.getDimensionList()
+                                         .contains( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS ) ) )
+        {
+            Set<TimeWindowOuter> adjusted =
+                    timeWindows.stream()
+                               .map( s -> EvaluationUtilities.clearValidDateTimes( s.getTimeWindow() ) )
+                               .map( TimeWindowOuter::of )
+                               .collect( Collectors.toSet() );
+            timeWindows.addAll( adjusted );
+        }
 
         return Collections.unmodifiableSet( timeWindows );
     }
@@ -1896,13 +1916,8 @@ class EvaluationUtilities
                 // Set the valid times to default
                 if ( mutableBuilder.hasTimeWindow() )
                 {
-                    Timestamp minimum = MessageUtilities.getTimestamp( Instant.MIN );
-                    Timestamp maximum = MessageUtilities.getTimestamp( Instant.MAX );
-                    TimeWindow adjustedWindow = mutableBuilder.getTimeWindow()
-                                                              .toBuilder()
-                                                              .setEarliestValidTime( minimum )
-                                                              .setLatestValidTime( maximum )
-                                                              .build();
+                    TimeWindow adjustedWindow =
+                            EvaluationUtilities.clearValidDateTimes( mutableBuilder.getTimeWindow() );
                     mutableBuilder.setTimeWindow( adjustedWindow );
                 }
 
@@ -1912,6 +1927,24 @@ class EvaluationUtilities
 
         // No op
         return a -> a;
+    }
+
+    /**
+     * Clears the valid times from the supplied {@link TimeWindow}.
+     *
+     * @param timeWindow the time window
+     * @return the time window with default valid times
+     */
+
+    private static TimeWindow clearValidDateTimes( TimeWindow timeWindow )
+    {
+        Timestamp minimum = MessageUtilities.getTimestamp( Instant.MIN );
+        Timestamp maximum = MessageUtilities.getTimestamp( Instant.MAX );
+        return timeWindow
+                .toBuilder()
+                .setEarliestValidTime( minimum )
+                .setLatestValidTime( maximum )
+                .build();
     }
 
     /**

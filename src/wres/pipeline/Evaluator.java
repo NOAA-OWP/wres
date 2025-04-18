@@ -690,10 +690,6 @@ public class Evaluator
                                                                                  declaration.summaryStatistics(),
                                                                                  doNotPublish );
 
-            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
-                                                   adjustedFeatureGroups,
-                                                   metricsAndThresholds );
-
             // Create the evaluation description for messaging
             Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeaturesAndThresholds );
 
@@ -719,6 +715,17 @@ public class Evaluator
                                                                                   evaluationDescription,
                                                                                   evaluationDetails );
 
+            // Get the time windows, which may originate from event detection and hence may not be declared. Also,
+            // summary statistics can generate novel time pools, so provide the declaration and check
+            Set<TimeWindowOuter> timeWindows = EvaluationUtilities.getTimeWindows( poolRequests,
+                                                                                   declarationWithFeaturesAndThresholds );
+
+            // Create the NetCDF blobs for writing, now that all required information is available
+            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
+                                                   adjustedFeatureGroups,
+                                                   metricsAndThresholds,
+                                                   timeWindows );
+
             int poolCount = poolRequests.size();
             monitor.setPoolCount( poolCount );
 
@@ -741,9 +748,6 @@ public class Evaluator
             // any summary statistics that aggregate across geographic features
             boolean clearThresholdValues =
                     EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( metricsAndThresholds );
-
-            // Get the time windows, which may originate from event detection and hence may not be declared
-            Set<TimeWindowOuter> timeWindows = EvaluationUtilities.getTimeWindows( poolRequests );
 
             // Create the summary statistics calculators to increment with raw statistics
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =

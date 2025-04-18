@@ -141,7 +141,8 @@ class MetricVariable
         {
             attributes.put( "summary_statistic_name", this.summaryStatistic.getStatistic()
                                                                            .name() );
-            attributes.put( "summary_statistic_dimension", this.summaryStatistic.getDimensionList()
+
+            attributes.put( "summary_statistic_dimensions", this.summaryStatistic.getDimensionList()
                                                                                 .stream()
                                                                                 .map( Enum::name )
                                                                                 .toList() );

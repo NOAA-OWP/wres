@@ -430,13 +430,13 @@ class NetcdfOutputFileCreator2
                                               analysisTimeName,
                                               analysisTimeNotes ) );
 
-
         // When going 2D, add the 2nd dimension here.
         // The "profile" or "timeSeries" featureType would be likeliest to work.
         List<Dimension> fooAndFeatureDimensions = List.of( featureDimension );
         for ( MetricVariable metricVariable : metricVariables )
         {
             String metricName = metricVariable.getName();
+
             Variable ncVariable =
                     NetcdfOutputFileCreator2.addDoubleVariable( writer,
                                                                 metricName,

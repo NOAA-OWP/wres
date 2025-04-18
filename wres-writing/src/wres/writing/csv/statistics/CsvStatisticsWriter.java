@@ -115,7 +115,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                          + "NAME,METRIC COMPONENT NAME,METRIC COMPONENT QUALIFIER,METRIC COMPONENT "
                                          + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC COMPONENT "
                                          + "OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY STATISTIC NAME,SUMMARY STATISTIC "
-                                         + "COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY STATISTIC DIMENSION,"
+                                         + "COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY STATISTIC DIMENSIONS,"
                                          + "SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,STATISTIC";
 
     /** The CSV delimiter. */
@@ -463,7 +463,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // SRID of 0 means no SRID
-        String srid = Integer.toString( srids.iterator().next() );
+        String srid = Integer.toString( srids.iterator()
+                                             .next() );
 
         List<String> wkts = geometries.stream()
                                       .map( Geometry::getWkt )
@@ -491,12 +492,20 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         // Compose any descriptions with a delimiter
         StringJoiner description = new StringJoiner( LIST_DELIMITER );
-        geometries.stream()
-                  .map( Geometry::getDescription )
-                  .forEach( description::add );
+        if ( geometries.stream()
+                       .anyMatch( g -> !g.getDescription()
+                                         .isEmpty() ) )
+        {
+            geometries.stream()
+                      .map( Geometry::getDescription )
+                      .forEach( description::add );
 
-        this.append( joiner, description.toString(), true );
-
+            this.append( joiner, description.toString(), true );
+        }
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+        }
         return joiner;
     }
 
@@ -1906,8 +1915,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
             String statisticDimension = summaryStatistic.getDimensionList()
                                                         .toString()
-                                                        .replace( "_", " " );
-            this.append( joiner, statisticDimension, false );
+                                                        .replace( "_", " " )
+                                                        .replace( "[", "" )
+                                                        .replace( "]", "" );
+            this.append( joiner, statisticDimension, true );
 
             // Quantile for the summary statistic?
             if ( this.hasQuantileSummaryStatistic( summaryStatistic ) )
