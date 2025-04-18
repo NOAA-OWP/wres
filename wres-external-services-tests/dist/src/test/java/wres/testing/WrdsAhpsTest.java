@@ -51,7 +51,7 @@ public class WrdsAhpsTest
     {
         try
         {
-            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
             OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
                                            .newBuilder()
                                            .sslSocketFactory( sslContext.getKey().getSocketFactory(),

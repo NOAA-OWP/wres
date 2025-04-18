@@ -50,7 +50,7 @@ class NwmVectorReaderTest
      * system test scenario600. For now, this test is ignored.
      */
 
-    @Disabled( "Until we can write a small grid to an in-memory file system, probably using the UCAR Netcdf API." )
+    @Disabled( "Until we can write a vector dataset to an in-memory file system, probably using the UCAR Netcdf API." )
     @Test
     void readTwentyFourShortRangeNwmForecastsForOneFeatureProducesTwentyFourTimeSeries()
     {
