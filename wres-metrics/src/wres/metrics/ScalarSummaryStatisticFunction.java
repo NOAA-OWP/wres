@@ -16,7 +16,8 @@ import wres.statistics.generated.SummaryStatistic;
  * @author James Brown
  */
 public record ScalarSummaryStatisticFunction( SummaryStatistic statistic,
-                                              ToDoubleFunction<double[]> calculator ) implements ToDoubleFunction<double[]>
+                                              ToDoubleFunction<double[]> calculator )
+        implements ToDoubleFunction<double[]>
 {
     /**
      * @param statistic the statistic
@@ -40,8 +41,8 @@ public record ScalarSummaryStatisticFunction( SummaryStatistic statistic,
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "statistic", this.statistic()
                                           .getStatistic() )
-                .append( "dimension", this.statistic()
-                                          .getDimension() )
+                .append( "dimensions", this.statistic()
+                                           .getDimensionList() )
                 .append( "probability", this.statistic()
                                             .getProbability() )
                 .toString();

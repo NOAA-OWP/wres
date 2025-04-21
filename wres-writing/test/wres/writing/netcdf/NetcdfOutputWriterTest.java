@@ -38,6 +38,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
@@ -237,7 +238,27 @@ class NetcdfOutputWriterTest
             Set<MetricsAndThresholds> metricsAndThresholdsList = Set.of( metricsAndThresholds );
 
             // Create the blobs to write
-            writer.createBlobsForWriting( featureGroups, metricsAndThresholdsList );
+            TimeWindow timeWindowOne =
+                    TimeWindow.newBuilder()
+                              .setEarliestReferenceTime( Timestamp.newBuilder()
+                                                                  .setSeconds( -31557014167219200L ) )
+                              .setLatestReferenceTime( Timestamp.newBuilder()
+                                                                .setSeconds( 31556889864403199L )
+                                                                .setNanos( 999999999 ) )
+                              .setEarliestValidTime( Timestamp.newBuilder()
+                                                              .setSeconds( -31557014167219200L ) )
+                              .setLatestValidTime( Timestamp.newBuilder()
+                                                            .setSeconds( 31556889864403199L )
+                                                            .setNanos( 999999999 ) )
+                              .setEarliestLeadDuration( Duration.newBuilder()
+                                                                .setSeconds( 0 ) )
+                              .setLatestLeadDuration( Duration.newBuilder()
+                                                              .setSeconds( 10_800 ) )
+                              .build();
+
+            writer.createBlobsForWriting( featureGroups,
+                                          metricsAndThresholdsList,
+                                          Set.of( TimeWindowOuter.of( timeWindowOne ) ) );
 
             // Create the statistics to write
             DoubleScoreMetric.DoubleScoreMetricComponent
@@ -262,23 +283,7 @@ class NetcdfOutputWriterTest
             Evaluation evaluation = Evaluation.newBuilder()
                                               .setMeasurementUnit( "CFS" )
                                               .build();
-            TimeWindow timeWindowOne =
-                    TimeWindow.newBuilder()
-                              .setEarliestReferenceTime( Timestamp.newBuilder()
-                                                                  .setSeconds( -31557014167219200L ) )
-                              .setLatestReferenceTime( Timestamp.newBuilder()
-                                                                .setSeconds( 31556889864403199L )
-                                                                .setNanos( 999999999 ) )
-                              .setEarliestValidTime( Timestamp.newBuilder()
-                                                              .setSeconds( -31557014167219200L ) )
-                              .setLatestValidTime( Timestamp.newBuilder()
-                                                            .setSeconds( 31556889864403199L )
-                                                            .setNanos( 999999999 ) )
-                              .setEarliestLeadDuration( Duration.newBuilder()
-                                                                .setSeconds( 0 ) )
-                              .setLatestLeadDuration( Duration.newBuilder()
-                                                              .setSeconds( 10_800 ) )
-                              .build();
+
             Pool poolOne = Pool.newBuilder()
                                .setGeometryGroup( geoGroupOne )
                                .setTimeWindow( timeWindowOne )

@@ -136,7 +136,8 @@ class ProjectUtilities
         Set<FeatureGroup> doNotPublish = new HashSet<>();
         if ( declaration.summaryStatistics()
                         .stream()
-                        .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+                        .anyMatch( s -> s.getDimensionList()
+                                         .contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) ) )
         {
             groupedFeaturesWithData.forEach( f -> doNotPublish.add( FeatureGroup.of( MessageFactory.getGeometryGroup( f.toStringShort(),
                                                                                                                       f ) ) ) );

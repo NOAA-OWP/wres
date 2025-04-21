@@ -85,7 +85,7 @@ class DurationDiagramStatisticOuterTest
 
         this.summaryStatistic = SummaryStatistic.newBuilder()
                                                 .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
-                                                .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                .addDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
                                                 .setProbability( 0.25 )
                                                 .build();
     }

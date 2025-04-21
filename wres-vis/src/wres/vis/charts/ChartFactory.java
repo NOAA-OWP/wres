@@ -273,7 +273,8 @@ public class ChartFactory
 
         // Summary statistic across a non-resampled dimension?
         if ( Objects.nonNull( summaryStatistic )
-             && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED )
+             && !summaryStatistic.getDimensionList()
+                                 .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
         {
             rangeTitle = summaryStatistic.getStatistic()
                                          .name()
@@ -565,7 +566,8 @@ public class ChartFactory
 
         // Summary statistic across a non-resampled dimension?
         if ( Objects.nonNull( summaryStatistic )
-             && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED )
+             && !summaryStatistic.getDimensionList()
+                                 .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
         {
             rangeTitle = summaryStatistic.getStatistic()
                                          .name()
@@ -991,7 +993,8 @@ public class ChartFactory
 
         // Summary statistic across a non-resampled dimension?
         if ( Objects.nonNull( summaryStatistic )
-             && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED )
+             && !summaryStatistic.getDimensionList()
+                                 .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
         {
             rangeTitle = summaryStatistic.getStatistic()
                                          .name()
@@ -1654,8 +1657,8 @@ public class ChartFactory
         String name = this.getSummaryStatisticQualifier( metricName, summaryStatistic );
 
         boolean isSummaryStatistic = Objects.nonNull( summaryStatistic )
-                                     && summaryStatistic.getDimension()
-                                        != SummaryStatistic.StatisticDimension.RESAMPLED;
+                                     && !summaryStatistic.getDimensionList()
+                                                         .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
 
         String metric = metricName.toString();
 
@@ -1688,8 +1691,10 @@ public class ChartFactory
         String geoName = this.getGeoNameForTitle( metadata );
 
         // Qualify the geography if not all geographic features
-        if ( !isSummaryStatistic || summaryStatistic.getDimension()
-                                    != SummaryStatistic.StatisticDimension.FEATURES )
+        boolean featuresQualified = !isSummaryStatistic
+                                    || !summaryStatistic.getDimensionList()
+                                                        .contains( SummaryStatistic.StatisticDimension.FEATURES );
+        if ( featuresQualified )
         {
             name += " at " + geoName;
         }
@@ -1726,8 +1731,8 @@ public class ChartFactory
         String name = "";
 
         boolean isSummaryStatistic = Objects.nonNull( summaryStatistic )
-                                     && summaryStatistic.getDimension()
-                                        != SummaryStatistic.StatisticDimension.RESAMPLED;
+                                     && !summaryStatistic.getDimensionList()
+                                                         .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
 
         if ( isSummaryStatistic )
         {
@@ -1749,20 +1754,57 @@ public class ChartFactory
 
             // Report the dimension. If the statistic aggregates a feature group, report as features because the group
             // is qualified separately
-            String dimension = summaryStatistic.getDimension()
-                                               .toString();
-            if ( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP )
-            {
-                dimension = SummaryStatistic.StatisticDimension.FEATURES.toString();
-            }
+            String dimension = this.getSummaryStatisticDimensionsQualifier( summaryStatistic );
 
             name = statisticName
-                   + " across "
+                   + " across the "
                    + dimension
                    + OF_THE;
         }
 
         return name;
+    }
+
+    /**
+     * Returns the dimensions qualified for a summary statistic.
+     * @param summaryStatistic the summary statistic
+     * @return the dimensions qualifier
+     */
+
+    private String getSummaryStatisticDimensionsQualifier( SummaryStatistic summaryStatistic )
+    {
+        StringBuilder dimensionBuilder = new StringBuilder();
+        List<SummaryStatistic.StatisticDimension> dimensionsList = summaryStatistic.getDimensionList();
+
+        for ( int i = 0; i < dimensionsList.size(); i++ )
+        {
+            if ( dimensionsList.size() > 1 )
+            {
+                if ( i == dimensionsList.size() - 1 )
+                {
+                    dimensionBuilder.append( AND );
+                }
+                else if ( i > 0 )
+                {
+                    dimensionBuilder.append( ", " );
+                }
+            }
+
+            String dimensionString = dimensionsList.get( i )
+                                                   .toString()
+                                                   .replace( "_", " " );
+            dimensionBuilder.append( dimensionString );
+        }
+
+        String dimension = dimensionBuilder.toString();
+
+        if ( dimensionsList.contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+        {
+            dimension = dimension.replace( SummaryStatistic.StatisticDimension.FEATURE_GROUP.toString(),
+                                           SummaryStatistic.StatisticDimension.FEATURES.toString() );
+        }
+
+        return dimension;
     }
 
     /**

@@ -237,9 +237,9 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         Predicate<DiagramStatisticOuter> filter = s -> s.isSummaryStatistic()
                                                        && s.getSummaryStatistic()
                                                            .getStatistic() == SummaryStatistic.StatisticName.QUANTILE
-                                                       && s.getSummaryStatistic()
-                                                           .getDimension()
-                                                          != SummaryStatistic.StatisticDimension.RESAMPLED;
+                                                       && !s.getSummaryStatistic()
+                                                            .getDimensionList()
+                                                            .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
         if ( diagrams.stream()
                      .anyMatch( filter )
              && diagrams.stream()
@@ -354,9 +354,9 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             List<DiagramMetric> metrics = statistics.stream()
                                                     .filter( n -> n.isSummaryStatistic()
-                                                                  && n.getSummaryStatistic()
-                                                                      .getDimension()
-                                                                     != SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                                  && !n.getSummaryStatistic()
+                                                                       .getDimensionList()
+                                                                       .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
                                                     .map( d -> d.getStatistic()
                                                                 .getMetric() )
                                                     .toList();
@@ -374,9 +374,9 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             name = statistics.stream()
                              .filter( n -> n.isSummaryStatistic()
-                                           && n.getSummaryStatistic()
-                                               .getDimension()
-                                              != SummaryStatistic.StatisticDimension.RESAMPLED )
+                                           && !n.getSummaryStatistic()
+                                                .getDimensionList()
+                                                .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
                              .map( d -> d.getSummaryStatistic()
                                          .getStatistic()
                                          .name() )

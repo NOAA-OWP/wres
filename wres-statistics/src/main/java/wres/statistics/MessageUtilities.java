@@ -426,19 +426,26 @@ public class MessageUtilities
     /**
      * Creates a {@link SummaryStatistic} from the inputs.
      * @param name the statistic name, required
-     * @param dimension the statistic dimension, required
+     * @param dimensions the statistic dimensions, required
      * @param probability the optional probability associated with a quantile statistic
      * @return a summary statistic
      * @throws NullPointerException if any required input is null
-     * @throws IllegalArgumentException if the probability is outside of the unit interval
+     * @throws IllegalArgumentException if the probability is outside of the unit interval of no dimensions are defined
      */
     public static SummaryStatistic getSummaryStatistic( SummaryStatistic.StatisticName name,
-                                                        SummaryStatistic.StatisticDimension dimension,
+                                                        Set<SummaryStatistic.StatisticDimension> dimensions,
                                                         Double probability )
     {
+        Objects.requireNonNull( dimensions );
+
+        if( dimensions.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot create a summary statistic without one or more dimensions." );
+        }
+
         SummaryStatistic.Builder builder = SummaryStatistic.newBuilder()
                                                            .setStatistic( name )
-                                                           .setDimension( dimension );
+                                                           .addAllDimension( dimensions );
 
         if ( Objects.nonNull( probability ) )
         {

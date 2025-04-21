@@ -441,7 +441,7 @@ class DeclarationUtilitiesTest
     {
         Set<SummaryStatistic> summaryStatisticsOne = new LinkedHashSet<>();
         SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+                                                            .addDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
         SummaryStatistic mean = template.setStatistic( SummaryStatistic.StatisticName.MEAN )
                                         .build();
         SummaryStatistic median = template.setStatistic( SummaryStatistic.StatisticName.MEDIAN )

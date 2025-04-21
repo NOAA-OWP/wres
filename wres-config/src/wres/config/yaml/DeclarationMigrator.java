@@ -1739,7 +1739,7 @@ public class DeclarationMigrator
                 }
 
                 SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
-                                                                    .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+                                                                    .addDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
 
                 Set<SummaryStatistic> durationScores
                         = metricNames.stream()

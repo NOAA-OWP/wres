@@ -42,6 +42,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeSeriesStore;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
@@ -689,10 +690,6 @@ public class Evaluator
                                                                                  declaration.summaryStatistics(),
                                                                                  doNotPublish );
 
-            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
-                                                   adjustedFeatureGroups,
-                                                   metricsAndThresholds );
-
             // Create the evaluation description for messaging
             Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeaturesAndThresholds );
 
@@ -717,6 +714,17 @@ public class Evaluator
             List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory,
                                                                                   evaluationDescription,
                                                                                   evaluationDetails );
+
+            // Get the time windows, which may originate from event detection and hence may not be declared. Also,
+            // summary statistics can generate novel time pools, so provide the declaration and check
+            Set<TimeWindowOuter> timeWindows = EvaluationUtilities.getTimeWindows( poolRequests,
+                                                                                   declarationWithFeaturesAndThresholds );
+
+            // Create the NetCDF blobs for writing, now that all required information is available
+            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
+                                                   adjustedFeatureGroups,
+                                                   metricsAndThresholds,
+                                                   timeWindows );
 
             int poolCount = poolRequests.size();
             monitor.setPoolCount( poolCount );
@@ -744,8 +752,10 @@ public class Evaluator
             // Create the summary statistics calculators to increment with raw statistics
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
                     EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                                                                         timeWindows,
                                                                          poolCount,
                                                                          clearThresholdValues );
+
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
@@ -754,6 +764,7 @@ public class Evaluator
             {
                 summaryStatsCalculatorsForBaseline =
                         EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                                                                             timeWindows,
                                                                              poolCount,
                                                                              clearThresholdValues );
             }

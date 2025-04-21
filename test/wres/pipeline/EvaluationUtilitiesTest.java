@@ -116,12 +116,12 @@ class EvaluationUtilitiesTest
         // Add some summary statistics
         SummaryStatistic first = SummaryStatistic.newBuilder()
                                                  .setStatistic( SummaryStatistic.StatisticName.MEAN )
-                                                 .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                 .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                  .build();
 
         SummaryStatistic second = SummaryStatistic.newBuilder()
                                                   .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
-                                                  .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                  .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                   .setHistogramBins( 10 )
                                                   .build();
 
@@ -138,8 +138,9 @@ class EvaluationUtilitiesTest
                                             .summaryStatistics( summaryStatistics )
                                             .build();
 
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( evaluation );
         Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, timeWindows, 0, false );
 
         // Eight filters
         assertEquals( 8, calculators.values()
@@ -171,7 +172,7 @@ class EvaluationUtilitiesTest
         // Add some summary statistics
         SummaryStatistic first = SummaryStatistic.newBuilder()
                                                  .setStatistic( SummaryStatistic.StatisticName.MEAN )
-                                                 .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                 .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                  .build();
 
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
@@ -182,8 +183,9 @@ class EvaluationUtilitiesTest
                                                                        .summaryStatistics( summaryStatistics )
                                                                        .build();
 
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( evaluation );
         Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, timeWindows, 0, false );
 
         // One filter
         assertEquals( 1, calculators.size() );
@@ -221,12 +223,12 @@ class EvaluationUtilitiesTest
         // Add some summary statistics
         SummaryStatistic first = SummaryStatistic.newBuilder()
                                                  .setStatistic( SummaryStatistic.StatisticName.MEAN )
-                                                 .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                 .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                  .build();
 
         SummaryStatistic second = SummaryStatistic.newBuilder()
                                                   .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
-                                                  .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                  .addDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                                                   .setHistogramBins( 10 )
                                                   .build();
 
@@ -288,8 +290,9 @@ class EvaluationUtilitiesTest
                                             .summaryStatistics( summaryStatistics )
                                             .build();
 
+        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( evaluation );
         Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, timeWindows, 0, false );
 
         // Eight filters
         assertEquals( 4, calculators.values()

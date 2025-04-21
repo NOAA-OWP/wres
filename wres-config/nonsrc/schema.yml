@@ -1854,6 +1854,7 @@ definitions:
     enum:
       - features
       - feature groups
+      - valid date pools
 
   # Originally, this type was used to direct ingest to either a set of
   # "forecast" or "observation" tables in the database. See discussion in

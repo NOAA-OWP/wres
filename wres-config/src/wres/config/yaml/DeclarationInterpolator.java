@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -172,6 +173,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateCovariatePurpose( adjustedBuilder );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedBuilder );
+        // Interpolate summary statistics when required
+        DeclarationInterpolator.interpolateSummaryStatistics( adjustedBuilder );
         // Interpolate the evaluation-wide decimal format string for each numeric format type
         DeclarationInterpolator.interpolateDecimalFormatforNumericFormats( adjustedBuilder );
         // Interpolate the metrics to ignore for each graphics format
@@ -876,6 +879,81 @@ public class DeclarationInterpolator
     }
 
     /**
+     * Interpolates the correct combinations of dimensions for summary statistics. All aggregation dimensions in time
+     * are applied to each aggregation dimension in space. For example, if the declared dimensions are
+     * {@link wres.statistics.generated.SummaryStatistic.StatisticDimension#FEATURES} and
+     * {@link wres.statistics.generated.SummaryStatistic.StatisticDimension#VALID_DATE_POOLS}, then each summary
+     * statistic will be calculated for all geographic features and valid date pools together. Upon reading the summary
+     * statistics in the declaration, the statistics are merely deserialized individually, one for each dimension.
+     * Here, the dimensions are combined or interpreted.
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void interpolateSummaryStatistics( EvaluationDeclarationBuilder builder )
+    {
+        if ( builder.summaryStatistics()
+                    .isEmpty() )
+        {
+            LOGGER.debug( "No summary statistics to interpolate." );
+            return;
+        }
+
+        Set<SummaryStatistic.StatisticDimension> dimensions = builder.summaryStatistics()
+                                                                     .stream()
+                                                                     .flatMap( d -> d.getDimensionList()
+                                                                                     .stream() )
+                                                                     .collect( Collectors.toSet() );
+
+        // Preserve iteration order of dimensions as they are listed - use a sorted set
+        Set<SummaryStatistic.StatisticDimension> poolShaped =
+                dimensions.stream()
+                          .filter( s -> s.name()
+                                         .contains( "POOLS" ) )
+                          .collect( Collectors.toCollection( TreeSet::new ) );
+        Set<SummaryStatistic.StatisticDimension> featureShaped =
+                dimensions.stream()
+                          .filter( s -> s == SummaryStatistic.StatisticDimension.FEATURES
+                                        || s == SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                          .collect( Collectors.toCollection( TreeSet::new ) );
+
+        if ( !poolShaped.isEmpty() && !featureShaped.isEmpty() )
+        {
+            Set<SummaryStatistic> summaryStatistics = new HashSet<>();
+
+            // Combine the temporal/pooling dimensions with each geographic dimension and then map per statistic name
+            for ( SummaryStatistic.StatisticDimension nextFeature : featureShaped )
+            {
+                // Preserve order
+                Set<SummaryStatistic.StatisticDimension> aggregated = new TreeSet<>( poolShaped );
+                aggregated.add( nextFeature );
+
+                // Add the aggregate dimensions to each statistic
+                // Start by filtering for unique statistics by name
+                Set<SummaryStatistic> filtered = builder.summaryStatistics()
+                                                        .stream()
+                                                        // Group by name
+                                                        .collect( Collectors.groupingBy( SummaryStatistic::getStatistic ) )
+                                                        // Iterate the newly grouped collection
+                                                        .entrySet()
+                                                        .stream()
+                                                        // Flatten and unpack the filtered values
+                                                        .flatMap( s -> s.getValue()
+                                                                        .stream() )
+                                                        .collect( Collectors.toSet() );
+
+                filtered.forEach( s -> summaryStatistics.add( s.toBuilder()
+                                                               .clearDimension()
+                                                               .addAllDimension( aggregated )
+                                                               .build() ) );
+            }
+
+            LOGGER.debug( "Interpolated the following summary statistics: {}.", summaryStatistics );
+
+            builder.summaryStatistics( summaryStatistics );
+        }
+    }
+
+    /**
      * Adds the decimal format string to each numeric format type.
      *
      * @param builder the declaration builder to adjust
@@ -1124,7 +1202,7 @@ public class DeclarationInterpolator
         }
         // Valid date pools?
         else if ( ( !builder.validDatePools()
-                           .isEmpty()
+                            .isEmpty()
                     || Objects.nonNull( builder.eventDetection() )
                     || DeclarationInterpolator.hasExplicitValidDatePools( builder.timePools() ) )
                   && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
@@ -1371,7 +1449,8 @@ public class DeclarationInterpolator
 
         return statistics.stream()
                          .map( n -> n.toBuilder()
-                                     .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
+                                     .clearDimension()
+                                     .addDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
                                      .build() )
                          .collect( Collectors.toUnmodifiableSet() );
     }

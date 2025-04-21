@@ -32,7 +32,7 @@ public record BoxplotSummaryStatisticFunction( SummaryStatistic statistic,
     }
 
     @Override
-    public BoxplotStatistic apply( Map<SummaryStatisticComponentName,String> parameters, double[] value )
+    public BoxplotStatistic apply( Map<SummaryStatisticComponentName, String> parameters, double[] value )
     {
         return this.calculator.apply( parameters, value );
     }
@@ -43,8 +43,8 @@ public record BoxplotSummaryStatisticFunction( SummaryStatistic statistic,
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "statistic", this.statistic()
                                           .getStatistic() )
-                .append( "dimension", this.statistic()
-                                          .getDimension() )
+                .append( "dimensions", this.statistic()
+                                           .getDimensionList() )
                 .toString();
     }
 }

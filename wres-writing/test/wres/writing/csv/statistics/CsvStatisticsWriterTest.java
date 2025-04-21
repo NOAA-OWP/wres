@@ -57,7 +57,7 @@ class CsvStatisticsWriterTest
             + "NAME,METRIC COMPONENT NAME,METRIC COMPONENT QUALIFIER,METRIC COMPONENT "
             + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC COMPONENT "
             + "OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY STATISTIC NAME,SUMMARY STATISTIC "
-            + "COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY STATISTIC DIMENSION,"
+            + "COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY STATISTIC DIMENSIONS,"
             + "SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,STATISTIC";
 
     @Test
@@ -553,7 +553,7 @@ class CsvStatisticsWriterTest
         SummaryStatistic summaryStatistic =
                 SummaryStatistic.newBuilder()
                                 .setStatistic( SummaryStatistic.StatisticName.MAXIMUM )
-                                .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                 .build();
         statistics = statistics.toBuilder()
                                .setSummaryStatistic( summaryStatistic )
@@ -638,7 +638,7 @@ class CsvStatisticsWriterTest
         {
             SummaryStatistic quantile = SummaryStatistic.newBuilder()
                                                         .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
-                                                        .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                        .addDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
                                                         .setProbability( 0.95 )
                                                         .build();
 

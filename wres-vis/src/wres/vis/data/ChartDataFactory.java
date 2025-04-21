@@ -360,8 +360,9 @@ public class ChartDataFactory
                                                .getThresholds()
                                                .equals( nextSeries )
                                            && ( !data.isSummaryStatistic()
-                                                || data.getSummaryStatistic().getDimension()
-                                                   != SummaryStatistic.StatisticDimension.RESAMPLED ) );
+                                                || !data.getSummaryStatistic()
+                                                        .getDimensionList()
+                                                        .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) ) );
 
             // Create a set-view by instant, because JFreeChart cannot handle duplicates
             Set<Instant> instants = new HashSet<>();

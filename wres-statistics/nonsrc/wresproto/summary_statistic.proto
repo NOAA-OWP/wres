@@ -44,10 +44,13 @@ message SummaryStatistic
 
         TIMING_ERRORS = 3;
         // A summary statistic over timing errors.
+
+        VALID_DATE_POOLS = 4;
+        // A summary statistic over valid date pools.
     }
 
-    StatisticDimension dimension = 2;
-    // The dimension over which the summary statistic applies.
+    repeated StatisticDimension dimension = 2;
+    // The dimensions over which the summary statistic applies.
 
     double probability = 3;
     // The probability associated with the quantile when the summary statistic
