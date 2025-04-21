@@ -172,6 +172,9 @@ public class JobMetadata
         this.jobMessage = jobMessage;
     }
 
+    /**
+     * @return List of left/observed input URI strings converted to URI instances.
+     */
     public List<URI> retrieveLeftInputURIs()
     {
         return this.getLeftInputs()
@@ -180,6 +183,9 @@ public class JobMetadata
                    .collect( Collectors.toList() );
     }
 
+    /**
+     * @return List of right/predicted input URI strings converted to URI instances.
+     */
     public List<URI> retrieveRightInputURIs()
     {
         return this.getRightInputs()
@@ -188,6 +194,9 @@ public class JobMetadata
                    .collect( Collectors.toList() );
     }
 
+    /**
+     * @return List of baseline input URI strings converted to URI instances.
+     */
     public List<URI> retrieveBaselineInputURIs()
     {
         return this.getBaselineInputs()
@@ -238,10 +247,9 @@ public class JobMetadata
     }
 
     /**
-     * Get an unmodifiable view of the outputs Set
-     * @return The Set of output URIs.
+     * Get an unmodifiable view of the outputs set as URIs.
+     * @return The Set of output URI strings converted to URI instances.
      */
-
     public SortedSet<URI> retrieveOutputURIs()
     {
         return this.getOutputs()
@@ -255,7 +263,6 @@ public class JobMetadata
      * Get an unmodifiable view of the standard output stream Map.
      * @return The Map of stdout.
      */
-
     public ConcurrentMap<Integer,String> getStdout()
     {
         return this.stdout;
@@ -288,7 +295,6 @@ public class JobMetadata
      * @param jobState The new job state (not NOT_FOUND)
      * @throws IllegalStateException When an illegal job state transition occurs
      */
-
     public void setJobState( JobState jobState )
     {
         Objects.requireNonNull( jobState );
@@ -462,7 +468,10 @@ public class JobMetadata
         }
         else
         {
-            boolean result = this.getOutputs().removeAll( uris.stream().map( URI::toASCIIString ).collect( Collectors.toList() ) );
+            boolean result = this.getOutputs()
+                                 .removeAll( uris.stream()
+                                         .map( URI::toASCIIString )
+                                         .collect( Collectors.toList() ) );
 
             if ( !result )
             {

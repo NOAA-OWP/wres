@@ -1026,11 +1026,13 @@ public class WresJob
      */
     private static void initializeRedissonClient()
     {
+        //Define the registered classes for the Kryo codec.
         List<Class<?>> registeredClasses = new ArrayList<>();
         registeredClasses.add(wres.tasker.JobMetadata.JobState.class);
         registeredClasses.add(org.redisson.RedissonReference.class);
         registeredClasses.add(byte[].class);
 
+        //Redisson config will use KryoCodec.
         Config redissonConfig = new Config();
         redissonConfig.setCodec( new KryoCodec( registeredClasses ) );
         String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
