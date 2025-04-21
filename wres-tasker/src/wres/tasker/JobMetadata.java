@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -173,17 +174,26 @@ public class JobMetadata
 
     public List<URI> retrieveLeftInputURIs()
     {
-        return this.getLeftInputs().stream().map( URI::create ).collect( Collectors.toList() );
+        return this.getLeftInputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( Collectors.toList() );
     }
 
     public List<URI> retrieveRightInputURIs()
     {
-        return this.getRightInputs().stream().map( URI::create ).collect( Collectors.toList() );
+        return this.getRightInputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( Collectors.toList() );
     }
 
     public List<URI> retrieveBaselineInputURIs()
     {
-        return this.getBaselineInputs().stream().map( URI::create ).collect( Collectors.toList() );
+        return this.getBaselineInputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( Collectors.toList() );
     }
 
     public List<String> getLeftInputs()
@@ -232,9 +242,13 @@ public class JobMetadata
      * @return The Set of output URIs.
      */
 
-    public Set<URI> retrieveOutputURIs()
+    public SortedSet<URI> retrieveOutputURIs()
     {
-        return this.getOutputs().stream().map( URI::create ).collect( Collectors.toSet() );
+        return this.getOutputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( 
+                           Collectors.toCollection( TreeSet::new ) );
     }
 
     /**

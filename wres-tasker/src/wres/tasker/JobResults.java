@@ -41,8 +41,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
-import jodd.net.HttpStatus;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.eclipse.jetty.http.HttpStatus;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
@@ -493,7 +493,7 @@ class JobResults
                           sharedData );
 
             // Checking for HTTP OK status
-            if ( resultValue == HttpStatus.ok().status() )
+            if ( resultValue == HttpStatus.OK_200 )
             {
                 sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_SUCCESS );
                 LOGGER.debug( "Shared metadata after setting job state: {}",
@@ -501,7 +501,7 @@ class JobResults
                 JobResults.deleteInputs( jobMetadata );
             }
             // We use 409 to signify a canceled evaluation
-            else if ( resultValue == HttpStatus.error409().status() )
+            else if ( resultValue == HttpStatus.CONFLICT_409 )
             {
                 sharedData.setJobState( JobMetadata.JobState.CANCELED );
                 LOGGER.debug( "Shared metadata after setting job state: {}",
