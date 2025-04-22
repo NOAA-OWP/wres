@@ -457,7 +457,7 @@ public class WresJob
                                     + "<body><h1>Declaration</h1>"
                                     + "<form action=\"/job\" method=\"post\">"
                                     + "    Evaluation project declaration full text:<br />"
-                                    + "    <textarea id=\"projectConfig\" class=\"evaluation\" name=\"projectConfig\" required=\"true\">"
+                                    + "    <textarea id=\"projectConfig\" class=\"evaluation\" name=\"projectConfig\" required=\"true\" style=\"resize:both;\" rows=\"20\" cols=\"80\">"
                                     + projectConfig
                                     + "    </textarea>"
                                     + "    <br />"
