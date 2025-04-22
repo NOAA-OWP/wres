@@ -234,42 +234,42 @@ then
 
 
         echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
-        podman tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+        podman tag localhost/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
         podman push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
 
 
         echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
-        podman tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        podman tag localhost/wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
         podman push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
 
 
         echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
-        podman tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        podman tag localhost/wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
         podman push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
 
 
         echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
-        podman tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        podman tag localhost/wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
         podman push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
 
 
         echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
-        podman tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+        podman tag localhost/wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
         podman push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
 
 
         echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
-        podman tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+        podman tag localhost/wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
         podman push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
 
 
         echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
-        podman tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        podman tag localhost/wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
         podman push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
 
 
         echo "Tagging and pushing wres/nginx as wres/nginx..."
-        podman tag wres/nginx $DOCKER_REGISTRY/wres/nginx
+        podman tag localhost/wres/nginx $DOCKER_REGISTRY/wres/nginx
         podman push $DOCKER_REGISTRY/wres/nginx
     fi
     
@@ -292,25 +292,25 @@ echo "If you are only updating some of the images/versions, it is recommended"
 echo "you skip this step and do that by manually editing the .ymls."
 echo ""
 
-cp compose-entry.template.yml compose-entry.yml 
-sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-entry.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" compose-entry.yml
-sed -i "s/REDIS_IMAGE/${redis_version}/" compose-entry.yml
-sed -i "s/WORKER_IMAGE/${overall_version}/" compose-entry.yml # By design... The tag for the worker image is the "overall_version".
-sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-entry.yml
-sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-entry.yml
-sed -i "s/WRITING_IMAGE/${writing_version}/" compose-entry.yml
-sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-entry.yml
+cp podman-compose-entry.template.yml podman-compose-entry.yml
+sed -i "s/TASKER_IMAGE/${tasker_version}/" podman-compose-entry.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" podman-compose-entry.yml
+sed -i "s/REDIS_IMAGE/${redis_version}/" podman-compose-entry.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" podman-compose-entry.yml # By design... The tag for the worker image is the "overall_version".
+sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" podman-compose-entry.yml
+sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" podman-compose-entry.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" podman-compose-entry.yml
+sed -i "s/OVERALL_IMAGE/${overall_version}/" podman-compose-entry.yml
 
-cp compose-workers.template.yml compose-workers.yml
-sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-workers.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" compose-workers.yml
-sed -i "s/REDIS_IMAGE/${redis_version}/" compose-workers.yml
-sed -i "s/WORKER_IMAGE/${overall_version}/" compose-workers.yml # By design... The tag for the worker image is the "overall_version".
-sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-workers.yml
-sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-workers.yml
-sed -i "s/WRITING_IMAGE/${writing_version}/" compose-workers.yml
-sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-workers.yml
+cp podman-compose-workers.template.yml podman-compose-workers.yml
+sed -i "s/TASKER_IMAGE/${tasker_version}/" podman-compose-workers.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" podman-compose-workers.yml
+sed -i "s/REDIS_IMAGE/${redis_version}/" podman-compose-workers.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" podman-compose-workers.yml # By design... The tag for the worker image is the "overall_version".
+sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" podman-compose-workers.yml
+sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" podman-compose-workers.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" podman-compose-workers.yml
+sed -i "s/OVERALL_IMAGE/${overall_version}/" podman-compose-workers.yml
 
 echo ""
 echo "The two .yml files have been updated.  Please push them to the repository, if appropriate, or use 'git checkout' to undo the changes."
