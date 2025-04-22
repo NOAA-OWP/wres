@@ -71,3 +71,6 @@ zulu17*
 /wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/NOTE.txt
 /wres-config/nonsrc/ProjectConfig.xsd.xml
 *.gz
+
+#Jenkins job ignore
+email.properties
