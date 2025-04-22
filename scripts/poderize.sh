@@ -234,37 +234,37 @@ then
 
 
         echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
-        podman tag localhost/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+        podman tag localhost/wres/wres-worker $DOCKER_REGISTRY/wres/wres-worker:$overall_version
         podman push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
 
 
         echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
-        podman tag localhost/wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        podman tag localhost/wres/wres-tasker $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
         podman push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
 
 
         echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
-        podman tag localhost/wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        podman tag localhost/wres/wres-broker $DOCKER_REGISTRY/wres/wres-broker:$broker_version
         podman push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
 
 
         echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
-        podman tag localhost/wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        podman tag localhost/wres/wres-redis $DOCKER_REGISTRY/wres/wres-redis:$redis_version
         podman push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
 
 
         echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
-        podman tag localhost/wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+        podman tag localhost/wres/wres-eventsbroker $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
         podman push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
 
 
         echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
-        podman tag localhost/wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+        podman tag localhost/wres/wres-graphics $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
         podman push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
 
 
         echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
-        podman tag localhost/wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        podman tag localhost/wres/wres-writing $DOCKER_REGISTRY/wres/wres-writing:$writing_version
         podman push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
 
 
