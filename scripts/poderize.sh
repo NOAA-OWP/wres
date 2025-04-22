@@ -199,7 +199,7 @@ popd
 echo "Built wres/nginx"
 
 echo "Displaying most recent 20 docker images"
-docker image ls | head -n 21
+podman image ls | head -n 21
 
 
 #=============================================================
