@@ -61,7 +61,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
-import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
@@ -195,7 +194,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     @Override
     public Set<Path> apply( List<DoubleScoreStatisticOuter> output )
     {
-        if ( !this.getIsReadyToWrite().get() )
+        if ( !this.getIsReadyToWrite()
+                  .get() )
         {
             throw new NetcdfWriteException( "This netcdf output writer is not ready for writing. The blobs must be "
                                             + "created first. The caller has made an error by asking the writer to "
@@ -206,7 +206,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow =
                 output.stream()
-                      .collect( Collectors.groupingBy( next -> next.getPoolMetadata().getTimeWindow() ) );
+                      .collect( Collectors.groupingBy( next -> next.getPoolMetadata()
+                                                                   .getTimeWindow() ) );
 
         Set<Path> pathsWritten = new HashSet<>();
 
@@ -217,6 +218,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // All writers have been created by now, as asserted above
             TimeWindowWriter writer = this.writersMap.get( timeWindow );
+
+            if ( Objects.isNull( writer ) )
+            {
+                throw new IllegalStateException( "Could not find a NetCDF writer for time window: " + timeWindow );
+            }
+
             try
             {
                 writer.write( scores );
@@ -406,24 +413,26 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      *
      * @param featureGroups The super-set of feature groups used in the evaluation.
      * @param metricsAndThresholds Thresholds imposed upon input data
+     * @param timeWindows the time windows
+     * @throws NullPointerException if any input is null
      * @throws NetcdfWriteException if the blobs have already been created
-     * @throws IOException if the blobs could not be created for any reason
+     * @throws IOException if the blobs could not be created for any other reason
      */
 
     public void createBlobsForWriting( Set<FeatureGroup> featureGroups,
-                                       Set<MetricsAndThresholds> metricsAndThresholds )
+                                       Set<MetricsAndThresholds> metricsAndThresholds,
+                                       Set<TimeWindowOuter> timeWindows )
             throws IOException
     {
+        Objects.requireNonNull( featureGroups );
         Objects.requireNonNull( metricsAndThresholds );
+        Objects.requireNonNull( timeWindows );
 
         if ( this.getIsReadyToWrite()
                  .get() )
         {
             throw new NetcdfWriteException( "The netcdf blobs have already been created." );
         }
-
-        // Time windows
-        Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( this.getDeclaration() );
 
         // Find the thresholds-by-metric for which blobs should be created
 
@@ -474,7 +483,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Desired time scale, if declared
         TimeScaleOuter desiredTimeScale = null;
-        if ( Objects.nonNull( this.getDeclaration().timeScale() ) )
+        if ( Objects.nonNull( this.getDeclaration()
+                                  .timeScale() ) )
         {
             desiredTimeScale = TimeScaleOuter.of( this.getDeclaration()
                                                       .timeScale()
@@ -752,6 +762,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             String lastTime = timeWindow.getEarliestValidTime()
                                         .toString();
+
             lastTime = lastTime.replace( "-", "" )
                                .replace( ":", "" )
                                .replace( "Z$", "" );
@@ -1094,9 +1105,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             for ( SummaryStatistic summaryStatistic : filtered )
             {
+                StringJoiner joiner = new StringJoiner( "_" );
+                summaryStatistic.getDimensionList()
+                                .stream()
+                                .map( Enum::name )
+                                .forEach( joiner::add );
+
                 String variableName = nominal.getName()
                                       + "_"
-                                      + summaryStatistic.getDimension()
+                                      + joiner
                                       + "_"
                                       + summaryStatistic.getStatistic();
                 if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
@@ -1721,15 +1738,20 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             String qualifier = "";
 
-            // Add the sample quantile using the standard name, where applicable
             if ( score.isSummaryStatistic() )
             {
+                StringJoiner joiner = new StringJoiner( "_" );
                 SummaryStatistic summaryStatistic = score.getSummaryStatistic();
+                summaryStatistic.getDimensionList()
+                                .stream()
+                                .map( Enum::name )
+                                .forEach( joiner::add );
                 qualifier = "_"
-                            + summaryStatistic.getDimension()
+                            + joiner
                             + "_"
                             + summaryStatistic.getStatistic();
 
+                // Add the sample quantile using the standard name, where applicable
                 if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
                 {
 
@@ -1737,7 +1759,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                            .getProbability();
                     Map<Double, String> quantileNames;
 
-                    if ( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
+                    if ( summaryStatistic.getDimensionList()
+                                         .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
                     {
                         quantileNames = this.outputWriter.getStandardQuantileNamesForSamplingUncertainty();
                     }

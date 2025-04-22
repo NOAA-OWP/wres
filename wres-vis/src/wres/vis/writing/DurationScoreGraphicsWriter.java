@@ -195,9 +195,9 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
         Optional<SummaryStatistic> statistic =
                 statistics.stream()
                           .filter( n -> n.isSummaryStatistic()
-                                        && n.getSummaryStatistic()
-                                            .getDimension()
-                                           != SummaryStatistic.StatisticDimension.RESAMPLED )
+                                        && !n.getSummaryStatistic()
+                                             .getDimensionList()
+                                             .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
                           .map( DurationScoreStatisticOuter::getSummaryStatistic )
                           .findFirst();
 

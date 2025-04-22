@@ -312,7 +312,7 @@ class TestDeclarationGenerator
                                            .build();
 
         SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
-                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURES );
+                                                            .addDimension( SummaryStatistic.StatisticDimension.FEATURES );
 
         MetricParameters metricParameters = MetricParametersBuilder.builder()
                                                                    .summaryStatistics( Set.of( template.setStatistic(

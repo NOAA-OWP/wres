@@ -301,22 +301,24 @@ abstract class GraphicsWriter
         // Slice by summary statistic presence/absence, ignoring resampled quantiles
         Predicate<T> summaryStat
                 = s -> s.isSummaryStatistic()
-                       && s.getSummaryStatistic()
-                           .getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED;
+                       && !s.getSummaryStatistic()
+                            .getDimensionList()
+                            .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
 
         List<T> summaryStats =
                 Slicer.filter( statistics,
                                summaryStat );
 
-        // Partition the summary statistics by statistic name and dimension
-        Map<Pair<Pair<SummaryStatistic.StatisticName, SummaryStatistic.StatisticDimension>, String>, List<T>> grouped =
+        // Partition the summary statistics by statistic name and dimensions
+        Map<Pair<Pair<SummaryStatistic.StatisticName, List<SummaryStatistic.StatisticDimension>>, String>, List<T>>
+                grouped =
                 summaryStats.stream()
                             .filter( s -> allowed.contains( s.getSummaryStatistic()
                                                              .getStatistic() ) )
                             .collect( Collectors.groupingBy( s -> Pair.of( Pair.of( s.getSummaryStatistic()
                                                                                      .getStatistic(),
                                                                                     s.getSummaryStatistic()
-                                                                                     .getDimension() ),
+                                                                                     .getDimensionList() ),
                                                                            qualifier.apply( s ) ) ) );
 
         List<T> noSummaryStats =

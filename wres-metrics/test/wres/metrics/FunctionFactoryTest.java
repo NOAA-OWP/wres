@@ -227,7 +227,7 @@ class FunctionFactoryTest
         SummaryStatistic parameters = SummaryStatistic.newBuilder()
                                                       .setHistogramBins( 5 )
                                                       .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
-                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
         DiagramSummaryStatisticFunction histogram = FunctionFactory.histogram( parameters );
 
@@ -295,7 +295,7 @@ class FunctionFactoryTest
         SummaryStatistic parameters = SummaryStatistic.newBuilder()
                                                       .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
                                                       .setHistogramBins( 5 )
-                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
         DiagramSummaryStatisticFunction histogram = FunctionFactory.ofDiagramSummaryStatistic( parameters );
         BiFunction<Map<SummaryStatisticComponentName, String>, Duration[],
@@ -378,7 +378,7 @@ class FunctionFactoryTest
     {
         SummaryStatistic parameters = SummaryStatistic.newBuilder()
                                                       .setStatistic( SummaryStatistic.StatisticName.BOX_PLOT )
-                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
         BoxplotSummaryStatisticFunction boxplot = FunctionFactory.boxplot( parameters );
 
@@ -418,7 +418,7 @@ class FunctionFactoryTest
         // #126936
         SummaryStatistic parameters = SummaryStatistic.newBuilder()
                                                       .setStatistic( SummaryStatistic.StatisticName.BOX_PLOT )
-                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
         BoxplotSummaryStatisticFunction boxplot = FunctionFactory.boxplot( parameters );
 

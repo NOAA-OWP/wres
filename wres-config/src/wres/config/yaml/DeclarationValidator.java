@@ -2754,7 +2754,8 @@ public class DeclarationValidator
         if ( !DeclarationUtilities.hasFeatureGroups( declaration )
              && declaration.summaryStatistics()
                            .stream()
-                           .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+                           .anyMatch( s -> s.getDimensionList()
+                                            .contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) ) )
         {
             EvaluationStatusEvent error
                     = EvaluationStatusEvent.newBuilder()
@@ -2770,9 +2771,30 @@ public class DeclarationValidator
             events.add( error );
         }
 
+        // Ensure that valid time pools are declared when needed
+        if ( !DeclarationValidator.hasPoolsWithQualifiedValidDates( declaration )
+             && declaration.summaryStatistics()
+                           .stream()
+                           .anyMatch( s -> s.getDimensionList()
+                                            .contains( SummaryStatistic.StatisticDimension.VALID_DATE_POOLS ) ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Summary statistics were declared to summarize the "
+                                                             + "evaluation results across valid date pools, "
+                                                             + "but the declaration does not contain any pools with "
+                                                             + "qualified valid dates. Please declare some pools with "
+                                                             + "qualified valid dates or remove the option to "
+                                                             + "calculate summary statistics across valid date pools." )
+                                           .build();
+            events.add( error );
+        }
+
         // Warn when no features are declared explicitly. Could still be implicitly declared via ingested data.
         if ( summaryStatistics.stream()
-                              .anyMatch( d -> d.getDimension() == SummaryStatistic.StatisticDimension.FEATURES )
+                              .anyMatch( d -> d.getDimensionList()
+                                               .contains( SummaryStatistic.StatisticDimension.FEATURES ) )
              && Objects.isNull( declaration.features() )
              && Objects.isNull( declaration.featureService() )
              && Objects.isNull( declaration.spatialMask() ) )
@@ -2789,8 +2811,8 @@ public class DeclarationValidator
 
         // Warn if the declaration contains diagrams and there are quantile statistics without a median
         Predicate<SummaryStatistic> filter = s -> s.getStatistic() == SummaryStatistic.StatisticName.QUANTILE
-                                                  && s.getDimension()
-                                                     != SummaryStatistic.StatisticDimension.RESAMPLED;
+                                                  && !s.getDimensionList()
+                                                       .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
 
         Set<MetricConstants> diagrams = declaration.metrics()
                                                    .stream()
@@ -2820,6 +2842,23 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Inspects the declaration for pools with qualified valid dates.
+     * @param declaration the declaration
+     * @return whether there are any pools with qualified valid dates
+     */
+
+    private static boolean hasPoolsWithQualifiedValidDates( EvaluationDeclaration declaration )
+    {
+        return !declaration.validDatePools()
+                           .isEmpty()
+               || Objects.nonNull( declaration.eventDetection() )
+               || declaration.timePools()
+                             .stream()
+                             .anyMatch( n -> n.hasEarliestValidTime()
+                                             || n.hasLatestValidTime() );
     }
 
     /**

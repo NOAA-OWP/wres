@@ -290,9 +290,9 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         Optional<SummaryStatistic.StatisticName> name =
                 statistics.stream()
                           .filter( n -> n.isSummaryStatistic()
-                                        && n.getSummaryStatistic()
-                                            .getDimension()
-                                           != SummaryStatistic.StatisticDimension.RESAMPLED )
+                                        && !n.getSummaryStatistic()
+                                             .getDimensionList()
+                                             .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) )
                           .map( d -> d.getSummaryStatistic()
                                       .getStatistic() )
                           .findFirst();
