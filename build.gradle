@@ -313,7 +313,7 @@ project(':wres-system') {
         testImplementation 'commons-io:commons-io:2.18.0'
         testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2'
         testImplementation 'io.netty:netty-codec-http2:4.1.119.Final'
-        testImplementation 'net.minidev:json-smart:2.4.9'
+        testImplementation 'net.minidev:json-smart:2.5.2'
         testImplementation 'org.yaml:snakeyaml:2.3'
         testImplementation 'io.netty:netty-common:4.1.119.Final'
         testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.80'
