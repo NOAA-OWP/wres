@@ -1,11 +1,11 @@
-FROM registry.access.redhat.com/ubi8/ubi:8.10-1088
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1184.1741863532
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.15.0.6-2.el8.x86_64 \
-    unzip-6.0-47.el8_10.x86_64 \
-    procps-ng-3.3.15-14.el8 \
-    iproute-6.2.0-6.el8_10.x86_64 \
-    hostname-3.20-6.el8 \
+    java-17-openjdk-headless \
+    unzip \
+    procps-ng \
+    iproute \
+    hostname \
     && dnf clean all
 
 # See comments in main/worker/root wres Dockerfile
