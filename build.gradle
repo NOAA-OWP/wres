@@ -20,6 +20,10 @@ buildscript {
         resolutionStrategy.dependencySubstitution {
             substitute module( 'com.overzealous:remark:1.1.0' ) using module( 'com.wavefront:remark:2023-07.07' ) because "not available on maven central anymore"
         }
+
+        // Forcing a newer version than what comes in with default com.github.seanrl.jaxb
+        // plugin below. This addresses a dependabot reported issue. See GitHub #478.
+        resolutionStrategy.force( 'org.codehaus.groovy:groovy-all:2.4.21' )
     }
     repositories {
         mavenCentral()
@@ -41,6 +45,7 @@ plugins {
     // Above is unmaintained, less gradle-y, below fork has several improvements
     //id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
     // Above has no releases since 2018, below fork supports gradle 7+
+    // The groovy force in buildScript above relates to the below plugin. See GitHub #478.
     id 'com.github.seanrl.jaxb' version '2.5.5'
 
     // For ability to use git ids for versioning jar files:
