@@ -1,14 +1,14 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.10-1184.1741863532
 
 RUN dnf install -y \
-    java-17-openjdk-headless \
-    unzip \
-    fontconfig \
-    dejavu-fonts-common \
-    dejavu-sans-fonts \
-    procps-ng \
-    iproute \
-    hostname \
+    java-17-openjdk-headless-1:17.0.15.0.6-2.el8.x86_64 \
+    unzip-6.0-47.el8_10.x86_64 \
+    fontconfig-2.13.1-4.el8 \
+    dejavu-fonts-common-2.35-7.el8 \
+    dejavu-sans-fonts-2.35-7.el8 \
+    procps-ng-3.3.15-14.el8 \
+    iproute-6.2.0-6.el8_10.x86_64 \
+    hostname-3.20-6.el8 \
     && dnf clean all
 
 # For examples of the following for alpine or debian, see git history.
