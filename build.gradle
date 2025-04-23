@@ -296,7 +296,33 @@ project(':wres-system') {
         testImplementation 'junit:junit:4.13.2'
 
         // Use mockserver to test certificate utilities
-        testImplementation 'org.mock-server:mockserver-netty:5.15.0'
+        testImplementation('org.mock-server:mockserver-netty:5.15.0') {
+            exclude group: 'commons-io', module: 'commons-io'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'io.netty', module: 'netty-codec-http2'
+            exclude group: 'net.minidev', module: 'json-smart'
+            exclude group: 'org.yaml', module: 'snakeyaml'
+            exclude group: 'io.netty', module: 'netty-common'
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+            exclude group: 'io.netty', module: 'netty-codec-http'
+            exclude group: 'com.google.guava', module: 'guava'
+            exclude group: 'org.xmlunit', module: 'xmlunit-core'
+            exclude group: 'com.jayway.jsonpath', module: 'json-path'
+            exclude group: 'io.netty', module: 'netty-handler'
+        }
+        testImplementation 'commons-io:commons-io:2.18.0'
+        testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2'
+        testImplementation 'io.netty:netty-codec-http2:4.1.119.Final'
+        testImplementation 'net.minidev:json-smart:2.4.9'
+        testImplementation 'org.yaml:snakeyaml:2.3'
+        testImplementation 'io.netty:netty-common:4.1.119.Final'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.80'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.80'
+        testImplementation 'io.netty:netty-codec-http:4.1.119.Final'
+        testImplementation 'com.google.guava:guava:33.4.7-jre'
+        testImplementation 'org.xmlunit:xmlunit-core:2.10.0'
+        testImplementation 'com.jayway.jsonpath:json-path:2.9.0'
+        testImplementation 'io.netty:netty-handler:4.1.119.Final'
     }
 
     test {
@@ -661,8 +687,34 @@ project(':wres-reading') {
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // Use mockserver as a mock server for mock API responses
-        testImplementation 'org.mock-server:mockserver-netty:5.15.0'
-
+        testImplementation('org.mock-server:mockserver-netty:5.15.0') {
+            exclude group: 'commons-io', module: 'commons-io'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt' 
+            exclude group: 'io.netty', module: 'netty-codec-http2' 
+            exclude group: 'net.minidev', module: 'json-smart' 
+            exclude group: 'org.yaml', module: 'snakeyaml' 
+            exclude group: 'io.netty', module: 'netty-common' 
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+            exclude group: 'io.netty', module: 'netty-codec-http'
+            exclude group: 'com.google.guava', module: 'guava' 
+            exclude group: 'org.xmlunit', module: 'xmlunit-core' 
+            exclude group: 'com.jayway.jsonpath', module: 'json-path' 
+            exclude group: 'io.netty', module: 'netty-handler' 
+        } 
+        testImplementation 'commons-io:commons-io:2.18.0' 
+        testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2' 
+        testImplementation 'io.netty:netty-codec-http2:4.1.119.Final' 
+        testImplementation 'net.minidev:json-smart:2.4.9' 
+        testImplementation 'org.yaml:snakeyaml:2.3' 
+        testImplementation 'io.netty:netty-common:4.1.119.Final'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.80'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.80'
+        testImplementation 'io.netty:netty-codec-http:4.1.119.Final' 
+        testImplementation 'com.google.guava:guava:33.4.7-jre' 
+        testImplementation 'org.xmlunit:xmlunit-core:2.10.0' 
+        testImplementation 'com.jayway.jsonpath:json-path:2.9.0'
+        testImplementation 'io.netty:netty-handler:4.1.119.Final'
+        
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
@@ -1258,8 +1310,34 @@ project(':wres-worker') {
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // Use mockserver as a mock server for mock API responses
-        testImplementation 'org.mock-server:mockserver-netty:5.15.0'
-
+        testImplementation('org.mock-server:mockserver-netty:5.15.0') {
+            exclude group: 'commons-io', module: 'commons-io'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt' 
+            exclude group: 'io.netty', module: 'netty-codec-http2' 
+            exclude group: 'net.minidev', module: 'json-smart' 
+            exclude group: 'org.yaml', module: 'snakeyaml' 
+            exclude group: 'io.netty', module: 'netty-common' 
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+            exclude group: 'io.netty', module: 'netty-codec-http'
+            exclude group: 'com.google.guava', module: 'guava' 
+            exclude group: 'org.xmlunit', module: 'xmlunit-core' 
+            exclude group: 'com.jayway.jsonpath', module: 'json-path' 
+            exclude group: 'io.netty', module: 'netty-handler' 
+        } 
+        testImplementation 'commons-io:commons-io:2.18.0' 
+        testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2' 
+        testImplementation 'io.netty:netty-codec-http2:4.1.119.Final' 
+        testImplementation 'net.minidev:json-smart:2.4.9' 
+        testImplementation 'org.yaml:snakeyaml:2.3' 
+        testImplementation 'io.netty:netty-common:4.1.119.Final' 
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.80'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.80'
+        testImplementation 'io.netty:netty-codec-http:4.1.119.Final' 
+        testImplementation 'com.google.guava:guava:33.4.7-jre' 
+        testImplementation 'org.xmlunit:xmlunit-core:2.10.0' 
+        testImplementation 'com.jayway.jsonpath:json-path:2.9.0'
+        testImplementation 'io.netty:netty-handler:4.1.119.Final'
+        
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
