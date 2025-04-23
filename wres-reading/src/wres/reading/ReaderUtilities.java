@@ -1,7 +1,6 @@
 package wres.reading;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -33,6 +32,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -62,6 +63,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.wrds.geography.FeatureFiller;
 import wres.statistics.generated.GeometryTuple;
@@ -85,6 +87,9 @@ public class ReaderUtilities
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
+
+    /** A web client to help with reading data from the web. */
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
 
     /**
      * Resolves any implicit declaration of features that require service calls to external web services. Currently,
@@ -291,7 +296,7 @@ public class ReaderUtilities
      * Service.
      *
      * @param uri the uri
-     * @return the time scale or null
+     * @return the timescale or null
      */
 
     public static TimeScaleOuter getTimeScaleFromUri( URI uri )
@@ -517,9 +522,9 @@ public class ReaderUtilities
         }
 
         LOGGER.debug(
-                      "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                      + "begin with a case-insensitive 'NWM_' designation.",
-                      dataSource );
+                "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
+                + "begin with a case-insensitive 'NWM_' designation.",
+                dataSource );
 
         return false;
     }
@@ -680,25 +685,26 @@ public class ReaderUtilities
         // No path to trust file. Try to set up a default ssl context using JDK certs.
         try
         {
-            //Load the keyStore from the JDK default.
+            // Load the keyStore from the JDK default.
             KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
             String cacertsPath = System.getProperty( "java.home" ) + "/lib/security/cacerts";
             FileInputStream fis = new FileInputStream( cacertsPath );
             String password = "changeit";
-            keyStore.load( fis, password.toCharArray() );
+            keyStore.load( fis, password.toCharArray() );   // NOSONAR
             fis.close();
 
-            //Initialize the factory for use.
+            // Initialize the factory for use.
             TrustManagerFactory tmf = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
             tmf.init( keyStore );
 
-            //Get the trust manager. This will use the last one found.
+            // Get the trust manager. This will use the last one found.
             X509TrustManager theTrustManager = null;
             for ( TrustManager manager : tmf.getTrustManagers() )
             {
                 if ( manager instanceof X509TrustManager m )
                 {
-                    LOGGER.warn( "No system property wres.wrdsCertificateFileToTrust provided. Using the default X509TrustManager: {}",
+                    LOGGER.warn( "No system property wres.wrdsCertificateFileToTrust provided. Using the default "
+                                 + "X509TrustManager: {}",
                                  manager );
                     theTrustManager = m;
                 }
@@ -708,7 +714,7 @@ public class ReaderUtilities
                 throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
             }
 
-            //Return the default context with the JDK-default certs trusted.
+            // Return the default context with the JDK-default certs trusted.
             return Pair.of( SSLContext.getDefault(), theTrustManager );
         }
         catch ( NoSuchAlgorithmException | KeyStoreException | CertificateException | IOException e )
@@ -738,7 +744,7 @@ public class ReaderUtilities
                           pathToTrustFile );
 
             Path path = Paths.get( pathToTrustFile );
-            InputStream inputStream = null;
+            InputStream inputStream;
             try
             {
                 // If the file exists, setup the input stream to point to it. IOException is handled below.
@@ -751,7 +757,7 @@ public class ReaderUtilities
                 else
                 {
                     inputStream = ReaderUtilities.class.getClassLoader()
-                                                                   .getResourceAsStream( pathToTrustFile );
+                                                       .getResourceAsStream( pathToTrustFile );
                     if ( inputStream == null )
                     {
                         throw new PreReadException( "The file "
@@ -761,7 +767,7 @@ public class ReaderUtilities
                                                     + "file system nor the class path." );
                     }
                 }
-                
+
                 //With the stream established, setup the SSLContext.
                 SSLStuffThatTrustsOneCertificate sslGoo =
                         new SSLStuffThatTrustsOneCertificate( inputStream,
@@ -914,11 +920,110 @@ public class ReaderUtilities
     }
 
     /**
+     * Returns a byte stream from a web source or null if the web source returns no data and that is considered a
+     * nominal response (see #isMissingResponse).
+     *
+     * @param uri the uri
+     * @param isMissingResponse a test to determine whether the http response code indicates missing data
+     * @param isErrorResponse a test to determine whether the http response code indicates an error
+     * @param errorUnpacker unpacks an error message from the web client response for onward communication, optional
+     * @param webClient an optional web client instance, otherwise the default will be used
+     * @return the byte stream
+     * @throws ReadException if the uri does not point to a web source or the stream could not be created for any reason
+     */
+
+    public static InputStream getByteStreamFromWebSource( URI uri,
+                                                          IntPredicate isMissingResponse,
+                                                          IntPredicate isErrorResponse,
+                                                          Function<WebClient.ClientResponse, String> errorUnpacker,
+                                                          WebClient webClient )
+    {
+        Objects.requireNonNull( uri );
+        Objects.requireNonNull( isMissingResponse );
+        Objects.requireNonNull( isErrorResponse );
+
+        if ( !ReaderUtilities.isWebSource( uri ) )
+        {
+            throw new ReadException( "Cannot read time-series data from "
+                                     + uri
+                                     + " because it is not a web source." );
+        }
+
+        if ( Objects.isNull( errorUnpacker ) )
+        {
+            errorUnpacker = c -> ""; // Empty response
+        }
+
+        if ( Objects.isNull( webClient ) )
+        {
+            webClient = WEB_CLIENT;
+        }
+
+        try
+        {
+            // Stream is closed on completion of streaming data, unless there is an error response
+            WebClient.ClientResponse response =
+                    webClient.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+            int httpStatus = response.getStatusCode();
+
+            if ( isMissingResponse.test( httpStatus ) )
+            {
+                String possibleError = errorUnpacker.apply( response );
+
+                if ( Objects.nonNull( possibleError ) )
+                {
+                    possibleError = " Received this error message: " + possibleError;
+                }
+
+                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.{}",
+                             httpStatus,
+                             uri,
+                             possibleError );
+
+                // Clean up now
+                ReaderUtilities.closeWebClientResponse( response );
+
+                // Flag to the caller as no data
+                return null;
+            }
+            else if ( isErrorResponse.test( httpStatus ) )
+            {
+                String possibleError = errorUnpacker.apply( response );
+
+                if ( Objects.nonNull( possibleError ) )
+                {
+                    possibleError = ". Received this error message: " + possibleError;
+                }
+
+                // Error response, so clean up now
+                ReaderUtilities.closeWebClientResponse( response );
+
+                throw new ReadException( "Failed to read data from '"
+                                         + uri
+                                         +
+                                         "' due to HTTP status code "
+                                         + httpStatus
+                                         + possibleError );
+            }
+
+            return response.getResponse();
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to acquire a byte stream from "
+                                     + uri
+                                     + ".",
+                                     e );
+        }
+    }
+
+    /**
      * Attempts to acquire thresholds from an external source and populate them in the supplied declaration, as needed.
      * @param thresholdSource the threshold source
      * @param evaluation the declaration to adjust
      * @return the adjusted declaration, including any thresholds acquired from the external source
      */
+
     private static EvaluationDeclaration fillThresholds( ThresholdSource thresholdSource,
                                                          EvaluationDeclaration evaluation )
     {

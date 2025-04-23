@@ -2,6 +2,7 @@ package wres.reading;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -9,10 +10,15 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -41,6 +47,7 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.http.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -1312,4 +1319,96 @@ class ReaderUtilitiesTest
         // Assert equality
         assertEquals( expected, actualSingletons );
     }
+
+    @Test
+    void testReadFromWebSource() throws IOException
+    {
+        // Path expectation includes handbook 5 identifiers
+        this.mockServer.when( HttpRequest.request()
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort() );
+
+        try ( InputStream stream =
+                      ReaderUtilities.getByteStreamFromWebSource( fakeUri,
+                                                                  c -> c == 404,
+                                                                  c -> c >= 400,
+                                                                  null,
+                                                                  null ) )
+        {
+            assert stream != null;
+
+            assertEquals( RESPONSE, new String( stream.readAllBytes() ) );
+        }
+    }
+
+    @Test
+    void testReadFromWebSourceSkipsMissingWhenEncountering404() throws IOException
+    {
+        // Path expectation includes handbook 5 identifiers
+        this.mockServer.when( HttpRequest.request()
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.notFoundResponse() );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort() );
+
+        try ( InputStream stream =
+                      ReaderUtilities.getByteStreamFromWebSource( fakeUri,
+                                                                  c -> c == 404,
+                                                                  c -> c >= 400,
+                                                                  null,
+                                                                  null ) )
+        {
+            assertNull( stream ); // Missing data
+        }
+    }
+
+    @Test
+    void testReadFromWebSourceThrowsErrorWhenEncountering404AssignedAsError()
+    {
+        // Path expectation includes handbook 5 identifiers
+        this.mockServer.when( HttpRequest.request()
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.notFoundResponse() );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort() );
+
+        AtomicInteger actualErrorCode = new AtomicInteger();
+        Function<WebClient.ClientResponse, String> unpacker =
+                r ->
+                {
+                    actualErrorCode.set( r.getStatusCode() );
+                    return "";
+                };
+
+        assertThrows( ReadException.class,
+                      () -> ReaderUtilities.getByteStreamFromWebSource( fakeUri,
+                                                                        c -> c == 400,
+                                                                        c -> c == 404,
+                                                                        unpacker,
+                                                                        null ) );
+
+        assertEquals( 404, actualErrorCode.get() );
+    }
+
+    @Test
+    void testReadFromWebSourceThrowsExpectedExceptionWhenEncounteringFileScheme()
+    {
+        URI fakeUri = URI.create( "file://foo" );
+
+        ReadException exception = assertThrows( ReadException.class,
+                                                () -> ReaderUtilities.getByteStreamFromWebSource( fakeUri,
+                                                                                                  c -> c == 400,
+                                                                                                  c -> c == 404,
+                                                                                                  null,
+                                                                                                  null ) );
+
+        assertTrue( exception.getMessage()
+                             .contains( "it is not a web source" ) );
+    }
+
 }

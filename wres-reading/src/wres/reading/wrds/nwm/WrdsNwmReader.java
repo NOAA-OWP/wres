@@ -30,6 +30,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -93,18 +94,28 @@ public class WrdsNwmReader implements TimeSeriesReader
     private static final String WRDS_NWM = "WRDS NWM";
 
     /** Custom HttpClient to use */
-    private static final OkHttpClient OK_HTTP_CLIENT;
+    private static final WebClient CUSTOM_WEB_CLIENT;
+
+    /** The HTTP response codes considered to represent no data. Is this too broad? Perhaps a 404 only, else a read
+     * exception. The problem is that "no data" is routine from the perspective of WRES, but apparently not WRDS, so we
+     * get a 404, not a 200. See Redmine issue #116808. The difficulty with such a broad range is that we potentially
+     * aggregate buggy requests with no data responses. */
+    private static final IntPredicate NO_DATA_PREDICATE = h -> h >= 400 && h < 500;
+
+    /** The HTTP response codes considered to represent an error to be thrown. */
+    private static final IntPredicate ERROR_RESPONSE_PREDICATE = h -> h >= 500;
 
     static
     {
         try
         {
             Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
-            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+            OkHttpClient client = WebClientUtils.defaultTimeoutHttpClient()
                                            .newBuilder()
                                            .sslSocketFactory( sslContext.getKey().getSocketFactory(),
                                                               sslContext.getRight() )
                                            .build();
+            CUSTOM_WEB_CLIENT = new WebClient( client );
         }
         catch ( PreReadException e )
         {
@@ -112,9 +123,6 @@ public class WrdsNwmReader implements TimeSeriesReader
                                                    + e.getMessage() );
         }
     }
-
-    /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( OK_HTTP_CLIENT );
 
     /** Declaration, which is used to chunk requests. Null if no chunking is required. */
     private final EvaluationDeclaration declaration;
@@ -183,7 +191,12 @@ public class WrdsNwmReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to WRDS for NWM time-series without any chunking of the data." );
-        InputStream stream = WrdsNwmReader.getByteStreamFromUri( dataSource.getUri() );
+        InputStream stream =
+                ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                                            NO_DATA_PREDICATE,
+                                                            ERROR_RESPONSE_PREDICATE,
+                                                            r -> WrdsNwmReader.tryToReadError( r.getResponse() ),
+                                                            CUSTOM_WEB_CLIENT );
 
         if ( Objects.isNull( stream ) )
         {
@@ -411,11 +424,16 @@ public class WrdsNwmReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = WrdsNwmReader.getByteStreamFromUri( dataSource.getUri() ) )
+                       try ( InputStream s =
+                                     ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                                                                 NO_DATA_PREDICATE,
+                                                                                 ERROR_RESPONSE_PREDICATE,
+                                                                                 r -> WrdsNwmReader.tryToReadError( r.getResponse() ),
+                                                                                 CUSTOM_WEB_CLIENT ) )
                        {
-                           if ( Objects.nonNull( inputStream ) )
+                           if ( Objects.nonNull( s ) )
                            {
-                               return NWM_READER.read( dataSource, inputStream )
+                               return NWM_READER.read( dataSource, s )
                                                 .toList(); // Terminal
                            }
 
@@ -687,69 +705,6 @@ public class WrdsNwmReader implements TimeSeriesReader
     }
 
     /**
-     * Returns a byte stream from a URI.
-     *
-     * @param uri the URI
-     * @return the byte stream or null if an http error is encountered between 400 inclusive and 500 exclusive
-     * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
-     * @throws ReadException if the stream could not be created for any other reason
-     */
-
-    private static InputStream getByteStreamFromUri( URI uri )
-    {
-        Objects.requireNonNull( uri );
-
-        if ( ReaderUtilities.isWebSource( uri ) )
-        {
-            try
-            {
-                // Stream is closed on completion of streaming data, unless there is an error response
-                WebClient.ClientResponse response =
-                        WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
-                int httpStatus = response.getStatusCode();
-
-                // Read an error if possible
-                // Is this too broad? Perhaps a 404 only, else a read exception. The problem is that "no data" is
-                // routine from the perspective of WRES, but apparently not WRDS, so we get a 404, not a 200. See
-                // Redmine issue #116808. The difficulty with such a broad range is that we potentially aggregate
-                // buggy requests with no data responses.
-                if ( httpStatus >= 400 && httpStatus < 500 )
-                {
-                    String possibleError = WrdsNwmReader.tryToReadErrorMessage( response.getResponse() );
-
-                    if ( Objects.nonNull( possibleError ) )
-                    {
-                        LOGGER.warn( "Found this WRDS error message from URI {}: {}",
-                                     uri,
-                                     possibleError );
-                    }
-
-                    // Error response, so clean up now
-                    ReaderUtilities.closeWebClientResponse( response );
-
-                    // Flag to the caller as no data
-                    return null;
-                }
-
-                return response.getResponse();
-            }
-            catch ( IOException e )
-            {
-                throw new ReadException( "Failed to acquire a byte stream from "
-                                         + uri
-                                         + ".",
-                                         e );
-            }
-        }
-        else
-        {
-            throw new ReadException( "Unable to read WRDS source " + uri
-                                     + "because it does not use the http "
-                                     + "scheme. Did you intend to use a JSON reader?" );
-        }
-    }
-
-    /**
      * Attempt to read an error message from the WRDS NWM service for a document like this:
      * {
      *   "error": "API Currently only supports querying by the following: ('nwm_feature_id', 'nws_lid', ... )"
@@ -761,7 +716,7 @@ public class WrdsNwmReader implements TimeSeriesReader
      * @return the value from the above map, null if not found.
      */
 
-    private static String tryToReadErrorMessage( InputStream inputStream )
+    private static String tryToReadError( InputStream inputStream )
     {
         try
         {

@@ -1,6 +1,5 @@
 package wres.reading.nwis;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
@@ -23,6 +22,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -35,14 +35,12 @@ import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Variable;
-import wres.http.WebClientUtils;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.waterml.WatermlReader;
-import wres.http.WebClient;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
@@ -74,11 +72,14 @@ public class NwisReader implements TimeSeriesReader
     /** The underlying format reader. */
     private static final WatermlReader WATERML_READER = WatermlReader.of();
 
-    /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
-
     /** Message string. */
     private static final String USGS_NWIS = "USGS NWIS";
+
+    /** The HTTP response codes considered to represent no data. */
+    private static final IntPredicate NO_DATA_PREDICATE = c -> c == 404;
+
+    /** The HTTP response codes considered to represent an error to be thrown. */
+    private static final IntPredicate ERROR_RESPONSE_PREDICATE = c -> !( c >= 200 && c < 300 );
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
     private final EvaluationDeclaration declaration;
@@ -126,7 +127,12 @@ public class NwisReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to NWIS for USGS time-series without any chunking of the data." );
-        InputStream stream = NwisReader.getByteStreamFromUri( dataSource.getUri() );
+
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                                                         NO_DATA_PREDICATE,
+                                                                         ERROR_RESPONSE_PREDICATE,
+                                                                         null,
+                                                                         null );
 
         return this.read( dataSource, stream );
     }
@@ -340,11 +346,15 @@ public class NwisReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = NwisReader.getByteStreamFromUri( dataSource.getUri() ) )
+                       try ( InputStream s = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                                                                         NO_DATA_PREDICATE,
+                                                                                         ERROR_RESPONSE_PREDICATE,
+                                                                                         null,
+                                                                                         null ) )
                        {
-                           if ( Objects.nonNull( inputStream ) )
+                           if ( Objects.nonNull( s ) )
                            {
-                               return WATERML_READER.read( dataSource, inputStream )
+                               return WATERML_READER.read( dataSource, s )
                                                     .toList(); // Terminal
                            }
 
@@ -465,69 +475,6 @@ public class NwisReader implements TimeSeriesReader
         }
 
         return start.toString();
-    }
-
-    /**
-     * Returns a byte stream from a file or web source.
-     *
-     * @param uri the uri
-     * @return the byte stream
-     * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
-     * @throws ReadException if the stream could not be created for any other reason
-     */
-
-    private static InputStream getByteStreamFromUri( URI uri )
-    {
-        Objects.requireNonNull( uri );
-
-        try
-        {
-            if ( ReaderUtilities.isWebSource( uri ) )
-            {
-                // Stream is closed on completion of streaming data, unless there is an error response
-                WebClient.ClientResponse response =
-                        WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
-                int httpStatus = response.getStatusCode();
-
-                if ( httpStatus == 404 )
-                {
-                    LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.",
-                                 httpStatus,
-                                 uri );
-
-                    // Error response, so clean up now
-                    ReaderUtilities.closeWebClientResponse( response );
-
-                    return null;
-                }
-                else if ( !( httpStatus >= 200 && httpStatus < 300 ) )
-                {
-                    // Error response, so clean up now
-                    ReaderUtilities.closeWebClientResponse( response );
-
-                    throw new ReadException( "Failed to read data from '"
-                                             + uri
-                                             +
-                                             "' due to HTTP status code "
-                                             + httpStatus );
-                }
-
-                return response.getResponse();
-            }
-            else
-            {
-                throw new ReadException( "Cannot read USGS NWIS time-series data from "
-                                         + uri
-                                         + ". Did you intend to use a WaterML reader?" );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new ReadException( "Failed to acquire a byte stream from "
-                                     + uri
-                                     + ".",
-                                     e );
-        }
     }
 
     /**
