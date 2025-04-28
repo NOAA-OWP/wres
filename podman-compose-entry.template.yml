@@ -111,7 +111,7 @@ services:
          #- /mnt/wres_share/logs/broker/:/mnt/wres_share/logs/broker/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
-         #- RABBITMQ_LOG_LOCATION=/mnt/wres_share/logs/broker/
+         - RABBITMQ_LOG_LOCATION=/mnt/wres_share/logs/broker/rabbitmq.log
          - WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_CERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_KEYFILE=${WRES_RABBITMQ_SSL_OPTIONS_KEYFILE}
