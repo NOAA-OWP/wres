@@ -188,7 +188,7 @@ services:
          - /mnt/wres_share/heap_dumps/eventsbroker:/mnt/wres_share/heap_dumps/eventsbroker
          # For certificates and keys that correspond to them
          - /mnt/wres_keys:/wres_secrets:ro
-         - /mnt/wres_share/wres_logs:/mnt/wres_share/wres_logs
+         - /mnt/wres_share/wres_logs/eventsbroker/worker_host/:/usr/local/wres-eventsbroker/log/
         environment:
          - BROKER_WORK=/container_home
          - BROKER_KEYSTORE_PATH=${EVENTSBROKER_KEYSTORE_PATH}
