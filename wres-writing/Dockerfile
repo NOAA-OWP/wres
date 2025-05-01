@@ -12,9 +12,10 @@ RUN dnf install -y \
     hostname-3.20-6.el8 \
     && dnf clean all
 
+# Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
 # Run the app as non-root, so create a non-root user.
-RUN groupadd --gid 1370800073 wres \
-    && useradd --uid 501 --gid 1370800073 wres_writing_docker --home-dir /container_home
+#RUN groupadd --gid 1370800073 wres \
+#    && useradd --uid 501 --gid 1370800073 wres_writing_docker --home-dir /container_home
 
 ARG version
 WORKDIR /opt
@@ -36,5 +37,7 @@ VOLUME /container_home
 
 # Should correspond to the port configured in WORKDIR/lib/conf/eventbroker.properties
 EXPOSE 5673
-USER wres_writing_docker
+
+# Uncomment this line as well to set the user you added above
+#USER wres_writing_docker
 ENTRYPOINT [ "/docker-entrypoint.sh" ]

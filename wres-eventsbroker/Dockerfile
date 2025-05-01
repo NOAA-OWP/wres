@@ -50,19 +50,19 @@ ENV ANONYMOUS_LOGIN=false
 # The --relax-jolokia is a shorthand for the jolokia-access.xml to allow connections on all network interfaces (0.0.0.0)
 ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --relax-jolokia --silent
 
-ARG BROKER_USER=wres_eventsbroker
-
+# Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
+#ARG BROKER_USER=wres_eventsbroker
 # Create user and group
-RUN groupadd --system --gid 1370800073 wres && \
-    useradd  --system --no-log-init \
-             --create-home --home-dir ${BROKER_WORK} \
-             --uid 502 --gid 1370800073 ${BROKER_USER}
+#RUN groupadd --system --gid 1370800073 wres && \
+#    useradd  --system --no-log-init \
+#             --create-home --home-dir ${BROKER_WORK} \
+#             --uid 502 --gid 1370800073 ${BROKER_USER}
     
 WORKDIR ${BROKER_WORK}
 
-# Create directories with the correct permissions
-RUN mkdir -p {${BROKER_HOME},${BROKER_CONFIG},${BROKER_INSTANCE}} && \
-    chown ${BROKER_USER} ${BROKER_INSTANCE}
+RUN mkdir -p ${BROKER_HOME}
+RUN mkdir -p ${BROKER_CONFIG}
+RUN mkdir -p ${BROKER_INSTANCE}
 
 COPY --from=builder /workspace/out ${BROKER_HOME}
 
@@ -76,7 +76,9 @@ RUN chmod +x /docker-entrypoint.sh
 VOLUME /container_home
 VOLUME /wres_secrets
 
-USER ${BROKER_USER}
+# Uncomment this line as well to set the user you added above
+#USER ${BROKER_USER}
+
 # Remember, to exec into a container and open a shell, use: 
 # docker run -ti --entrypoint /bin/bash container_id
 # Without the --entrypoint, the entrypoint script below will run
