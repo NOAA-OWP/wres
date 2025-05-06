@@ -7,9 +7,17 @@ import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -25,6 +33,7 @@ import com.google.common.jimfs.Jimfs;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
@@ -47,11 +56,20 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.Feature;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.types.Ensemble;
 import wres.http.WebClient;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Threshold;
+import wres.statistics.generated.TimeScale;
 
 /**
  * Tests the {@link ReaderUtilities}.
@@ -1367,7 +1385,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void testReadFromWebSourceThrowsErrorWhenEncountering404AssignedAsError()
+    void testReadFromWebSourceThrowsExceptionWhenEncountering404AssignedAsException()
     {
         // Path expectation includes handbook 5 identifiers
         this.mockServer.when( HttpRequest.request()
@@ -1396,6 +1414,32 @@ class ReaderUtilitiesTest
     }
 
     @Test
+    void testReadFromWebSourceThrowsExpectedExceptionWhenGetFromWebExcepts() throws IOException
+    {
+        // Path expectation includes handbook 5 identifiers
+        this.mockServer.when( HttpRequest.request()
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
+
+        String uri = "http://localhost:"
+                     + this.mockServer.getLocalPort();
+        URI fakeUri = URI.create( uri );
+
+        WebClient client = Mockito.mock( WebClient.class );
+        Mockito.when( client.getFromWeb( Mockito.any(), Mockito.anyList() ) )
+               .thenThrow( new IOException() );
+
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.getByteStreamFromWebSource( fakeUri,
+                                                                                               c -> c == 404,
+                                                                                               c -> c >= 400,
+                                                                                               null,
+                                                                                               client ) );
+
+        assertEquals( "Failed to acquire a byte stream from " + uri + ".", actual.getMessage() );
+    }
+
+    @Test
     void testReadFromWebSourceThrowsExpectedExceptionWhenEncounteringFileScheme()
     {
         URI fakeUri = URI.create( "file://foo" );
@@ -1411,4 +1455,275 @@ class ReaderUtilitiesTest
                              .contains( "it is not a web source" ) );
     }
 
+    @Test
+    void testParseInstant()
+    {
+        String date = "2025-04-21";
+        String time = "12:00:00";
+        Instant actual = ReaderUtilities.parseInstant( date, time, ZoneOffset.UTC );
+        Instant expected = Instant.parse( "2025-04-21T12:00:00Z" );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeSeriesMetadataFromHeader()
+    {
+        TimeSeriesHeader header = new TimeSeriesHeader.TimeSeriesHeaderBuilder()
+                .forecastDateDate( "2025-04-21" )
+                .forecastDateTime( "12:00:00" )
+                .parameterId( "foo" )
+                .locationId( "bar" )
+                .units( "qux" )
+                .locationDescription( "baz" )
+                .type( "instantaneous" )
+                .x( "41.26" )
+                .y( "23.79" )
+                .z( "13.5" )
+                .build();
+
+        TimeSeriesMetadata actual = ReaderUtilities.getTimeSeriesMetadataFromHeader( header, ZoneOffset.UTC );
+
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, "POINT ( 41.26 23.79 13.5 )" );
+        TimeSeriesMetadata expected = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setTimeScale( TimeScaleOuter.of() )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeSeriesMetadataFromHeaderWithAggregatedTimeScale()
+    {
+        TimeSeriesHeader header = new TimeSeriesHeader.TimeSeriesHeaderBuilder()
+                .forecastDateDate( "2025-04-21" )
+                .forecastDateTime( "12:00:00" )
+                .parameterId( "foo" )
+                .locationId( "bar" )
+                .locationDescription( "baz" )
+                .type( "accumulation" )
+                .units( "qux" )
+                .timeStepUnit( "second" )
+                .timeStepMultiplier( "21600" )
+                .latitude( "-43.2789" )
+                .longitude( "48.4523" )
+                .build();
+
+        TimeSeriesMetadata actual = ReaderUtilities.getTimeSeriesMetadataFromHeader( header, ZoneOffset.UTC );
+
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, "POINT ( 48.4523 -43.2789 )" );
+        TimeSeriesMetadata expected = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setTimeScale( TimeScaleOuter.of( Duration.ofSeconds( 21600 ), TimeScale.TimeScaleFunction.UNKNOWN ) )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeSeriesMetadataFromHeaderWithNonEquidistantTimeScale()
+    {
+        TimeSeriesHeader header = new TimeSeriesHeader.TimeSeriesHeaderBuilder()
+                .forecastDateDate( "2025-04-21" )
+                .forecastDateTime( "12:00:00" )
+                .parameterId( "foo" )
+                .locationId( "bar" )
+                .locationDescription( "baz" )
+                .units( "qux" )
+                .timeStepUnit( "nonequidistant" )
+                .build();
+
+        TimeSeriesMetadata actual = ReaderUtilities.getTimeSeriesMetadataFromHeader( header, ZoneOffset.UTC );
+
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, null );
+        TimeSeriesMetadata expected = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeSeriesMetadataFromHeaderThrowsExceptedExceptionForNonNumericMultiplier()
+    {
+        TimeSeriesHeader header = new TimeSeriesHeader.TimeSeriesHeaderBuilder()
+                .forecastDateDate( "2025-04-21" )
+                .forecastDateTime( "12:00:00" )
+                .parameterId( "foo" )
+                .locationId( "bar" )
+                .locationDescription( "baz" )
+                .type( "accumulation" )
+                .units( "qux" )
+                .timeStepUnit( "second" )
+                .timeStepMultiplier( "fooNotANumber" )
+                .latitude( "-43.2789" )
+                .longitude( "48.4523" )
+                .build();
+
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.getTimeSeriesMetadataFromHeader( header,
+                                                                                                    ZoneOffset.UTC ) );
+
+        assertTrue( actual.getMessage()
+                          .contains( "fooNotANumber" ) );
+    }
+
+    @Test
+    void testGetTimeSeriesMetadataFromHeaderThrowsExceptedExceptionForInvalidTimeStepUnit()
+    {
+        TimeSeriesHeader header = new TimeSeriesHeader.TimeSeriesHeaderBuilder()
+                .forecastDateDate( "2025-04-21" )
+                .forecastDateTime( "12:00:00" )
+                .parameterId( "foo" )
+                .locationId( "bar" )
+                .locationDescription( "baz" )
+                .type( "accumulation" )
+                .units( "qux" )
+                .timeStepUnit( "fooNotAValidUnit" )
+                .timeStepMultiplier( "21600" )
+                .latitude( "-43.2789" )
+                .longitude( "48.4523" )
+                .build();
+
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.getTimeSeriesMetadataFromHeader( header,
+                                                                                                    ZoneOffset.UTC ) );
+
+        assertTrue( actual.getMessage()
+                          .contains( "fooNotAValidUnit" ) );
+    }
+
+    @Test
+    void testTransform()
+    {
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, null );
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        SortedMap<Instant, Double> trace = new TreeMap<>();
+        Instant instant = Instant.parse( "2025-04-25T12:00:00Z" );
+        trace.put( instant, 34.2 );
+
+        TimeSeries<Double> actual = ReaderUtilities.transform( metadata,
+                                                               trace,
+                                                               0,
+                                                               URI.create( "https://foo.bar" ) );
+
+        SortedSet<Event<Double>> events = new TreeSet<>();
+        events.add( Event.of( instant, 34.2 ) );
+        TimeSeries<Double> expected = TimeSeries.of( metadata, events );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testTransformThrowsExpectedExceptionForEmptyTrace()
+    {
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, null );
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        SortedMap<Instant, Double> trace = new TreeMap<>();
+        URI uri = URI.create( "https://foo.bar" );
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.transform( metadata,
+                                                                              trace,
+                                                                              0,
+                                                                              uri ) );
+
+        assertTrue( actual.getMessage()
+                          .contains( "there are no values in the trace" ) );
+
+    }
+
+    @Test
+    void testTransformEnsemble()
+    {
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, null );
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        SortedMap<String, SortedMap<Instant, Double>> traces = new TreeMap<>();
+        Instant instant = Instant.parse( "2025-04-25T12:00:00Z" );
+        SortedMap<Instant, Double> trace = new TreeMap<>();
+        trace.put( instant, 34.2 );
+        traces.put( "quux", trace );
+        TimeSeries<Ensemble> actual = ReaderUtilities.transformEnsemble( metadata,
+                                                                         traces,
+                                                                         0,
+                                                                         URI.create( "https://foo.bar" ) );
+
+        SortedSet<Event<Ensemble>> events = new TreeSet<>();
+        events.add( Event.of( instant, Ensemble.of( new double[] { 34.2 }, Ensemble.Labels.of( "quux" ) ) ) );
+        TimeSeries<Ensemble> expected = TimeSeries.of( metadata, events );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testTransformEnsembleThrowsExpectedExceptionWhenValidDatetimesAreInconsistent()
+    {
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, null );
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
+                                            Instant.parse( "2025-04-21T12:00:00Z" ) ) )
+                .build();
+
+        SortedMap<String, SortedMap<Instant, Double>> traces = new TreeMap<>();
+        Instant instant = Instant.parse( "2025-04-25T12:00:00Z" );
+        SortedMap<Instant, Double> trace = new TreeMap<>();
+        trace.put( instant, 34.2 );
+        SortedMap<Instant, Double> anotherTrace = new TreeMap<>();
+        anotherTrace.put( instant.plus( Duration.ofMinutes( 1 ) ), 34.3 );
+        traces.put( "quux", trace );
+        traces.put( "garply", anotherTrace );
+        URI uri = URI.create( "https://foo.bar" );
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.transformEnsemble( metadata,
+                                                                                      traces,
+                                                                                      0,
+                                                                                      uri ) );
+
+        assertTrue( actual.getMessage()
+                          .contains( "All traces must be dense and have matching valid datetimes." ) );
+    }
+
+    @Test
+    void TestGetTimeScaleFromUri()
+    {
+        URI uri = URI.create( "https://foo.bar/nwis/iv" );
+        URI unknown = URI.create( "https://foo.bar" );
+
+        assertAll( () -> assertEquals( TimeScaleOuter.of(), ReaderUtilities.getTimeScaleFromUri( uri ) ),
+                   () -> assertNull( ReaderUtilities.getTimeScaleFromUri( unknown ) ),
+                   () -> assertNull( ReaderUtilities.getTimeScaleFromUri( null ) ) );
+    }
 }

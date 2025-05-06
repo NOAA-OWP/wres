@@ -12,13 +12,20 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
@@ -55,6 +63,7 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.TimeInterval;
+import wres.datamodel.space.Feature;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -66,7 +75,11 @@ import wres.http.WebClient;
 import wres.http.WebClientUtils;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.wrds.geography.FeatureFiller;
+import wres.statistics.MessageUtilities;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.ReferenceTime;
+import wres.statistics.generated.TimeScale;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
@@ -150,6 +163,7 @@ public class ReaderUtilities
      * @param lineNumber the approximate location in the source to help with messaging
      * @param uri a uri to help with messaging
      * @return The complete TimeSeries
+     * @throws ReadException if the trace is empty
      */
 
     public static TimeSeries<Double> transform( TimeSeriesMetadata metadata,
@@ -170,11 +184,11 @@ public class ReaderUtilities
                          + ".";
             }
 
-            throw new IllegalArgumentException( "Cannot build a single-valued time-series from "
-                                                + uri
-                                                + " because there are no values in the trace with metadata "
-                                                + metadata
-                                                + append );
+            throw new ReadException( "Cannot build a single-valued time-series from "
+                                     + uri
+                                     + " because there are no values in the trace with metadata "
+                                     + metadata
+                                     + append );
         }
 
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
@@ -220,11 +234,17 @@ public class ReaderUtilities
         int i = 0;
 
         String append = "";
-        if ( lineNumber > -1 )
+
+        if ( Objects.nonNull( uri ) )
         {
-            append = " with data at or before "
-                     + "line number "
-                     + lineNumber;
+            append = " from " + uri;
+
+            if ( lineNumber > -1 )
+            {
+                append = " with data at or before "
+                         + "line number "
+                         + lineNumber;
+            }
         }
 
         for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
@@ -238,8 +258,7 @@ public class ReaderUtilities
                                                                                   .keySet() );
                 if ( !theseInstants.equals( previousInstants ) )
                 {
-                    throw new ReadException( "Cannot build ensemble from "
-                                             + uri
+                    throw new ReadException( "Could not build an ensemble time-series"
                                              + append
                                              + " because the trace named "
                                              + trace.getKey()
@@ -252,7 +271,7 @@ public class ReaderUtilities
                                              + previousInstants
                                              + " which is not allowed. All"
                                              + " traces must be dense and "
-                                             + "match valid datetimes." );
+                                             + "have matching valid datetimes." );
                 }
             }
 
@@ -304,8 +323,9 @@ public class ReaderUtilities
         TimeScaleOuter returnMe = null;
 
         // Assume that the NWIS "IV" service implies "instantaneous" values
-        if ( Objects.nonNull( uri ) && uri.toString()
-                                          .contains( "/nwis/iv" ) )
+        if ( Objects.nonNull( uri )
+             && uri.toString()
+                   .contains( "/nwis/iv" ) )
         {
             returnMe = TimeScaleOuter.of();
         }
@@ -351,7 +371,8 @@ public class ReaderUtilities
                                      + "' or run WRES as a user with read"
                                      + " permissions on that path." );
         }
-        else if ( !allowDirectory && !Files.isRegularFile( path ) )
+        else if ( !allowDirectory
+                  && !Files.isRegularFile( path ) )
         {
             throw new ReadException( "Expected a file source, but the source was not a file: " + dataSource + "." );
         }
@@ -521,10 +542,9 @@ public class ReaderUtilities
             return true;
         }
 
-        LOGGER.debug(
-                "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                + "begin with a case-insensitive 'NWM_' designation.",
-                dataSource );
+        LOGGER.debug( "Failed to identify data source {} as a NWM vector source because the interface shorthand did "
+                      + "not begin with a case-insensitive 'NWM_' designation.",
+                      dataSource );
 
         return false;
     }
@@ -1015,6 +1035,171 @@ public class ReaderUtilities
                                      + ".",
                                      e );
         }
+    }
+
+    /**
+     * Parses an instant from a formatted date and time string.
+     * @param date the date
+     * @param time the time in UTC
+     * @param offset the time zone offset
+     * @return the instant
+     */
+
+    public static Instant parseInstant( String date, String time, ZoneOffset offset )
+    {
+        LocalDate localDate = LocalDate.parse( date );
+        LocalTime localTime = LocalTime.parse( time );
+        LocalDateTime localDateTime = LocalDateTime.of( localDate, localTime );
+        return localDateTime.toInstant( offset );
+    }
+
+    /**
+     * Translates a {@link TimeSeriesHeader} into a {@link TimeSeriesMetadata}.
+     *
+     * @param header the header
+     * @param zoneOffset the time zone offset
+     * @return the metadata
+     */
+
+    public static TimeSeriesMetadata getTimeSeriesMetadataFromHeader( TimeSeriesHeader header,
+                                                                      ZoneOffset zoneOffset )
+    {
+        Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes =
+                ReaderUtilities.getReferenceTimesFromHeader( header, zoneOffset );
+
+        String locationWkt = ReaderUtilities.getWktFromHeader( header );
+        Geometry geometry = MessageUtilities.getGeometry( header.locationId(),
+                                                          header.locationDescription(),
+                                                          null,
+                                                          locationWkt );
+        Feature feature = Feature.of( geometry );
+
+        TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
+        Duration scalePeriod = Duration.ofMillis( 1 );
+        if ( !"instantaneous".equalsIgnoreCase( header.type() ) )
+        {
+            Duration timeStep = ReaderUtilities.getTimeStep( header.timeStepUnit(), header.timeStepMultiplier() );
+            LOGGER.debug( "Detected a time-series with a non-instantaneous time scale. Assuming that the time scale "
+                          + "period is equal to the nominated timestep, which is {}.", timeStep );
+            scalePeriod = timeStep;
+        }
+        TimeScaleOuter timeScale = null;
+        if ( Objects.nonNull( scalePeriod ) )
+        {
+            timeScale = TimeScaleOuter.of( scalePeriod, function );
+        }
+
+        return TimeSeriesMetadata.of( referenceTimes, timeScale, header.parameterId(), feature, header.units() );
+    }
+
+    /**
+     * Parses the time-step from a unit and multiplier.
+     * @param unit the unit
+     * @param multiplier the multiplier, possibly null
+     * @return the time-step
+     * @throws ReadException if the unit and/or multiplier are not correctly formatted
+     */
+
+    private static Duration getTimeStep( String unit, String multiplier )
+    {
+        if ( unit.equalsIgnoreCase( "nonequidistant" ) )
+        {
+            LOGGER.debug( "Discovered a data-source with an irregular time-series, i.e., a "
+                          + "nonequidistant time-step unit. " );
+
+            return null;
+        }
+
+        String unitString = unit.toUpperCase() + "S";
+
+        try
+        {
+            ChronoUnit chronoUnit = ChronoUnit.valueOf( unitString );
+            int amount = Integer.parseInt( multiplier );
+            return Duration.of( amount, chronoUnit );
+        }
+        catch ( NumberFormatException e )
+        {
+            throw new ReadException( "While attempting to read a time-series data source, could not parse the value of "
+                                     + "the time step multiplier associated with one or more time-series. The "
+                                     + "multiplier should be an integer, but was: '"
+                                     + multiplier
+                                     + "'. The time step unit was: '"
+                                     + unit
+                                     + "'." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new ReadException( "While attempting to read a time-series data source, could not parse the value of "
+                                     + "the time step unit associated with one or more time-series. The unit was: '"
+                                     + unit
+                                     + "'. An 'S' was appended to this unit string and interpreted as '"
+                                     + unitString
+                                     + "'." );
+        }
+    }
+
+    /**
+     * Creates a map of reference times from the header.
+     * @param header the header
+     * @param zoneOffset the time zone offset
+     * @return map of reference times
+     */
+    private static Map<ReferenceTime.ReferenceTimeType, Instant> getReferenceTimesFromHeader( TimeSeriesHeader header,
+                                                                                              ZoneOffset zoneOffset )
+    {
+        Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes =
+                new EnumMap<>( ReferenceTime.ReferenceTimeType.class );
+
+        if ( Objects.nonNull( header.forecastDateDate() )
+             && Objects.nonNull( header.forecastDateTime() ) )
+        {
+            Instant t0 =
+                    ReaderUtilities.parseInstant( header.forecastDateDate(), header.forecastDateTime(), zoneOffset );
+            referenceTimes.put( ReferenceTime.ReferenceTimeType.T0, t0 );
+        }
+
+        return Collections.unmodifiableMap( referenceTimes );
+    }
+
+    /**
+     * Creates a wkt from the time-series header.
+     *
+     * @param header the header
+     * @return a wkt string
+     */
+    private static String getWktFromHeader( TimeSeriesHeader header )
+    {
+        String locationWkt = null;
+
+        // When x and y are present, prefer those to lon, lat.
+        // Going to Double back to String seems frivolous, but it validates data.
+        if ( Objects.nonNull( header.x() )
+             && Objects.nonNull( header.y() ) )
+        {
+            StringJoiner wktGeometry = new StringJoiner( " " );
+            wktGeometry.add( "POINT (" );
+            wktGeometry.add( header.x() );
+            wktGeometry.add( header.y() );
+            if ( Objects.nonNull( header.z() ) )
+            {
+                wktGeometry.add( header.z() );
+            }
+            wktGeometry.add( ")" );
+            locationWkt = wktGeometry.toString();
+        }
+        else if ( Objects.nonNull( header.latitude() )
+                  && Objects.nonNull( header.longitude() ) )
+        {
+            StringJoiner wktGeometry = new StringJoiner( " " );
+            wktGeometry.add( "POINT (" );
+            wktGeometry.add( header.longitude() );
+            wktGeometry.add( header.latitude() );
+            wktGeometry.add( ")" );
+            locationWkt = wktGeometry.toString();
+        }
+
+        return locationWkt;
     }
 
     /**

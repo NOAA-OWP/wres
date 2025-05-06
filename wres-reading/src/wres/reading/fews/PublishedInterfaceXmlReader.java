@@ -1094,7 +1094,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         // When x and y are present, prefer those to lon, lat.
         // Going to Double back to String seems frivolous, but it validates data.
-        if ( Objects.nonNull( header.x ) && Objects.nonNull( header.y ) )
+        if ( Objects.nonNull( header.x )
+             && Objects.nonNull( header.y ) )
         {
             StringJoiner wktGeometry = new StringJoiner( " " );
             wktGeometry.add( "POINT (" );
@@ -1125,7 +1126,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * Creates a map of reference times from the header.
      * @param header the header
      * @param zoneOffset the time zone offset
-     * @return a wkt string
+     * @return a map of reference times
      */
     private Map<ReferenceTimeType, Instant> getReferenceTimesFromHeader( TimeSeriesHeader header,
                                                                          ZoneOffset zoneOffset )
