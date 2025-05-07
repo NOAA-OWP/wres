@@ -139,13 +139,13 @@ echo "Building images..."
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
 echo "Building and tagging worker image..."
-worker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
+worker_image_id=$( podman build --format docker --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
 echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 
 # Build and tag the tasker image which solely contains the tasker.
 echo "Building tasker image..."
 pushd wres-tasker
-tasker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker . )
+tasker_image_id=$( podman build --format docker --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker . )
 popd
 
 echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
@@ -153,7 +153,7 @@ echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
 # Build and tag the broker image
 echo "Building broker image..."
 pushd wres-broker
-broker_image_id=$( podman build --format docker -f Poderfile --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker . )
+broker_image_id=$( podman build --format docker --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker . )
 popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
@@ -161,7 +161,7 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 # Build and tag the redis image
 echo "Building redis image..."
 pushd wres-redis
-redis_image_id=$( podman build --format docker -f Poderfile --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis . )
+redis_image_id=$( podman build --format docker --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis . )
 popd
 
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
@@ -169,7 +169,7 @@ echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 # Build and tag the eventsbroker image
 echo "Building events broker image..."
 pushd wres-eventsbroker
-eventsbroker_image_id=$( podman build --format docker -f Poderfile --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker . )
+eventsbroker_image_id=$( podman build --format docker --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker . )
 popd
 
 echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_id"
@@ -177,7 +177,7 @@ echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_
 # Build and tag the graphics image
 echo "Building graphics image..."
 pushd wres-vis
-graphics_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics . )
+graphics_image_id=$( podman build --format docker --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics . )
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
@@ -185,7 +185,7 @@ echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
 # Build and tag the writing image
 echo "Building writing image..."
 pushd wres-writing
-writing_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing . )
+writing_image_id=$( podman build --format docker --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing . )
 popd
 
 echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
