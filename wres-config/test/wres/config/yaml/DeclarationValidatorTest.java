@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -105,7 +104,7 @@ class DeclarationValidatorTest
     void runBeforeEach() throws URISyntaxException
     {
         Source source = SourceBuilder.builder()
-                                     .uri( new URI( "http://foo" ) )
+                                     .uri( new URI( "file://foo" ) )
                                      .build();
 
         this.defaultDataset = DatasetBuilder.builder()
@@ -139,8 +138,12 @@ class DeclarationValidatorTest
                                             .sourceInterface( SourceInterface.WRDS_NWM )
                                             .build();
 
+        Source yetAnotherSource = SourceBuilder.builder()
+                                               .sourceInterface( SourceInterface.WRDS_HEFS )
+                                               .build();
+
         Dataset dataset = DatasetBuilder.builder()
-                                        .sources( List.of( source, anotherSource ) )
+                                        .sources( List.of( source, anotherSource, yetAnotherSource ) )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
@@ -189,6 +192,14 @@ class DeclarationValidatorTest
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "for a 'covariate' dataset "
                                                                                 + "with an interface shorthand of wrds "
                                                                                 + "nwm, which requires the 'variable'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset "
+                                                                                + "with an interface shorthand of wrds "
+                                                                                + "hefs, which requires the 'variable'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'predicted' dataset "
+                                                                                + "with an interface shorthand of wrds "
+                                                                                + "hefs, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) )
 
         );
@@ -379,6 +390,55 @@ class DeclarationValidatorTest
                                                                                 + "and use web services, but the "
                                                                                 + "'valid_dates' were incomplete",
                                                                         StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testNoInterfaceDeclaredForWebServiceResultsInWarning()
+    {
+        Source source = SourceBuilder.builder()
+                                     .uri( URI.create( "http://foo.bar" ) )
+                                     .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
+
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
+
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataset )
+                                                            .build();
+
+        List<CovariateDataset> covariates = List.of( covariate );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .baseline( baseline )
+                                                                        .covariates( covariates )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "'observed' data sources "
+                                                                                + "refers to an HTTP address, but does "
+                                                                                + "not declare a source 'interface'",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "'predicted' data sources "
+                                                                                + "refers to an HTTP address, but does "
+                                                                                + "not declare a source 'interface'",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "'baseline' data sources "
+                                                                                + "refers to an HTTP address, but does "
+                                                                                + "not declare a source 'interface'",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "'covariate' data sources "
+                                                                                + "refers to an HTTP address, but does "
+                                                                                + "not declare a source 'interface'",
+                                                                        StatusLevel.WARN ) )
         );
     }
 
@@ -2072,7 +2132,7 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertEquals( Collections.emptyList(), events );
+        assertTrue( events.isEmpty() );
     }
 
     @Test
@@ -2094,13 +2154,16 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
+        System.out.println( events );
+
         // Two warnings, both of the same type
-        assertAll( () -> assertEquals( 2, events.stream()
-                                                .filter( e -> e.getStatusLevel() == StatusLevel.WARN )
-                                                .count() ),
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "but the 'time_scale' associated with "
+                                                                        + "the 'observed' dataset is undefined",
+                                                                        StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "it is assumed that the dataset has the same time scale "
-                                                                        + "as the evaluation 'time_scale'",
+                                                                        "but the 'time_scale' associated with "
+                                                                        + "the 'predicted' dataset is undefined",
                                                                         StatusLevel.WARN ) ) );
     }
 

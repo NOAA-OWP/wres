@@ -15,6 +15,8 @@ import wres.reading.netcdf.nwm.NwmVectorReader;
 import wres.reading.waterml.WatermlReader;
 import wres.reading.nwis.NwisReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
+import wres.reading.wrds.hefs.WrdsHefsJsonReader;
+import wres.reading.wrds.hefs.WrdsHefsReader;
 import wres.reading.wrds.nwm.WrdsNwmReader;
 import wres.reading.wrds.ahps.WrdsAhpsJsonReader;
 import wres.reading.wrds.nwm.WrdsNwmJsonReader;
@@ -22,9 +24,9 @@ import wres.system.SystemSettings;
 
 /**
  * <p>Factory class that creates time-series readers for a {@link DataSource}.
- * 
+ *
  * <p>TODO: When gridded reading is par with vectors, remove the features cache from this class: #51232.
- * 
+ *
  * @author James Brown
  */
 
@@ -51,6 +53,9 @@ public class TimeSeriesReaderFactory
     /** WRDS NWM JSON reader. */
     private static final WrdsNwmJsonReader WRDS_NWM_JSON_READER = WrdsNwmJsonReader.of();
 
+    /** WRDS HEFS JSON reader. */
+    private static final WrdsHefsJsonReader WRDS_HEFS_JSON_READER = WrdsHefsJsonReader.of();
+
     /** Pair declaration, which is used to build some readers. */
     private final EvaluationDeclaration declaration;
 
@@ -76,7 +81,7 @@ public class TimeSeriesReaderFactory
 
     /**
      * Returns a concrete reader for the prescribed data source.
-     * 
+     *
      * @param dataSource the data source, required
      * @return a reader
      * @throws NullPointerException if the data source is null
@@ -143,6 +148,21 @@ public class TimeSeriesReaderFactory
                               + "NWM time-series from a source other than WRDS.",
                               dataSource );
                 return WRDS_NWM_JSON_READER;
+            }
+            case JSON_WRDS_HEFS ->
+            {
+                // A web source? If so, assume a WRDS instance.
+                if ( ReaderUtilities.isWebSource( dataSource ) )
+                {
+                    LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
+                                  dataSource );
+                    return WrdsHefsReader.of( this.getDeclaration(), this.systemSettings );
+                }
+                // A reader for WRDS-formatted JSON from HEFS, but not from a WRDS instance
+                LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
+                              + "HEFS time-series from a source other than WRDS.",
+                              dataSource );
+                return WRDS_HEFS_JSON_READER;
             }
             case TARBALL ->
             {

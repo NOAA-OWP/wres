@@ -1,4 +1,4 @@
-package wres.reading.wrds.ahps;
+package wres.reading.wrds.hefs;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -26,10 +26,6 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.X509TrustManager;
-
-import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -38,76 +34,49 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.http.WebClientUtils;
-import wres.reading.PreReadException;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.http.WebClient;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
 /**
- * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the Advanced
- * Hydrologic Prediction Service (AHPS). The service requests are chunked into year ranges for observations or
- * simple ranges, based on the declaration, for forecast sources. The underlying format reader is a
- * {@link WrdsAhpsJsonReader}.
+ * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the Hydrologic
+ * Ensemble Forecast Service (HEFS). The service requests are chunked into simple ranges, based on the declaration.
  *
  * @author James Brown
  */
 
-public class WrdsAhpsReader implements TimeSeriesReader
+public class WrdsHefsReader implements TimeSeriesReader
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsAhpsReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsHefsReader.class );
 
-    /** The underlying format reader for JSON-formatted data from the AHPS service. */
-    private static final WrdsAhpsJsonReader AHPS_READER = WrdsAhpsJsonReader.of();
+    /** Deserializer. */
+    private static final WrdsHefsJsonReader READER = WrdsHefsJsonReader.of();
 
     /** Forward slash character. */
     private static final String SLASH = "/";
 
     /** Message string. */
-    private static final String WRDS_AHPS = "WRDS AHPS";
-
-    /** Custom HttpClient to use */
-    private static final WebClient CUSTOM_WEB_CLIENT;
+    private static final String WRDS_AHPS = "WRDS HEFS";
 
     /** The HTTP response codes considered to represent no data. Is this too broad? Perhaps a 404 only, else a read
      * exception. The problem is that "no data" is routine from the perspective of WRES, but apparently not WRDS, so we
      * get a 404, not a 200. See Redmine issue #116808. The difficulty with such a broad range is that we potentially
      * aggregate buggy requests with no data responses. */
-    private static final IntPredicate NO_DATA_PREDICATE = h -> h >= 400 && h < 500;
+    private static final IntPredicate NO_DATA_PREDICATE = h -> h == 404;
 
     /** The HTTP response codes considered to represent an error to be thrown. */
-    private static final IntPredicate ERROR_RESPONSE_PREDICATE = h -> h >= 500;
+    private static final IntPredicate ERROR_RESPONSE_PREDICATE = h -> h >= 400 && h != 404;
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
     private final EvaluationDeclaration declaration;
 
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
-
-    static
-    {
-        try
-        {
-            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
-            OkHttpClient client = WebClientUtils.defaultTimeoutHttpClient()
-                                                .newBuilder()
-                                                .sslSocketFactory( sslContext.getKey().getSocketFactory(),
-                                                                   sslContext.getRight() )
-                                                .build();
-            CUSTOM_WEB_CLIENT = new WebClient( client );
-        }
-        catch ( PreReadException e )
-        {
-            throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
-                                                   + e.getMessage() );
-        }
-    }
 
     /**
      * @see #of(EvaluationDeclaration, SystemSettings)
@@ -116,9 +85,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * @throws NullPointerException if the systemSettings is null
      */
 
-    public static WrdsAhpsReader of( SystemSettings systemSettings )
+    public static WrdsHefsReader of( SystemSettings systemSettings )
     {
-        return new WrdsAhpsReader( null, systemSettings );
+        return new WrdsHefsReader( null, systemSettings );
     }
 
     /**
@@ -128,11 +97,11 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * @throws NullPointerException if either input is null
      */
 
-    public static WrdsAhpsReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    public static WrdsHefsReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
         Objects.requireNonNull( declaration );
 
-        return new WrdsAhpsReader( declaration, systemSettings );
+        return new WrdsHefsReader( declaration, systemSettings );
     }
 
     @Override
@@ -143,17 +112,17 @@ public class WrdsAhpsReader implements TimeSeriesReader
         // Chunk the requests if needed
         if ( Objects.nonNull( this.getDeclaration() ) )
         {
-            LOGGER.debug( "Preparing requests for WRDS AHPS time-series that chunk the time-series data by feature and "
+            LOGGER.debug( "Preparing requests for WRDS HEFS time-series that chunk the time-series data by feature and "
                           + "time range." );
             return this.read( dataSource, this.getDeclaration() );
         }
 
-        LOGGER.debug( "Preparing a request to WRDS for AHPS time-series without any chunking of the data." );
+        LOGGER.debug( "Preparing a request to WRDS for HEFS time-series without any chunking of the data." );
         InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
                                                                          NO_DATA_PREDICATE,
                                                                          ERROR_RESPONSE_PREDICATE,
                                                                          null,
-                                                                         CUSTOM_WEB_CLIENT );
+                                                                         null );
 
         if ( Objects.isNull( stream ) )
         {
@@ -173,10 +142,10 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         this.validateSource( dataSource );
 
-        LOGGER.debug( "Discovered an existing stream, assumed to be from a WRDS AHPS service instance. Passing through "
-                      + "to an underlying WRDS AHPS JSON reader." );
+        LOGGER.debug( "Discovered an existing stream, assumed to be from a WRDS HEFS service instance. Deserializing "
+                      + "the stream." );
 
-        return AHPS_READER.read( dataSource, stream );
+        return READER.read( dataSource, stream );
     }
 
     /**
@@ -217,17 +186,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
         Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges;
-        if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
-        {
-            dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
-        }
-        else
-        {
-            dateRanges = new HashSet<>();
-            Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
-            dateRanges.add( range );
-        }
+        Set<Pair<Instant, Instant>> dateRanges = new HashSet<>();
+        Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
+        dateRanges.add( range );
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -310,13 +271,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
                     mutableChunks.remove( nextChunk );
 
                     // Create the inner data source for the chunk
-                    URI nextUri = this.getUriForChunk( dataSource.getSource()
-                                                                 .uri(),
+                    URI nextUri = this.getUriForChunk( dataSource,
                                                        nextChunk.getRight(),
-                                                       nextChunk.getLeft(),
-                                                       dataSource.getSource()
-                                                                 .parameters(),
-                                                       ReaderUtilities.isWrdsObservedSource( dataSource ) );
+                                                       nextChunk.getLeft() );
 
                     DataSource innerSource =
                             DataSource.of( dataSource.getDisposition(),
@@ -385,7 +342,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                                                                                    NO_DATA_PREDICATE,
                                                                                                    ERROR_RESPONSE_PREDICATE,
                                                                                                    null,
-                                                                                                   CUSTOM_WEB_CLIENT ) )
+                                                                                                   null ) )
                        {
                            if ( Objects.isNull( inputStream ) )
                            {
@@ -395,7 +352,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                return List.of();
                            }
 
-                           try ( Stream<TimeSeriesTuple> seriesStream = AHPS_READER.read( dataSource, inputStream ) )
+                           try ( Stream<TimeSeriesTuple> seriesStream = READER.read( dataSource, inputStream ) )
                            {
                                return seriesStream.toList(); // Terminal
                            }
@@ -410,10 +367,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     private void validateSource( DataSource dataSource )
     {
-        if ( !( ReaderUtilities.isWrdsAhpsSource( dataSource )
-                || ReaderUtilities.isWrdsObservedSource( dataSource ) ) )
+        if ( !( ReaderUtilities.isWrdsHefsSource( dataSource ) ) )
         {
-            throw new ReadException( "Expected a WRDS AHPS data source, but got: " + dataSource + "." );
+            throw new ReadException( "Expected a WRDS HEFS data source, but got: " + dataSource + "." );
         }
     }
 
@@ -421,22 +377,19 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Gets a URI for given date range and feature.
      *
      * <p>Expecting a wrds URI like this:
-     * <a href="http://redacted/api/v1/forecasts/streamflow/ahps">http://redacted/api/v1/forecasts/streamflow/ahps</a></p>
-     * @param baseUri the base URI
+     * <a href="https://api.water.noaa.gov/hefs/v1/ensembles">https://api.water.noaa.gov/hefs/v1/ensembles</a></p>
+     * @param dataSource the data source
      * @param range the range of dates (from left to right)
      * @param nwsLocationId the feature for which to get data
-     * @param additionalParameters the additional parameters, if any
-     * @param observed true for observations, false for AHPS forecasts
      * @return a URI suitable to get the data from WRDS API
      * @throws ReadException if the URI could not be constructed
      */
 
-    private URI getUriForChunk( URI baseUri,
+    private URI getUriForChunk( DataSource dataSource,
                                 Pair<Instant, Instant> range,
-                                String nwsLocationId,
-                                Map<String, String> additionalParameters,
-                                boolean observed )
+                                String nwsLocationId )
     {
+        URI baseUri = dataSource.getUri();
         String basePath = baseUri.getPath();
 
         // Tolerate either a slash at end or not.
@@ -445,75 +398,58 @@ public class WrdsAhpsReader implements TimeSeriesReader
             basePath = basePath + SLASH;
         }
 
-        // Add nws_lid to the end of the path.
-        // TODO Remove the outer if-check once the old, 1.1 API is gone.
-        if ( !basePath.contains( "v1.1" )
-             && !basePath.endsWith( "nws_lid/" ) )
-        {
-            basePath = basePath + "nws_lid/";
-        }
-
-        Map<String, String> wrdsParameters = this.createWrdsAhpsUrlParameters( range,
-                                                                               additionalParameters,
-                                                                               observed );
-        String pathWithLocation = basePath
-                                  + nwsLocationId;
+        Map<String, String> additionalParameters = dataSource.getSource()
+                                                             .parameters();
+        Map<String, String> wrdsParameters = this.createWrdsHefsUrlParameters( nwsLocationId,
+                                                                               dataSource.getVariable()
+                                                                                         .name(),
+                                                                               range,
+                                                                               additionalParameters );
         URIBuilder uriBuilder = new URIBuilder( baseUri );
-        uriBuilder.setPath( pathWithLocation );
+        uriBuilder.setPath( basePath );
 
-        URI uriWithLocation;
+        URI adjustedUri;
         try
         {
-            uriWithLocation = uriBuilder.build();
+            adjustedUri = uriBuilder.build();
         }
         catch ( URISyntaxException use )
         {
             throw new ReadException( "Could not create a URI from "
                                      + baseUri
                                      + " and "
-                                     + pathWithLocation
+                                     + basePath
                                      + ".",
                                      use );
         }
 
-        return ReaderUtilities.getUriWithParameters( uriWithLocation,
+        return ReaderUtilities.getUriWithParameters( adjustedUri,
                                                      wrdsParameters );
     }
 
     /**
      * Specific to WRDS API, get date range url parameters
+     * @param nwsLocationId the feature for which to get data
+     * @param parameterId the variable name
      * @param dateRange the date range to set parameters for
      * @param additionalParameters the additional parameters, if any
-     * @param observed is true if the target dataset contains observations
      * @return the key/value parameters
      */
 
-    private Map<String, String> createWrdsAhpsUrlParameters( Pair<Instant, Instant> dateRange,
-                                                             Map<String, String> additionalParameters,
-                                                             boolean observed )
+    private Map<String, String> createWrdsHefsUrlParameters( String nwsLocationId,
+                                                             String parameterId,
+                                                             Pair<Instant, Instant> dateRange,
+                                                             Map<String, String> additionalParameters )
     {
         Map<String, String> urlParameters = new HashMap<>( 2 );
 
-        // Set the proj field, allowing for a user to override it with a URL
-        // parameter, which is handled next.
-        urlParameters.put( "proj", ReaderUtilities.DEFAULT_WRDS_PROJ );
-
         // Caller-supplied additional parameters are lower precedence, put first
         urlParameters.putAll( additionalParameters );
+        urlParameters.put( "location_id", nwsLocationId );
+        urlParameters.put( "parameter_id", parameterId );
 
-        String timeTag = "issuedTime";
-        if ( observed )
-        {
-            timeTag = "validTime";
-        }
-
-        urlParameters.put( timeTag,
-                           "[" + dateRange.getLeft()
-                                          .toString()
-                           + ","
-                           + dateRange.getRight()
-                                      .toString()
-                           + "]" );
+        LOGGER.debug( "Currently, the WRDS HEFS service does not support chunking by date range. The following date "
+                      + "range was supplied, but will be ignored: {}", dateRange );
 
         return Collections.unmodifiableMap( urlParameters );
     }
@@ -526,7 +462,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private WrdsAhpsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    private WrdsHefsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
         Objects.requireNonNull( systemSettings );
 

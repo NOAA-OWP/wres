@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -24,12 +25,14 @@ import java.util.function.Function;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +42,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
@@ -52,10 +56,15 @@ import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -1726,4 +1735,171 @@ class ReaderUtilitiesTest
                    () -> assertNull( ReaderUtilities.getTimeScaleFromUri( unknown ) ),
                    () -> assertNull( ReaderUtilities.getTimeScaleFromUri( null ) ) );
     }
+
+    @Test
+    void getSimpleRange()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        List<Source> sources = List.of( source );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( sources )
+                                                .type( DataType.OBSERVATIONS )
+                                                .build();
+        Dataset forecastDataset = DatasetBuilder.builder()
+                                                .sources( sources )
+                                                .type( DataType.ENSEMBLE_FORECASTS )
+                                                .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-03-01T00:00:00Z" ) )
+                                                   .build();
+        EvaluationDeclaration forecastDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                .left( observedDataset )
+                                                                                .right( forecastDataset )
+                                                                                .referenceDates( interval )
+                                                                                .build();
+        EvaluationDeclaration observedDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                .left( observedDataset )
+                                                                                .right( forecastDataset )
+                                                                                .validDates( interval )
+                                                                                .build();
+        DataSource observedDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                                       source,
+                                                       observedDataset,
+                                                       List.of(),
+                                                       URI.create( "http://foo.bar" ),
+                                                       DatasetOrientation.LEFT,
+                                                       null );
+        DataSource forecastDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                                       source,
+                                                       forecastDataset,
+                                                       List.of(),
+                                                       URI.create( "http://foo.bar" ),
+                                                       DatasetOrientation.RIGHT,
+                                                       null );
+        Pair<Instant, Instant> expected = Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                                                   Instant.parse( "2023-03-01T00:00:00Z" ) );
+        assertAll( () -> assertEquals( expected,
+                                       ReaderUtilities.getSimpleRange( observedDeclaration, observedDataSource ) ),
+                   () -> assertEquals( expected,
+                                       ReaderUtilities.getSimpleRange( forecastDeclaration, forecastDataSource ) ) );
+    }
+
+    @Test
+    void getSimpleRangeThrowsReadExceptionWhenReferenceDatesMissing()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        List<Source> sources = List.of( source );
+        Dataset forecastDataset = DatasetBuilder.builder()
+                                                .sources( sources )
+                                                .type( DataType.ENSEMBLE_FORECASTS )
+                                                .build();
+        EvaluationDeclaration forecastDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                .left( forecastDataset )
+                                                                                .right( forecastDataset )
+                                                                                .build();
+        DataSource forecastDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                                       source,
+                                                       forecastDataset,
+                                                       List.of(),
+                                                       URI.create( "http://foo.bar" ),
+                                                       DatasetOrientation.RIGHT,
+                                                       null );
+
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.getSimpleRange( forecastDeclaration,
+                                                                                   forecastDataSource ) );
+
+        assertTrue( actual.getMessage()
+                          .contains( "missing 'reference_dates', which is not allowed" ) );
+    }
+
+    @Test
+    void getSimpleRangeThrowsReadExceptionWhenValidDatesMissing()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        List<Source> sources = List.of( source );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( sources )
+                                                .type( DataType.OBSERVATIONS )
+                                                .build();
+        EvaluationDeclaration observedDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                .left( observedDataset )
+                                                                                .right( observedDataset )
+                                                                                .build();
+        DataSource observedDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                                       source,
+                                                       observedDataset,
+                                                       List.of(),
+                                                       URI.create( "http://foo.bar" ),
+                                                       DatasetOrientation.LEFT,
+                                                       null );
+
+        ReadException actual = assertThrows( ReadException.class,
+                                             () -> ReaderUtilities.getSimpleRange( observedDeclaration,
+                                                                                   observedDataSource ) );
+
+        assertTrue( actual.getMessage()
+                          .contains( "missing 'valid_dates', which is not allowed" ) );
+    }
+
+    @Test
+    void testIsWrdsHefsSourceWithExplicitInterface()
+    {
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.WRDS_HEFS )
+                                     .build();
+        List<Source> sources = List.of( source );
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( sources )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        DataSource dataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                               source,
+                                               dataset,
+                                               List.of(),
+                                               URI.create( "http://foo.bar" ),
+                                               DatasetOrientation.RIGHT,
+                                               null );
+
+        Source sourceTwo = SourceBuilder.builder()
+                                        .sourceInterface( SourceInterface.WRDS_AHPS )
+                                        .build();
+        DataSource dataSourceTwo = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                                  sourceTwo,
+                                                  dataset,
+                                                  List.of(),
+                                                  URI.create( "http://foo.bar" ),
+                                                  DatasetOrientation.RIGHT,
+                                                  null );
+
+        assertAll( () -> assertTrue( ReaderUtilities.isWrdsHefsSource( dataSource ) ),
+                   () -> assertFalse( ReaderUtilities.isWrdsHefsSource( dataSourceTwo ) ) );
+    }
+
+    @Test
+    void testIsWrdsHefsSourceWithImplicitInterface()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        List<Source> sources = List.of( source );
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( sources )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        DataSource dataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
+                                               source,
+                                               dataset,
+                                               List.of(),
+                                               URI.create( "http://foo.bar/hefs/" ),
+                                               DatasetOrientation.RIGHT,
+                                               null );
+
+        assertTrue( ReaderUtilities.isWrdsHefsSource( dataSource ) );
+    }
+
 }

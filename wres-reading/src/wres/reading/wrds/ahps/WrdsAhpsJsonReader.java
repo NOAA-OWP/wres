@@ -119,7 +119,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     }
 
     /**
-     * Reads WaterML data from a stream.
+     * Reads time-series data from a stream.
      * @param dataSource the data source
      * @param inputStream the data stream
      * @return the time-series streams

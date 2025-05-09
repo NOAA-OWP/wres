@@ -3,14 +3,9 @@ package wres.reading.wrds.hefs;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -20,22 +15,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.types.Ensemble;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesHeader;
 
 /**
- * Deserializes a collection of results from a request to the Water Resource Data Service for the Hydrologic Ensemble
- * Forecast Service.
+ * Deserializes a single trace from an ensemble forecast contained in a response from the Water Resources Data Service
+ * (WRDS) for the Hydrologic Ensemble Forecast Service.
  *
  * @author James Brown
  */
-class HefsTimeSeriesDeserializer extends JsonDeserializer<List<TimeSeries<Ensemble>>>
+class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( HefsTimeSeriesDeserializer.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( HefsTraceDeserializer.class );
 
     private static final String PARAMETER_ID = "parameter_id";
     private static final String ENSEMBLE_ID = "ensemble_id";
@@ -47,61 +42,21 @@ class HefsTimeSeriesDeserializer extends JsonDeserializer<List<TimeSeries<Ensemb
     private static final String LONG_NAME = "long_name";
 
     @Override
-    public List<TimeSeries<Ensemble>> deserialize( JsonParser jsonParser,
-                                                   DeserializationContext deserializationContext ) throws IOException
+    public HefsTrace deserialize( JsonParser jsonParser,
+                                  DeserializationContext deserializationContext ) throws IOException
     {
         ObjectMapper mapper = ( ObjectMapper ) jsonParser.getCodec();
         JsonNode node = mapper.readTree( jsonParser );
 
-        Map<TimeSeriesHeader, SortedMap<String, SortedMap<Instant, Double>>> ensembleTraces = new HashMap<>();
+        SortedSet<Event<Double>> events = this.readEvents( node );
+        TimeSeriesHeader header = this.readHeader( node );
 
-        int size = node.size();
+        LOGGER.debug( "Read a time-series with the following header: {}.", header );
 
-        LOGGER.debug( "Detected {} traces to read, which will be read and composed into ensemble time-series", size );
+        TimeSeriesMetadata metadata = ReaderUtilities.getTimeSeriesMetadataFromHeader( header, ZoneOffset.UTC );
+        TimeSeries<Double> timeSeries = TimeSeries.of( metadata, events );
 
-        for ( int i = 0; i < size; i++ )
-        {
-            JsonNode nextNode = node.get( i );
-            SortedMap<Instant, Double> events = this.readEvents( nextNode );
-
-            TimeSeriesHeader metadata = this.readMetadata( nextNode );
-
-            LOGGER.debug( "Read a time-series with the following metadata: {}.", metadata );
-
-            SortedMap<String, SortedMap<Instant, Double>> nextTraceMap = ensembleTraces.get( metadata );
-
-            // Create a new map
-            if ( Objects.isNull( nextTraceMap ) )
-            {
-                nextTraceMap = new TreeMap<>();
-                ensembleTraces.put( metadata, nextTraceMap );
-            }
-
-            nextTraceMap.put( metadata.ensembleMemberIndex(), events );
-        }
-
-        // Create some time-series metadata for each metadata instance and then compose the ensemble time-series
-        List<TimeSeries<Ensemble>> results = new ArrayList<>();
-        for ( Map.Entry<TimeSeriesHeader, SortedMap<String, SortedMap<Instant, Double>>> nextEntry : ensembleTraces.entrySet() )
-        {
-            TimeSeriesHeader nextMetadata = nextEntry.getKey();
-            TimeSeriesMetadata timeSeriesMetadata =
-                    ReaderUtilities.getTimeSeriesMetadataFromHeader( nextMetadata, ZoneOffset.UTC );
-            TimeSeries<Ensemble> nextSeries =
-                    ReaderUtilities.transformEnsemble( timeSeriesMetadata, nextEntry.getValue(), -1, null );
-            results.add( nextSeries );
-        }
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Finished reading {} time-series, which contained {} traces and each trace contained {} "
-                          + "events.",
-                          results.size(),
-                          size,
-                          results.stream().mapToLong( n -> n.getEvents().size() ).sum() );
-        }
-
-        return Collections.unmodifiableList( results );
+        return new HefsTrace( header, timeSeries );
     }
 
     /**
@@ -111,9 +66,9 @@ class HefsTimeSeriesDeserializer extends JsonDeserializer<List<TimeSeries<Ensemb
      * @return the events
      */
 
-    private SortedMap<Instant, Double> readEvents( JsonNode resultNode )
+    private SortedSet<Event<Double>> readEvents( JsonNode resultNode )
     {
-        SortedMap<Instant, Double> events = new TreeMap<>();
+        SortedSet<Event<Double>> events = new TreeSet<>();
         if ( resultNode.has( "events" ) )
         {
             JsonNode eventsNode = resultNode.get( "events" );
@@ -128,12 +83,13 @@ class HefsTimeSeriesDeserializer extends JsonDeserializer<List<TimeSeries<Ensemb
                     double value = nextEvent.get( "value" ).doubleValue();
 
                     Instant instant = ReaderUtilities.parseInstant( date, time, ZoneOffset.UTC );
-                    events.put( instant, value );
+                    Event<Double> event = Event.of( instant, value );
+                    events.add( event );
                 }
             }
         }
 
-        return Collections.unmodifiableSortedMap( events );
+        return Collections.unmodifiableSortedSet( events );
     }
 
     /**
@@ -143,7 +99,7 @@ class HefsTimeSeriesDeserializer extends JsonDeserializer<List<TimeSeries<Ensemb
      * @return the metadata
      */
 
-    private TimeSeriesHeader readMetadata( JsonNode resultNode )
+    private TimeSeriesHeader readHeader( JsonNode resultNode )
     {
         TimeSeriesHeader.TimeSeriesHeaderBuilder builder = this.readGeospatialMetadata( resultNode ).toBuilder();
 

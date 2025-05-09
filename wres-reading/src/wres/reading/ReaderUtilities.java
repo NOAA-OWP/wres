@@ -502,6 +502,39 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
+     * @return whether the source is a WRDS HEFS source
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isWrdsHefsSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.getUri();
+        SourceInterface interfaceShortHand = source.getSource()
+                                                   .sourceInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand == SourceInterface.WRDS_HEFS;
+        }
+
+        boolean isHefs = uri.getPath()
+                            .toLowerCase()
+                            .contains( "/hefs/" );
+
+        LOGGER.debug( "When attempting to detect whether the supplied data source refers to the WRDS HEFS "
+                      + "service, could not detect an explicit interface shorthand of {}, so looked for a URI that "
+                      + "contains '/hefs/', which was: {}. The data source is: {}.",
+                      SourceInterface.WRDS_HEFS,
+                      isHefs,
+                      source );
+
+        // Fallback for unspecified interface.
+        return isHefs;
+    }
+
+    /**
+     * @param source the data source
      * @return whether the source is a WRDS NWM source
      * @throws NullPointerException if the source is null
      */
@@ -534,9 +567,10 @@ public class ReaderUtilities
         SourceInterface interfaceType = dataSource.getSource()
                                                   .sourceInterface();
 
-        if ( Objects.nonNull( interfaceType ) && interfaceType.name()
-                                                              .toLowerCase()
-                                                              .startsWith( "nwm_" ) )
+        if ( Objects.nonNull( interfaceType )
+             && interfaceType.name()
+                             .toLowerCase()
+                             .startsWith( "nwm_" ) )
         {
             LOGGER.debug( "Identified data source {} as a NWM vector source.", dataSource );
             return true;
@@ -577,6 +611,57 @@ public class ReaderUtilities
                     || uri.getScheme()
                           .toLowerCase()
                           .startsWith( "cdms3" ) );
+    }
+
+    /**
+     * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
+     * time range.
+     *
+     * @param declaration the declaration
+     * @param dataSource the data source
+     * @return a simple range
+     */
+    public static Pair<Instant, Instant> getSimpleRange( EvaluationDeclaration declaration,
+                                                         DataSource dataSource )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getContext() );
+
+        // Forecast data?
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
+
+        if ( ( isForecast
+               && Objects.isNull( declaration.referenceDates() ) ) )
+        {
+            throw new ReadException( "While attempting to read forecasts from a web service, discovered an evaluation "
+                                     + "with missing 'reference_dates', which is not allowed. Please declare "
+                                     + "'reference_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data." );
+        }
+        else if ( !isForecast
+                  && Objects.isNull( declaration.validDates() ) )
+        {
+            throw new ReadException( "While attempting to read a non-forecast data source from a web service, "
+                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
+                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data. The data type was: "
+                                     + dataSource.getContext()
+                                                 .type()
+                                     + "." );
+        }
+
+        // When dates are present, both bookends are present because this was validated on construction of the reader
+        TimeInterval dates = declaration.validDates();
+
+        if ( isForecast )
+        {
+            dates = declaration.referenceDates();
+        }
+
+        Instant earliest = dates.minimum();
+        Instant latest = dates.maximum();
+        return Pair.of( earliest, latest );
     }
 
     /**

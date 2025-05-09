@@ -22,6 +22,9 @@ public enum SourceInterface
     /** wrds ahps. */
     @JsonProperty( "wrds ahps" )
     WRDS_AHPS( Set.of( DataType.SINGLE_VALUED_FORECASTS, DataType.OBSERVATIONS ), FeatureAuthority.NWS_LID ),
+    /** wrds hefs. */
+    @JsonProperty( "wrds hefs" )
+    WRDS_HEFS( Set.of( DataType.ENSEMBLE_FORECASTS ), FeatureAuthority.NWS_LID ),
     /** wrds obs. */
     @JsonProperty( "wrds obs" )
     WRDS_OBS( Set.of( DataType.OBSERVATIONS ), FeatureAuthority.NWS_LID ),
