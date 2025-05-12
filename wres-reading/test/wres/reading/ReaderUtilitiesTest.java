@@ -1902,4 +1902,26 @@ class ReaderUtilitiesTest
         assertTrue( ReaderUtilities.isWrdsHefsSource( dataSource ) );
     }
 
+    @Test
+    void testGetMissingValueDouble()
+    {
+        TimeSeriesHeader one = TimeSeriesHeader.builder().missingValue( "null" )
+                                               .build();
+        TimeSeriesHeader two = TimeSeriesHeader.builder().missingValue( "NULL" )
+                                               .build();
+        TimeSeriesHeader three = TimeSeriesHeader.builder()
+                                                 .build();
+        TimeSeriesHeader four = TimeSeriesHeader.builder()
+                                                .missingValue( "NaN" )
+                                                .build();
+        TimeSeriesHeader five = TimeSeriesHeader.builder().missingValue( "23.5" )
+                                                .build();
+
+        assertAll( () -> assertEquals( Double.NaN, ReaderUtilities.getMissingValueDouble( one ) ),
+                   () -> assertEquals( Double.NaN, ReaderUtilities.getMissingValueDouble( two ) ),
+                   () -> assertEquals( Double.NaN, ReaderUtilities.getMissingValueDouble( three ) ),
+                   () -> assertEquals( Double.NaN, ReaderUtilities.getMissingValueDouble( four ) ),
+                   () -> assertEquals( 23.5, ReaderUtilities.getMissingValueDouble( five ) ) );
+    }
+
 }

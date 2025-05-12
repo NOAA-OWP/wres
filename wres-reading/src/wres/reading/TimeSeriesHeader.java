@@ -29,6 +29,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * @param z the station Z coordinate
  * @param latitude the station latitude
  * @param longitude the station longitude
+ * @param missingValue the missing value identifier
+ * @param locationName the location name
+ * @param locationLongName a long name for the location
  */
 
 @Builder( toBuilder = true )
@@ -49,7 +52,10 @@ public record TimeSeriesHeader( String locationId,
                                 String y,
                                 String z,
                                 String latitude,
-                                String longitude )
+                                String longitude,
+                                String missingValue,
+                                String locationName,
+                                String locationLongName )
 {
     /**
      * Only consider a subset of attributes for comparison.
@@ -70,7 +76,10 @@ public record TimeSeriesHeader( String locationId,
                              this.qualifierId(),
                              this.type(),
                              this.timeStepMultiplier(),
-                             this.timeStepUnit() );
+                             this.timeStepUnit(),
+                             this.missingValue(),
+                             this.locationName(),
+                             this.locationLongName() );
     }
 
     @Override
@@ -91,7 +100,10 @@ public record TimeSeriesHeader( String locationId,
                && Objects.equals( this.qualifierId(), otherMetadata.qualifierId() )
                && Objects.equals( this.type(), otherMetadata.type() )
                && Objects.equals( this.timeStepMultiplier(), otherMetadata.timeStepMultiplier() )
-               && Objects.equals( this.timeStepUnit(), otherMetadata.timeStepUnit() );
+               && Objects.equals( this.timeStepUnit(), otherMetadata.timeStepUnit() )
+               && Objects.equals( this.missingValue(), otherMetadata.missingValue() )
+               && Objects.equals( this.locationName(), otherMetadata.locationName() )
+               && Objects.equals( this.locationLongName(), otherMetadata.locationLongName() );
     }
 
     @Override
@@ -116,6 +128,9 @@ public record TimeSeriesHeader( String locationId,
                 .append( "z", this.z() )
                 .append( "latitude", this.latitude() )
                 .append( "longitude", this.longitude() )
+                .append( "missingValue", this.missingValue() )
+                .append( "locationName", this.locationName() )
+                .append( "locationLongName", this.locationLongName() )
                 .toString();
     }
 }

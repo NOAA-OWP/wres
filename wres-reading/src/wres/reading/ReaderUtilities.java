@@ -1139,6 +1139,36 @@ public class ReaderUtilities
     }
 
     /**
+     * Parses the missing value from the {@link TimeSeriesHeader#missingValue()}.
+     *
+     * @param header the header
+     * @return the missing value double
+     * @throws ReadException if the missing value could not be parsed
+     * @throws NullPointerException if the header is missing
+     */
+
+    public static double getMissingValueDouble( TimeSeriesHeader header )
+    {
+        Objects.requireNonNull( header );
+        if ( Objects.isNull( header.missingValue() )
+             || "null".equalsIgnoreCase( header.missingValue() ) )
+        {
+            return Double.NaN;
+        }
+
+        try
+        {
+            return Double.parseDouble( header.missingValue() );
+        }
+        catch ( NumberFormatException e )
+        {
+            throw new ReadException( "The missing value string is not a valid number: "
+                                     + header.missingValue()
+                                     + "." );
+        }
+    }
+
+    /**
      * Translates a {@link TimeSeriesHeader} into a {@link TimeSeriesMetadata}.
      *
      * @param header the header
@@ -1160,18 +1190,25 @@ public class ReaderUtilities
         Feature feature = Feature.of( geometry );
 
         TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
-        Duration scalePeriod = Duration.ofMillis( 1 );
-        if ( !"instantaneous".equalsIgnoreCase( header.type() ) )
+        TimeScaleOuter timeScale;
+
+        if ( "instantaneous".equalsIgnoreCase( header.type() ) )
         {
+            timeScale = TimeScaleOuter.of();
+        }
+        else if ( "nonequidistant".equals( header.timeStepUnit() ) )
+        {
+            LOGGER.debug( "Discovered a time-series without explicit time-scale information and with a non-equidistant "
+                          + "time-step. The time-scale information must be constant, but cannot be determined." );
+            timeScale = null;
+        }
+        else
+        {
+            // See #59438
             Duration timeStep = ReaderUtilities.getTimeStep( header.timeStepUnit(), header.timeStepMultiplier() );
             LOGGER.debug( "Detected a time-series with a non-instantaneous time scale. Assuming that the time scale "
                           + "period is equal to the nominated timestep, which is {}.", timeStep );
-            scalePeriod = timeStep;
-        }
-        TimeScaleOuter timeScale = null;
-        if ( Objects.nonNull( scalePeriod ) )
-        {
-            timeScale = TimeScaleOuter.of( scalePeriod, function );
+            timeScale = TimeScaleOuter.of( timeStep, function );
         }
 
         return TimeSeriesMetadata.of( referenceTimes, timeScale, header.parameterId(), feature, header.units() );
