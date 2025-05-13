@@ -7,20 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.DateTimeException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
-import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,8 +34,6 @@ import com.sun.xml.fastinfoset.stax.StAXDocumentParser; // NOSONAR
 
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.PreReadException;
@@ -49,12 +41,9 @@ import wres.reading.DataSource;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeSeriesHeader;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.statistics.MessageUtilities;
-import wres.statistics.generated.Geometry;
-import wres.statistics.generated.TimeScale.TimeScaleFunction;
-import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.xml.XMLHelper;
 
 /**
@@ -410,7 +399,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         {
             reader.next();
 
-            if ( reader.isEndElement() && reader.getLocalName().equalsIgnoreCase( "series" ) )
+            if ( reader.isEndElement()
+                 && reader.getLocalName()
+                          .equalsIgnoreCase( "series" ) )
             {
                 break;
             }
@@ -421,13 +412,13 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 if ( localName.equalsIgnoreCase( HEADER ) )
                 {
                     // This may complete an earlier time-series
-                    returnMe = this.parseHeader( reader,
-                                                 dataSource,
-                                                 traceValues,
-                                                 currentTraceName,
-                                                 currentTimeSeriesMetadata,
-                                                 zoneOffset,
-                                                 missingValue );
+                    returnMe = this.parseHeaderAndFinishTimeSeries( reader,
+                                                                    dataSource,
+                                                                    traceValues,
+                                                                    currentTraceName,
+                                                                    currentTimeSeriesMetadata,
+                                                                    zoneOffset,
+                                                                    missingValue );
                 }
                 else if ( localName.equalsIgnoreCase( "event" ) )
                 {
@@ -511,12 +502,12 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @param header the existing header with ingested information
      * @param dataSource the data source
      */
-    private void setMeasurementUnit( TimeSeriesHeader header, DataSource dataSource )
+    private TimeSeriesHeader setMeasurementUnit( TimeSeriesHeader header, DataSource dataSource )
     {
-        String finalUnit = header.unitName;
+        String finalUnit = header.units();
 
         // See #126661
-        if ( Objects.isNull( header.unitName ) )
+        if ( Objects.isNull( header.units() ) )
         {
             // The unit may be declared for this source or for the overall dataset
             String unit = dataSource.getSource()
@@ -550,7 +541,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             String declaredUnit = dataSource.getSource()
                                             .unit();
             if ( Objects.nonNull( declaredUnit )
-                 && !declaredUnit.equals( header.unitName ) )
+                 && !declaredUnit.equals( header.units() ) )
             {
                 LOGGER.warn( "The declared 'unit' for the data source at '{}' was {}, which does not match "
                              + "the 'units' of {} for a time-series within the source. It is best not to declare "
@@ -559,11 +550,45 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                              + "ignored.",
                              dataSource.getUri(),
                              declaredUnit,
-                             header.unitName );
+                             header.units() );
             }
         }
 
-        header.unitName = finalUnit;
+        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = header.toBuilder();
+
+        return builder.units( finalUnit )
+                      .build();
+    }
+
+    /**
+     * Sets the location description from the available information in the time-series header.
+     * @param header the header
+     * @return the adjusted header
+     */
+
+    private TimeSeriesHeader setLocationDescription( TimeSeriesHeader header )
+    {
+        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = header.toBuilder();
+
+        if ( header.locationName() != null )
+        {
+            builder.locationDescription( header.locationName() );
+        }
+
+        if ( header.locationLongName() != null )
+        {
+            // Append the long name to description when already set with station
+            if ( header.locationDescription() != null )
+            {
+                builder.locationDescription( header.locationDescription() + " " + header.locationLongName() );
+            }
+            else
+            {
+                builder.locationDescription( header.locationLongName() );
+            }
+        }
+
+        return builder.build();
     }
 
     /**
@@ -671,7 +696,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     }
 
     /**
-     * Interprets the information within PIXML "header" tags and returns a time-series if the last one is complete.
+     * Interprets the information within a PI-XML "header" tags and returns a time-series if the last one is complete.
      * @param reader the reader positioned at the "header" tag
      * @param dataSource the data source
      * @param traceValues the trace values
@@ -683,37 +708,23 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @throws XMLStreamException if the stream reading fails for any reason
      */
 
-    private TimeSeriesTuple parseHeader( XMLStreamReader reader,
-                                         DataSource dataSource,
-                                         SortedMap<String, SortedMap<Instant, Double>> traceValues,
-                                         AtomicReference<String> currentTraceName,
-                                         AtomicReference<TimeSeriesMetadata> currentTimeSeriesMetadata,
-                                         ZoneOffset zoneOffset,
-                                         AtomicDouble missingValue )
+    private TimeSeriesTuple parseHeaderAndFinishTimeSeries( XMLStreamReader reader,
+                                                            DataSource dataSource,
+                                                            SortedMap<String, SortedMap<Instant, Double>> traceValues,
+                                                            AtomicReference<String> currentTraceName,
+                                                            AtomicReference<TimeSeriesMetadata> currentTimeSeriesMetadata,
+                                                            ZoneOffset zoneOffset,
+                                                            AtomicDouble missingValue )
             throws XMLStreamException
     {
         TimeSeriesHeader header = this.getTimeSeriesHeader( reader, dataSource );
-
-        TimeScaleOuter scale = TimeScaleOuter.of( header.scalePeriod, header.scaleFunction );
-        Map<ReferenceTimeType, Instant> referenceTimes = this.getReferenceTimesFromHeader( header, zoneOffset );
-        String locationWkt = this.getWktFromHeader( header );
-        Geometry geometry = MessageUtilities.getGeometry( header.locationName,
-                                                          header.locationDescription,
-                                                          null,
-                                                          locationWkt );
-        Feature feature = Feature.of( geometry );
-
-        TimeSeriesMetadata justParsed = TimeSeriesMetadata.of( referenceTimes,
-                                                               scale,
-                                                               header.variableName,
-                                                               feature,
-                                                               header.unitName );
+        TimeSeriesMetadata metadata = ReaderUtilities.getTimeSeriesMetadataFromHeader( header, zoneOffset );
 
         TimeSeriesTuple returnMe = null;
 
         // If the metadata has changed, we have a new time-series. However, if the metadata has not changed, we have a
         // new time-series if there is no ensemble member label, just a default name
-        boolean metadataEqual = justParsed.equals( currentTimeSeriesMetadata.get() );
+        boolean metadataEqual = metadata.equals( currentTimeSeriesMetadata.get() );
 
         if ( ( !metadataEqual || traceValues.containsKey( DEFAULT_ENSEMBLE_NAME ) ) && !traceValues.isEmpty() )
         {
@@ -722,7 +733,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 LOGGER.debug(
                         "Saving a trace as a standalone time-series because the metadata has changed. The current "
                         + "metadata is {}. The new metadata is: {}.",
-                        justParsed,
+                        metadata,
                         currentTimeSeriesMetadata );
             }
             else if ( LOGGER.isDebugEnabled() )
@@ -745,27 +756,53 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         // Duplicate trace labels are not allowed in the same context/source: #110238
         // Check here to allow for the trace values to be cleared above if starting a new series
-        if ( traceValues.containsKey( header.traceName ) )
+        String traceName = this.getTraceName( header );
+        if ( traceValues.containsKey( traceName ) )
         {
             throw new ReadException( "Found invalid data in PI-XML source '"
                                      + dataSource.getUri()
                                      + "' near line "
-                                     + reader.getLocation().getLineNumber()
+                                     + reader.getLocation()
+                                             .getLineNumber()
                                      + ": discovered two or more time-series with the same ensemble trace "
                                      + "identifier of '"
                                      + currentTraceName
                                      + "', which is not allowed." );
         }
 
-        LOGGER.trace( "Setting the missing value sentinel to {}.", header.missValue );
+        LOGGER.trace( "Setting the missing value sentinel to {}.", header.missingValue() );
 
-        missingValue.set( header.missValue );
-        currentTraceName.set( header.traceName );
+        // Get the missing value
+        double missingValueDouble = ReaderUtilities.getMissingValueDouble( header );
+        missingValue.set( missingValueDouble );
+        currentTraceName.set( traceName );
 
         // Create new trace for each header in PI-XML data.
-        currentTimeSeriesMetadata.set( justParsed );
+        currentTimeSeriesMetadata.set( metadata );
 
         return returnMe;
+    }
+
+    /**
+     * Interprets the trace name, using the {@link TimeSeriesHeader#ensembleMemberIndex()} if available, else the
+     * {@link TimeSeriesHeader#ensembleId()}.
+     *
+     * @param header the header
+     * @return the trace name
+     */
+
+    private String getTraceName( TimeSeriesHeader header )
+    {
+        if ( Objects.nonNull( header.ensembleMemberIndex() ) )
+        {
+            return header.ensembleMemberIndex();
+        }
+        else if ( Objects.nonNull( header.ensembleId() ) )
+        {
+            return header.ensembleId();
+        }
+
+        return DEFAULT_ENSEMBLE_NAME;
     }
 
     /**
@@ -776,12 +813,12 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @throws ReadException if the trace name could not be set due to an invalid header
      */
 
-    private void setEnsembleTraceName( TimeSeriesHeader header,
-                                       XMLStreamReader reader,
-                                       DataSource dataSource )
+    private void validateEnsembleTraceName( TimeSeriesHeader header,
+                                            XMLStreamReader reader,
+                                            DataSource dataSource )
     {
-        if ( Objects.nonNull( header.ensembleMemberId )
-             && Objects.nonNull( header.ensembleMemberIndex ) )
+        if ( Objects.nonNull( header.ensembleId() )
+             && Objects.nonNull( header.ensembleMemberIndex() ) )
         {
             throw new ReadException( "Found invalid data in PI-XML source '"
                                      + dataSource.getUri()
@@ -790,46 +827,11 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                      + ": a trace may contain either an ensembleMemberId or an "
                                      + "ensembleMemberIndex, but not both. Found ensembleMemberId"
                                      + " '"
-                                     + header.ensembleMemberId
+                                     + header.ensembleId()
                                      + "' and ensembleMemberIndex of '"
-                                     + header.ensembleMemberIndex
+                                     + header.ensembleMemberIndex()
                                      + "'. For more details see "
                                      + "https://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
-        }
-
-        if ( Objects.nonNull( header.ensembleMemberId ) )
-        {
-            header.traceName = header.ensembleMemberId;
-        }
-        else if ( Objects.nonNull( header.ensembleMemberIndex ) )
-        {
-            header.traceName = header.ensembleMemberIndex;
-        }
-    }
-
-    /**
-     * Sets the location description.
-     * @param header the time-series header
-     */
-
-    private void setLocationDescription( TimeSeriesHeader header )
-    {
-        if ( header.locationStationName != null )
-        {
-            header.locationDescription = header.locationStationName;
-        }
-
-        if ( header.locationLongName != null )
-        {
-            // Append the long name to description when already set with station
-            if ( header.locationDescription != null )
-            {
-                header.locationDescription += " " + header.locationLongName;
-            }
-            else
-            {
-                header.locationDescription = header.locationLongName;
-            }
         }
     }
 
@@ -844,7 +846,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     private TimeSeriesHeader getTimeSeriesHeader( XMLStreamReader reader, DataSource dataSource )
             throws XMLStreamException
     {
-        TimeSeriesHeader header = new TimeSeriesHeader();
+        TimeSeriesHeader header = TimeSeriesHeader.builder()
+                                                  .build();
 
         //  If the current tag is the header tag itself, move on to the next tag
         if ( reader.isStartElement()
@@ -866,54 +869,23 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
             else if ( reader.isStartElement() )
             {
-                this.updateTimeSeriesHeader( reader, header, dataSource );
+                header = this.updateTimeSeriesHeader( reader, header );
             }
 
             reader.next();
         }
 
         // Update the unit if declared rather than supplied inband
-        this.setMeasurementUnit( header, dataSource );
+        header = this.setMeasurementUnit( header, dataSource );
+
+        header = this.setLocationDescription( header );
 
         // Validate and set the unique trace name
-        this.setEnsembleTraceName( header, reader, dataSource );
-
-        // Set the location description
-        this.setLocationDescription( header );
-
-        // See #59438
-        // For accumulative data, the scalePeriod has not been set, and this is equal
-        // to the timeStep, if available
-        if ( Objects.isNull( header.scalePeriod ) )
-        {
-            header.scalePeriod = header.timeStep;
-        }
+        this.validateEnsembleTraceName( header, reader, dataSource );
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Parsed PI-XML header: scalePeriod={}, scaleFunction={}, timeStep={}, forecastDate={}, "
-                          + "locationName={}, variableName={}, unitName={}, traceName={}, ensembleMemberId={}, "
-                          + "ensembleMemberIndex={}, missingValue={}, locationLongName={}, locationStationName={}, "
-                          + "locationDescription={}, latitude={}, longitude={}, x={}, y={}, z={}.",
-                          header.scalePeriod,
-                          header.scaleFunction,
-                          header.timeStep,
-                          header.forecastDate,
-                          header.locationName,
-                          header.variableName,
-                          header.unitName,
-                          header.traceName,
-                          header.ensembleMemberId,
-                          header.ensembleMemberIndex,
-                          header.missValue,
-                          header.locationLongName,
-                          header.locationStationName,
-                          header.locationDescription,
-                          header.latitude,
-                          header.longitude,
-                          header.x,
-                          header.y,
-                          header.z );
+            LOGGER.debug( "Parsed a time-series header: {}.", header );
         }
 
         return header;
@@ -923,236 +895,126 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * Updates the time-series header
      * @param reader the reader
      * @param h the header
-     * @param dataSource the data source to help with error messaging
      * @throws XMLStreamException if the stream could not be read
      */
 
-    private void updateTimeSeriesHeader( XMLStreamReader reader,
-                                         TimeSeriesHeader h,
-                                         DataSource dataSource )
+    private TimeSeriesHeader updateTimeSeriesHeader( XMLStreamReader reader,
+                                                     TimeSeriesHeader h )
             throws XMLStreamException
     {
         String localName = reader.getLocalName();
 
-        if ( localName.equalsIgnoreCase( "locationId" ) )
+        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = h.toBuilder();
+
+        if ( localName.equalsIgnoreCase( "type" ) )
         {
-            // Change for 5.0: just store location verbatim. No magic.
-            h.locationName = XMLHelper.getXMLText( reader );
+            builder.type( XMLHelper.getXMLText( reader ) );
+        }
+        else if ( localName.equalsIgnoreCase( "locationId" ) )
+        {
+            builder.locationId( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "units" ) )
         {
-            h.unitName = XMLHelper.getXMLText( reader );
+            builder.units( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "missVal" ) )
         {
             // If we are at the tag for the missing value definition, record it
-            h.missValue = Double.parseDouble( XMLHelper.getXMLText( reader ) );
+            builder.missingValue( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "parameterId" ) )
         {
-            h.variableName = XMLHelper.getXMLText( reader );
+            builder.parameterId( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "forecastDate" ) )
         {
-            h.forecastDate = PublishedInterfaceXmlReader.parseDateTime( reader );
-        }
-        else if ( localName.equalsIgnoreCase( "type" )
-                  && XMLHelper.getXMLText( reader )
-                              .equalsIgnoreCase( "instantaneous" ) )
-        {
-            // See #59438
-            h.scalePeriod = Duration.ofMillis( 1 );
+            builder = PublishedInterfaceXmlReader.parseForecastDateTime( reader, builder.build() )
+                                                 .toBuilder();
         }
         else if ( localName.equalsIgnoreCase( "timeStep" ) )
         {
             String unit = XMLHelper.getAttributeValue( reader, "unit" );
             unit = unit.toUpperCase();
             String multiplier = XMLHelper.getAttributeValue( reader, "multiplier" );
-            h.timeStep = this.getTimeStep( unit, multiplier, dataSource );
+            builder.timeStepUnit( unit );
+            builder.timeStepMultiplier( multiplier );
         }
         else if ( localName.equalsIgnoreCase( "ensembleMemberId" ) )
         {
-            h.ensembleMemberId = XMLHelper.getXMLText( reader );
+            builder.ensembleId( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "ensembleMemberIndex" ) )
         {
-            h.ensembleMemberIndex = XMLHelper.getXMLText( reader );
+            builder.ensembleMemberIndex( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "longName" ) )
         {
-            h.locationLongName = XMLHelper.getXMLText( reader );
+            builder.locationLongName( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "stationName" ) )
         {
-            h.locationStationName = XMLHelper.getXMLText( reader );
+            builder.locationName( XMLHelper.getXMLText( reader ) );
         }
 
         // Add the georeferencing attributes
-        this.updateHeaderWithGeoreferencing( reader, h, localName );
-    }
-
-    /**
-     * Parses the time-step from a unit and multiplier.
-     * @param unit the unit
-     * @param multiplier the multiplier, possibly null
-     * @param dataSource the data source to help with error messaging
-     * @return the time-step
-     * @throws ReadException if the unit and/or multiplier are not correctly formatted
-     */
-
-    private Duration getTimeStep( String unit, String multiplier, DataSource dataSource )
-    {
-        if ( unit.equalsIgnoreCase( "nonequidistant" ) )
-        {
-            LOGGER.debug( "Discovered a PI-XML data-source with an irregular time-series, i.e., a "
-                          + "nonequidistant time-step unit. " );
-
-            return null;
-        }
-
-        String unitString = unit + "S";
-
-        try
-        {
-            ChronoUnit chronoUnit = ChronoUnit.valueOf( unitString );
-            int amount = Integer.parseInt( multiplier );
-            return Duration.of( amount, chronoUnit );
-        }
-        catch ( NumberFormatException e )
-        {
-            throw new ReadException( "While attempting to read a data source with URI "
-                                     + dataSource.getUri()
-                                     + ", could not parse the value of the timeStep multiplier associated with one or "
-                                     + "more time-series. The multiplier should be an integer, but was: '"
-                                     + multiplier
-                                     + "'. The timeStep unit was: '"
-                                     + unit
-                                     + "'." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new ReadException( "While attempting to read a data source with URI "
-                                     + dataSource.getUri()
-                                     + ", could not parse the value of the timeStep unit associated with one or "
-                                     + "more time-series. The unit was: '"
-                                     + unit
-                                     + "'. An 'S' was appended to this unit string and interpreted as '"
-                                     + unitString
-                                     + "'." );
-        }
+        return this.updateHeaderWithGeoreferencing( reader, builder.build(), localName );
     }
 
     /**
      * Updates the time-series header with georeferencing attributes.
      * @param reader the reader
-     * @param h the header
+     * @param header the header
      * @param localName the name of the attribute to read
      * @throws XMLStreamException if the stream could not be read
      */
 
-    private void updateHeaderWithGeoreferencing( XMLStreamReader reader,
-                                                 TimeSeriesHeader h,
-                                                 String localName )
+    private TimeSeriesHeader updateHeaderWithGeoreferencing( XMLStreamReader reader,
+                                                             TimeSeriesHeader header,
+                                                             String localName )
             throws XMLStreamException
     {
+        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = header.toBuilder();
+
         if ( localName.equalsIgnoreCase( "lat" ) )
         {
-            String rawLatitude = XMLHelper.getXMLText( reader );
-            h.latitude = Double.parseDouble( rawLatitude );
+            builder.latitude( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "lon" ) )
         {
-            String rawLongitude = XMLHelper.getXMLText( reader );
-            h.longitude = Double.parseDouble( rawLongitude );
+            builder.longitude( XMLHelper.getXMLText( reader ) );
         }
 
         else if ( localName.equalsIgnoreCase( "x" ) )
         {
-            String rawX = XMLHelper.getXMLText( reader );
-            h.x = Double.parseDouble( rawX );
+            builder.x( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "y" ) )
         {
-            String rawY = XMLHelper.getXMLText( reader );
-            h.y = Double.parseDouble( rawY );
+            builder.y( XMLHelper.getXMLText( reader ) );
         }
         else if ( localName.equalsIgnoreCase( "z" ) )
         {
-            String rawZ = XMLHelper.getXMLText( reader );
-            h.z = Double.parseDouble( rawZ );
-        }
-    }
-
-    /**
-     * Creates a wkt from the time-series header.
-     * @param header the header
-     * @return a wkt string
-     */
-    private String getWktFromHeader( TimeSeriesHeader header )
-    {
-        String locationWkt = null;
-
-        // When x and y are present, prefer those to lon, lat.
-        // Going to Double back to String seems frivolous, but it validates data.
-        if ( Objects.nonNull( header.x ) && Objects.nonNull( header.y ) )
-        {
-            StringJoiner wktGeometry = new StringJoiner( " " );
-            wktGeometry.add( "POINT (" );
-            wktGeometry.add( header.x.toString() );
-            wktGeometry.add( header.y.toString() );
-
-            if ( Objects.nonNull( header.z ) )
-            {
-                wktGeometry.add( header.z.toString() );
-            }
-            wktGeometry.add( ")" );
-            locationWkt = wktGeometry.toString();
-        }
-        else if ( Objects.nonNull( header.latitude ) && Objects.nonNull( header.longitude ) )
-        {
-            StringJoiner wktGeometry = new StringJoiner( " " );
-            wktGeometry.add( "POINT (" );
-            wktGeometry.add( header.longitude.toString() );
-            wktGeometry.add( header.latitude.toString() );
-            wktGeometry.add( ")" );
-            locationWkt = wktGeometry.toString();
+            builder.z( XMLHelper.getXMLText( reader ) );
         }
 
-        return locationWkt;
-    }
-
-    /**
-     * Creates a map of reference times from the header.
-     * @param header the header
-     * @param zoneOffset the time zone offset
-     * @return a wkt string
-     */
-    private Map<ReferenceTimeType, Instant> getReferenceTimesFromHeader( TimeSeriesHeader header,
-                                                                         ZoneOffset zoneOffset )
-    {
-        Map<ReferenceTimeType, Instant> referenceTimes = new EnumMap<>( ReferenceTimeType.class );
-
-        if ( Objects.nonNull( header.forecastDate ) )
-        {
-            Instant t0 = OffsetDateTime.of( header.forecastDate, zoneOffset )
-                                       .toInstant();
-            referenceTimes.put( ReferenceTimeType.T0, t0 );
-        }
-
-        return Collections.unmodifiableMap( referenceTimes );
+        return builder.build();
     }
 
     /**
      * Reads the date and time from an XML reader that stores the date and time in separate attributes
      * @param reader The XML Reader positioned at a node containing date and time attributes
-     * @return a LocalDateTime representing the parsed value
+     * @param header the header
      * @throws ReadException if the datetime could not be parsed
      */
-    private static LocalDateTime parseDateTime( XMLStreamReader reader )
+    private static TimeSeriesHeader parseForecastDateTime( XMLStreamReader reader,
+                                                           TimeSeriesHeader header )
     {
-        LocalDate date = null;
-        LocalTime time = null;
+        String date = null;
+        String time = null;
         String localName;
+
+        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = header.toBuilder();
 
         for ( int attributeIndex = 0; attributeIndex < reader.getAttributeCount(); ++attributeIndex )
         {
@@ -1160,17 +1022,17 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
             if ( localName.equalsIgnoreCase( "date" ) )
             {
-                String dateText = reader.getAttributeValue( attributeIndex );
-                date = LocalDate.parse( dateText );
+                date = reader.getAttributeValue( attributeIndex );
+                builder.forecastDateDate( date );
             }
             else if ( localName.equalsIgnoreCase( "time" ) )
             {
-                String timeText = reader.getAttributeValue( attributeIndex );
-                time = LocalTime.parse( timeText );
+                time = reader.getAttributeValue( attributeIndex );
+                builder.forecastDateTime( time );
             }
         }
 
-        if ( date == null || time == null )
+        if ( Objects.isNull( date ) || Objects.isNull( time ) )
         {
             throw new ReadException( "Could not parse date and time at line "
                                      + reader.getLocation().getLineNumber()
@@ -1178,7 +1040,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                      + reader.getLocation().getColumnNumber() );
         }
 
-        return LocalDateTime.of( date, time );
+        return builder.build();
     }
 
     /**
@@ -1284,42 +1146,6 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
     private PublishedInterfaceXmlReader()
     {
-    }
-
-    /**
-     * A value class that corresponds to the time-series header in pi-xml world. Do not expose. Ideally, this would be 
-     * an immutable class, built incrementally, even though it is not exposed beyond this class, but this is a massive 
-     * faff for limited benefit until we have automated builder creation. The reason for this class is to allow for 
-     * header creation to be broken up into a smaller number of manageable methods, rather than one enormous method.
-     *
-     * @author James Brown
-     */
-
-    private static class TimeSeriesHeader
-    {
-        private Duration scalePeriod = null;
-        private final TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
-        private Duration timeStep = null;
-        private LocalDateTime forecastDate = null;
-        private String locationName = null;
-        private String variableName = null;
-        private String unitName = null;
-        private String traceName = DEFAULT_ENSEMBLE_NAME;
-        private String ensembleMemberId = null;
-        private String ensembleMemberIndex = null;
-        private double missValue = PIXML_DEFAULT_MISSING_VALUE;
-        private String locationLongName = null;
-        private String locationStationName = null;
-        private String locationDescription = null;
-        private Double latitude = null;
-        private Double longitude = null;
-        private Double x = null;
-        private Double y = null;
-        private Double z = null;
-
-        private TimeSeriesHeader()
-        {
-        }
     }
 
 }

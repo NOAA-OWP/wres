@@ -1541,6 +1541,7 @@ definitions:
       - wrds ahps
       - wrds obs
       - wrds nwm
+      - wrds hefs
       - usgs nwis
       - nwm short range channel rt conus
       - nwm short range channel rt hawaii

@@ -578,6 +578,11 @@ public class SourceLoader
                 LOGGER.debug( "Identified a source as a JSON WRDS AHPS source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_AHPS;
             }
+            else if ( ReaderUtilities.isWrdsHefsSource( dataSource ) )
+            {
+                LOGGER.debug( "Identified a source as a JSON WRDS HEFS source: {}.", dataSource );
+                return DataDisposition.JSON_WRDS_HEFS;
+            }
             else if ( ReaderUtilities.isWrdsNwmSource( dataSource ) )
             {
                 LOGGER.debug( "Identified a source as a JSON WRDS NWM source: {}.", dataSource );

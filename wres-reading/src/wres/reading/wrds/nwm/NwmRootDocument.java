@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import wres.reading.wrds.ahps.ParameterCodes;
 
+import lombok.Getter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -55,13 +56,18 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * ...
  * }
  */
+@Getter
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmRootDocument
 {
+    /** The forecasts. */
     private final List<NwmForecast> forecasts;
+    /** The variable. */
     private final Map<String, String> variable;
+    /** The parameter codes. */
     private final ParameterCodes parameterCodes;
+    /** The warnings. */
     private final List<String> warnings;
 
     /**
@@ -85,38 +91,6 @@ public class NwmRootDocument
         this.variable = variable;
         this.parameterCodes = parameterCodes;
         this.warnings = warnings;
-    }
-
-    /**
-     * @return the forecasts
-     */
-    public List<NwmForecast> getForecasts()
-    {
-        return this.forecasts;
-    }
-
-    /**
-     * @return the variable
-     */
-    public Map<String, String> getVariable()
-    {
-        return this.variable;
-    }
-
-    /**
-     * @return the parameter codes
-     */
-    public ParameterCodes getParameterCodes()
-    {
-        return this.parameterCodes;
-    }
-
-    /**
-     * @return the warnings
-     */
-    public List<String> getWarnings()
-    {
-        return this.warnings;
     }
 
     @Override

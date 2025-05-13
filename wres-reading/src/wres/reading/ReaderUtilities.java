@@ -1,7 +1,6 @@
 package wres.reading;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -13,13 +12,20 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +33,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -54,6 +63,7 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.TimeInterval;
+import wres.datamodel.space.Feature;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -62,9 +72,14 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.wrds.geography.FeatureFiller;
+import wres.statistics.MessageUtilities;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.ReferenceTime;
+import wres.statistics.generated.TimeScale;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
@@ -85,6 +100,9 @@ public class ReaderUtilities
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
+
+    /** A web client to help with reading data from the web. */
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
 
     /**
      * Resolves any implicit declaration of features that require service calls to external web services. Currently,
@@ -145,6 +163,7 @@ public class ReaderUtilities
      * @param lineNumber the approximate location in the source to help with messaging
      * @param uri a uri to help with messaging
      * @return The complete TimeSeries
+     * @throws ReadException if the trace is empty
      */
 
     public static TimeSeries<Double> transform( TimeSeriesMetadata metadata,
@@ -165,11 +184,11 @@ public class ReaderUtilities
                          + ".";
             }
 
-            throw new IllegalArgumentException( "Cannot build a single-valued time-series from "
-                                                + uri
-                                                + " because there are no values in the trace with metadata "
-                                                + metadata
-                                                + append );
+            throw new ReadException( "Cannot build a single-valued time-series from "
+                                     + uri
+                                     + " because there are no values in the trace with metadata "
+                                     + metadata
+                                     + append );
         }
 
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
@@ -215,11 +234,17 @@ public class ReaderUtilities
         int i = 0;
 
         String append = "";
-        if ( lineNumber > -1 )
+
+        if ( Objects.nonNull( uri ) )
         {
-            append = " with data at or before "
-                     + "line number "
-                     + lineNumber;
+            append = " from " + uri;
+
+            if ( lineNumber > -1 )
+            {
+                append = " with data at or before "
+                         + "line number "
+                         + lineNumber;
+            }
         }
 
         for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
@@ -233,8 +258,7 @@ public class ReaderUtilities
                                                                                   .keySet() );
                 if ( !theseInstants.equals( previousInstants ) )
                 {
-                    throw new ReadException( "Cannot build ensemble from "
-                                             + uri
+                    throw new ReadException( "Could not build an ensemble time-series"
                                              + append
                                              + " because the trace named "
                                              + trace.getKey()
@@ -247,7 +271,7 @@ public class ReaderUtilities
                                              + previousInstants
                                              + " which is not allowed. All"
                                              + " traces must be dense and "
-                                             + "match valid datetimes." );
+                                             + "have matching valid datetimes." );
                 }
             }
 
@@ -291,7 +315,7 @@ public class ReaderUtilities
      * Service.
      *
      * @param uri the uri
-     * @return the time scale or null
+     * @return the timescale or null
      */
 
     public static TimeScaleOuter getTimeScaleFromUri( URI uri )
@@ -299,8 +323,9 @@ public class ReaderUtilities
         TimeScaleOuter returnMe = null;
 
         // Assume that the NWIS "IV" service implies "instantaneous" values
-        if ( Objects.nonNull( uri ) && uri.toString()
-                                          .contains( "/nwis/iv" ) )
+        if ( Objects.nonNull( uri )
+             && uri.toString()
+                   .contains( "/nwis/iv" ) )
         {
             returnMe = TimeScaleOuter.of();
         }
@@ -346,7 +371,8 @@ public class ReaderUtilities
                                      + "' or run WRES as a user with read"
                                      + " permissions on that path." );
         }
-        else if ( !allowDirectory && !Files.isRegularFile( path ) )
+        else if ( !allowDirectory
+                  && !Files.isRegularFile( path ) )
         {
             throw new ReadException( "Expected a file source, but the source was not a file: " + dataSource + "." );
         }
@@ -476,6 +502,39 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
+     * @return whether the source is a WRDS HEFS source
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isWrdsHefsSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.getUri();
+        SourceInterface interfaceShortHand = source.getSource()
+                                                   .sourceInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand == SourceInterface.WRDS_HEFS;
+        }
+
+        boolean isHefs = uri.getPath()
+                            .toLowerCase()
+                            .contains( "/hefs/" );
+
+        LOGGER.debug( "When attempting to detect whether the supplied data source refers to the WRDS HEFS "
+                      + "service, could not detect an explicit interface shorthand of {}, so looked for a URI that "
+                      + "contains '/hefs/', which was: {}. The data source is: {}.",
+                      SourceInterface.WRDS_HEFS,
+                      isHefs,
+                      source );
+
+        // Fallback for unspecified interface.
+        return isHefs;
+    }
+
+    /**
+     * @param source the data source
      * @return whether the source is a WRDS NWM source
      * @throws NullPointerException if the source is null
      */
@@ -508,17 +567,17 @@ public class ReaderUtilities
         SourceInterface interfaceType = dataSource.getSource()
                                                   .sourceInterface();
 
-        if ( Objects.nonNull( interfaceType ) && interfaceType.name()
-                                                              .toLowerCase()
-                                                              .startsWith( "nwm_" ) )
+        if ( Objects.nonNull( interfaceType )
+             && interfaceType.name()
+                             .toLowerCase()
+                             .startsWith( "nwm_" ) )
         {
             LOGGER.debug( "Identified data source {} as a NWM vector source.", dataSource );
             return true;
         }
 
-        LOGGER.debug(
-                      "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                      + "begin with a case-insensitive 'NWM_' designation.",
+        LOGGER.debug( "Failed to identify data source {} as a NWM vector source because the interface shorthand did "
+                      + "not begin with a case-insensitive 'NWM_' designation.",
                       dataSource );
 
         return false;
@@ -552,6 +611,57 @@ public class ReaderUtilities
                     || uri.getScheme()
                           .toLowerCase()
                           .startsWith( "cdms3" ) );
+    }
+
+    /**
+     * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
+     * time range.
+     *
+     * @param declaration the declaration
+     * @param dataSource the data source
+     * @return a simple range
+     */
+    public static Pair<Instant, Instant> getSimpleRange( EvaluationDeclaration declaration,
+                                                         DataSource dataSource )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getContext() );
+
+        // Forecast data?
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
+
+        if ( ( isForecast
+               && Objects.isNull( declaration.referenceDates() ) ) )
+        {
+            throw new ReadException( "While attempting to read forecasts from a web service, discovered an evaluation "
+                                     + "with missing 'reference_dates', which is not allowed. Please declare "
+                                     + "'reference_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data." );
+        }
+        else if ( !isForecast
+                  && Objects.isNull( declaration.validDates() ) )
+        {
+            throw new ReadException( "While attempting to read a non-forecast data source from a web service, "
+                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
+                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data. The data type was: "
+                                     + dataSource.getContext()
+                                                 .type()
+                                     + "." );
+        }
+
+        // When dates are present, both bookends are present because this was validated on construction of the reader
+        TimeInterval dates = declaration.validDates();
+
+        if ( isForecast )
+        {
+            dates = declaration.referenceDates();
+        }
+
+        Instant earliest = dates.minimum();
+        Instant latest = dates.maximum();
+        return Pair.of( earliest, latest );
     }
 
     /**
@@ -680,25 +790,26 @@ public class ReaderUtilities
         // No path to trust file. Try to set up a default ssl context using JDK certs.
         try
         {
-            //Load the keyStore from the JDK default.
+            // Load the keyStore from the JDK default.
             KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
             String cacertsPath = System.getProperty( "java.home" ) + "/lib/security/cacerts";
             FileInputStream fis = new FileInputStream( cacertsPath );
             String password = "changeit";
-            keyStore.load( fis, password.toCharArray() );
+            keyStore.load( fis, password.toCharArray() );   // NOSONAR
             fis.close();
 
-            //Initialize the factory for use.
+            // Initialize the factory for use.
             TrustManagerFactory tmf = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
             tmf.init( keyStore );
 
-            //Get the trust manager. This will use the last one found.
+            // Get the trust manager. This will use the last one found.
             X509TrustManager theTrustManager = null;
             for ( TrustManager manager : tmf.getTrustManagers() )
             {
                 if ( manager instanceof X509TrustManager m )
                 {
-                    LOGGER.warn( "No system property wres.wrdsCertificateFileToTrust provided. Using the default X509TrustManager: {}",
+                    LOGGER.warn( "No system property wres.wrdsCertificateFileToTrust provided. Using the default "
+                                 + "X509TrustManager: {}",
                                  manager );
                     theTrustManager = m;
                 }
@@ -708,7 +819,7 @@ public class ReaderUtilities
                 throw new UnsupportedOperationException( "Could not find a default X509TrustManager" );
             }
 
-            //Return the default context with the JDK-default certs trusted.
+            // Return the default context with the JDK-default certs trusted.
             return Pair.of( SSLContext.getDefault(), theTrustManager );
         }
         catch ( NoSuchAlgorithmException | KeyStoreException | CertificateException | IOException e )
@@ -738,7 +849,7 @@ public class ReaderUtilities
                           pathToTrustFile );
 
             Path path = Paths.get( pathToTrustFile );
-            InputStream inputStream = null;
+            InputStream inputStream;
             try
             {
                 // If the file exists, setup the input stream to point to it. IOException is handled below.
@@ -751,7 +862,7 @@ public class ReaderUtilities
                 else
                 {
                     inputStream = ReaderUtilities.class.getClassLoader()
-                                                                   .getResourceAsStream( pathToTrustFile );
+                                                       .getResourceAsStream( pathToTrustFile );
                     if ( inputStream == null )
                     {
                         throw new PreReadException( "The file "
@@ -761,7 +872,7 @@ public class ReaderUtilities
                                                     + "file system nor the class path." );
                     }
                 }
-                
+
                 //With the stream established, setup the SSLContext.
                 SSLStuffThatTrustsOneCertificate sslGoo =
                         new SSLStuffThatTrustsOneCertificate( inputStream,
@@ -914,11 +1025,312 @@ public class ReaderUtilities
     }
 
     /**
+     * Returns a byte stream from a web source or null if the web source returns no data and that is considered a
+     * nominal response (see #isMissingResponse).
+     *
+     * @param uri the uri
+     * @param isMissingResponse a test to determine whether the http response code indicates missing data
+     * @param isErrorResponse a test to determine whether the http response code indicates an error
+     * @param errorUnpacker unpacks an error message from the web client response for onward communication, optional
+     * @param webClient an optional web client instance, otherwise the default will be used
+     * @return the byte stream
+     * @throws ReadException if the uri does not point to a web source or the stream could not be created for any reason
+     */
+
+    public static InputStream getByteStreamFromWebSource( URI uri,
+                                                          IntPredicate isMissingResponse,
+                                                          IntPredicate isErrorResponse,
+                                                          Function<WebClient.ClientResponse, String> errorUnpacker,
+                                                          WebClient webClient )
+    {
+        Objects.requireNonNull( uri );
+        Objects.requireNonNull( isMissingResponse );
+        Objects.requireNonNull( isErrorResponse );
+
+        if ( !ReaderUtilities.isWebSource( uri ) )
+        {
+            throw new ReadException( "Cannot read time-series data from "
+                                     + uri
+                                     + " because it is not a web source." );
+        }
+
+        if ( Objects.isNull( errorUnpacker ) )
+        {
+            errorUnpacker = c -> ""; // Empty response
+        }
+
+        if ( Objects.isNull( webClient ) )
+        {
+            webClient = WEB_CLIENT;
+        }
+
+        try
+        {
+            // Stream is closed on completion of streaming data, unless there is an error response
+            WebClient.ClientResponse response =
+                    webClient.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+            int httpStatus = response.getStatusCode();
+
+            if ( isMissingResponse.test( httpStatus ) )
+            {
+                String possibleError = errorUnpacker.apply( response );
+
+                if ( Objects.nonNull( possibleError ) )
+                {
+                    possibleError = " Received this error message: " + possibleError;
+                }
+
+                LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.{}",
+                             httpStatus,
+                             uri,
+                             possibleError );
+
+                // Clean up now
+                ReaderUtilities.closeWebClientResponse( response );
+
+                // Flag to the caller as no data
+                return null;
+            }
+            else if ( isErrorResponse.test( httpStatus ) )
+            {
+                String possibleError = errorUnpacker.apply( response );
+
+                if ( Objects.nonNull( possibleError ) )
+                {
+                    possibleError = ". Received this error message: " + possibleError;
+                }
+
+                // Error response, so clean up now
+                ReaderUtilities.closeWebClientResponse( response );
+
+                throw new ReadException( "Failed to read data from '"
+                                         + uri
+                                         +
+                                         "' due to HTTP status code "
+                                         + httpStatus
+                                         + possibleError );
+            }
+
+            return response.getResponse();
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to acquire a byte stream from "
+                                     + uri
+                                     + ".",
+                                     e );
+        }
+    }
+
+    /**
+     * Parses an instant from a formatted date and time string.
+     * @param date the date
+     * @param time the time in UTC
+     * @param offset the time zone offset
+     * @return the instant
+     */
+
+    public static Instant parseInstant( String date, String time, ZoneOffset offset )
+    {
+        LocalDate localDate = LocalDate.parse( date );
+        LocalTime localTime = LocalTime.parse( time );
+        LocalDateTime localDateTime = LocalDateTime.of( localDate, localTime );
+        return localDateTime.toInstant( offset );
+    }
+
+    /**
+     * Parses the missing value from the {@link TimeSeriesHeader#missingValue()}.
+     *
+     * @param header the header
+     * @return the missing value double
+     * @throws ReadException if the missing value could not be parsed
+     * @throws NullPointerException if the header is missing
+     */
+
+    public static double getMissingValueDouble( TimeSeriesHeader header )
+    {
+        Objects.requireNonNull( header );
+        if ( Objects.isNull( header.missingValue() )
+             || "null".equalsIgnoreCase( header.missingValue() ) )
+        {
+            return Double.NaN;
+        }
+
+        try
+        {
+            return Double.parseDouble( header.missingValue() );
+        }
+        catch ( NumberFormatException e )
+        {
+            throw new ReadException( "The missing value string is not a valid number: "
+                                     + header.missingValue()
+                                     + "." );
+        }
+    }
+
+    /**
+     * Translates a {@link TimeSeriesHeader} into a {@link TimeSeriesMetadata}.
+     *
+     * @param header the header
+     * @param zoneOffset the time zone offset
+     * @return the metadata
+     */
+
+    public static TimeSeriesMetadata getTimeSeriesMetadataFromHeader( TimeSeriesHeader header,
+                                                                      ZoneOffset zoneOffset )
+    {
+        Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes =
+                ReaderUtilities.getReferenceTimesFromHeader( header, zoneOffset );
+
+        String locationWkt = ReaderUtilities.getWktFromHeader( header );
+        Geometry geometry = MessageUtilities.getGeometry( header.locationId(),
+                                                          header.locationDescription(),
+                                                          null,
+                                                          locationWkt );
+        Feature feature = Feature.of( geometry );
+
+        TimeScale.TimeScaleFunction function = TimeScale.TimeScaleFunction.UNKNOWN;
+        TimeScaleOuter timeScale;
+
+        if ( "instantaneous".equalsIgnoreCase( header.type() ) )
+        {
+            timeScale = TimeScaleOuter.of();
+        }
+        else if ( "nonequidistant".equals( header.timeStepUnit() ) )
+        {
+            LOGGER.debug( "Discovered a time-series without explicit time-scale information and with a non-equidistant "
+                          + "time-step. The time-scale information must be constant, but cannot be determined." );
+            timeScale = null;
+        }
+        else
+        {
+            // See #59438
+            Duration timeStep = ReaderUtilities.getTimeStep( header.timeStepUnit(), header.timeStepMultiplier() );
+            LOGGER.debug( "Detected a time-series with a non-instantaneous time scale. Assuming that the time scale "
+                          + "period is equal to the nominated timestep, which is {}.", timeStep );
+            timeScale = TimeScaleOuter.of( timeStep, function );
+        }
+
+        return TimeSeriesMetadata.of( referenceTimes, timeScale, header.parameterId(), feature, header.units() );
+    }
+
+    /**
+     * Parses the time-step from a unit and multiplier.
+     * @param unit the unit
+     * @param multiplier the multiplier, possibly null
+     * @return the time-step
+     * @throws ReadException if the unit and/or multiplier are not correctly formatted
+     */
+
+    private static Duration getTimeStep( String unit, String multiplier )
+    {
+        if ( unit.equalsIgnoreCase( "nonequidistant" ) )
+        {
+            LOGGER.debug( "Discovered a data-source with an irregular time-series, i.e., a "
+                          + "nonequidistant time-step unit. " );
+
+            return null;
+        }
+
+        String unitString = unit.toUpperCase() + "S";
+
+        try
+        {
+            ChronoUnit chronoUnit = ChronoUnit.valueOf( unitString );
+            int amount = Integer.parseInt( multiplier );
+            return Duration.of( amount, chronoUnit );
+        }
+        catch ( NumberFormatException e )
+        {
+            throw new ReadException( "While attempting to read a time-series data source, could not parse the value of "
+                                     + "the time step multiplier associated with one or more time-series. The "
+                                     + "multiplier should be an integer, but was: '"
+                                     + multiplier
+                                     + "'. The time step unit was: '"
+                                     + unit
+                                     + "'." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new ReadException( "While attempting to read a time-series data source, could not parse the value of "
+                                     + "the time step unit associated with one or more time-series. The unit was: '"
+                                     + unit
+                                     + "'. An 'S' was appended to this unit string and interpreted as '"
+                                     + unitString
+                                     + "'." );
+        }
+    }
+
+    /**
+     * Creates a map of reference times from the header.
+     * @param header the header
+     * @param zoneOffset the time zone offset
+     * @return map of reference times
+     */
+    private static Map<ReferenceTime.ReferenceTimeType, Instant> getReferenceTimesFromHeader( TimeSeriesHeader header,
+                                                                                              ZoneOffset zoneOffset )
+    {
+        Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes =
+                new EnumMap<>( ReferenceTime.ReferenceTimeType.class );
+
+        if ( Objects.nonNull( header.forecastDateDate() )
+             && Objects.nonNull( header.forecastDateTime() ) )
+        {
+            Instant t0 =
+                    ReaderUtilities.parseInstant( header.forecastDateDate(), header.forecastDateTime(), zoneOffset );
+            referenceTimes.put( ReferenceTime.ReferenceTimeType.T0, t0 );
+        }
+
+        return Collections.unmodifiableMap( referenceTimes );
+    }
+
+    /**
+     * Creates a wkt from the time-series header.
+     *
+     * @param header the header
+     * @return a wkt string
+     */
+    private static String getWktFromHeader( TimeSeriesHeader header )
+    {
+        String locationWkt = null;
+
+        // When x and y are present, prefer those to lon, lat.
+        // Going to Double back to String seems frivolous, but it validates data.
+        if ( Objects.nonNull( header.x() )
+             && Objects.nonNull( header.y() ) )
+        {
+            StringJoiner wktGeometry = new StringJoiner( " " );
+            wktGeometry.add( "POINT (" );
+            wktGeometry.add( header.x() );
+            wktGeometry.add( header.y() );
+            if ( Objects.nonNull( header.z() ) )
+            {
+                wktGeometry.add( header.z() );
+            }
+            wktGeometry.add( ")" );
+            locationWkt = wktGeometry.toString();
+        }
+        else if ( Objects.nonNull( header.latitude() )
+                  && Objects.nonNull( header.longitude() ) )
+        {
+            StringJoiner wktGeometry = new StringJoiner( " " );
+            wktGeometry.add( "POINT (" );
+            wktGeometry.add( header.longitude() );
+            wktGeometry.add( header.latitude() );
+            wktGeometry.add( ")" );
+            locationWkt = wktGeometry.toString();
+        }
+
+        return locationWkt;
+    }
+
+    /**
      * Attempts to acquire thresholds from an external source and populate them in the supplied declaration, as needed.
      * @param thresholdSource the threshold source
      * @param evaluation the declaration to adjust
      * @return the adjusted declaration, including any thresholds acquired from the external source
      */
+
     private static EvaluationDeclaration fillThresholds( ThresholdSource thresholdSource,
                                                          EvaluationDeclaration evaluation )
     {

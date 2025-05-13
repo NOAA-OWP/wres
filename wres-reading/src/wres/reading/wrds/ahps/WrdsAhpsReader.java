@@ -1,6 +1,5 @@
 package wres.reading.wrds.ahps;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,6 +22,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.TimeInterval;
 import wres.http.WebClientUtils;
 import wres.reading.PreReadException;
 import wres.reading.DataSource;
@@ -74,18 +73,34 @@ public class WrdsAhpsReader implements TimeSeriesReader
     private static final String WRDS_AHPS = "WRDS AHPS";
 
     /** Custom HttpClient to use */
-    private static final OkHttpClient OK_HTTP_CLIENT;
+    private static final WebClient CUSTOM_WEB_CLIENT;
+
+    /** The HTTP response codes considered to represent no data. Is this too broad? Perhaps a 404 only, else a read
+     * exception. The problem is that "no data" is routine from the perspective of WRES, but apparently not WRDS, so we
+     * get a 404, not a 200. See Redmine issue #116808. The difficulty with such a broad range is that we potentially
+     * aggregate buggy requests with no data responses. */
+    private static final IntPredicate NO_DATA_PREDICATE = h -> h >= 400 && h < 500;
+
+    /** The HTTP response codes considered to represent an error to be thrown. */
+    private static final IntPredicate ERROR_RESPONSE_PREDICATE = h -> h >= 500;
+
+    /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
+    private final EvaluationDeclaration declaration;
+
+    /** A thread pool to process web requests. */
+    private final ThreadPoolExecutor executor;
 
     static
     {
         try
         {
             Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
-            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
-                                           .newBuilder()
-                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
-                                                              sslContext.getRight() )
-                                           .build();
+            OkHttpClient client = WebClientUtils.defaultTimeoutHttpClient()
+                                                .newBuilder()
+                                                .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                                   sslContext.getRight() )
+                                                .build();
+            CUSTOM_WEB_CLIENT = new WebClient( client );
         }
         catch ( PreReadException e )
         {
@@ -93,15 +108,6 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                                    + e.getMessage() );
         }
     }
-
-    /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( OK_HTTP_CLIENT );
-
-    /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
-    private final EvaluationDeclaration declaration;
-
-    /** A thread pool to process web requests. */
-    private final ThreadPoolExecutor executor;
 
     /**
      * @see #of(EvaluationDeclaration, SystemSettings)
@@ -143,7 +149,11 @@ public class WrdsAhpsReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to WRDS for AHPS time-series without any chunking of the data." );
-        InputStream stream = WrdsAhpsReader.getByteStreamFromUri( dataSource.getUri() );
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                                                         NO_DATA_PREDICATE,
+                                                                         ERROR_RESPONSE_PREDICATE,
+                                                                         null,
+                                                                         CUSTOM_WEB_CLIENT );
 
         if ( Objects.isNull( stream ) )
         {
@@ -214,7 +224,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
         }
         else
         {
-            dateRanges = WrdsAhpsReader.getSimpleRange( declaration, dataSource );
+            dateRanges = new HashSet<>();
+            Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
+            dateRanges.add( range );
         }
 
         // Combine the features and date ranges to form the chunk boundaries
@@ -369,7 +381,11 @@ public class WrdsAhpsReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = WrdsAhpsReader.getByteStreamFromUri( dataSource.getUri() ) )
+                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                                                                                   NO_DATA_PREDICATE,
+                                                                                                   ERROR_RESPONSE_PREDICATE,
+                                                                                                   null,
+                                                                                                   CUSTOM_WEB_CLIENT ) )
                        {
                            if ( Objects.isNull( inputStream ) )
                            {
@@ -399,116 +415,6 @@ public class WrdsAhpsReader implements TimeSeriesReader
         {
             throw new ReadException( "Expected a WRDS AHPS data source, but got: " + dataSource + "." );
         }
-    }
-
-    /**
-     * Returns a byte stream from a file or web source.
-     *
-     * @param uri the uri
-     * @return the byte stream or null if an http error is encountered between 400 inclusive and 500 exclusive
-     * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
-     * @throws ReadException if the stream could not be created for any other reason
-     */
-
-    private static InputStream getByteStreamFromUri( URI uri )
-    {
-        Objects.requireNonNull( uri );
-
-        if ( ReaderUtilities.isWebSource( uri ) )
-        {
-            try
-            {
-                // Stream is closed on completion of streaming data, unless there is an error response
-                WebClient.ClientResponse response =
-                        WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
-                int httpStatus = response.getStatusCode();
-
-                // Is this too broad? Perhaps a 404 only, else a read exception. The problem is that "no data" is
-                // routine from the perspective of WRES, but apparently not WRDS, so we get a 404, not a 200. See
-                // Redmine issue #116808. The difficulty with such a broad range is that we potentially aggregate
-                // buggy requests with no data responses.
-                if ( httpStatus >= 400 && httpStatus < 500 )
-                {
-                    LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.",
-                                 httpStatus,
-                                 uri );
-
-                    // Error response, so clean up now
-                    ReaderUtilities.closeWebClientResponse( response );
-
-                    // Flag to the caller as no data
-                    return null;
-                }
-
-                return response.getResponse();
-            }
-            catch ( IOException e )
-            {
-                throw new ReadException( "Failed to acquire a byte stream from "
-                                         + uri
-                                         + ".",
-                                         e );
-            }
-        }
-        else
-        {
-            throw new ReadException( "Unable to read WRDS source " + uri
-                                     + "because it does not use the http "
-                                     + "scheme. Did you intend to use a JSON reader?" );
-        }
-    }
-
-    /**
-     * Returns the exact forecast range from the declaration instead of breaking it apart. Promote to
-     * {@link ReaderUtilities} if other readers require this behavior.
-     *
-     * @param declaration the pair declaration
-     * @param dataSource the data source
-     * @return a simple range
-     */
-    private static Set<Pair<Instant, Instant>> getSimpleRange( EvaluationDeclaration declaration,
-                                                               DataSource dataSource )
-    {
-
-        Objects.requireNonNull( declaration );
-        Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
-
-        // Forecast data?
-        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
-
-        if ( ( isForecast
-               && Objects.isNull( declaration.referenceDates() ) ) )
-        {
-            throw new ReadException( "While attempting to read forecasts from the WRDS AHPS service, discovered an "
-                                     + "evaluation with missing 'reference_dates', which is not allowed. Please "
-                                     + "declare 'reference_dates' to constrain the evaluation to a finite amount of "
-                                     + "time-series data." );
-        }
-        else if ( !isForecast
-                  && Objects.isNull( declaration.validDates() ) )
-        {
-            throw new ReadException( "While attempting to read a non-forecast data source from the WRDS AHPS service, "
-                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
-                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
-                                     + "time-series data. The data type was: "
-                                     + dataSource.getContext()
-                                                 .type()
-                                     + "." );
-        }
-
-        // When dates are present, both bookends are present because this was validated on construction of the reader
-        TimeInterval dates = declaration.validDates();
-
-        if ( isForecast )
-        {
-            dates = declaration.referenceDates();
-        }
-
-        Instant earliest = dates.minimum();
-        Instant latest = dates.maximum();
-        Pair<Instant, Instant> range = Pair.of( earliest, latest );
-        return Set.of( range );
     }
 
     /**
@@ -578,6 +484,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Specific to WRDS API, get date range url parameters
      * @param dateRange the date range to set parameters for
      * @param additionalParameters the additional parameters, if any
+     * @param observed is true if the target dataset contains observations
      * @return the key/value parameters
      */
 

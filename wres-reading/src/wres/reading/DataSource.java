@@ -16,6 +16,7 @@ import java.util.Set;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import lombok.Getter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
@@ -75,6 +76,8 @@ public class DataSource
         JSON_WRDS_NWM,
         /** The data has been detected as a json, wrds/ahps stream. */
         JSON_WRDS_AHPS,
+        /** The data has been detected as a json, wrds/hefs stream. */
+        JSON_WRDS_HEFS,
         /** The data has been detected as a json response from the wrds threshold service. */
         JSON_WRDS_THRESHOLDS,
         /** The data has been detected as a csv, wres stream. */
@@ -96,25 +99,33 @@ public class DataSource
     /** The count of bytes to use for detecting WRES-compatible type. */
     private static final int DETECTION_BYTES = 1024;
 
-    /** The disposition of the data for this source. */
+    /** The disposition of the data for this source. Used to determine the reader for simple sources or whether more
+     * decomposition or recomposition is needed. */
+    @Getter
     private final DataDisposition disposition;
 
     /** The context in which this source is declared. */
+    @Getter
     private final Dataset context;
 
     /** The source to load and link. */
+    @Getter
     private final Source source;
 
+    // Rendered immutable on construction
     /** Additional links; may be empty, in which case, link only to its own {@link #getContext()}. */
+    @Getter
     private final List<DatasetOrientation> links;
 
-    /** URI of the source. */
+    /** URI of the source.*/
+    @Getter
     private final URI uri;
 
     /** Whether the source originates from the left, right or baseline side of the evaluation. */
     private final DatasetOrientation orientation;
 
     /** The covariate feature orientation, if defined. */
+    @Getter
     private final DatasetOrientation covariateFeatureOrientation;
 
     /**
@@ -166,63 +177,6 @@ public class DataSource
     }
 
     /**
-     * The disposition of this data source. Used to determine the reader for
-     * simple sources or whether more decomposition or recomposition is needed.
-     * @return The disposition.
-     */
-
-    public DataDisposition getDisposition()
-    {
-        return this.disposition;
-    }
-
-    /**
-     * Returns the feature orientation of a covariate dataset or possibly null if the {@link #getDatasetOrientation()}
-     * is undefined or not {@link DatasetOrientation#COVARIATE}.
-     *
-     * @return the covariate feature orientation
-     */
-
-    public DatasetOrientation getCovariateFeatureOrientation()
-    {
-        return this.covariateFeatureOrientation;
-    }
-
-    /**
-     * Returns the type of link to create.
-     *
-     * @return the type of link
-     */
-
-    public List<DatasetOrientation> getLinks()
-    {
-        // Rendered immutable on construction
-        return this.links;
-    }
-
-    /**
-     * Returns the data source.
-     *
-     * @return the source
-     */
-
-    public Source getSource()
-    {
-        return this.source;
-    }
-
-    /**
-     * Returns the data source path.
-     *
-     * @return the path
-     */
-
-    public URI getUri()
-    {
-        return this.uri;
-    }
-
-    /**
      * Returns <code>true</code> if the data source path is not null, otherwise
      * <code>false</code>. The path may not be available for some services,
      * for which the system knows the path.
@@ -233,17 +187,6 @@ public class DataSource
     public boolean hasSourcePath()
     {
         return Objects.nonNull( this.getUri() );
-    }
-
-    /**
-     * Returns the context in which the source appears.
-     *
-     * @return the context
-     */
-
-    public Dataset getContext()
-    {
-        return this.context;
     }
 
     /**
@@ -535,6 +478,8 @@ public class DataSource
 
         String start = new String( firstBytes, jsonCharset );
 
+        LOGGER.debug( "Using this string to detect the JSON subtype: {}", start );
+
         if ( start.contains( "org.cuahsi.waterml" ) )
         {
             innerDisposition = DataDisposition.JSON_WATERML;
@@ -545,13 +490,18 @@ public class DataSource
         }
         else
         {
-            if ( start.contains( "wrds" ) && start.contains( "nwm" ) )
+            if ( start.contains( "wrds" )
+                 && start.contains( "nwm" ) )
             {
                 innerDisposition = DataDisposition.JSON_WRDS_NWM;
             }
             else if ( start.contains( "\"header\":" ) )
             {
                 innerDisposition = DataDisposition.JSON_WRDS_AHPS;
+            }
+            else if ( start.contains( "/hefs/" ) )
+            {
+                innerDisposition = DataDisposition.JSON_WRDS_HEFS;
             }
             else
             {

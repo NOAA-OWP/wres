@@ -264,7 +264,7 @@ class WrdsNwmReaderTest
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
             Geometry geometry = MessageUtilities.getGeometry( Integer.toString( NWM_FEATURE_ID ),
                                                               null,

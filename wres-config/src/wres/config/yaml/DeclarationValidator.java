@@ -544,7 +544,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> covariateFilters = DeclarationValidator.covariateFiltersAreValid( declaration );
         events.addAll( covariateFilters );
         // When obtaining data from web services, dates must be defined
-        List<EvaluationStatusEvent> services = DeclarationValidator.datesPresentForWebServices( declaration );
+        List<EvaluationStatusEvent> services = DeclarationValidator.declarationValidForWebServices( declaration );
         events.addAll( services );
         // Check that the time scales are valid
         List<EvaluationStatusEvent> timeScales = DeclarationValidator.timeScalesAreValid( declaration );
@@ -976,9 +976,7 @@ public class DeclarationValidator
                           .sources()
                           .stream()
                           .anyMatch( n -> Objects.nonNull( n.uri() )
-                                          && n.uri()
-                                              .toString()
-                                              .startsWith( "http" ) )
+                                          && DeclarationValidator.isWebSource( n ) )
                   // Valid dates are present and span less than 365 days
                   && Objects.nonNull( declaration.validDates() )
                   && Objects.nonNull( declaration.validDates()
@@ -1142,6 +1140,14 @@ public class DeclarationValidator
                                                           .build();
                 events.add( event );
             }
+
+            if ( DeclarationValidator.hasSourceInterface( dataset.sources(), SourceInterface.WRDS_HEFS ) )
+            {
+                String message = messageStart + SourceInterface.WRDS_HEFS + messageEnd;
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
+                events.add( event );
+            }
         }
 
         return Collections.unmodifiableList( events );
@@ -1272,24 +1278,33 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that dates are available to constrain requests to web services.
+     * Checks that the declaration of web services is valid.
      * @param declaration the declaration
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> datesPresentForWebServices( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> declarationValidForWebServices( EvaluationDeclaration declaration )
     {
-        // Some web services declared for left sources?
+        // Check that the dates are declared for web services and that each web-like source has a source interface
         List<EvaluationStatusEvent> events =
                 new ArrayList<>( DeclarationValidator.datesPresentForWebServices( declaration,
                                                                                   declaration.left(),
                                                                                   DatasetOrientation.LEFT ) );
 
-        // Some web services declared for right sources?
+        List<EvaluationStatusEvent> leftInterfaceEvents =
+                new ArrayList<>( DeclarationValidator.interfacePresentForWebSources( declaration.left(),
+                                                                                     DatasetOrientation.LEFT ) );
+        events.addAll( leftInterfaceEvents );
+
         List<EvaluationStatusEvent> rightEvents =
                 DeclarationValidator.datesPresentForWebServices( declaration,
                                                                  declaration.right(),
                                                                  DatasetOrientation.RIGHT );
         events.addAll( rightEvents );
+
+        List<EvaluationStatusEvent> rightInterfaceEvents =
+                DeclarationValidator.interfacePresentForWebSources( declaration.right(),
+                                                                    DatasetOrientation.RIGHT );
+        events.addAll( rightInterfaceEvents );
 
         if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
@@ -1299,6 +1314,12 @@ public class DeclarationValidator
                                                                                 .dataset(),
                                                                      DatasetOrientation.BASELINE );
             events.addAll( baselineEvents );
+
+            List<EvaluationStatusEvent> baselineInterfaceEvents =
+                    DeclarationValidator.interfacePresentForWebSources( declaration.baseline()
+                                                                                   .dataset(),
+                                                                        DatasetOrientation.BASELINE );
+            events.addAll( baselineInterfaceEvents );
         }
 
         for ( CovariateDataset covariate : declaration.covariates() )
@@ -1308,6 +1329,11 @@ public class DeclarationValidator
                                                                      covariate.dataset(),
                                                                      DatasetOrientation.COVARIATE );
             events.addAll( covariateEvents );
+
+            List<EvaluationStatusEvent> covariateInterfaceEvents =
+                    DeclarationValidator.interfacePresentForWebSources( covariate.dataset(),
+                                                                        DatasetOrientation.COVARIATE );
+            events.addAll( covariateInterfaceEvents );
         }
 
         return Collections.unmodifiableList( events );
@@ -1334,6 +1360,59 @@ public class DeclarationValidator
                                                                      dataset.type(),
                                                                      orientation );
             events.addAll( sourceEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Determines whether the source interface is missing for any web-like sources and warns if so.
+     *
+     * @param dataset the dataset
+     * @param orientation the dataset orientation
+     * @return any validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> interfacePresentForWebSources( Dataset dataset,
+                                                                              DatasetOrientation orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Check that a source interface is defined for each web-like source, otherwise warn
+        if ( Objects.nonNull( dataset )
+             && Objects.nonNull( dataset.sources() )
+             && dataset.sources()
+                       .stream()
+                       .anyMatch( s -> DeclarationValidator.isWebSource( s )
+                                       && Objects.isNull( s.sourceInterface() ) ) )
+        {
+            String add = "";
+            if ( Objects.nonNull( dataset.variable() )
+                 && Objects.nonNull( dataset.variable()
+                                            .name() ) )
+            {
+                add = " for the '"
+                      + dataset.variable()
+                               .name()
+                      + "' variable";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "One or more '"
+                                                             + orientation
+                                                             + "' data sources"
+                                                             + add
+                                                             + " refers to an HTTP address, but does not declare a "
+                                                             + "source 'interface'. This is allowed, but the source "
+                                                             + "'interface' will need to be interpolated from the URL "
+                                                             + "itself, which may not be reliable. The 'interface' is "
+                                                             + "used to establish the rules for communicating with a "
+                                                             + "web service, such as how to formulate requests and "
+                                                             + "read responses. " )
+                                           .build();
+            events.add( event );
         }
 
         return Collections.unmodifiableList( events );
@@ -5035,9 +5114,7 @@ public class DeclarationValidator
             // Warn about the use of the http/s scheme for sources that declare an nwm interface. The cdms3 scheme
             // may be much quicker as this leverages the S3 or GCS APIs to make byte-range requests: see GitHub #75
             if ( Objects.nonNull( source.uri() )
-                 && source.uri()
-                          .toString()
-                          .startsWith( "http" )
+                 && DeclarationValidator.isWebSource( source )
                  && Objects.nonNull( source.sourceInterface() )
                  && source.sourceInterface()
                           .isNwmInterface() )
@@ -5108,6 +5185,20 @@ public class DeclarationValidator
         events.addAll( interfaceEvents );
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Determines whether the source refers to a web service.
+     * @param source the source
+     * @return whether the source refers to an HTTP address
+     */
+
+    private static boolean isWebSource( Source source )
+    {
+        return Objects.nonNull( source.uri() )
+               && source.uri()
+                        .toString()
+                        .startsWith( "http" );
     }
 
     /**
@@ -5219,6 +5310,8 @@ public class DeclarationValidator
                                                                              DataType type,
                                                                              String orientation )
     {
+        // The WRDS HEFS service always serves ensemble forecasts, so no need to validate that
+
         List<EvaluationStatusEvent> events = new ArrayList<>();
         Set<DataType> types = sourceInterface.getDataTypes();
         if ( Objects.isNull( type )
@@ -5257,7 +5350,8 @@ public class DeclarationValidator
                && DeclarationValidator.hasSourceInterface( dataset.sources(),
                                                            SourceInterface.USGS_NWIS,
                                                            SourceInterface.WRDS_AHPS,
-                                                           SourceInterface.WRDS_NWM );
+                                                           SourceInterface.WRDS_NWM,
+                                                           SourceInterface.WRDS_HEFS );
     }
 
     /**
@@ -5276,8 +5370,9 @@ public class DeclarationValidator
      */
     private static boolean isTimeIntervalIncomplete( TimeInterval timeInterval )
     {
-        return Objects.isNull( timeInterval ) || Objects.isNull( timeInterval.minimum() ) || Objects.isNull(
-                timeInterval.maximum() );
+        return Objects.isNull( timeInterval )
+               || Objects.isNull( timeInterval.minimum() )
+               || Objects.isNull( timeInterval.maximum() );
     }
 
     /**

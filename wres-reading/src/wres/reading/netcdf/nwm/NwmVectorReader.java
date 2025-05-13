@@ -128,7 +128,9 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                   .stream()
                                                                   .map( Source::sourceInterface )
                                                                   .collect( Collectors.toSet() )
-                                                      + "), geographic features, time periods etc.)." );
+                                                      + "), geographic features, time periods etc. and that you have "
+                                                      + "the appropriate credentials to access the data (e.g. for a "
+                                                      + "cloud bucket with controlled access)." );
                          }
                      } );
     }
