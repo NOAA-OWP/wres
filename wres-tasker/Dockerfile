@@ -1,16 +1,17 @@
-FROM registry.access.redhat.com/ubi8/ubi:8.10-1088
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1184.1741863532
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.14.0.7-3.el8.x86_64 \
+    java-17-openjdk-headless-1:17.0.15.0.6-2.el8.x86_64 \
     unzip-6.0-47.el8_10.x86_64 \
     procps-ng-3.3.15-14.el8 \
     iproute-6.2.0-6.el8_10.x86_64 \
     hostname-3.20-6.el8 \
     && dnf clean all
 
+# Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
 # See comments in main/worker/root wres Dockerfile
-RUN groupadd --gid 1370800073 wres \
-    && useradd --uid 499 --gid 1370800073 wres_tasker_docker
+#RUN groupadd --gid 1370800073 wres \
+#    && useradd --uid 499 --gid 1370800073 wres_tasker_docker
 
 ARG version
 WORKDIR /opt
@@ -28,7 +29,8 @@ COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 8443
-USER wres_tasker_docker
+# Uncomment this line as well to set the user you added above
+#USER wres_tasker_docker
 
 # Remember, to exec into a container and open a shell, use: 
 # docker run -ti --entrypoint /bin/bash container_id

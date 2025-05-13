@@ -108,10 +108,10 @@ services:
          # To support durable queues after a cycling down and up.
          - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
          # Persistent log location
-         #- /mnt/wres_share/logs/broker/:/mnt/wres_share/logs/broker/
+         - /mnt/wres_share/wres_logs/broker/:/mnt/wres_share/wres_logs/broker/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
-         #- RABBITMQ_LOG_LOCATION=/mnt/wres_share/logs/broker/
+         - RABBITMQ_LOG_LOCATION=/mnt/wres_share/wres_logs/broker/rabbitmq.log
          - WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_CERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CERTFILE}
          - WRES_RABBITMQ_SSL_OPTIONS_KEYFILE=${WRES_RABBITMQ_SSL_OPTIONS_KEYFILE}
@@ -235,7 +235,7 @@ services:
          # For certificates and keys that correspond to them
          - /mnt/wres_keys:/wres_secrets:ro
           # Persistent log location
-         - /mnt/wres_share/wres_logs:/mnt/wres_share/wres_logs
+         - /mnt/wres_share/wres_logs/eventsbroker/entry_host/:/usr/local/wres-eventsbroker/log/
         environment:
          - BROKER_WORK=/container_home
          - BROKER_KEYSTORE_PATH=${EVENTSBROKER_KEYSTORE_PATH}

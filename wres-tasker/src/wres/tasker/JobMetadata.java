@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import org.redisson.api.RCascadeType;
 import org.redisson.api.annotation.RCascade;
@@ -65,7 +67,7 @@ public class JobMetadata
     private Integer exitCode;
 
     @RCascade( RCascadeType.ALL )
-    private SortedSet<URI> outputs;
+    private SortedSet<String> outputs;
 
     @RCascade( RCascadeType.ALL )
     private ConcurrentMap<Integer,String> stdout;
@@ -78,15 +80,15 @@ public class JobMetadata
 
     /** Inputs to be added to the above declaration when posting job input */
     @RCascade( RCascadeType.ALL )
-    private List<URI> leftInputs;
+    private List<String> leftInputs;
 
     /** Inputs to be added to the above declaration when posting job input */
     @RCascade( RCascadeType.ALL )
-    private List<URI> rightInputs;
+    private List<String> rightInputs;
 
     /** Inputs to be added to the above declaration when posting job input */
     @RCascade( RCascadeType.ALL )
-    private List<URI> baselineInputs;
+    private List<String> baselineInputs;
 
     //Must ensure this is not null.  Just set it to CREATED on construction.
     private JobState jobState = JobState.CREATED;
@@ -170,35 +172,69 @@ public class JobMetadata
         this.jobMessage = jobMessage;
     }
 
-    public List<URI> getLeftInputs()
+    /**
+     * @return List of left/observed input URI strings converted to URI instances.
+     */
+    public List<URI> retrieveLeftInputURIs()
+    {
+        return this.getLeftInputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return List of right/predicted input URI strings converted to URI instances.
+     */
+    public List<URI> retrieveRightInputURIs()
+    {
+        return this.getRightInputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return List of baseline input URI strings converted to URI instances.
+     */
+    public List<URI> retrieveBaselineInputURIs()
+    {
+        return this.getBaselineInputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( Collectors.toList() );
+    }
+
+    public List<String> getLeftInputs()
     {
         return this.leftInputs;
     }
 
-    public void setLeftInputs( List<URI> leftInputs )
+    public void setLeftInputs( List<String> leftInputs )
     {
         this.leftInputs = leftInputs;
     }
 
-    public List<URI> getRightInputs()
+    public List<String> getRightInputs()
     {
         return this.rightInputs;
     }
 
-    public void setRightInputs( List<URI> rightInputs )
+    public void setRightInputs( List<String> rightInputs )
     {
         this.rightInputs = rightInputs;
     }
 
-    public List<URI> getBaselineInputs()
+    public List<String> getBaselineInputs()
     {
         return this.baselineInputs;
     }
 
-    public void setBaselineInputs( List<URI> baselineInputs )
+    public void setBaselineInputs( List<String> baselineInputs )
     {
         this.baselineInputs = baselineInputs;
     }
+
 
     public void setKeepInput( boolean keepInput )
     {
@@ -211,26 +247,22 @@ public class JobMetadata
     }
 
     /**
-     * Get an unmodifiable view of the outputs Set
-     * @return The Set of output URIs.
+     * Get an unmodifiable view of the outputs set as URIs.
+     * @return The Set of output URI strings converted to URI instances.
      */
-
-    public SortedSet<URI> getOutputs()
+    public SortedSet<URI> retrieveOutputURIs()
     {
-        return this.outputs;
-    }
-
-
-    public void setOutputs( SortedSet<URI> outputs )
-    {
-        this.outputs = outputs;
+        return this.getOutputs()
+                   .stream()
+                   .map( URI::create )
+                   .collect( 
+                           Collectors.toCollection( TreeSet::new ) );
     }
 
     /**
      * Get an unmodifiable view of the standard output stream Map.
      * @return The Map of stdout.
      */
-
     public ConcurrentMap<Integer,String> getStdout()
     {
         return this.stdout;
@@ -263,7 +295,6 @@ public class JobMetadata
      * @param jobState The new job state (not NOT_FOUND)
      * @throws IllegalStateException When an illegal job state transition occurs
      */
-
     public void setJobState( JobState jobState )
     {
         Objects.requireNonNull( jobState );
@@ -373,6 +404,16 @@ public class JobMetadata
         databasePort = value;
     }
 
+    public SortedSet<String> getOutputs()
+    {
+        return this.outputs;
+    }
+
+    public void setOutputs( SortedSet<String> outputs )
+    {
+        this.outputs = outputs;
+    }
+
     void addStdout( Integer index, String line )
     {
         String result = this.getStdout()
@@ -399,8 +440,7 @@ public class JobMetadata
 
     void addOutput( URI uri )
     {
-        boolean result = this.getOutputs()
-                             .add( uri );
+        boolean result = this.getOutputs().add( uri.toASCIIString() );
 
         if ( !result )
         {
@@ -428,7 +468,10 @@ public class JobMetadata
         }
         else
         {
-            boolean result = this.getOutputs().removeAll( uris );
+            boolean result = this.getOutputs()
+                                 .removeAll( uris.stream()
+                                         .map( URI::toASCIIString )
+                                         .collect( Collectors.toList() ) );
 
             if ( !result )
             {
@@ -445,20 +488,20 @@ public class JobMetadata
 
     void addLeftInput( URI input )
     {
-        List<URI> uris = this.getLeftInputs();
-        uris.add( input );
+        List<String> uris = this.getLeftInputs();
+        uris.add( input.toASCIIString());
     }
 
     void addRightInput( URI input )
     {
-        List<URI> uris = this.getRightInputs();
-        uris.add( input );
+        List<String> uris = this.getRightInputs();
+        uris.add( input.toASCIIString() );
     }
 
     void addBaselineInput( URI input )
     {
-        List<URI> uris = this.getBaselineInputs();
-        uris.add( input );
+        List<String> uris = this.getBaselineInputs();
+        uris.add( input.toASCIIString() );
     }
 
     /**
@@ -478,13 +521,14 @@ public class JobMetadata
         return new org.apache.commons.lang3.builder.ToStringBuilder( this )
                 .append( "id", this.getId() )
                 .append( "exitCode", this.getExitCode() )
-                .append( "outputs", this.getOutputs() )
+                .append( "outputs", this.retrieveOutputURIs() )
                 .append( "jobMessage", this.getJobMessage() )
-                .append( "leftInputs", this.getLeftInputs() )
-                .append( "rightInputs", this.getRightInputs() )
-                .append( "baselineInputs", this.getBaselineInputs() )
+                .append( "leftInputs", this.retrieveLeftInputURIs() )
+                .append( "rightInputs", this.retrieveRightInputURIs() )
+                .append( "baselineInputs", this.retrieveBaselineInputURIs() )
                 .toString();
     }
 
 }
+
 

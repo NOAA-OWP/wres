@@ -139,13 +139,13 @@ echo "Building images..."
 # Build and tag the worker image which is composed of WRES core and worker shim.
 # Tag will be based on the later image version which is WRES core at git root.
 echo "Building and tagging worker image..."
-worker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
+worker_image_id=$( podman build --format docker --build-arg version=$wres_core_version --build-arg worker_version=$wres_worker_shim_version --quiet --tag wres/wres-worker . )
 echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 
 # Build and tag the tasker image which solely contains the tasker.
 echo "Building tasker image..."
 pushd wres-tasker
-tasker_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker . )
+tasker_image_id=$( podman build --format docker --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker . )
 popd
 
 echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
@@ -153,7 +153,7 @@ echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
 # Build and tag the broker image
 echo "Building broker image..."
 pushd wres-broker
-broker_image_id=$( podman build --format docker -f Poderfile --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker . )
+broker_image_id=$( podman build --format docker --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker . )
 popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
@@ -161,7 +161,7 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 # Build and tag the redis image
 echo "Building redis image..."
 pushd wres-redis
-redis_image_id=$( podman build --format docker -f Poderfile --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis . )
+redis_image_id=$( podman build --format docker --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis . )
 popd
 
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
@@ -169,7 +169,7 @@ echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 # Build and tag the eventsbroker image
 echo "Building events broker image..."
 pushd wres-eventsbroker
-eventsbroker_image_id=$( podman build --format docker -f Poderfile --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker . )
+eventsbroker_image_id=$( podman build --format docker --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker . )
 popd
 
 echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_id"
@@ -177,7 +177,7 @@ echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_
 # Build and tag the graphics image
 echo "Building graphics image..."
 pushd wres-vis
-graphics_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics . )
+graphics_image_id=$( podman build --format docker --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics . )
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
@@ -185,7 +185,7 @@ echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
 # Build and tag the writing image
 echo "Building writing image..."
 pushd wres-writing
-writing_image_id=$( podman build --format docker -f Poderfile --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing . )
+writing_image_id=$( podman build --format docker --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing . )
 popd
 
 echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
@@ -199,7 +199,7 @@ popd
 echo "Built wres/nginx"
 
 echo "Displaying most recent 20 docker images"
-docker image ls | head -n 21
+podman image ls | head -n 21
 
 
 #=============================================================
@@ -234,42 +234,42 @@ then
 
 
         echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
-        podman tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+        podman tag localhost/wres/wres-worker $DOCKER_REGISTRY/wres/wres-worker:$overall_version
         podman push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
 
 
         echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
-        podman tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        podman tag localhost/wres/wres-tasker $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
         podman push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
 
 
         echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
-        podman tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        podman tag localhost/wres/wres-broker $DOCKER_REGISTRY/wres/wres-broker:$broker_version
         podman push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
 
 
         echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
-        podman tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        podman tag localhost/wres/wres-redis $DOCKER_REGISTRY/wres/wres-redis:$redis_version
         podman push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
 
 
         echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
-        podman tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+        podman tag localhost/wres/wres-eventsbroker $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
         podman push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
 
 
         echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
-        podman tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+        podman tag localhost/wres/wres-graphics $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
         podman push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
 
 
         echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
-        podman tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        podman tag localhost/wres/wres-writing $DOCKER_REGISTRY/wres/wres-writing:$writing_version
         podman push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
 
 
         echo "Tagging and pushing wres/nginx as wres/nginx..."
-        podman tag wres/nginx $DOCKER_REGISTRY/wres/nginx
+        podman tag localhost/wres/nginx $DOCKER_REGISTRY/wres/nginx
         podman push $DOCKER_REGISTRY/wres/nginx
     fi
     
@@ -292,25 +292,25 @@ echo "If you are only updating some of the images/versions, it is recommended"
 echo "you skip this step and do that by manually editing the .ymls."
 echo ""
 
-cp compose-entry.template.yml compose-entry.yml 
-sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-entry.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" compose-entry.yml
-sed -i "s/REDIS_IMAGE/${redis_version}/" compose-entry.yml
-sed -i "s/WORKER_IMAGE/${overall_version}/" compose-entry.yml # By design... The tag for the worker image is the "overall_version".
-sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-entry.yml
-sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-entry.yml
-sed -i "s/WRITING_IMAGE/${writing_version}/" compose-entry.yml
-sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-entry.yml
+cp podman-compose-entry.template.yml podman-compose-entry.yml
+sed -i "s/TASKER_IMAGE/${tasker_version}/" podman-compose-entry.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" podman-compose-entry.yml
+sed -i "s/REDIS_IMAGE/${redis_version}/" podman-compose-entry.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" podman-compose-entry.yml # By design... The tag for the worker image is the "overall_version".
+sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" podman-compose-entry.yml
+sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" podman-compose-entry.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" podman-compose-entry.yml
+sed -i "s/OVERALL_IMAGE/${overall_version}/" podman-compose-entry.yml
 
-cp compose-workers.template.yml compose-workers.yml
-sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-workers.yml
-sed -i "s/BROKER_IMAGE/${broker_version}/" compose-workers.yml
-sed -i "s/REDIS_IMAGE/${redis_version}/" compose-workers.yml
-sed -i "s/WORKER_IMAGE/${overall_version}/" compose-workers.yml # By design... The tag for the worker image is the "overall_version".
-sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-workers.yml
-sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-workers.yml
-sed -i "s/WRITING_IMAGE/${writing_version}/" compose-workers.yml
-sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-workers.yml
+cp podman-compose-workers.template.yml podman-compose-workers.yml
+sed -i "s/TASKER_IMAGE/${tasker_version}/" podman-compose-workers.yml
+sed -i "s/BROKER_IMAGE/${broker_version}/" podman-compose-workers.yml
+sed -i "s/REDIS_IMAGE/${redis_version}/" podman-compose-workers.yml
+sed -i "s/WORKER_IMAGE/${overall_version}/" podman-compose-workers.yml # By design... The tag for the worker image is the "overall_version".
+sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" podman-compose-workers.yml
+sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" podman-compose-workers.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" podman-compose-workers.yml
+sed -i "s/OVERALL_IMAGE/${overall_version}/" podman-compose-workers.yml
 
 echo ""
 echo "The two .yml files have been updated.  Please push them to the repository, if appropriate, or use 'git checkout' to undo the changes."

@@ -41,8 +41,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
-import jodd.net.HttpStatus;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.eclipse.jetty.http.HttpStatus;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
@@ -493,7 +493,7 @@ class JobResults
                           sharedData );
 
             // Checking for HTTP OK status
-            if ( resultValue == HttpStatus.ok().status() )
+            if ( resultValue == HttpStatus.OK_200 )
             {
                 sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_SUCCESS );
                 LOGGER.debug( "Shared metadata after setting job state: {}",
@@ -501,7 +501,7 @@ class JobResults
                 JobResults.deleteInputs( jobMetadata );
             }
             // We use 409 to signify a canceled evaluation
-            else if ( resultValue == HttpStatus.error409().status() )
+            else if ( resultValue == HttpStatus.CONFLICT_409 )
             {
                 sharedData.setJobState( JobMetadata.JobState.CANCELED );
                 LOGGER.debug( "Shared metadata after setting job state: {}",
@@ -1146,7 +1146,7 @@ class JobResults
             return null;
         }
 
-        return metadata.getOutputs();
+        return metadata.retrieveOutputURIs();
     }
 
     /**
@@ -1262,21 +1262,21 @@ class JobResults
     {
         JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
-        return Collections.unmodifiableList( metadata.getLeftInputs() );
+        return Collections.unmodifiableList( metadata.retrieveLeftInputURIs() );
     }
 
     List<URI> getRightInputs( String jobId )
     {
         JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
-        return Collections.unmodifiableList( metadata.getRightInputs() );
+        return Collections.unmodifiableList( metadata.retrieveRightInputURIs() );
     }
 
     List<URI> getBaselineInputs( String jobId )
     {
         JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
-        return Collections.unmodifiableList( metadata.getBaselineInputs() );
+        return Collections.unmodifiableList( metadata.retrieveBaselineInputURIs() );
     }
 
     void addInput( String jobId, String side, URI input )
@@ -1328,7 +1328,7 @@ class JobResults
      */
     void deleteOutputs( JobMetadata sharedData ) throws IOException
     {
-        Set<URI> jobOutputs = sharedData.getOutputs();
+        Set<URI> jobOutputs = sharedData.retrieveOutputURIs();
         Set<URI> deletedOutputs = new ConcurrentSkipListSet<>();
 
         //Remove each file if it exists. Log messages appropriately.
@@ -1419,7 +1419,7 @@ class JobResults
         String jobId = sharedData.getId();
 
         // When there are posted input data related to this job, remove them
-        for ( URI uri : sharedData.getLeftInputs() )
+        for ( URI uri : sharedData.retrieveLeftInputURIs() )
         {
             try
             {
@@ -1434,7 +1434,7 @@ class JobResults
                              ioe );
             }
         }
-        for ( URI uri : sharedData.getRightInputs() )
+        for ( URI uri : sharedData.retrieveRightInputURIs() )
         {
             try
             {
@@ -1450,7 +1450,7 @@ class JobResults
             }
         }
 
-        for ( URI uri : sharedData.getBaselineInputs() )
+        for ( URI uri : sharedData.retrieveBaselineInputURIs() )
         {
             try
             {

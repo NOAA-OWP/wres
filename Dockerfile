@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.10-1184.1741863532
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.14.0.7-3.el8.x86_64 \
+    java-17-openjdk-headless-1:17.0.15.0.6-2.el8.x86_64 \
     unzip-6.0-47.el8_10.x86_64 \
     fontconfig-2.13.1-4.el8 \
     dejavu-fonts-common-2.35-7.el8 \
@@ -11,9 +11,9 @@ RUN dnf install -y \
     hostname-3.20-6.el8 \
     && dnf clean all
 
-# For examples of the following for alpine or debian, see git history.
-RUN groupadd --gid 1370800073 wres \
-    && useradd --uid 498 --gid 1370800073 wres_docker --home-dir /container_home
+# Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
+#RUN groupadd --gid 1370800073 wres \
+#    && useradd --uid 498 --gid 1370800073 wres_docker --home-dir /container_home
 
 # Specifies which version of the main WRES version to use.
 ARG version
@@ -41,7 +41,8 @@ WORKDIR /opt/wres-worker-${worker_version}
 # In order to set umask for file sharing, use a wrapper script, see #56790
 COPY ./scripts/docker-entrypoint.sh .
 
-USER wres_docker
+# Uncomment this line as well to set the user you added above
+# USER wres_docker
 
 CMD [ "./docker-entrypoint.sh" ]
 

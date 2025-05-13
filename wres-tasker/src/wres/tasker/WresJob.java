@@ -47,6 +47,7 @@ import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
+import org.redisson.codec.KryoCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -456,7 +457,7 @@ public class WresJob
                                     + "<body><h1>Declaration</h1>"
                                     + "<form action=\"/job\" method=\"post\">"
                                     + "    Evaluation project declaration full text:<br />"
-                                    + "    <textarea id=\"projectConfig\" class=\"evaluation\" name=\"projectConfig\" required=\"true\">"
+                                    + "    <textarea id=\"projectConfig\" class=\"evaluation\" name=\"projectConfig\" required=\"true\" style=\"resize:both;\" rows=\"20\" cols=\"80\">"
                                     + projectConfig
                                     + "    </textarea>"
                                     + "    <br />"
@@ -1025,7 +1026,15 @@ public class WresJob
      */
     private static void initializeRedissonClient()
     {
+        //Define the registered classes for the Kryo codec.
+        List<Class<?>> registeredClasses = new ArrayList<>();
+        registeredClasses.add(wres.tasker.JobMetadata.JobState.class);
+        registeredClasses.add(org.redisson.RedissonReference.class);
+        registeredClasses.add(byte[].class);
+
+        //Redisson config will use KryoCodec.
         Config redissonConfig = new Config();
+        redissonConfig.setCodec( new KryoCodec( registeredClasses ) );
         String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
         String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
         if ( Objects.nonNull( specifiedRedisHost ) )
