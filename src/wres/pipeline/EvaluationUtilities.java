@@ -139,8 +139,10 @@ class EvaluationUtilities
 
     /**
      * Generates statistics by creating a sequence of pool-shaped tasks, which are then chained together and executed.
-     * On completion of each pool-shaped tasks, the statistics associated with that pool are published. Finally, creates
-     * any end-of-chain summary statistics and publishes those too.
+     * On completion of each pool-shaped tasks, the statistics associated with that pool are published. Finally,
+     * when summary statistics are requested, the main statistics are registered with each
+     * {@link SummaryStatisticsCalculator} for the calculation of end-of-pipeline summary statistics. These statistics
+     * are created and published separately with {@link #createAndPublishSummaryStatistics(EvaluationDetails)}.
      *
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
@@ -933,6 +935,7 @@ class EvaluationUtilities
 
             Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = next.getValue();
 
+            // Register the main statistics with any summary statistics calculators
             List<SummaryStatisticsCalculator> calculators = evaluationDetails.summaryStatistics()
                                                                              .values()
                                                                              .stream()
@@ -1118,6 +1121,7 @@ class EvaluationUtilities
 
             Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = next.getValue();
 
+            // Register the main statistics with any summary statistics calculators
             List<SummaryStatisticsCalculator> calculators = evaluationDetails.summaryStatistics()
                                                                              .values()
                                                                              .stream()

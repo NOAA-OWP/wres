@@ -2,6 +2,7 @@ package wres.datamodel.statistics;
 
 import java.io.Serial;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -17,7 +18,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Format;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -345,17 +345,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         try
         {
-            // Split the statistics into two groups as there may be separate statistics for a baseline
-            Map<DatasetOrientation, List<Statistics>> groups = Slicer.getGroupedStatistics( statistics );
-
-            // Iterate the types
-            for ( Map.Entry<DatasetOrientation, List<Statistics>> nextEntry : groups.entrySet() )
-            {
-                DatasetOrientation key = nextEntry.getKey();
-                List<Statistics> value = nextEntry.getValue();
-                Set<Path> innerPaths = this.accept( value, key == DatasetOrientation.BASELINE );
-                paths.addAll( innerPaths );
-            }
+            Set<Path> innerPaths = this.accept( statistics );
+            paths.addAll( innerPaths );
         }
         // Wrap with some context
         catch ( RuntimeException e )
@@ -369,13 +360,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     /**
      * Accept some statistics for consumption.
      * @param statistics the statistics
-     * @param isBaselinePool is true if the statistics refer to a baseline pool (when generating separate statistics 
-     *            for both a main pool and baseline pool).
      * @return the paths written
      * @throws NullPointerException if the statistics are null
      */
 
-    private Set<Path> accept( Collection<Statistics> statistics, boolean isBaselinePool )
+    private Set<Path> accept( Collection<Statistics> statistics )
     {
         Objects.requireNonNull( statistics );
 
@@ -383,10 +372,12 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         // Supplies the pool metadata from either the baseline pool or the main pool
         Function<Statistics, Pool> poolSupplier = statistic -> {
-            if ( isBaselinePool )
+            if ( !statistic.hasPool()
+                 && statistic.hasBaselinePool() )
             {
                 return statistic.getBaselinePool();
             }
+
             return statistic.getPool();
         };
 
@@ -402,7 +393,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         // Box-plot output available per pair
-        if ( statistics.stream().anyMatch( next -> next.getOneBoxPerPairCount() > 0 ) )
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getOneBoxPerPairCount() > 0 ) )
         {
             Function<Statistics, List<BoxplotStatistic>> supplier = Statistics::getOneBoxPerPairList;
             List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
@@ -470,7 +462,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     }
 
     /**
-     * <p>Returns wrapped statistics from unwrapped statistics. Additionally sort the statistics by time window and 
+     * <p>Returns wrapped statistics from unwrapped statistics. Additionally, sort the statistics by time window and
      * threshold. a
      *
      * <p>Some of the existing consumers, notably the PNG consumers, currently assume that the statistics are sorted. 
@@ -630,12 +622,19 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             this.log( outputs, next.getKey(), true );
 
-            List<DiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( outputs,
-                                                                                            next.getKey() );
+            List<List<DiagramStatisticOuter>> grouped = this.getGroupedStatisticsForThisFormat( outputs,
+                                                                                                next.getKey() );
 
-            // Consume the output
-            Set<Path> innerPaths = next.getValue().apply( filtered );
-            paths.addAll( innerPaths );
+            for ( List<DiagramStatisticOuter> nextStatistics : grouped )
+            {
+                List<DiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( nextStatistics,
+                                                                                                next.getKey() );
+
+                // Consume the output
+                Set<Path> innerPaths = next.getValue()
+                                           .apply( filtered );
+                paths.addAll( innerPaths );
+            }
 
             this.log( outputs, next.getKey(), false );
         }
@@ -671,7 +670,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                             next.getKey() );
 
             // Consume the output
-            Set<Path> innerPaths = next.getValue().apply( filtered );
+            Set<Path> innerPaths = next.getValue()
+                                       .apply( filtered );
             paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
@@ -741,13 +741,19 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             this.log( outputs, next.getKey(), true );
 
-            List<DoubleScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( outputs,
-                                                                                                next.getKey() );
+            List<List<DoubleScoreStatisticOuter>> grouped = this.getGroupedStatisticsForThisFormat( outputs,
+                                                                                                    next.getKey() );
 
-            // Consume the output
-            Set<Path> innerPaths = next.getValue()
-                                       .apply( filtered );
-            paths.addAll( innerPaths );
+            for ( List<DoubleScoreStatisticOuter> nextStatistics : grouped )
+            {
+                List<DoubleScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( nextStatistics,
+                                                                                                    next.getKey() );
+
+                // Consume the output
+                Set<Path> innerPaths = next.getValue()
+                                           .apply( filtered );
+                paths.addAll( innerPaths );
+            }
 
             this.log( outputs, next.getKey(), false );
         }
@@ -779,11 +785,14 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             this.log( outputs, next.getKey(), true );
 
+            // Do not group the duration scores into main and baseline for grouped consumption like other formats until
+            // the graphics formats support multiple datasets/scenarios in a single plot
             List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( outputs,
                                                                                                   next.getKey() );
 
             // Consume the output
-            Set<Path> innerPaths = next.getValue().apply( filtered );
+            Set<Path> innerPaths = next.getValue()
+                                       .apply( filtered );
             paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
@@ -816,11 +825,14 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             this.log( outputs, next.getKey(), true );
 
-            List<DurationDiagramStatisticOuter> filtered =
-                    this.getFilteredStatisticsForThisFormat( outputs, next.getKey() );
+            // Do not group the duration scores into main and baseline for grouped consumption like other formats until
+            // the graphics formats support multiple datasets/scenarios in a single plot
+            List<DurationDiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( outputs,
+                                                                                                    next.getKey() );
 
             // Consume the output
-            Set<Path> innerPaths = next.getValue().apply( filtered );
+            Set<Path> innerPaths = next.getValue()
+                                       .apply( filtered );
             paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
@@ -853,7 +865,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             for ( Statistics nextStatistics : statistics )
             {
-                Set<Path> innerPaths = next.getValue().apply( nextStatistics );
+                Set<Path> innerPaths = next.getValue()
+                                           .apply( nextStatistics );
                 paths.addAll( innerPaths );
             }
         }
@@ -909,7 +922,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * suppressed for particular statistics. See {@link #getSuppressTheseMetricsForThisFormat(Format).
      *
      * @param statistics the statistics to filter
-     * @param Format the format type by which to filter
+     * @param format the format type by which to filter
      * @return a filtered list of statistics, omitting those to be suppressed for the prescribed format type
      * @throws NullPointerException if any input is null
      */
@@ -930,6 +943,62 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
         // Nothing filtered
         return statistics;
+    }
+
+    /**
+     * Groups the input statistics for the prescribed format depending on whether the statistics should be grouped by
+     * dataset.
+     *
+     * @param statistics the statistics to filter
+     * @param format the format type by which to filter
+     * @return a filtered list of statistics, omitting those to be suppressed for the prescribed format type
+     * @throws NullPointerException if any input is null
+     */
+
+    private <T extends Statistic<?>> List<List<T>> getGroupedStatisticsForThisFormat( List<T> statistics,
+                                                                                      Format format )
+    {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( format );
+
+        // Group the statistics by dataset
+        if ( format.isGraphicsFormat()
+             && this.getEvaluationDescription()
+                    .getOutputs()
+                    .getCombinedGraphics() )
+        {
+            List<T> main =
+                    statistics.stream()
+                              .filter( s -> !s.getPoolMetadata()
+                                              .getPool()
+                                              .getIsBaselinePool() )
+                              .toList();
+
+            List<T> baseline =
+                    statistics.stream()
+                              .filter( s -> s.getPoolMetadata()
+                                             .getPool()
+                                             .getIsBaselinePool() )
+                              .toList();
+
+            List<List<T>> returnMe = new ArrayList<>();
+
+            if ( !main.isEmpty() )
+            {
+                returnMe.add( main );
+            }
+
+            if ( !baseline.isEmpty() )
+            {
+                returnMe.add( baseline );
+            }
+
+            return Collections.unmodifiableList( returnMe );
+        }
+        else
+        {
+            return List.of( statistics );
+        }
     }
 
     /**
@@ -969,8 +1038,9 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         Map<Format, Set<MetricConstants>> returnMe = new EnumMap<>( Format.class );
 
         // PNG
-        if ( outputs.hasPng() && outputs.getPng()
-                                        .hasOptions() )
+        if ( outputs.hasPng()
+             && outputs.getPng()
+                       .hasOptions() )
         {
             List<MetricName> ignore = outputs.getPng()
                                              .getOptions()
@@ -983,8 +1053,9 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             returnMe.put( Format.PNG, mapped );
         }
         // SVG
-        if ( outputs.hasSvg() && outputs.getSvg()
-                                        .hasOptions() )
+        if ( outputs.hasSvg()
+             && outputs.getSvg()
+                       .hasOptions() )
         {
             List<MetricName> ignore = outputs.getSvg()
                                              .getOptions()

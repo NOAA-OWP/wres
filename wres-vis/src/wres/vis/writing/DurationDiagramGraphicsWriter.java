@@ -156,7 +156,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                         DurationDiagramStatisticOuter next = filtered.get( 0 );
 
                         MetricConstants metricName = next.getMetricName();
-                        PoolMetadata metadata = next.getPoolMetadata();
+                        PoolMetadata metadata = GraphicsWriter.getPoolMetadata( filtered );
                         String pathQualifier = DurationDiagramGraphicsWriter.getPathQualifier( filtered );
 
                         JFreeChart chart = chartFactory.getDurationDiagramChart( filtered,

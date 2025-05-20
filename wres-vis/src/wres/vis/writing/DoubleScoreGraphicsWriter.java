@@ -20,7 +20,6 @@ import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -87,20 +86,11 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             {
                 List<DoubleScoreStatisticOuter> filtered = Slicer.filter( output, next );
 
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<DatasetOrientation, List<DoubleScoreStatisticOuter>> groups =
-                        Slicer.getGroupedStatistics( filtered );
-
-                for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                                        super.getOutputsDescription(),
-                                                                        nextGroup );
-                    paths.addAll( innerPathsWrittenTo );
-                }
+                Set<Path> innerPathsWrittenTo =
+                        DoubleScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
+                                                                    super.getOutputsDescription(),
+                                                                    filtered );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
 
@@ -147,8 +137,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                     MetricConstants metricName = nextOutput.get( 0 )
                                                            .getMetricName();
 
-                    PoolMetadata metadata = nextOutput.get( 0 )
-                                                      .getPoolMetadata();
+                    PoolMetadata metadata = GraphicsWriter.getPoolMetadata( nextOutput );
 
                     Map<MetricConstants, JFreeChart> engines = chartFactory.getScoreCharts( nextOutput,
                                                                                             helper.getGraphicShape(),
@@ -201,37 +190,119 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                          .getPool()
                                                          .getEnsembleAverageType() );
 
-            // Slice by secondary threshold
-            if ( !innerSlice.isEmpty() )
+            // Slice univariate statistics separately as they are structurally different. See GitHub #488
+            List<List<DoubleScoreStatisticOuter>> univariateSliced =
+                    DoubleScoreGraphicsWriter.getStatisticsSlicedByType( innerSlice );
+
+            for ( List<DoubleScoreStatisticOuter> nextSlice : univariateSliced )
             {
-                if ( !secondThreshold.isEmpty() )
-                {
-                    // Slice by the second threshold
-                    List<DoubleScoreStatisticOuter> innerSliceFinal = innerSlice;
-                    secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSliceFinal,
-                                                                                value -> next.equals( value.getPoolMetadata()
-                                                                                                           .getThresholds()
-                                                                                                           .second() ) ) ) );
-
-                    // Primary thresholds without secondary thresholds
-                    innerSlice = innerSliceFinal.stream()
-                                                .filter( next -> !next.getPoolMetadata()
-                                                                      .getThresholds()
-                                                                      .hasTwo() )
-                                                .toList();
-                }
-
-                // Group by summary statistic presence/absence
-                List<List<DoubleScoreStatisticOuter>> grouped
-                        = GraphicsWriter.groupBySummaryStatistics( innerSlice,
-                                                                   s -> "",
-                                                                   Arrays.stream( SummaryStatistic.StatisticName.values() )
-                                                                         .collect( Collectors.toUnmodifiableSet() ) );
-                sliced.addAll( grouped );
+                List<List<DoubleScoreStatisticOuter>> finalSlice =
+                        DoubleScoreGraphicsWriter.getStatisticsSlicedByThresholdAndSummaryStatistics( nextSlice,
+                                                                                                      secondThreshold );
+                sliced.addAll( finalSlice );
             }
         }
 
         return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Slices the statistics by secondary threshold.
+     * @param statistics the statistics to slice
+     * @param secondThreshold the secondary threshold
+     * @return the sliced statistics
+     */
+
+    private static List<List<DoubleScoreStatisticOuter>> getStatisticsSlicedByThresholdAndSummaryStatistics( List<DoubleScoreStatisticOuter> statistics,
+                                                                                                             SortedSet<ThresholdOuter> secondThreshold )
+    {
+        List<List<DoubleScoreStatisticOuter>> sliced = new ArrayList<>();
+
+        // Slice by secondary threshold
+        if ( !statistics.isEmpty() )
+        {
+            if ( !secondThreshold.isEmpty() )
+            {
+                // Slice by the second threshold
+                List<DoubleScoreStatisticOuter> innerSliceFinal = statistics;
+                secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSliceFinal,
+                                                                            value -> next.equals( value.getPoolMetadata()
+                                                                                                       .getThresholds()
+                                                                                                       .second() ) ) ) );
+
+                // Primary thresholds without secondary thresholds
+                statistics = innerSliceFinal.stream()
+                                            .filter( next -> !next.getPoolMetadata()
+                                                                  .getThresholds()
+                                                                  .hasTwo() )
+                                            .toList();
+            }
+
+            // Group by summary statistic presence/absence
+            List<List<DoubleScoreStatisticOuter>> grouped
+                    = GraphicsWriter.groupBySummaryStatistics( statistics,
+                                                               s -> "",
+                                                               Arrays.stream( SummaryStatistic.StatisticName.values() )
+                                                                     .collect( Collectors.toUnmodifiableSet() ) );
+            sliced.addAll( grouped );
+        }
+
+        return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Slices the statistics according to whether they are univariate (i.e., single-sided data) or bivariate
+     * (i.e., paired data). For the former, separates out the main and baseline statistics in case the statistics are
+     * grouped for plotting together (univariate statistics are never plotted together).
+     *
+     * @param statistics the statistics to slice
+     * @return the sliced statistics
+     */
+
+    private static List<List<DoubleScoreStatisticOuter>> getStatisticsSlicedByType( List<DoubleScoreStatisticOuter> statistics )
+    {
+        // Remove baseline statistics from the univariate group, as these should be plotted separately
+        List<DoubleScoreStatisticOuter> univariateMain =
+                statistics.stream()
+                          .filter( s -> s.getMetricName()
+                                         .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
+                                        && !s.getPoolMetadata()
+                                             .getPool()
+                                             .getIsBaselinePool() )
+                          .toList();
+
+        List<DoubleScoreStatisticOuter> univariateBaseline =
+                statistics.stream()
+                          .filter( s -> s.getMetricName()
+                                         .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
+                                        && s.getPoolMetadata()
+                                            .getPool()
+                                            .getIsBaselinePool() )
+                          .toList();
+
+        List<DoubleScoreStatisticOuter> bivariate =
+                statistics.stream()
+                          .filter( s -> !s.getMetricName()
+                                          .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC ) )
+                          .toList();
+        List<List<DoubleScoreStatisticOuter>> returnMe = new ArrayList<>();
+
+        if ( !univariateMain.isEmpty() )
+        {
+            returnMe.add( univariateMain );
+        }
+
+        if ( !univariateBaseline.isEmpty() )
+        {
+            returnMe.add( univariateBaseline );
+        }
+
+        if ( !bivariate.isEmpty() )
+        {
+            returnMe.add( bivariate );
+        }
+
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**

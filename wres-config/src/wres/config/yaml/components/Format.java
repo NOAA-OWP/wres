@@ -29,6 +29,15 @@ public enum Format
     /** A bag of graphics formats. This is not part of the declaration language, but is used internally. */
     GRAPHIC;
 
+    /**
+     * @return whether this format is a graphics format
+     */
+
+    public boolean isGraphicsFormat()
+    {
+        return this == PNG || this == SVG || this == GRAPHIC;
+    }
+
     @Override
     public String toString()
     {

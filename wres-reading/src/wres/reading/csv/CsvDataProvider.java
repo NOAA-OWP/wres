@@ -10,14 +10,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,7 @@ class CsvDataProvider
     private static final String THE_VALUE = "The value '";
     private Map<String, Integer> columnNames;
     private int currentRow = -1;
+    @Getter
     private boolean closed;
     private final Path filePath;
     private final BufferedReader reader;
@@ -122,11 +122,6 @@ class CsvDataProvider
         this.currentRow = -1;
     }
 
-    public boolean isClosed()
-    {
-        return this.closed;
-    }
-
     public boolean next()
     {
         if ( this.isClosed() )
@@ -149,6 +144,7 @@ class CsvDataProvider
                     && readLine.startsWith( this.commentString ) )
             {
                 // Continue to skip comment lines
+                LOGGER.trace( "Skipping comment line: {}.", readLine );
             }
         }
         catch ( IOException e )
@@ -378,17 +374,6 @@ class CsvDataProvider
                                           +
                                           "' cannot be cast as a double." );
         }
-    }
-
-    public LocalTime getTime( String columnName )
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
-        }
-
-        Instant instant = this.getInstant( columnName );
-        return instant.atOffset( ZoneOffset.UTC ).toLocalTime();
     }
 
     public Instant getInstant( String columnName )

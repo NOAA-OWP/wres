@@ -28,7 +28,6 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.writing.csv.CommaSeparatedUtilities;
 import wres.statistics.generated.Pool.EnsembleAverageType;
@@ -130,7 +129,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
      * @param <S>  the score component type
      * @param <T> the score type
      * @param outputDirectory the directory into which to write
-     * @param destinationConfig the destination configuration    
      * @param statistics the score output to iterate through
      * @param durationUnits the time units for durations
      * @param mapper a mapper function that provides a string representation of the score
@@ -324,7 +322,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
      *
-     * @param destinationConfig the destination configuration
      * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
@@ -333,9 +330,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     getSlicedStatistics( List<T> statistics )
     {
         List<List<T>> sliced = new ArrayList<>();
-
-        SortedSet<ThresholdOuter> secondThreshold =
-                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds().second() );
 
         // Slice by ensemble averaging function
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
@@ -356,7 +350,6 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
     /**
      * Generates a path qualifier based on the statistics provided.
-     * @param destinationConfig the destination configuration
      * @param statistics the statistics
      * @return a path qualifier or null if non is required
      */
@@ -366,38 +359,25 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     {
         String append = null;
 
-        // Secondary threshold? If yes, only one, as this was sliced above
-        SortedSet<ThresholdOuter> second =
-                Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata()
-                                             .getThresholds()
-                                             .second() );
-
         // Non-default averaging types that should be qualified?
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata()
+                                             .getPool()
+                                             .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()
-                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                     .filter( next -> next != EnsembleAverageType.MEAN
+                                      && next != EnsembleAverageType.NONE
                                       && next != EnsembleAverageType.UNRECOGNIZED )
                      .findFirst();
 
         if ( type.isPresent() )
         {
-            if ( Objects.nonNull( append ) )
-            {
-                append = append + "_ENSEMBLE_"
-                         + type.get()
-                               .name();
-            }
-            else
-            {
-                append = "ENSEMBLE_" + type.get()
-                                           .name();
-            }
+            append = "ENSEMBLE_" + type.get()
+                                       .name();
         }
 
         return append;
@@ -409,8 +389,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
      * @param declaration the project configuration
      * @param outputDirectory the directory into which to write
      * @param mapper a mapper function that provides a string representation of the score
-     * @throws NullPointerException if either input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing 
+     * @throws NullPointerException if either input is null
      */
 
     private CommaSeparatedScoreWriter( EvaluationDeclaration declaration,

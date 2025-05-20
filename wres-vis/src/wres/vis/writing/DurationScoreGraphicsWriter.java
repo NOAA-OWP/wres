@@ -153,7 +153,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
 
                     DurationScoreStatisticOuter next = nextStatistics.get( 0 );
                     MetricConstants metricName = next.getMetricName();
-                    PoolMetadata metadata = next.getPoolMetadata();
+                    PoolMetadata metadata = GraphicsWriter.getPoolMetadata( nextStatistics );
                     String pathQualifier = DurationScoreGraphicsWriter.getPathQualifier( nextStatistics );
 
                     // Build the output file name

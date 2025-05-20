@@ -7,12 +7,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
@@ -34,6 +36,9 @@ import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
+
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -110,9 +115,25 @@ public class ChartDataFactory
                                                                                 .getThresholds()
                                                                                 .equals( key ) );
 
-            String name = DataUtilities.toStringWithoutUnits( key );
-            YIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced, name, domainValue );
-            dataset.addSeries( nextSeries );
+            // Slice by main/baseline and sort with baseline last
+            Map<DatasetOrientation, List<DoubleScoreComponentOuter>> sorted =
+                    ChartDataFactory.sliceByDatasetOrientation( sliced );
+
+            for ( Map.Entry<DatasetOrientation, List<DoubleScoreComponentOuter>> nextEntry : sorted.entrySet() )
+            {
+                DatasetOrientation nextOrientation = nextEntry.getKey();
+                List<DoubleScoreComponentOuter> nextScenario = nextEntry.getValue();
+                String name = DataUtilities.toStringWithoutUnits( key );
+
+                if ( sorted.size() > 1
+                     && nextOrientation == DatasetOrientation.BASELINE )
+                {
+                    name += BASELINE_SCENARIO_LABEL;
+                }
+
+                YIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( nextScenario, name, domainValue );
+                dataset.addSeries( nextSeries );
+            }
         }
 
         return dataset;
@@ -152,12 +173,27 @@ public class ChartDataFactory
                                                                                     .first()
                                                                                     .isAllDataThreshold() );
 
-            Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
-                                                                        durationUnits );
-            String name = leadDuration.toString();
+            // Slice by main/baseline and sort with baseline last
+            Map<DatasetOrientation, List<DoubleScoreComponentOuter>> sorted =
+                    ChartDataFactory.sliceByDatasetOrientation( sliced );
 
-            YIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced, name, domainValue );
-            dataset.addSeries( nextSeries );
+            for ( Map.Entry<DatasetOrientation, List<DoubleScoreComponentOuter>> nextEntry : sorted.entrySet() )
+            {
+                DatasetOrientation nextOrientation = nextEntry.getKey();
+                List<DoubleScoreComponentOuter> nextScenario = nextEntry.getValue();
+                Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
+                                                                            durationUnits );
+                String name = leadDuration.toString();
+
+                if ( sorted.size() > 1
+                     && nextOrientation == DatasetOrientation.BASELINE )
+                {
+                    name += BASELINE_SCENARIO_LABEL;
+                }
+
+                YIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( nextScenario, name, domainValue );
+                dataset.addSeries( nextSeries );
+            }
         }
 
         return dataset;
@@ -394,21 +430,21 @@ public class ChartDataFactory
     /**
      * Returns a dataset for a verification diagram organized by lead duration (one) and then threshold (up to many).
      * @param statistics the statistics
-     * @param xDimension the metric dimension for the X axis
-     * @param yDimension the metric dimension for the Y axis
+     * @param domainDimension the metric dimension for the X axis
+     * @param rangeDimension the metric dimension for the Y axis
      * @param durationUnits the duration units
      * @return a data source that can be used to draw a plot
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the dataset contains more than one lead duration
      */
-    public static XYDataset ofVerificationDiagramByLeadAndThreshold( List<DiagramStatisticOuter> statistics,
-                                                                     MetricDimension xDimension,
-                                                                     MetricDimension yDimension,
-                                                                     ChronoUnit durationUnits )
+    public static XYDataset ofDiagramStatisticsByLeadAndThreshold( List<DiagramStatisticOuter> statistics,
+                                                                   MetricDimension domainDimension,
+                                                                   MetricDimension rangeDimension,
+                                                                   ChronoUnit durationUnits )
     {
         Objects.requireNonNull( statistics );
-        Objects.requireNonNull( xDimension );
-        Objects.requireNonNull( yDimension );
+        Objects.requireNonNull( domainDimension );
+        Objects.requireNonNull( rangeDimension );
         Objects.requireNonNull( durationUnits );
 
         DiagramStatisticOuter first = statistics.get( 0 );
@@ -452,6 +488,10 @@ public class ChartDataFactory
                                                                             .getThresholds()
                                                                             .equals( key ) );
 
+            // Slice by main/baseline and sort with baseline last
+            Map<DatasetOrientation, List<DiagramStatisticOuter>> sorted =
+                    ChartDataFactory.sliceByDatasetOrientation( sliced );
+
             SortedSet<String> qualified = sliced.stream()
                                                 .flatMap( n -> n.getStatistic()
                                                                 .getStatisticsList()
@@ -460,31 +500,20 @@ public class ChartDataFactory
                                                 .filter( n -> !n.isBlank() )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-            // No qualifiers
-            if ( qualified.isEmpty() )
+            String baseName = DataUtilities.toStringWithoutUnits( key );
+
+            for ( Map.Entry<DatasetOrientation, List<DiagramStatisticOuter>> nextEntry : sorted.entrySet() )
             {
-                String name = DataUtilities.toStringWithoutUnits( key );
-                XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced,
-                                                                                  name,
-                                                                                  xDimension,
-                                                                                  yDimension );
-                dataset.addSeries( nextSeries );
-            }
-            // Slice by qualifier
-            else
-            {
-                for ( String name : qualified )
-                {
-                    List<DiagramStatisticOuter> slicedInner = Slicer.filter( sliced,
-                                                                             next -> next.getComponentNameQualifiers()
-                                                                                         .stream()
-                                                                                         .anyMatch( name::equals ) );
-                    XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( slicedInner,
-                                                                                      name,
-                                                                                      xDimension,
-                                                                                      yDimension );
-                    dataset.addSeries( nextSeries );
-                }
+                DatasetOrientation nextOrientation = nextEntry.getKey();
+                List<DiagramStatisticOuter> nextScenario = nextEntry.getValue();
+
+                ChartDataFactory.addDiagramSeries( nextOrientation,
+                                                   nextScenario,
+                                                   qualified,
+                                                   sorted.size(),
+                                                   baseName,
+                                                   dataset,
+                                                   Pair.of( domainDimension, rangeDimension ) );
             }
         }
 
@@ -494,23 +523,22 @@ public class ChartDataFactory
     /**
      * Returns a dataset for a verification diagram organized by threshold (one) and then lead duration (up to many).
      * @param statistics the statistics
-     * @param xDimension the metric dimension for the X axis
-     * @param yDimension the metric dimension for the Y axis
+     * @param domainDimension the metric dimension for the X axis
+     * @param rangeDimension the metric dimension for the Y axis
      * @param durationUnits the duration units
      * @return a data source that can be used to draw a plot
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the dataset contains more than one threshold
      */
-    public static XYDataset ofVerificationDiagramByThresholdAndLead( List<DiagramStatisticOuter> statistics,
-                                                                     MetricDimension xDimension,
-                                                                     MetricDimension yDimension,
-                                                                     ChronoUnit durationUnits )
+    public static XYDataset ofDiagramStatisticsByThresholdAndLead( List<DiagramStatisticOuter> statistics,
+                                                                   MetricDimension domainDimension,
+                                                                   MetricDimension rangeDimension,
+                                                                   ChronoUnit durationUnits )
     {
         Objects.requireNonNull( statistics );
-        Objects.requireNonNull( xDimension );
-        Objects.requireNonNull( yDimension );
+        Objects.requireNonNull( domainDimension );
+        Objects.requireNonNull( rangeDimension );
         Objects.requireNonNull( durationUnits );
-
 
         DiagramStatisticOuter first = statistics.get( 0 );
         MetricConstants metricName = first.getMetricName();
@@ -541,7 +569,8 @@ public class ChartDataFactory
 
         // Arrange by time window
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( statistics, next -> next.getPoolMetadata().getTimeWindow() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata()
+                                                         .getTimeWindow() );
 
         XYIntervalSeriesCollection dataset = new XYIntervalSeriesCollection();
 
@@ -552,6 +581,10 @@ public class ChartDataFactory
                                                                             .getTimeWindow()
                                                                             .equals( key ) );
 
+            // Slice by main/baseline and sort with baseline last
+            Map<DatasetOrientation, List<DiagramStatisticOuter>> sorted =
+                    ChartDataFactory.sliceByDatasetOrientation( sliced );
+
             SortedSet<String> qualified = sliced.stream()
                                                 .flatMap( n -> n.getStatistic()
                                                                 .getStatisticsList()
@@ -560,34 +593,22 @@ public class ChartDataFactory
                                                 .filter( n -> !n.isBlank() )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-            // No qualifiers
-            if ( qualified.isEmpty() )
-            {
-                Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
-                                                                            durationUnits );
-                String name = leadDuration.toString();
+            Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
+                                                                        durationUnits );
+            String baseName = leadDuration.toString();
 
-                XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced,
-                                                                                  name,
-                                                                                  xDimension,
-                                                                                  yDimension );
-                dataset.addSeries( nextSeries );
-            }
-            // Slice by qualifier
-            else
+            for ( Map.Entry<DatasetOrientation, List<DiagramStatisticOuter>> nextEntry : sorted.entrySet() )
             {
-                for ( String name : qualified )
-                {
-                    List<DiagramStatisticOuter> slicedInner = Slicer.filter( sliced,
-                                                                             next -> next.getComponentNameQualifiers()
-                                                                                         .stream()
-                                                                                         .anyMatch( name::equals ) );
-                    XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( slicedInner,
-                                                                                      name,
-                                                                                      xDimension,
-                                                                                      yDimension );
-                    dataset.addSeries( nextSeries );
-                }
+                DatasetOrientation nextOrientation = nextEntry.getKey();
+                List<DiagramStatisticOuter> nextScenario = nextEntry.getValue();
+
+                ChartDataFactory.addDiagramSeries( nextOrientation,
+                                                   nextScenario,
+                                                   qualified,
+                                                   sorted.size(),
+                                                   baseName,
+                                                   dataset,
+                                                   Pair.of( domainDimension, rangeDimension ) );
             }
         }
 
@@ -760,33 +781,106 @@ public class ChartDataFactory
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( slice, next -> next.getPoolMetadata()
                                                     .getThresholds() );
+
+
+        ToDoubleFunction<DoubleScoreComponentOuter> mapper = score ->
+        {
+            Instant midpoint =
+                    ChartDataFactory.getMidpointBetweenTimes( score.getPoolMetadata()
+                                                                   .getTimeWindow(),
+                                                              graphicShape == GraphicShape.ISSUED_DATE_POOLS );
+            return midpoint.toEpochMilli();
+        };
+
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             // Slice the data by threshold.  The resulting data will still contain potentially
             // multiple issued time pooling windows and/or valid time pooling windows.
-            List<DoubleScoreComponentOuter> finalSlice =
+            List<DoubleScoreComponentOuter> thresholdSlice =
                     Slicer.filter( slice,
                                    next -> next.getPoolMetadata()
                                                .getThresholds()
                                                .equals( nextThreshold ) );
 
-            // Create the time series with a label
-            String seriesName = ChartDataFactory.getNameForPoolingWindowSeries( leadDurations,
-                                                                                poolingTimes,
-                                                                                nextThreshold,
-                                                                                durationUnits );
 
-            ToDoubleFunction<DoubleScoreComponentOuter> mapper = score ->
+            // Slice by main/baseline and sort with baseline last
+            Map<DatasetOrientation, List<DoubleScoreComponentOuter>> sorted =
+                    ChartDataFactory.sliceByDatasetOrientation( thresholdSlice );
+
+            for ( Map.Entry<DatasetOrientation, List<DoubleScoreComponentOuter>> nextEntry : sorted.entrySet() )
             {
-                Instant midpoint =
-                        ChartDataFactory.getMidpointBetweenTimes( score.getPoolMetadata()
-                                                                       .getTimeWindow(),
-                                                                  graphicShape == GraphicShape.ISSUED_DATE_POOLS );
-                return midpoint.toEpochMilli();
-            };
+                DatasetOrientation nextOrientation = nextEntry.getKey();
+                List<DoubleScoreComponentOuter> nextScenario = nextEntry.getValue();
 
-            YIntervalSeries series = ChartDataFactory.getIntervalSeries( finalSlice, seriesName, mapper );
-            collection.addSeries( series );
+                // Create the time series with a label
+                String seriesName = ChartDataFactory.getNameForPoolingWindowSeries( leadDurations,
+                                                                                    poolingTimes,
+                                                                                    nextThreshold,
+                                                                                    durationUnits );
+
+                if ( sorted.size() > 1
+                     && nextOrientation == DatasetOrientation.BASELINE )
+                {
+                    seriesName += BASELINE_SCENARIO_LABEL;
+                }
+
+                YIntervalSeries series = ChartDataFactory.getIntervalSeries( nextScenario, seriesName, mapper );
+                collection.addSeries( series );
+            }
+        }
+    }
+
+    /**
+     * Returns a dataset for a verification diagram organized by lead duration (one) and then threshold (up to many).
+     * @param orientation the dataset orientation
+     * @param statistics the statistics
+     * @param qualifiers the qualifiers
+     * @param scenarioCount the number of datasets or scenarios
+     * @param baseName the base name of the dataset
+     * @param dataset the plotting dataset to which series will be added
+     * @param dimensions the plot dimensions
+     */
+    private static void addDiagramSeries( DatasetOrientation orientation,
+                                          List<DiagramStatisticOuter> statistics,
+                                          SortedSet<String> qualifiers,
+                                          int scenarioCount,
+                                          String baseName,
+                                          XYIntervalSeriesCollection dataset,
+                                          Pair<MetricDimension, MetricDimension> dimensions )
+    {
+        String orientationQualifier = "";
+        if ( scenarioCount > 1
+             && orientation == DatasetOrientation.BASELINE )
+        {
+            orientationQualifier = BASELINE_SCENARIO_LABEL;
+        }
+
+        // No qualifiers
+        if ( qualifiers.isEmpty() )
+        {
+            String name = baseName + orientationQualifier;
+            XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( statistics,
+                                                                              name,
+                                                                              dimensions.getLeft(),
+                                                                              dimensions.getRight() );
+            dataset.addSeries( nextSeries );
+        }
+        // Slice by qualifier
+        else
+        {
+            for ( String qualifier : qualifiers )
+            {
+                List<DiagramStatisticOuter> slicedInner = Slicer.filter( statistics,
+                                                                         next -> next.getComponentNameQualifiers()
+                                                                                     .stream()
+                                                                                     .anyMatch( qualifier::equals ) );
+                String name = qualifier + orientationQualifier;
+                XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( slicedInner,
+                                                                                  name,
+                                                                                  dimensions.getLeft(),
+                                                                                  dimensions.getRight() );
+                dataset.addSeries( nextSeries );
+            }
         }
     }
 
@@ -1350,6 +1444,40 @@ public class ChartDataFactory
         }
 
         return lableTime;
+    }
+
+    /**
+     * Slices the statistics by {@link DatasetOrientation} and places them in a sorted map with the baseline ordered
+     * last, if available.
+     * @param statistics the statistics
+     * @return the sliced statistics
+     * @param <T> the type of statistic
+     */
+
+    private static <T extends Statistic<?>> Map<DatasetOrientation, List<T>> sliceByDatasetOrientation( List<T> statistics )
+    {
+        Map<DatasetOrientation, List<T>> groups = Slicer.getGroupedStatistics( statistics );
+        Comparator<DatasetOrientation> baselineDown = ( a, b ) ->
+        {
+            if ( a == DatasetOrientation.RIGHT
+                 && b == DatasetOrientation.BASELINE )
+            {
+                return -1;
+            }
+            else if ( a == DatasetOrientation.BASELINE
+                      && b == DatasetOrientation.RIGHT )
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        };
+        Map<DatasetOrientation, List<T>> sorted = new TreeMap<>( baselineDown );
+        sorted.putAll( groups );
+
+        return Collections.unmodifiableMap( sorted );
     }
 
     /**

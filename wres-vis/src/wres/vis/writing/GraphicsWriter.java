@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -336,6 +337,38 @@ abstract class GraphicsWriter
         }
 
         return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Returns representative pool metadata from the supplied statistics. When there are statistics present for both
+     * main and baseline pairs, returns the metadata for the first main pool encountered, else the first pool
+     * encountered.
+     *
+     * @param statistics the statistics
+     * @return the representative metadata
+     * @param <T> the statistic type
+     */
+
+    static <T extends Statistic<?>> PoolMetadata getPoolMetadata( List<T> statistics )
+    {
+        boolean baselinePools = statistics.stream()
+                                          .anyMatch( s -> s.getPoolMetadata()
+                                                           .getPool()
+                                                           .getIsBaselinePool() );
+
+        List<PoolMetadata> notBaselinePools = statistics.stream()
+                                                        .map( s -> s.getPoolMetadata() )
+                                                        .filter( poolMetadata -> !poolMetadata.getPool()
+                                                                                              .getIsBaselinePool() )
+                                                        .toList();
+
+        if ( baselinePools && !notBaselinePools.isEmpty() )
+        {
+            return notBaselinePools.get( 0 );
+        }
+
+        return statistics.get( 0 )
+                         .getPoolMetadata();
     }
 
     /**

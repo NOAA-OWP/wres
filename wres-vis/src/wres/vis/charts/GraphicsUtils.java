@@ -17,6 +17,9 @@ import wres.statistics.generated.MetricName;
 
 public class GraphicsUtils
 {
+    /** The scenario label to use when plotting a baseline scenario in the same plot as a predicted scenario. */
+    public static final String BASELINE_SCENARIO_LABEL = " (dashed)";
+
     /**
      * @return a sequence of base colors.
      */
