@@ -825,15 +825,19 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             this.log( outputs, next.getKey(), true );
 
-            // Do not group the duration scores into main and baseline for grouped consumption like other formats until
-            // the graphics formats support multiple datasets/scenarios in a single plot
-            List<DurationDiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( outputs,
-                                                                                                    next.getKey() );
+            List<List<DurationDiagramStatisticOuter>> grouped = this.getGroupedStatisticsForThisFormat( outputs,
+                                                                                                        next.getKey() );
 
-            // Consume the output
-            Set<Path> innerPaths = next.getValue()
-                                       .apply( filtered );
-            paths.addAll( innerPaths );
+            for ( List<DurationDiagramStatisticOuter> nextStatistics : grouped )
+            {
+                List<DurationDiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( nextStatistics,
+                                                                                                        next.getKey() );
+
+                // Consume the output
+                Set<Path> innerPaths = next.getValue()
+                                           .apply( filtered );
+                paths.addAll( innerPaths );
+            }
 
             this.log( outputs, next.getKey(), false );
         }
@@ -961,40 +965,49 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( format );
 
-        // Group the statistics by dataset
-        if ( format.isGraphicsFormat()
-             && this.getEvaluationDescription()
-                    .getOutputs()
-                    .getCombinedGraphics() )
+        // Group the statistics by main/baseline pool if needed
+        if ( format.isGraphicsFormat() )
         {
-            List<T> main =
-                    statistics.stream()
-                              .filter( s -> !s.getPoolMetadata()
-                                              .getPool()
-                                              .getIsBaselinePool() )
-                              .toList();
-
-            List<T> baseline =
-                    statistics.stream()
-                              .filter( s -> s.getPoolMetadata()
-                                             .getPool()
-                                             .getIsBaselinePool() )
-                              .toList();
-
-            List<List<T>> returnMe = new ArrayList<>();
-
-            if ( !main.isEmpty() )
+            // Return all statistics as-is for combined writing
+            if ( this.getEvaluationDescription()
+                     .getOutputs()
+                     .getCombinedGraphics() )
             {
-                returnMe.add( main );
+                return List.of( statistics );
             }
-
-            if ( !baseline.isEmpty() )
+            // Separate out the statistics by main/baseline pool
+            else
             {
-                returnMe.add( baseline );
-            }
+                List<List<T>> returnMe = new ArrayList<>();
 
-            return Collections.unmodifiableList( returnMe );
+                List<T> main =
+                        statistics.stream()
+                                  .filter( s -> !s.getPoolMetadata()
+                                                  .getPool()
+                                                  .getIsBaselinePool() )
+                                  .toList();
+
+                List<T> baseline =
+                        statistics.stream()
+                                  .filter( s -> s.getPoolMetadata()
+                                                 .getPool()
+                                                 .getIsBaselinePool() )
+                                  .toList();
+
+                if ( !main.isEmpty() )
+                {
+                    returnMe.add( main );
+                }
+
+                if ( !baseline.isEmpty() )
+                {
+                    returnMe.add( baseline );
+                }
+
+                return Collections.unmodifiableList( returnMe );
+            }
         }
+        // Return all statistics as-is for non-graphics formats
         else
         {
             return List.of( statistics );

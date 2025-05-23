@@ -33,6 +33,7 @@ import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
 import wres.config.yaml.serializers.PositiveIntegerSerializer;
 import wres.config.yaml.serializers.ThresholdSetsSerializer;
 import wres.config.yaml.serializers.ThresholdsSerializer;
+import wres.config.yaml.serializers.TrueSerializer;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeWindow;
@@ -140,7 +141,9 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonSerialize( using = DecimalFormatSerializer.class )
                                      @JsonDeserialize( using = DecimalFormatDeserializer.class )
                                      @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
-                                     @JsonProperty( "output_formats" ) Formats formats )
+                                     @JsonProperty( "output_formats" ) Formats formats,
+                                     @JsonSerialize( using = TrueSerializer.class )
+                                     @JsonProperty( "combined_graphics" ) Boolean combinedGraphics )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
@@ -225,6 +228,22 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
         {
             covariates = Collections.unmodifiableList( covariates );
         }
+
+        if( Objects.isNull( combinedGraphics ) )
+        {
+            combinedGraphics = false;
+        }
+    }
+
+    @Override
+    public Boolean combinedGraphics()
+    {
+        if( Objects.isNull( this.combinedGraphics ) )
+        {
+            return false;
+        }
+
+        return this.combinedGraphics;
     }
 
     /**

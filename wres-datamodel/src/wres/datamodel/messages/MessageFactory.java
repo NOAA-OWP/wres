@@ -864,7 +864,8 @@ public class MessageFactory
         }
 
         // Set the pool information
-        if ( metadata.getPool().getIsBaselinePool() )
+        if ( metadata.getPool()
+                     .getIsBaselinePool() )
         {
             statistics.setBaselinePool( metadata.getPool() );
         }
@@ -915,6 +916,14 @@ public class MessageFactory
             MessageFactory.addDiagramStatisticsToPool( statistics, mappedStatistics );
         }
 
+        // Duration diagrams
+        if ( statisticsStore.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
+        {
+            List<DurationDiagramStatisticOuter> statistics =
+                    statisticsStore.getDurationDiagramStatistics();
+            MessageFactory.addDurationDiagramStatisticsToPool( statistics, mappedStatistics );
+        }
+
         // Box plots per pair
         if ( statisticsStore.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
@@ -929,14 +938,6 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics =
                     statisticsStore.getBoxPlotStatisticsPerPool();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
-        }
-
-        // Box plots statistics per pool
-        if ( statisticsStore.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
-        {
-            List<DurationDiagramStatisticOuter> statistics =
-                    statisticsStore.getDurationDiagramStatistics();
-            MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
         List<StatisticsStore> returnMe = new ArrayList<>();
@@ -1193,8 +1194,8 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addPairedStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
-                                                   Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
+    private static void addDurationDiagramStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
+                                                            Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 

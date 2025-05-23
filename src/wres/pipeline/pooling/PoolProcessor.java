@@ -151,7 +151,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // Create the statistics, generating sampling uncertainty estimates as needed
         List<Statistics> statistics = this.createStatistics( pool, this.samplingUncertainty, this.blockSize );
 
-        // Group the statistics by dataset orientation
+        // Group the statistics by dataset orientation for summary statistic calculation
         Map<DatasetOrientation, List<Statistics>> groups = Slicer.getGroupedStatistics( statistics );
 
         // Register the statistics with any summary statistics calculators

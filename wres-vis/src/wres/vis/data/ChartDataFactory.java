@@ -384,47 +384,78 @@ public class ChartDataFactory
                                                          .getThresholds() );
 
         // Filter by threshold
-        for ( OneOrTwoThresholds nextSeries : thresholds )
+        for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
-            String noUnits = DataUtilities.toStringWithoutUnits( nextSeries );
-            TimeSeries next = new TimeSeries( noUnits );
-
             // JFreeChart does not currently support an interval series, so omit any resampled quantiles: GitHub 399
             List<DurationDiagramStatisticOuter> filtered =
                     Slicer.filter( statistics,
                                    data -> data.getPoolMetadata()
                                                .getThresholds()
-                                               .equals( nextSeries )
+                                               .equals( nextThreshold )
                                            && ( !data.isSummaryStatistic()
                                                 || !data.getSummaryStatistic()
                                                         .getDimensionList()
                                                         .contains( SummaryStatistic.StatisticDimension.RESAMPLED ) ) );
 
-            // Create a set-view by instant, because JFreeChart cannot handle duplicates
-            Set<Instant> instants = new HashSet<>();
+            // Group the series by dataset
+            // Slice by main/baseline and sort with baseline last
+            Map<DatasetOrientation, List<DurationDiagramStatisticOuter>> sorted =
+                    ChartDataFactory.sliceByDatasetOrientation( filtered );
 
-            // Create the series
-            for ( DurationDiagramStatisticOuter nextSet : filtered )
+            for ( Map.Entry<DatasetOrientation, List<DurationDiagramStatisticOuter>> nextEntry : sorted.entrySet() )
             {
-                for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
+                DatasetOrientation nextOrientation = nextEntry.getKey();
+                List<DurationDiagramStatisticOuter> nextScenario = nextEntry.getValue();
+                String seriesName = DataUtilities.toStringWithoutUnits( nextThreshold );
+
+                if ( sorted.size() > 1
+                     && nextOrientation == DatasetOrientation.BASELINE )
                 {
-                    if ( !instants.contains( oneValue.getKey() ) )
-                    {
-                        // Find the decimal hours
-                        BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
-                                                      .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
-
-                        next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
-                                  result.doubleValue() );
-
-                        instants.add( oneValue.getKey() );
-                    }
+                    seriesName += BASELINE_SCENARIO_LABEL;
                 }
+
+                TimeSeries nextSeries = ChartDataFactory.getDurationDiagramSeries( seriesName, nextScenario );
+                returnMe.addSeries( nextSeries );
             }
-            returnMe.addSeries( next );
         }
 
         return returnMe;
+    }
+
+    /**
+     * Returns a named duration diagram series.
+     * @param name the series name
+     * @param data the series data
+     * @return the series
+     */
+
+    private static TimeSeries getDurationDiagramSeries( String name,
+                                                        List<DurationDiagramStatisticOuter> data )
+    {
+        TimeSeries next = new TimeSeries( name );
+
+        // Create a set-view by instant, because JFreeChart cannot handle duplicates
+        Set<Instant> instants = new HashSet<>();
+
+        // Create the series
+        for ( DurationDiagramStatisticOuter nextSet : data )
+        {
+            for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
+            {
+                if ( !instants.contains( oneValue.getKey() ) )
+                {
+                    // Find the decimal hours
+                    BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
+                                                  .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+
+                    next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
+                              result.doubleValue() );
+
+                    instants.add( oneValue.getKey() );
+                }
+            }
+        }
+        return next;
     }
 
     /**

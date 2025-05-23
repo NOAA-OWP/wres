@@ -188,7 +188,7 @@ public class DeclarationInterpolator
         // Interpolate metric parameters
         DeclarationInterpolator.interpolateMetricParameters( adjustedBuilder );
         // Interpolate output formats where none exist
-        DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedBuilder );
+        DeclarationInterpolator.interpolateOutputs( adjustedBuilder );
         // Interpolate time windows
         DeclarationInterpolator.interpolateTimeWindows( adjustedBuilder );
 
@@ -1481,6 +1481,18 @@ public class DeclarationInterpolator
      *
      * @param builder the builder to mutate
      */
+    private static void interpolateOutputs( EvaluationDeclarationBuilder builder )
+    {
+        DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( builder );
+
+        DeclarationInterpolator.interpolateCombinedGraphics( builder );
+    }
+
+    /**
+     * Adds a default output format of CSV2 where none exists.
+     *
+     * @param builder the builder to mutate
+     */
     private static void interpolateOutputFormatsWhenNoneDeclared( EvaluationDeclarationBuilder builder )
     {
         if ( Objects.isNull( builder.formats() )
@@ -1491,6 +1503,24 @@ public class DeclarationInterpolator
             Outputs.Builder formatsBuilder = Outputs.newBuilder()
                                                     .setCsv2( Formats.CSV2_FORMAT );
             builder.formats( new Formats( formatsBuilder.build() ) );
+        }
+    }
+
+    /**
+     * Interpolates the option for generating combined graphics.
+     *
+     * @param builder the builder to mutate
+     */
+    private static void interpolateCombinedGraphics( EvaluationDeclarationBuilder builder )
+    {
+        if ( DeclarationUtilities.hasGraphicsFormats( builder.build() )
+             && Boolean.TRUE.equals( builder.combinedGraphics() ) )
+        {
+            LOGGER.debug( "Discovered a request for combined graphics. Transferring this to the formats description." );
+            builder.formats( new Formats( Outputs.newBuilder( builder.formats()
+                                                                     .outputs() )
+                                                 .setCombinedGraphics( true )
+                                                 .build() ) );
         }
     }
 
