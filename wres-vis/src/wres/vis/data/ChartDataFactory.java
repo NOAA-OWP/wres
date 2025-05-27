@@ -335,31 +335,46 @@ public class ChartDataFactory
 
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        // Add the data items
-        for ( DurationScoreStatisticOuter entry : statistics )
+        // Slice by main/baseline and sort with baseline last
+        Map<DatasetOrientation, List<DurationScoreStatisticOuter>> sorted =
+                ChartDataFactory.sliceByDatasetOrientation( statistics );
+
+        for ( Map.Entry<DatasetOrientation, List<DurationScoreStatisticOuter>> nextEntry : sorted.entrySet() )
         {
-            String rowKey = DataUtilities.toStringWithoutUnits( entry.getPoolMetadata()
-                                                                     .getThresholds() );
+            DatasetOrientation orientation = nextEntry.getKey();
+            List<DurationScoreStatisticOuter> scores = nextEntry.getValue();
 
-            for ( MetricConstants metric : entry.getComponents() )
+            // Add the data items
+            for ( DurationScoreStatisticOuter entry : scores )
             {
-                com.google.protobuf.Duration score = entry.getComponent( metric )
-                                                          .getStatistic()
-                                                          .getValue();
-                Duration durationStat = MessageUtilities.getDuration( score );
+                String rowKey = DataUtilities.toStringWithoutUnits( entry.getPoolMetadata()
+                                                                         .getThresholds() );
 
-                // Find the decimal hours
-                double doubleResult = Double.NaN;
-                if ( Objects.nonNull( durationStat ) )
+                if ( sorted.size() > 1
+                     && orientation == DatasetOrientation.BASELINE )
                 {
-                    BigDecimal result = BigDecimal.valueOf( durationStat.toMillis() )
-                                                  .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
-                    doubleResult = result.doubleValue();
+                    rowKey = rowKey + " baseline";
                 }
 
-                String columnKey = metric.toString();
+                for ( MetricConstants metric : entry.getComponents() )
+                {
+                    com.google.protobuf.Duration score = entry.getComponent( metric )
+                                                              .getStatistic()
+                                                              .getValue();
+                    Duration durationStat = MessageUtilities.getDuration( score );
 
-                dataset.addValue( doubleResult, rowKey, columnKey );
+                    // Find the decimal hours
+                    double doubleResult = Double.NaN;
+                    if ( Objects.nonNull( durationStat ) )
+                    {
+                        BigDecimal result = BigDecimal.valueOf( durationStat.toMillis() )
+                                                      .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+                        doubleResult = result.doubleValue();
+                    }
+
+                    String columnKey = metric.toString();
+                    dataset.addValue( doubleResult, rowKey, columnKey );
+                }
             }
         }
 
@@ -420,42 +435,6 @@ public class ChartDataFactory
         }
 
         return returnMe;
-    }
-
-    /**
-     * Returns a named duration diagram series.
-     * @param name the series name
-     * @param data the series data
-     * @return the series
-     */
-
-    private static TimeSeries getDurationDiagramSeries( String name,
-                                                        List<DurationDiagramStatisticOuter> data )
-    {
-        TimeSeries next = new TimeSeries( name );
-
-        // Create a set-view by instant, because JFreeChart cannot handle duplicates
-        Set<Instant> instants = new HashSet<>();
-
-        // Create the series
-        for ( DurationDiagramStatisticOuter nextSet : data )
-        {
-            for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
-            {
-                if ( !instants.contains( oneValue.getKey() ) )
-                {
-                    // Find the decimal hours
-                    BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
-                                                  .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
-
-                    next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
-                              result.doubleValue() );
-
-                    instants.add( oneValue.getKey() );
-                }
-            }
-        }
-        return next;
     }
 
     /**
@@ -744,6 +723,76 @@ public class ChartDataFactory
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
         return Collections.unmodifiableSortedSet( quantiles );
+    }
+
+    /**
+     * Slices the statistics by {@link DatasetOrientation} and places them in a sorted map with the baseline ordered
+     * last, if available.
+     * @param statistics the statistics
+     * @return the sliced statistics
+     * @param <T> the type of statistic
+     */
+
+    private static <T extends Statistic<?>> Map<DatasetOrientation, List<T>> sliceByDatasetOrientation( List<T> statistics )
+    {
+        Map<DatasetOrientation, List<T>> groups = Slicer.getGroupedStatistics( statistics );
+        Comparator<DatasetOrientation> baselineDown = ( a, b ) ->
+        {
+            if ( a == DatasetOrientation.RIGHT
+                 && b == DatasetOrientation.BASELINE )
+            {
+                return -1;
+            }
+            else if ( a == DatasetOrientation.BASELINE
+                      && b == DatasetOrientation.RIGHT )
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        };
+        Map<DatasetOrientation, List<T>> sorted = new TreeMap<>( baselineDown );
+        sorted.putAll( groups );
+
+        return Collections.unmodifiableMap( sorted );
+    }
+
+    /**
+     * Returns a named duration diagram series.
+     * @param name the series name
+     * @param data the series data
+     * @return the series
+     */
+
+    private static TimeSeries getDurationDiagramSeries( String name,
+                                                        List<DurationDiagramStatisticOuter> data )
+    {
+        TimeSeries next = new TimeSeries( name );
+
+        // Create a set-view by instant, because JFreeChart cannot handle duplicates
+        Set<Instant> instants = new HashSet<>();
+
+        // Create the series
+        for ( DurationDiagramStatisticOuter nextSet : data )
+        {
+            for ( Pair<Instant, Duration> oneValue : nextSet.getPairs() )
+            {
+                if ( !instants.contains( oneValue.getKey() ) )
+                {
+                    // Find the decimal hours
+                    BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
+                                                  .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+
+                    next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
+                              result.doubleValue() );
+
+                    instants.add( oneValue.getKey() );
+                }
+            }
+        }
+        return next;
     }
 
     /**
@@ -1475,40 +1524,6 @@ public class ChartDataFactory
         }
 
         return lableTime;
-    }
-
-    /**
-     * Slices the statistics by {@link DatasetOrientation} and places them in a sorted map with the baseline ordered
-     * last, if available.
-     * @param statistics the statistics
-     * @return the sliced statistics
-     * @param <T> the type of statistic
-     */
-
-    private static <T extends Statistic<?>> Map<DatasetOrientation, List<T>> sliceByDatasetOrientation( List<T> statistics )
-    {
-        Map<DatasetOrientation, List<T>> groups = Slicer.getGroupedStatistics( statistics );
-        Comparator<DatasetOrientation> baselineDown = ( a, b ) ->
-        {
-            if ( a == DatasetOrientation.RIGHT
-                 && b == DatasetOrientation.BASELINE )
-            {
-                return -1;
-            }
-            else if ( a == DatasetOrientation.BASELINE
-                      && b == DatasetOrientation.RIGHT )
-            {
-                return 1;
-            }
-            else
-            {
-                return 0;
-            }
-        };
-        Map<DatasetOrientation, List<T>> sorted = new TreeMap<>( baselineDown );
-        sorted.putAll( groups );
-
-        return Collections.unmodifiableMap( sorted );
     }
 
     /**

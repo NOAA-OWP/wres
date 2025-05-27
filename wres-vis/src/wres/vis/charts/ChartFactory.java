@@ -1,13 +1,6 @@
 package wres.vis.charts;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontFormatException;
-import java.awt.GraphicsEnvironment;
-import java.awt.Paint;
-import java.awt.Shape;
-import java.awt.Stroke;
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.io.File;
 import java.io.IOException;
@@ -240,12 +233,10 @@ public class ChartFactory
                                                 .map( DurationScoreStatisticOuter::getPoolMetadata )
                                                 .collect( Collectors.toSet() );
 
+        CategoryDataset source = ChartDataFactory.ofDurationScoreSummaryStatistics( statistics );
         MetricConstants metricName = example.getMetricName();
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
-
-        // Build the source.
-        CategoryDataset source = ChartDataFactory.ofDurationScoreSummaryStatistics( statistics );
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
@@ -301,10 +292,43 @@ public class ChartFactory
                                                                         false );
 
         CategoryPlot plot = chart.getCategoryPlot();
+
+        // Eliminate duplicate legend items, which may occur when there are multiple dataset orientations. Since all
+        // datasets are plotted with the same color, only a different shade, eliminate the duplicate entries
+        LegendItemCollection existing = plot.getLegendItems();
+        LegendItemCollection adjusted = new LegendItemCollection();
+        int count = existing.getItemCount();
+        for ( int i = 0; i < count; i++ )
+        {
+            LegendItem next = existing.get( i );
+            if ( !next.getLabel()
+                      .endsWith( "baseline" ) )
+            {
+                adjusted.add( next );
+            }
+        }
+
+        plot.setFixedLegendItems( adjusted );
+
         chart.setAntiAlias( true );
         this.setChartPadding( chart );
         this.setChartTheme( chart );
-        this.setSeriesColorAndShape( plot );
+
+        int rowCount = plot.getDataset()
+                           .getRowCount();
+
+        // Two dataset orientations together? If so, wash/brighten colors for second/baseline
+        boolean washAlternate = statistics.stream()
+                                          .anyMatch( s -> s.getPoolMetadata()
+                                                           .getPool()
+                                                           .getIsBaselinePool() )
+                                && statistics.stream()
+                                             .anyMatch( s -> !s.getPoolMetadata()
+                                                               .getPool()
+                                                               .getIsBaselinePool() );
+
+        BarRenderer renderer = this.getDurationScoreSeriesRenderer( rowCount, washAlternate );
+        plot.setRenderer( renderer );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, true ) )
@@ -1575,16 +1599,16 @@ public class ChartFactory
     }
 
     /**
-     * Sets the color and shape for each series.
+     * Returns the renderer for a duration score series.
      *
-     * @param plot the category plot
+     * @param seriesCount the series count
+     * @param washAlternate whether to wash colors for alternate row keys
+     * @return the renderer
      * @throws NullPointerException if the plot is null
      */
 
-    private void setSeriesColorAndShape( CategoryPlot plot )
+    private BarRenderer getDurationScoreSeriesRenderer( int seriesCount, boolean washAlternate )
     {
-        Objects.requireNonNull( plot );
-
         BarRenderer renderer = new BarRenderer();
 
         // Solid bar colors
@@ -1596,23 +1620,56 @@ public class ChartFactory
         // No shadow
         renderer.setShadowVisible( false );
 
-        Color[] colors = this.getSeriesColors();
-
-        // Too many series for the default color sequence? Generate a sequence instead.
-        int seriesCount = plot.getDataset()
-                              .getRowCount();
-
-        if ( colors.length < seriesCount )
-        {
-            colors = GraphicsUtils.getColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
-        }
+        Color[] colors = this.getDurationScoreSeriesColors( seriesCount, washAlternate );
 
         for ( int i = 0; i < seriesCount; i++ )
         {
             renderer.setSeriesPaint( i, colors[i] );
         }
 
-        plot.setRenderer( renderer );
+        return renderer;
+    }
+
+    /**
+     * Generates a color pallete for a duration score chart.
+     * @param seriesCount the number of series
+     * @param washAlternate whether every other series should have the same color as the prior series, only brightened
+     * @return the colors
+     */
+
+    private Color[] getDurationScoreSeriesColors( int seriesCount, boolean washAlternate )
+    {
+        int actualSeriesCount = seriesCount;
+        Color[] colors = this.getSeriesColors();
+        if ( washAlternate )
+        {
+            actualSeriesCount = seriesCount / 2;
+        }
+
+        // Too many series for the default color sequence? Generate a sequence instead
+        if ( colors.length < actualSeriesCount )
+        {
+            colors = GraphicsUtils.getColorPalette( actualSeriesCount, Color.BLUE, Color.GREEN, Color.RED );
+        }
+
+        Color[] returnMe = new Color[seriesCount];
+
+        if ( washAlternate )
+        {
+            for ( int i = 0; i < actualSeriesCount; i += 1 )
+            {
+                // Re-use colors but brighten the second series x2
+                returnMe[i * 2] = colors[i];
+                returnMe[( i * 2 ) + 1] = colors[i].brighter()
+                                                   .brighter();
+            }
+        }
+        else
+        {
+            System.arraycopy( colors, 0, returnMe, 0, seriesCount );
+        }
+
+        return returnMe;
     }
 
     /**
@@ -2033,7 +2090,7 @@ public class ChartFactory
 
             if ( this.isMultiScenarioPlot( metadatas, metric ) )
             {
-                scenarioName = this.getMultiScenarioNameForTitle( metadatas );
+                scenarioName = this.getMultiScenarioNameForTitle( metadatas, metric );
             }
             else if ( exampleMetadata.getPool()
                                      .getIsBaselinePool() )
@@ -2065,19 +2122,29 @@ public class ChartFactory
      * @return the scenario name
      */
 
-    private String getMultiScenarioNameForTitle( Set<PoolMetadata> metadatas )
+    private String getMultiScenarioNameForTitle( Set<PoolMetadata> metadatas, MetricConstants metric )
     {
+        String baselineScenario = BASELINE_SCENARIO_LABEL;
+        String mainScenarioAppender = "";
+        if ( metric.isInGroup( StatisticType.DURATION_SCORE ) )
+        {
+            baselineScenario = " (lighter)";
+            mainScenarioAppender = " (darker)";
+        }
+        String baselineScenarioFinal = baselineScenario;
+        String mainScenarioAppenderFinal = mainScenarioAppender;
+
         Set<String> scenarioNames = metadatas.stream()
                                              .filter( s -> !s.getEvaluation()
                                                              .getRightDataName()
                                                              .isEmpty() )
                                              .map( s -> s.getEvaluation()
-                                                         .getRightDataName() )
+                                                         .getRightDataName() + mainScenarioAppenderFinal )
                                              .collect( Collectors.toSet() );
 
         if ( scenarioNames.isEmpty() )
         {
-            scenarioNames.add( "PREDICTED" );
+            scenarioNames.add( "PREDICTED" + mainScenarioAppender );
         }
 
         Set<String> baselineScenarioNames = metadatas.stream()
@@ -2085,22 +2152,22 @@ public class ChartFactory
                                                                      .getBaselineDataName()
                                                                      .isEmpty() )
                                                      .map( s -> s.getEvaluation()
-                                                                 .getBaselineDataName() + BASELINE_SCENARIO_LABEL )
+                                                                 .getBaselineDataName() + baselineScenarioFinal )
                                                      .collect( Collectors.toSet() );
 
         if ( baselineScenarioNames.isEmpty() )
         {
-            scenarioNames.add( "BASELINE" + BASELINE_SCENARIO_LABEL );
+            scenarioNames.add( "BASELINE" + baselineScenario );
         }
 
         // Add the baseline scenario last
         Comparator<String> comparator = ( a, b ) ->
         {
-            if ( a.endsWith( BASELINE_SCENARIO_LABEL ) )
+            if ( a.endsWith( baselineScenarioFinal ) )
             {
                 return 1;
             }
-            else if ( b.endsWith( BASELINE_SCENARIO_LABEL ) )
+            else if ( b.endsWith( baselineScenarioFinal ) )
             {
                 return -1;
             }

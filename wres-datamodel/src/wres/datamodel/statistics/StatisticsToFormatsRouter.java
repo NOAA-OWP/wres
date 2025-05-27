@@ -785,15 +785,19 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             this.log( outputs, next.getKey(), true );
 
-            // Do not group the duration scores into main and baseline for grouped consumption like other formats until
-            // the graphics formats support multiple datasets/scenarios in a single plot
-            List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( outputs,
-                                                                                                  next.getKey() );
+            List<List<DurationScoreStatisticOuter>> grouped = this.getGroupedStatisticsForThisFormat( outputs,
+                                                                                                      next.getKey() );
 
-            // Consume the output
-            Set<Path> innerPaths = next.getValue()
-                                       .apply( filtered );
-            paths.addAll( innerPaths );
+            for ( List<DurationScoreStatisticOuter> nextStatistics : grouped )
+            {
+                List<DurationScoreStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( nextStatistics,
+                                                                                                      next.getKey() );
+
+                // Consume the output
+                Set<Path> innerPaths = next.getValue()
+                                           .apply( filtered );
+                paths.addAll( innerPaths );
+            }
 
             this.log( outputs, next.getKey(), false );
         }
