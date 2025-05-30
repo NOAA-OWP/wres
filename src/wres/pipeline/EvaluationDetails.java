@@ -16,6 +16,7 @@ import wres.events.subscribe.SubscriberApprover;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.project.Project;
 import wres.metrics.SummaryStatisticsCalculator;
+import wres.statistics.generated.GeometryGroup;
 import wres.system.SystemSettings;
 
 /**
@@ -51,8 +52,8 @@ record EvaluationDetails( SystemSettings systemSettings,
                           Project project,
                           EvaluationMessager evaluationMessager,
                           TimeSeriesStore timeSeriesStore,
-                          Map<String, List<SummaryStatisticsCalculator>> summaryStatistics,
-                          Map<String, List<SummaryStatisticsCalculator>> summaryStatisticsForBaseline,
+                          Map<GeometryGroup, List<SummaryStatisticsCalculator>> summaryStatistics,
+                          Map<GeometryGroup, List<SummaryStatisticsCalculator>> summaryStatisticsForBaseline,
                           Set<FeatureGroup> summaryStatisticsOnly )
 {
     /**

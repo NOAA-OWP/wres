@@ -2182,7 +2182,7 @@ public class PoolFactory
                                             .getEvaluation();
 
                 wres.statistics.generated.Pool clean = next.getMetadata()
-                                                           .getPool()
+                                                           .getPoolDescription()
                                                            .toBuilder()
                                                            .clearPoolId()
                                                            .clearGeometryGroup()
@@ -2196,7 +2196,7 @@ public class PoolFactory
                 if ( next.hasBaseline() )
                 {
                     wres.statistics.generated.Pool cleanBase = next.getMetadataForBaseline()
-                                                                   .getPool()
+                                                                   .getPoolDescription()
                                                                    .toBuilder()
                                                                    .clearPoolId()
                                                                    .clearGeometryGroup()
@@ -2398,7 +2398,7 @@ public class PoolFactory
         {
             GeometryGroup geoGroup = MessageFactory.getGeometryGroup( nextFeature.toStringShort(), nextFeature );
             FeatureGroup singleton = FeatureGroup.of( geoGroup );
-            wres.statistics.generated.Pool poolInner = main.getPool();
+            wres.statistics.generated.Pool poolInner = main.getPoolDescription();
             wres.statistics.generated.Pool poolInnerWithId = poolInner.toBuilder()
                                                                       .clearPoolId()
                                                                       .build();

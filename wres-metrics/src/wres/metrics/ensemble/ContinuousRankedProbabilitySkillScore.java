@@ -84,21 +84,23 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         }
         // CRPSS, currently without decomposition
         // TODO: implement the decomposition
-        double numerator = super.apply( pool ).getComponent( MetricConstants.MAIN )
+        double numerator = super.apply( pool )
+                                .getComponent( MetricConstants.MAIN )
                                 .getStatistic()
                                 .getValue();
-        double denominator = super.apply( pool.getBaselineData() ).getComponent( MetricConstants.MAIN )
+        double denominator = super.apply( pool.getBaselineData() )
+                                  .getComponent( MetricConstants.MAIN )
                                   .getStatistic()
                                   .getValue();
 
         double result = FunctionFactory.skill()
                                        .applyAsDouble( numerator, denominator );
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric(
-                                                                                       ContinuousRankedProbabilitySkillScore.MAIN )
-                                                                               .setValue( result )
-                                                                               .build();
+        DoubleScoreStatisticComponent component =
+                DoubleScoreStatisticComponent.newBuilder()
+                                             .setMetric( ContinuousRankedProbabilitySkillScore.MAIN )
+                                             .setValue( result )
+                                             .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( ContinuousRankedProbabilitySkillScore.BASIC_METRIC )

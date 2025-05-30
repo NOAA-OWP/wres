@@ -47,7 +47,7 @@ import wres.statistics.generated.Threshold;
 class EvaluationUtilitiesTest
 {
     @Test
-    void testGetSummaryStatisticsCalculatorsWithTwoTimeWindowsAndTwoThresholdsAcrossAllFeatures()
+    void testGetSumStatsCalculatorsWithTwoTimeWindowsAndTwoThresholdsAcrossAllFeatures()
     {
         // Create the declaration
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
@@ -139,8 +139,8 @@ class EvaluationUtilitiesTest
                                             .build();
 
         Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( evaluation );
-        Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, timeWindows, 0, false );
+        Map<GeometryGroup, List<SummaryStatisticsCalculator>> calculators =
+                EvaluationUtilities.getSumStatsCalculators( evaluation, timeWindows, 0, false );
 
         // Eight filters
         assertEquals( 8, calculators.values()
@@ -150,7 +150,7 @@ class EvaluationUtilitiesTest
     }
 
     @Test
-    void testGetSummaryStatisticsCalculatorsForNamedThresholdsAcrossAllFeatures()
+    void testGetSumStatsCalculatorsForNamedThresholdsAcrossAllFeatures()
     {
         // Create the declaration
         Threshold pOneValue = Threshold.newBuilder()
@@ -184,8 +184,8 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( evaluation );
-        Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, timeWindows, 0, false );
+        Map<GeometryGroup, List<SummaryStatisticsCalculator>> calculators =
+                EvaluationUtilities.getSumStatsCalculators( evaluation, timeWindows, 0, false );
 
         // One filter
         assertEquals( 1, calculators.size() );
@@ -210,7 +210,7 @@ class EvaluationUtilitiesTest
     }
 
     @Test
-    void testGetSummaryStatisticsCalculatorsWithTwoTimeWindowsAcrossFeatureGroups()
+    void testGetSumStatsCalculatorsWithTwoTimeWindowsAcrossFeatureGroups()
     {
         // Create the declaration
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
@@ -291,8 +291,8 @@ class EvaluationUtilitiesTest
                                             .build();
 
         Set<TimeWindowOuter> timeWindows = TimeWindowSlicer.getTimeWindows( evaluation );
-        Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, timeWindows, 0, false );
+        Map<GeometryGroup, List<SummaryStatisticsCalculator>> calculators =
+                EvaluationUtilities.getSumStatsCalculators( evaluation, timeWindows, 0, false );
 
         // Eight filters
         assertEquals( 4, calculators.values()

@@ -952,7 +952,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         // Set the metadata, adjusted to include the desired timescale
         wres.statistics.generated.Pool.Builder newMetadataBuilder =
                 this.getMetadata()
-                    .getPool()
+                    .getPoolDescription()
                     .toBuilder();
 
         if ( Objects.nonNull( desiredTimeScale ) )
@@ -971,7 +971,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             wres.statistics.generated.Pool.Builder newBaseMetadataBuilder =
                     this.getBaselineMetadata()
-                        .getPool()
+                        .getPoolDescription()
                         .toBuilder();
             if ( Objects.nonNull( desiredTimeScale ) )
             {
@@ -1022,7 +1022,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                                      .getName() );
 
         wres.statistics.generated.Pool.Builder builder =
-                metadata.getPool()
+                metadata.getPoolDescription()
                         .toBuilder()
                         .clearGeometryTuples()
                         .addGeometryTuples( feature.getGeometryTuple() )

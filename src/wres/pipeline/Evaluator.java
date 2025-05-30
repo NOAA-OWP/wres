@@ -63,6 +63,7 @@ import wres.io.project.Projects;
 import wres.reading.ReaderUtilities;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.statistics.MessageUtilities;
+import wres.statistics.generated.GeometryGroup;
 import wres.writing.netcdf.NetcdfOutputWriter;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.pipeline.pooling.PoolFactory;
@@ -750,23 +751,23 @@ public class Evaluator
                     EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( metricsAndThresholds );
 
             // Create the summary statistics calculators to increment with raw statistics
-            Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
-                                                                         timeWindows,
-                                                                         poolCount,
-                                                                         clearThresholdValues );
+            Map<GeometryGroup, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
+                    EvaluationUtilities.getSumStatsCalculators( declarationWithFeaturesAndThresholds,
+                                                                timeWindows,
+                                                                poolCount,
+                                                                clearThresholdValues );
 
-            Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculatorsForBaseline = Map.of();
+            Map<GeometryGroup, List<SummaryStatisticsCalculator>> summaryStatsCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
                                                                .separateMetrics();
             if ( separateMetricsForBaseline )
             {
                 summaryStatsCalculatorsForBaseline =
-                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
-                                                                             timeWindows,
-                                                                             poolCount,
-                                                                             clearThresholdValues );
+                        EvaluationUtilities.getSumStatsCalculators( declarationWithFeaturesAndThresholds,
+                                                                    timeWindows,
+                                                                    poolCount,
+                                                                    clearThresholdValues );
             }
 
             // Set the project and evaluation messager, metrics and thresholds and summary statistics

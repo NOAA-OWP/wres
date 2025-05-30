@@ -228,7 +228,7 @@ definitions:
           - "$ref": "#/definitions/SummaryStatisticsWithDimensions"
       duration_format:
         "$ref": "#/definitions/DurationEnum"
-      combined_graphics:
+      combine_graphics:
         type: boolean
       decimal_format:
         type: string

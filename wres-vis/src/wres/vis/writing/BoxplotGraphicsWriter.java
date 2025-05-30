@@ -348,7 +348,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         {
             List<BoxplotStatisticOuter> innerSlice = Slicer.filter( statistics,
                                                                     value -> type == value.getPoolMetadata()
-                                                                                          .getPool()
+                                                                                          .getPoolDescription()
                                                                                           .getEnsembleAverageType() );
 
             if ( !innerSlice.isEmpty() )
@@ -449,7 +449,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
                                  next -> next.getPoolMetadata()
-                                             .getPool()
+                                             .getPoolDescription()
                                              .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =

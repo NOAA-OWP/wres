@@ -263,7 +263,7 @@ abstract class GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPoolDescription().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()
@@ -353,12 +353,12 @@ abstract class GraphicsWriter
     {
         boolean baselinePools = statistics.stream()
                                           .anyMatch( s -> s.getPoolMetadata()
-                                                           .getPool()
+                                                           .getPoolDescription()
                                                            .getIsBaselinePool() );
 
         List<PoolMetadata> notBaselinePools = statistics.stream()
                                                         .map( s -> s.getPoolMetadata() )
-                                                        .filter( poolMetadata -> !poolMetadata.getPool()
+                                                        .filter( poolMetadata -> !poolMetadata.getPoolDescription()
                                                                                               .getIsBaselinePool() )
                                                         .toList();
 

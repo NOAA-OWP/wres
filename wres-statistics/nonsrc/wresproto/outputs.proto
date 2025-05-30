@@ -169,6 +169,6 @@ message Outputs
     PairFormat pairs = 9;
     // Pairs.
 
-    bool combined_graphics = 10;
+    bool combine_graphics = 10;
     // Whether graphics should contain all datasets/scenarios.
 }

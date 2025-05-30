@@ -320,11 +320,11 @@ public class ChartFactory
         // Two dataset orientations together? If so, wash/brighten colors for second/baseline
         boolean washAlternate = statistics.stream()
                                           .anyMatch( s -> s.getPoolMetadata()
-                                                           .getPool()
+                                                           .getPoolDescription()
                                                            .getIsBaselinePool() )
                                 && statistics.stream()
                                              .anyMatch( s -> !s.getPoolMetadata()
-                                                               .getPool()
+                                                               .getPoolDescription()
                                                                .getIsBaselinePool() );
 
         BarRenderer renderer = this.getDurationScoreSeriesRenderer( rowCount, washAlternate );
@@ -370,7 +370,7 @@ public class ChartFactory
                                    .getMetric()
                                    .getHasDiagonal();
 
-        EnsembleAverageType ensembleAverageType = exampleMetadata.getPool()
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
                                                                  .getEnsembleAverageType();
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
 
@@ -673,7 +673,7 @@ public class ChartFactory
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
 
-        EnsembleAverageType ensembleAverageType = exampleMetadata.getPool()
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
                                                                  .getEnsembleAverageType();
 
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
@@ -887,7 +887,7 @@ public class ChartFactory
         QuantileValueType type = metric.getQuantileValueType();
         String metricUnits = metric.getUnits();
 
-        EnsembleAverageType ensembleAverageType = exampleMetadata.getPool()
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
                                                                  .getEnsembleAverageType();
 
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
@@ -985,7 +985,7 @@ public class ChartFactory
         // Component name
         MetricConstants metricComponentName = example.getMetricName();
 
-        EnsembleAverageType ensembleAverageType = exampleMetadata.getPool()
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
                                                                  .getEnsembleAverageType();
 
         // Do not qualify a "main" score component because it is qualified by the overall metric name
@@ -1546,6 +1546,8 @@ public class ChartFactory
                                                            1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
                 renderer.setSeriesVisibleInLegend( i, Boolean.FALSE );
 
+                renderer.setSeriesShapesFilled( i, false );
+
                 String test = key.replace( " (dashed)", "" );
 
                 if ( seriesByKey.containsKey( test ) )
@@ -1815,12 +1817,12 @@ public class ChartFactory
             name += " at " + geoName;
         }
 
-        String scenarioName = this.getScenarioNameForTitle( metadatas, metricName );
+        String scenarioName = this.getScenarioNameForTitle( metadatas, metricName, isSummaryStatistic );
         name += " for" + scenarioName + "predictions of";
 
         name += this.getVariableNameForTitle( exampleMetadata, metricName, metricComponentName );
 
-        if ( !this.isMultiScenarioPlot( metadatas, metricName ) )
+        if ( !this.isMultiScenarioPlot( metadatas, metricName, isSummaryStatistic ) )
         {
             name += this.getBaselineScenarioForTitle( exampleMetadata, metricName );
         }
@@ -1845,19 +1847,22 @@ public class ChartFactory
      *
      * @param metadatas the metadatas to test
      * @param metric the metric
+     * @param isSummaryStatistic is true if the statistic is a summary statistic
      * @return whether this is a multi-scenario plot
      */
 
     private boolean isMultiScenarioPlot( Set<PoolMetadata> metadatas,
-                                         MetricConstants metric )
+                                         MetricConstants metric,
+                                         boolean isSummaryStatistic )
     {
         // Must be more than one singleton pool type
-        return !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
+        return ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
+                 || isSummaryStatistic )
                && metadatas.stream()
-                           .anyMatch( s -> s.getPool()
+                           .anyMatch( s -> s.getPoolDescription()
                                             .getIsBaselinePool() )
                && metadatas.stream()
-                           .anyMatch( s -> !s.getPool()
+                           .anyMatch( s -> !s.getPoolDescription()
                                              .getIsBaselinePool() );
     }
 
@@ -2070,15 +2075,18 @@ public class ChartFactory
      * @throws NullPointerException if the metadata or metric is null
      */
 
-    private String getScenarioNameForTitle( Set<PoolMetadata> metadatas, MetricConstants metric )
+    private String getScenarioNameForTitle( Set<PoolMetadata> metadatas,
+                                            MetricConstants metric,
+                                            boolean isSummaryStatistic )
     {
         Objects.requireNonNull( metadatas );
         Objects.requireNonNull( metric );
 
         String scenarioName = " ";
 
-        // Not univariate statistics, except the sample size
-        if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
+        // Not univariate statistics, with exceptions
+        if ( ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
+               || isSummaryStatistic )
              || metric == MetricConstants.SAMPLE_SIZE
              || metric == MetricConstants.SAMPLE_SIZE_DIFFERENCE )
         {
@@ -2088,11 +2096,11 @@ public class ChartFactory
                                                     .next();
             Evaluation evaluation = exampleMetadata.getEvaluation();
 
-            if ( this.isMultiScenarioPlot( metadatas, metric ) )
+            if ( this.isMultiScenarioPlot( metadatas, metric, isSummaryStatistic ) )
             {
                 scenarioName = this.getMultiScenarioNameForTitle( metadatas, metric );
             }
-            else if ( exampleMetadata.getPool()
+            else if ( exampleMetadata.getPoolDescription()
                                      .getIsBaselinePool() )
             {
                 if ( !evaluation.getBaselineDataName()
@@ -2400,7 +2408,7 @@ public class ChartFactory
             // Skill scores for baseline use a default reference, which is climatology
             // This is also potentially brittle, so consider a better way, such as adding the default baseline
             // name into the evaluation description
-            if ( metadata.getPool()
+            if ( metadata.getPoolDescription()
                          .getIsBaselinePool() )
             {
                 baselineSuffix = metadata.getEvaluation()
@@ -2444,7 +2452,7 @@ public class ChartFactory
     {
         Objects.requireNonNull( metadata );
 
-        String regionName = metadata.getPool()
+        String regionName = metadata.getPoolDescription()
                                     .getGeometryGroup()
                                     .getRegionName();
 

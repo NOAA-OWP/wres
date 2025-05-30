@@ -79,6 +79,7 @@ import wres.statistics.generated.TimeWindow;
  * @param durationFormat the duration format
  * @param decimalFormat the decimal format
  * @param formats the statistics formats to write
+ * @param combineGraphics is true to combine predicted and baseline statistics into the same graphics
  */
 
 @RecordBuilder
@@ -143,7 +144,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
                                      @JsonProperty( "output_formats" ) Formats formats,
                                      @JsonSerialize( using = TrueSerializer.class )
-                                     @JsonProperty( "combined_graphics" ) Boolean combinedGraphics )
+                                     @JsonProperty( "combine_graphics" ) Boolean combineGraphics )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
@@ -189,6 +190,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param decimalFormat the decimal format
      * @param formats the statistics formats to write
      * @param label an optional label or name for the evaluation
+     * @param combineGraphics is true to combine predicted and baseline statistics into the same graphics
      */
     public EvaluationDeclaration
     {
@@ -229,21 +231,20 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             covariates = Collections.unmodifiableList( covariates );
         }
 
-        if( Objects.isNull( combinedGraphics ) )
+        if ( Objects.isNull( combineGraphics ) )
         {
-            combinedGraphics = false;
+            combineGraphics = false;
         }
     }
 
-    @Override
-    public Boolean combinedGraphics()
+    public Boolean combineGraphics()
     {
-        if( Objects.isNull( this.combinedGraphics ) )
+        if ( Objects.isNull( this.combineGraphics ) )
         {
             return false;
         }
 
-        return this.combinedGraphics;
+        return this.combineGraphics;
     }
 
     /**

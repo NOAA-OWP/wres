@@ -187,7 +187,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             List<DoubleScoreStatisticOuter> innerSlice =
                     Slicer.filter( statistics,
                                    value -> type == value.getPoolMetadata()
-                                                         .getPool()
+                                                         .getPoolDescription()
                                                          .getEnsembleAverageType() );
 
             // Slice univariate statistics separately as they are structurally different. See GitHub #488
@@ -261,13 +261,15 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
     private static List<List<DoubleScoreStatisticOuter>> getStatisticsSlicedByType( List<DoubleScoreStatisticOuter> statistics )
     {
-        // Remove baseline statistics from the univariate group, as these should be plotted separately
+        // Remove baseline statistics from the univariate group, as these should be plotted separately, unless they are
+        // summary statistics for bivariate data
         List<DoubleScoreStatisticOuter> univariateMain =
                 statistics.stream()
                           .filter( s -> s.getMetricName()
                                          .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
+                                        && !s.isSummaryStatistic()
                                         && !s.getPoolMetadata()
-                                             .getPool()
+                                             .getPoolDescription()
                                              .getIsBaselinePool() )
                           .toList();
 
@@ -275,15 +277,17 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 statistics.stream()
                           .filter( s -> s.getMetricName()
                                          .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
+                                        && !s.isSummaryStatistic()
                                         && s.getPoolMetadata()
-                                            .getPool()
+                                            .getPoolDescription()
                                             .getIsBaselinePool() )
                           .toList();
 
         List<DoubleScoreStatisticOuter> bivariate =
                 statistics.stream()
                           .filter( s -> !s.getMetricName()
-                                          .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC ) )
+                                          .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
+                                        || s.isSummaryStatistic() )
                           .toList();
         List<List<DoubleScoreStatisticOuter>> returnMe = new ArrayList<>();
 
@@ -332,7 +336,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
                                  next -> next.getPoolMetadata()
-                                             .getPool()
+                                             .getPoolDescription()
                                              .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =

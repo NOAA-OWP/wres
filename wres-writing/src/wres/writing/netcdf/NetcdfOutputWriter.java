@@ -1449,7 +1449,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // Figure out the location of all values and build the origin in each variable grid
             Pool pool = score.getPoolMetadata()
-                             .getPool();
+                             .getPoolDescription();
             GeometryGroup group = pool.getGeometryGroup();
             List<GeometryTuple> geometries = group.getGeometryTuplesList();
             String featureGroupName = group.getRegionName();
@@ -1509,7 +1509,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // Figure out the location of all values and build the origin in each variable grid
             Pool pool = score.getPoolMetadata()
-                             .getPool();
+                             .getPoolDescription();
             GeometryGroup geoGroup = pool.getGeometryGroup();
             GeometryTuple geometry = geoGroup.getGeometryTuplesList()
                                              .get( 0 );
@@ -1644,13 +1644,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             String append = "";
-            if ( poolMetadata.getPool().getIsBaselinePool() )
+            if ( poolMetadata.getPoolDescription().getIsBaselinePool() )
             {
                 append = "_" + DatasetOrientation.BASELINE.name();
             }
 
             // Add the ensemble average type, where applicable
-            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType = poolMetadata.getPool()
+            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType = poolMetadata.getPoolDescription()
                                                                                                  .getEnsembleAverageType();
             if ( ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.MEAN
                  && ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.NONE )

@@ -336,7 +336,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         {
             List<T> innerSlice = Slicer.filter( statistics,
                                                 value -> type == value.getPoolMetadata()
-                                                                      .getPool()
+                                                                      .getPoolDescription()
                                                                       .getEnsembleAverageType() );
             // Slice by secondary threshold
             if ( !innerSlice.isEmpty() )
@@ -364,7 +364,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
                                  next -> next.getPoolMetadata()
-                                             .getPool()
+                                             .getPoolDescription()
                                              .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =

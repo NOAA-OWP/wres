@@ -387,7 +387,7 @@ public final class DataUtilities
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
         Objects.requireNonNull( metricName, "Specify a non-null metric name." );
 
-        Pool pool = meta.getPool();
+        Pool pool = meta.getPoolDescription();
 
         // Build the path 
         StringJoiner joinElements = new StringJoiner( "_" );

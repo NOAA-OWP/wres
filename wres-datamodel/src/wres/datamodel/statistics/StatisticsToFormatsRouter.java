@@ -909,7 +909,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                               type,
                               output.get( 0 )
                                     .getPoolMetadata()
-                                    .getPool()
+                                    .getPoolDescription()
                                     .getGeometryGroup(),
                               output.get( 0 )
                                     .getPoolMetadata()
@@ -975,7 +975,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             // Return all statistics as-is for combined writing
             if ( this.getEvaluationDescription()
                      .getOutputs()
-                     .getCombinedGraphics() )
+                     .getCombineGraphics() )
             {
                 return List.of( statistics );
             }
@@ -987,14 +987,14 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                 List<T> main =
                         statistics.stream()
                                   .filter( s -> !s.getPoolMetadata()
-                                                  .getPool()
+                                                  .getPoolDescription()
                                                   .getIsBaselinePool() )
                                   .toList();
 
                 List<T> baseline =
                         statistics.stream()
                                   .filter( s -> s.getPoolMetadata()
-                                                 .getPool()
+                                                 .getPoolDescription()
                                                  .getIsBaselinePool() )
                                   .toList();
 

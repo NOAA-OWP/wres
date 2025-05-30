@@ -88,8 +88,10 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
             return false;
         }
 
-        return this.getStatistic().equals( v.getStatistic() )
-               && this.getPoolMetadata().equals( v.getPoolMetadata() )
+        return this.getStatistic()
+                   .equals( v.getStatistic() )
+               && this.getPoolMetadata()
+                      .equals( v.getPoolMetadata() )
                && Objects.equals( this.getSummaryStatistic(), v.getSummaryStatistic() );
     }
 

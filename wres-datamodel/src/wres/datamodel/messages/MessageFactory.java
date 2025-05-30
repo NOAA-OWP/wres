@@ -858,21 +858,17 @@ public class MessageFactory
         if ( !added )
         {
             LOGGER.debug( "Discovered an empty pool of statistics for {}. Returning null.",
-                          metadata.getPool() );
+                          metadata.getPoolDescription() );
 
             return null;
         }
 
-        // Set the pool information
-        if ( metadata.getPool()
-                     .getIsBaselinePool() )
-        {
-            statistics.setBaselinePool( metadata.getPool() );
-        }
-        else
-        {
-            statistics.setPool( metadata.getPool() );
-        }
+        statistics.setPool( metadata.getPoolDescription() );
+
+        // TODO: set the pool metadata for the baseline pool, which requires that the metadata is available in the
+        // wrapped statistics. Currently, any description of the baseline pool information is relying on the evaluation
+        // metadata, rather than the pool metadata. Note that, when an evaluation includes separate statistics for a
+        // baseline, then the statistics for the baseline pool are in the slot for the main/predicted pool
 
         return statistics.build();
     }
@@ -969,7 +965,7 @@ public class MessageFactory
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
         SortedSet<wres.datamodel.space.FeatureTuple> features =
-                metadata.getPool()
+                metadata.getPoolDescription()
                         .getGeometryGroup()
                         .getGeometryTuplesList()
                         .stream()
@@ -979,7 +975,7 @@ public class MessageFactory
         return new PoolBoundaries( Collections.unmodifiableSortedSet( features ),
                                    window,
                                    thresholds,
-                                   metadata.getPool()
+                                   metadata.getPoolDescription()
                                            .getIsBaselinePool() );
     }
 

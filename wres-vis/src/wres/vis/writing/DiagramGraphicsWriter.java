@@ -186,7 +186,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             List<DiagramStatisticOuter> innerSlice = Slicer.filter( statistics,
                                                                     value -> type == value.getPoolMetadata()
-                                                                                          .getPool()
+                                                                                          .getPoolDescription()
                                                                                           .getEnsembleAverageType() );
             if ( !innerSlice.isEmpty() )
             {
@@ -302,7 +302,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
                                  next -> next.getPoolMetadata()
-                                             .getPool()
+                                             .getPoolDescription()
                                              .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =

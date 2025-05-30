@@ -628,7 +628,7 @@ class CsvStatisticsWriterTest
 
         Pool pool = scores.get( 0 )
                           .getPoolMetadata()
-                          .getPool();
+                          .getPoolDescription();
 
         Statistics.Builder builder = Statistics.newBuilder()
                                                .addAllScores( scores.stream()
@@ -671,7 +671,7 @@ class CsvStatisticsWriterTest
 
         Pool pool = scores.get( 0 )
                           .getPoolMetadata()
-                          .getPool()
+                          .getPoolDescription()
                           .toBuilder()
                           .setEnsembleAverageType( Pool.EnsembleAverageType.MEDIAN )
                           .build();
@@ -695,7 +695,7 @@ class CsvStatisticsWriterTest
 
         Pool pool = scores.get( 0 )
                           .getPoolMetadata()
-                          .getPool().toBuilder()
+                          .getPoolDescription().toBuilder()
                           .setEnsembleAverageType( Pool.EnsembleAverageType.MEAN )
                           .build();
 
@@ -721,7 +721,7 @@ class CsvStatisticsWriterTest
 
         Pool pool = boxesPaired.get( 0 )
                                .getPoolMetadata()
-                               .getPool();
+                               .getPoolDescription();
 
         return Statistics.newBuilder()
                          .addAllOneBoxPerPair( boxesPaired.stream()
@@ -745,7 +745,7 @@ class CsvStatisticsWriterTest
 
         Pool pool = boxes.get( 0 )
                          .getPoolMetadata()
-                         .getPool();
+                         .getPoolDescription();
 
         return Statistics.newBuilder()
                          .addAllDiagrams( boxes.stream()
