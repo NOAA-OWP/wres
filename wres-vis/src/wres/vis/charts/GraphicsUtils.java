@@ -25,8 +25,8 @@ public class GraphicsUtils
      */
     public static Color[] getColors()
     {
-        //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
-        //Those shades do not show up well on white
+        // Build a list of colors from the JFreeChart defaults and strip out the yellow shades.
+        // Those shades do not show up well on white
         final Paint[] p = DefaultDrawingSupplier.DEFAULT_PAINT_SEQUENCE;
         final ArrayList<Color> baseColors = new ArrayList<>();
         for ( Paint paint : p )
@@ -47,14 +47,26 @@ public class GraphicsUtils
      * steps are all equal sized, meaning that colors can be stepped over by this algorithm. Only the first and last
      * colors are guaranteed to be in the returned array.
      *
-     * @param numberOfColors the number of colors to create.
-     * @param baseColors the colors that dictate the palette.
-     * @return a palette of colors.
+     * @param numberOfColors the number of colors to create
+     * @param baseColors the colors that dictate the palette
+     * @return a palette of colors
+     * @throws IllegalArgumentException if the number of colors is fewer than one or base colors fewer than two
      */
     public static Color[] getColorPalette( final int numberOfColors, final Color... baseColors )
     {
-        final int numberOfBaseColors = baseColors.length;
-        final Color[] palette = new Color[numberOfColors];
+        int numberOfBaseColors = baseColors.length;
+
+        if ( numberOfColors < 1 )
+        {
+            throw new IllegalArgumentException( "Cannot create a color ramp without one of more colors." );
+        }
+
+        if ( numberOfBaseColors < 2 )
+        {
+            throw new IllegalArgumentException( "Cannot create a color ramp with fewer than two base colors." );
+        }
+
+        Color[] palette = new Color[numberOfColors];
 
         // No shade computations needed.
         if ( numberOfColors <= numberOfBaseColors )
