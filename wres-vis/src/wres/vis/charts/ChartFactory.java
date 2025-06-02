@@ -1903,7 +1903,7 @@ public class ChartFactory
             String dimension = this.getSummaryStatisticDimensionsQualifier( summaryStatistic );
 
             name = statisticName
-                   + " across the "
+                   + " across "
                    + dimension
                    + OF_THE;
         }
