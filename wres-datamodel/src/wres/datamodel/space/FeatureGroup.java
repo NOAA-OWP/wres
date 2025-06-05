@@ -120,7 +120,8 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     @Override
     public int hashCode()
     {
-        return this.getGeometryGroup().hashCode();
+        return this.getGeometryGroup()
+                   .hashCode();
     }
 
     @Override

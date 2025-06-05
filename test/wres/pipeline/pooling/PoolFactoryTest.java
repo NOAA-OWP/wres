@@ -195,7 +195,7 @@ class PoolFactoryTest
         // Assert the expected number of unique pool identifiers. The actual identifiers will vary since there is one 
         // sequence per class loader and other tests share the class loader
         Set<Long> actualPoolIds = suppliers.stream()
-                                           .map( next -> next.getLeft().getMetadata().getPool().getPoolId() )
+                                           .map( next -> next.getLeft().getMetadata().getPoolDescription().getPoolId() )
                                            .collect( Collectors.toSet() );
 
         Assertions.assertEquals( 48, actualPoolIds.size() );

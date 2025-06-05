@@ -220,7 +220,7 @@ public abstract class PairsWriter<L, R>
         Objects.requireNonNull( pairs, "Cannot write null pairs." );
 
         if ( pairs.getMetadata()
-                  .getPool()
+                  .getPoolDescription()
                   .getGeometryGroup()
                   .getGeometryTuplesCount() == 0 )
         {
@@ -243,7 +243,7 @@ public abstract class PairsWriter<L, R>
 
                 // Feature group name
                 GeometryGroup geoGroup = pairs.getMetadata()
-                                              .getPool()
+                                              .getPoolDescription()
                                               .getGeometryGroup();
                 String featureGroupName = this.getFeatureNameFrom( geoGroup.getRegionName() );
 

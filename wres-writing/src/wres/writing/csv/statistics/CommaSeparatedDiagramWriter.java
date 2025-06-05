@@ -468,7 +468,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         {
             List<DiagramStatisticOuter> innerSlice = Slicer.filter( statistics,
                                                                     value -> type == value.getPoolMetadata()
-                                                                                          .getPool()
+                                                                                          .getPoolDescription()
                                                                                           .getEnsembleAverageType() );
             // Slice by secondary threshold
             if ( !innerSlice.isEmpty() )
@@ -527,7 +527,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPoolDescription().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

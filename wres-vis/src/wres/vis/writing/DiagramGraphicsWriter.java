@@ -18,7 +18,6 @@ import java.util.function.Predicate;
 
 import org.jfree.chart.JFreeChart;
 
-import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -82,26 +81,17 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             List<DiagramStatisticOuter> filtered = Slicer.filter( output, next );
 
-            // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
-            // each window with DatasetOrientation.BASELINE data): #48287
-            Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
-                    Slicer.getGroupedStatistics( filtered );
+            // Slice the statistics
+            List<List<DiagramStatisticOuter>> sliced =
+                    DiagramGraphicsWriter.getSlicedStatistics( filtered );
 
-            for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
+            for ( List<DiagramStatisticOuter> nextSlice : sliced )
             {
-                // Slice the statistics
-                List<List<DiagramStatisticOuter>> sliced =
-                        DiagramGraphicsWriter.getSlicedStatistics( nextGroup );
-
-                for ( List<DiagramStatisticOuter> nextSlice : sliced )
-                {
-                    Set<Path> innerPathsWrittenTo =
-                            DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
-                                                                 super.getOutputsDescription(),
-                                                                 nextSlice );
-                    paths.addAll( innerPathsWrittenTo );
-                }
+                Set<Path> innerPathsWrittenTo =
+                        DiagramGraphicsWriter.writeDiagrams( super.getOutputDirectory(),
+                                                             super.getOutputsDescription(),
+                                                             nextSlice );
+                paths.addAll( innerPathsWrittenTo );
             }
         }
 
@@ -132,8 +122,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             MetricConstants metricName = statistics.get( 0 )
                                                    .getMetricName();
-            PoolMetadata metadata = statistics.get( 0 )
-                                              .getPoolMetadata();
+            PoolMetadata metadata = GraphicsWriter.getPoolMetadata( statistics );
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -153,7 +142,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 {
                     // Build the output file name
                     Object appendObject = nextEntry.getKey();
-                    String appendString = DiagramGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
+                    String appendString =
+                            DiagramGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
                     Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                               metadata,
                                                                               appendString,
@@ -196,7 +186,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             List<DiagramStatisticOuter> innerSlice = Slicer.filter( statistics,
                                                                     value -> type == value.getPoolMetadata()
-                                                                                          .getPool()
+                                                                                          .getPoolDescription()
                                                                                           .getEnsembleAverageType() );
             if ( !innerSlice.isEmpty() )
             {
@@ -231,12 +221,14 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      * @return the filtered statistics
      */
 
-    private static List<DiagramStatisticOuter> removeSummaryStatisticQuantilesWithoutMedian( List<DiagramStatisticOuter> diagrams )
+    private static List<DiagramStatisticOuter> removeSummaryStatisticQuantilesWithoutMedian
+    ( List<DiagramStatisticOuter> diagrams )
     {
         List<DiagramStatisticOuter> filtered = diagrams;
         Predicate<DiagramStatisticOuter> filter = s -> s.isSummaryStatistic()
                                                        && s.getSummaryStatistic()
-                                                           .getStatistic() == SummaryStatistic.StatisticName.QUANTILE
+                                                           .getStatistic()
+                                                          == SummaryStatistic.StatisticName.QUANTILE
                                                        && !s.getSummaryStatistic()
                                                             .getDimensionList()
                                                             .contains( SummaryStatistic.StatisticDimension.RESAMPLED );
@@ -282,8 +274,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             }
             else
             {
-                // This is not fully qualified, but making it so will be a breaking change. It will need to be fully 
-                // qualified when arbitrary pools are supported: see #86646. At that time, use the time window safe 
+                // This is not fully qualified, but making it so will be a breaking change. It will need to be fully
+                // qualified when arbitrary pools are supported: see #86646. At that time, use the time window safe
                 // string helpers in the DataUtilities class.
                 append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
 
@@ -310,7 +302,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
                                  next -> next.getPoolMetadata()
-                                             .getPool()
+                                             .getPoolDescription()
                                              .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =

@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
 
-import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -75,20 +73,11 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
         {
             List<DurationScoreStatisticOuter> filtered = Slicer.filter( output, next );
 
-            // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
-            // each window with DatasetOrientation.BASELINE data): #48287
-            Map<DatasetOrientation, List<DurationScoreStatisticOuter>> groups =
-                    Slicer.getGroupedStatistics( filtered );
-
-            for ( List<DurationScoreStatisticOuter> nextGroup : groups.values() )
-            {
-                Set<Path> innerPathsWrittenTo =
-                        DurationScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
-                                                                      super.getOutputsDescription(),
-                                                                      nextGroup );
-                paths.addAll( innerPathsWrittenTo );
-            }
+            Set<Path> innerPathsWrittenTo =
+                    DurationScoreGraphicsWriter.writeScoreCharts( super.getOutputDirectory(),
+                                                                  super.getOutputsDescription(),
+                                                                  filtered );
+            paths.addAll( innerPathsWrittenTo );
         }
 
         return Collections.unmodifiableSet( paths );
@@ -153,7 +142,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
 
                     DurationScoreStatisticOuter next = nextStatistics.get( 0 );
                     MetricConstants metricName = next.getMetricName();
-                    PoolMetadata metadata = next.getPoolMetadata();
+                    PoolMetadata metadata = GraphicsWriter.getPoolMetadata( nextStatistics );
                     String pathQualifier = DurationScoreGraphicsWriter.getPathQualifier( nextStatistics );
 
                     // Build the output file name

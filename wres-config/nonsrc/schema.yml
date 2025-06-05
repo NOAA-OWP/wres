@@ -228,6 +228,8 @@ definitions:
           - "$ref": "#/definitions/SummaryStatisticsWithDimensions"
       duration_format:
         "$ref": "#/definitions/DurationEnum"
+      combine_graphics:
+        type: boolean
       decimal_format:
         type: string
         minLength: 1

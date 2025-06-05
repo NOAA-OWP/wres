@@ -858,20 +858,17 @@ public class MessageFactory
         if ( !added )
         {
             LOGGER.debug( "Discovered an empty pool of statistics for {}. Returning null.",
-                          metadata.getPool() );
+                          metadata.getPoolDescription() );
 
             return null;
         }
 
-        // Set the pool information
-        if ( metadata.getPool().getIsBaselinePool() )
-        {
-            statistics.setBaselinePool( metadata.getPool() );
-        }
-        else
-        {
-            statistics.setPool( metadata.getPool() );
-        }
+        statistics.setPool( metadata.getPoolDescription() );
+
+        // TODO: set the pool metadata for the baseline pool, which requires that the metadata is available in the
+        // wrapped statistics. Currently, any description of the baseline pool information is relying on the evaluation
+        // metadata, rather than the pool metadata. Note that, when an evaluation includes separate statistics for a
+        // baseline, then the statistics for the baseline pool are in the slot for the main/predicted pool
 
         return statistics.build();
     }
@@ -915,6 +912,14 @@ public class MessageFactory
             MessageFactory.addDiagramStatisticsToPool( statistics, mappedStatistics );
         }
 
+        // Duration diagrams
+        if ( statisticsStore.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
+        {
+            List<DurationDiagramStatisticOuter> statistics =
+                    statisticsStore.getDurationDiagramStatistics();
+            MessageFactory.addDurationDiagramStatisticsToPool( statistics, mappedStatistics );
+        }
+
         // Box plots per pair
         if ( statisticsStore.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
         {
@@ -929,14 +934,6 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics =
                     statisticsStore.getBoxPlotStatisticsPerPool();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
-        }
-
-        // Box plots statistics per pool
-        if ( statisticsStore.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
-        {
-            List<DurationDiagramStatisticOuter> statistics =
-                    statisticsStore.getDurationDiagramStatistics();
-            MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
         List<StatisticsStore> returnMe = new ArrayList<>();
@@ -968,7 +965,7 @@ public class MessageFactory
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
         SortedSet<wres.datamodel.space.FeatureTuple> features =
-                metadata.getPool()
+                metadata.getPoolDescription()
                         .getGeometryGroup()
                         .getGeometryTuplesList()
                         .stream()
@@ -978,7 +975,7 @@ public class MessageFactory
         return new PoolBoundaries( Collections.unmodifiableSortedSet( features ),
                                    window,
                                    thresholds,
-                                   metadata.getPool()
+                                   metadata.getPoolDescription()
                                            .getIsBaselinePool() );
     }
 
@@ -1193,8 +1190,8 @@ public class MessageFactory
      * @throws NullPointerException if the input is null
      */
 
-    private static void addPairedStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
-                                                   Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
+    private static void addDurationDiagramStatisticsToPool( List<DurationDiagramStatisticOuter> statistics,
+                                                            Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 

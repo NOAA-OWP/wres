@@ -118,7 +118,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
         String right = "PREDICTED";
 
         if ( pairs.getMetadata()
-                  .getPool()
+                  .getPoolDescription()
                   .getIsBaselinePool() )
         {
             right = "BASELINE";

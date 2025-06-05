@@ -506,7 +506,7 @@ abstract class CommaSeparatedStatisticsWriter
 
         String featureName = "UNKNOWN";
 
-        Pool pool = metadata.getPool();
+        Pool pool = metadata.getPoolDescription();
 
         GeometryGroup geoGroup = pool.getGeometryGroup();
         if ( geoGroup.getGeometryTuplesCount() > 0 )

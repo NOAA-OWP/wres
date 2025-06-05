@@ -187,7 +187,7 @@ public final class SingleValuedStatisticsProcessorTest
             TimeWindowOuter window = TimeWindowOuter.of( inner );
 
             wres.statistics.generated.Pool pool = pairs.getMetadata()
-                                                       .getPool()
+                                                       .getPoolDescription()
                                                        .toBuilder()
                                                        .setTimeWindow( window.getTimeWindow() )
                                                        .build();
@@ -1027,7 +1027,7 @@ public final class SingleValuedStatisticsProcessorTest
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         wres.statistics.generated.Pool poolOneDescription = pairs.getMetadata()
-                                                                 .getPool()
+                                                                 .getPoolDescription()
                                                                  .toBuilder()
                                                                  .setGeometryGroup( GeometryGroup.newBuilder()
                                                                                                  .addGeometryTuples(
@@ -1043,7 +1043,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                     .build();
 
         wres.statistics.generated.Pool poolTwoDescription = pairs.getMetadata()
-                                                                 .getPool()
+                                                                 .getPoolDescription()
                                                                  .toBuilder()
                                                                  .setGeometryGroup( GeometryGroup.newBuilder()
                                                                                                  .addGeometryTuples(

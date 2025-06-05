@@ -739,7 +739,7 @@ class PoolSupplierTest
                                                         poolOneWindow,
                                                         this.desiredTimeScale );
 
-        wres.statistics.generated.Pool baselinePool = poolOneMetadata.getPool()
+        wres.statistics.generated.Pool baselinePool = poolOneMetadata.getPoolDescription()
                                                                      .toBuilder()
                                                                      .setIsBaselinePool( true )
                                                                      .build();
@@ -1044,7 +1044,7 @@ class PoolSupplierTest
 
         PoolMetadata poolMetadata =
                 PoolMetadata.of( start.getEvaluation(),
-                                 start.getPool()
+                                 start.getPoolDescription()
                                       .toBuilder()
                                       .setGeometryGroup( geometryGroup )
                                       .build() );
@@ -1297,7 +1297,7 @@ class PoolSupplierTest
                                                         this.desiredTimeScale );
 
 
-        wres.statistics.generated.Pool baselinePool = poolOneMetadata.getPool().toBuilder()
+        wres.statistics.generated.Pool baselinePool = poolOneMetadata.getPoolDescription().toBuilder()
                                                                      .setIsBaselinePool( true )
                                                                      .build();
 

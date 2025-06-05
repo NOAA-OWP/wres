@@ -924,7 +924,7 @@ public final class Slicer
     {
         Function<? super T, DatasetOrientation> classifier = statistic -> {
             if ( statistic.getPoolMetadata()
-                          .getPool()
+                          .getPoolDescription()
                           .getIsBaselinePool() )
             {
                 return DatasetOrientation.BASELINE;
@@ -951,8 +951,10 @@ public final class Slicer
     {
         // Split the statistics into two groups as there may be separate statistics for a baseline
         Function<? super Statistics, DatasetOrientation> classifier = statistic -> {
-            if ( !statistic.hasPool()
-                 && statistic.hasBaselinePool() )
+            if ( ( !statistic.hasPool()
+                   && statistic.hasBaselinePool() )
+                 || statistic.getPool()
+                             .getIsBaselinePool() )
             {
                 return DatasetOrientation.BASELINE;
             }

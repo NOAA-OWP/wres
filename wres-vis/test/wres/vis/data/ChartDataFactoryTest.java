@@ -278,7 +278,7 @@ class ChartDataFactoryTest
     }
 
     @Test
-    void testOfVerificationDiagramByLeadAndThreshold()
+    void testOfDiagramStatisticsByLeadAndThreshold()
     {
         DiagramMetric.DiagramMetricComponent observedQuantiles =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
@@ -338,10 +338,10 @@ class ChartDataFactoryTest
 
         DiagramStatisticOuter outerDiagram = DiagramStatisticOuter.of( diagram, meta );
 
-        XYDataset dataset = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( List.of( outerDiagram ),
-                                                                                      MetricConstants.MetricDimension.PREDICTED_QUANTILES,
-                                                                                      MetricConstants.MetricDimension.OBSERVED_QUANTILES,
-                                                                                      ChronoUnit.SECONDS );
+        XYDataset dataset = ChartDataFactory.ofDiagramStatisticsByLeadAndThreshold( List.of( outerDiagram ),
+                                                                                    MetricConstants.MetricDimension.PREDICTED_QUANTILES,
+                                                                                    MetricConstants.MetricDimension.OBSERVED_QUANTILES,
+                                                                                    ChronoUnit.SECONDS );
 
         assertEquals( 10, dataset.getItemCount( 0 ) );
         assertEquals( 1, dataset.getSeriesCount() );

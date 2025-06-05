@@ -88,7 +88,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
         String right = "PREDICTED";
 
         if( pairs.getMetadata()
-                 .getPool()
+                 .getPoolDescription()
                  .getIsBaselinePool() )
         {
             right = "BASELINE";

@@ -33,6 +33,7 @@ import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
 import wres.config.yaml.serializers.PositiveIntegerSerializer;
 import wres.config.yaml.serializers.ThresholdSetsSerializer;
 import wres.config.yaml.serializers.ThresholdsSerializer;
+import wres.config.yaml.serializers.TrueSerializer;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeWindow;
@@ -78,6 +79,7 @@ import wres.statistics.generated.TimeWindow;
  * @param durationFormat the duration format
  * @param decimalFormat the decimal format
  * @param formats the statistics formats to write
+ * @param combineGraphics is true to combine predicted and baseline statistics into the same graphics
  */
 
 @RecordBuilder
@@ -140,7 +142,9 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonSerialize( using = DecimalFormatSerializer.class )
                                      @JsonDeserialize( using = DecimalFormatDeserializer.class )
                                      @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
-                                     @JsonProperty( "output_formats" ) Formats formats )
+                                     @JsonProperty( "output_formats" ) Formats formats,
+                                     @JsonSerialize( using = TrueSerializer.class )
+                                     @JsonProperty( "combine_graphics" ) Boolean combineGraphics )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
@@ -186,6 +190,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param decimalFormat the decimal format
      * @param formats the statistics formats to write
      * @param label an optional label or name for the evaluation
+     * @param combineGraphics is true to combine predicted and baseline statistics into the same graphics
      */
     public EvaluationDeclaration
     {
@@ -225,6 +230,21 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
         {
             covariates = Collections.unmodifiableList( covariates );
         }
+
+        if ( Objects.isNull( combineGraphics ) )
+        {
+            combineGraphics = false;
+        }
+    }
+
+    public Boolean combineGraphics()
+    {
+        if ( Objects.isNull( this.combineGraphics ) )
+        {
+            return false;
+        }
+
+        return this.combineGraphics;
     }
 
     /**

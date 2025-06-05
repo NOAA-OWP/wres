@@ -1,13 +1,6 @@
 package wres.vis.charts;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontFormatException;
-import java.awt.GraphicsEnvironment;
-import java.awt.Paint;
-import java.awt.Shape;
-import java.awt.Stroke;
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +13,9 @@ import java.time.Instant;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,14 +60,15 @@ import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
+import static wres.vis.charts.GraphicsUtils.PREDICTED_SCENARIO_LABEL;
+
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
-import wres.config.MetricConstants.MetricGroup;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -232,14 +228,15 @@ public class ChartFactory
 
         // Use the metadata from the first element, plus the aggregate time window
         DurationScoreStatisticOuter example = statistics.get( 0 );
-        PoolMetadata metadata = example.getPoolMetadata();
+        PoolMetadata exampleMetadata = example.getPoolMetadata();
+        Set<PoolMetadata> metadatas = statistics.stream()
+                                                .map( DurationScoreStatisticOuter::getPoolMetadata )
+                                                .collect( Collectors.toSet() );
 
+        CategoryDataset source = ChartDataFactory.ofDurationScoreSummaryStatistics( statistics );
         MetricConstants metricName = example.getMetricName();
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
-
-        // Build the source.
-        CategoryDataset source = ChartDataFactory.ofDurationScoreSummaryStatistics( statistics );
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
@@ -254,10 +251,10 @@ public class ChartFactory
                                                  GraphicShape.DEFAULT,
                                                  durationUnits,
                                                  timeWindows,
-                                                 metadata.getEvaluation()
-                                                         .getMeasurementUnit() );
+                                                 exampleMetadata.getEvaluation()
+                                                                .getMeasurementUnit() );
 
-        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+        ChartTitleParameters parameters = new ChartTitleParameters( metadatas,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
@@ -295,10 +292,43 @@ public class ChartFactory
                                                                         false );
 
         CategoryPlot plot = chart.getCategoryPlot();
+
+        // Eliminate duplicate legend items, which may occur when there are multiple dataset orientations. Since all
+        // datasets are plotted with the same color, only a different shade, eliminate the duplicate entries
+        LegendItemCollection existing = plot.getLegendItems();
+        LegendItemCollection adjusted = new LegendItemCollection();
+        int count = existing.getItemCount();
+        for ( int i = 0; i < count; i++ )
+        {
+            LegendItem next = existing.get( i );
+            if ( !next.getLabel()
+                      .endsWith( "baseline" ) )
+            {
+                adjusted.add( next );
+            }
+        }
+
+        plot.setFixedLegendItems( adjusted );
+
         chart.setAntiAlias( true );
         this.setChartPadding( chart );
         this.setChartTheme( chart );
-        this.setSeriesColorAndShape( plot );
+
+        int rowCount = plot.getDataset()
+                           .getRowCount();
+
+        // Two dataset orientations together? If so, wash/brighten colors for second/baseline
+        boolean washAlternate = statistics.stream()
+                                          .anyMatch( s -> s.getPoolMetadata()
+                                                           .getPoolDescription()
+                                                           .getIsBaselinePool() )
+                                && statistics.stream()
+                                             .anyMatch( s -> !s.getPoolMetadata()
+                                                               .getPoolDescription()
+                                                               .getIsBaselinePool() );
+
+        BarRenderer renderer = this.getDurationScoreSeriesRenderer( rowCount, washAlternate );
+        plot.setRenderer( renderer );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, true ) )
@@ -327,7 +357,8 @@ public class ChartFactory
 
         // Use the metadata from the first element
         DiagramStatisticOuter first = statistics.get( 0 );
-        PoolMetadata metadata = first.getPoolMetadata();
+        PoolMetadata exampleMetadata = first.getPoolMetadata();
+
         MetricConstants metricName = first.getMetricName();
         DiagramMetricComponent domain = first.getComponent( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
         String summaryStatisticNameQualifier = this.getDiagramStatisticNameQualifier( first );
@@ -339,8 +370,8 @@ public class ChartFactory
                                    .getMetric()
                                    .getHasDiagonal();
 
-        EnsembleAverageType ensembleAverageType = metadata.getPool()
-                                                          .getEnsembleAverageType();
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
+                                                                 .getEnsembleAverageType();
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
 
         // Determine the output type
@@ -364,8 +395,8 @@ public class ChartFactory
                                                  graphicShape,
                                                  durationUnits,
                                                  Set.of(),
-                                                 metadata.getEvaluation()
-                                                         .getMeasurementUnit() );
+                                                 exampleMetadata.getEvaluation()
+                                                                .getMeasurementUnit() );
 
         // One chart per key instance
         for ( Object keyInstance : keySetValues )
@@ -376,17 +407,17 @@ public class ChartFactory
                                                                     statistics,
                                                                     chartType );
 
-            List<PoolMetadata> metadatas = slicedStatistics.stream()
-                                                           .map( DiagramStatisticOuter::getPoolMetadata )
-                                                           .toList();
-
-            PoolMetadata union = PoolSlicer.unionOf( metadatas );
-
             SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-            ChartTitleParameters parameters = new ChartTitleParameters( union,
-                                                                        // Same as aggregate metadata
-                                                                        union.getTimeWindow(),
+            Set<PoolMetadata> metadatas = slicedStatistics.stream()
+                                                          .map( DiagramStatisticOuter::getPoolMetadata )
+                                                          .collect( Collectors.toSet() );
+            // Get an example metadata for the time window
+            PoolMetadata timeWindowMetadata = metadatas.iterator()
+                                                       .next();
+
+            ChartTitleParameters parameters = new ChartTitleParameters( metadatas,
+                                                                        timeWindowMetadata.getTimeWindow(),
                                                                         Pair.of( metricName, null ),
                                                                         durationUnits,
                                                                         chartType,
@@ -521,7 +552,10 @@ public class ChartFactory
 
         DurationDiagramStatisticOuter example = statistics.get( 0 );
 
-        PoolMetadata metadata = example.getPoolMetadata();
+        PoolMetadata exampleMetadata = example.getPoolMetadata();
+        Set<PoolMetadata> metadatas = statistics.stream()
+                                                .map( DurationDiagramStatisticOuter::getPoolMetadata )
+                                                .collect( Collectors.toSet() );
 
         SummaryStatistic summaryStatistic = example.getSummaryStatistic();
 
@@ -547,10 +581,10 @@ public class ChartFactory
                                                  GraphicShape.DEFAULT,
                                                  durationUnits,
                                                  Set.of(),
-                                                 metadata.getEvaluation()
-                                                         .getMeasurementUnit() );
+                                                 exampleMetadata.getEvaluation()
+                                                                .getMeasurementUnit() );
 
-        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+        ChartTitleParameters parameters = new ChartTitleParameters( metadatas,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
@@ -628,7 +662,10 @@ public class ChartFactory
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = first.getPoolMetadata();
+        PoolMetadata exampleMetadata = first.getPoolMetadata();
+        Set<PoolMetadata> metadatas = statistics.stream()
+                                                .map( BoxplotStatisticOuter::getPoolMetadata )
+                                                .collect( Collectors.toSet() );
         BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
@@ -636,8 +673,8 @@ public class ChartFactory
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
 
-        EnsembleAverageType ensembleAverageType = metadata.getPool()
-                                                          .getEnsembleAverageType();
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
+                                                                 .getEnsembleAverageType();
 
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
 
@@ -674,7 +711,7 @@ public class ChartFactory
                                                      .collect( Collectors.toSet() );
         TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
 
-        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+        ChartTitleParameters parameters = new ChartTitleParameters( metadatas,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
@@ -799,18 +836,18 @@ public class ChartFactory
         if ( chartType == ChartType.LEAD_THRESHOLD
              || chartType == ChartType.POOLING_WINDOW )
         {
-            dataset = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( slicedStatistics,
-                                                                                domainDimension,
-                                                                                rangeDimension,
-                                                                                durationUnits );
+            dataset = ChartDataFactory.ofDiagramStatisticsByLeadAndThreshold( slicedStatistics,
+                                                                              domainDimension,
+                                                                              rangeDimension,
+                                                                              durationUnits );
         }
         // One threshold and up to many lead durations
         else
         {
-            dataset = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( slicedStatistics,
-                                                                                domainDimension,
-                                                                                rangeDimension,
-                                                                                durationUnits );
+            dataset = ChartDataFactory.ofDiagramStatisticsByThresholdAndLead( slicedStatistics,
+                                                                              domainDimension,
+                                                                              rangeDimension,
+                                                                              durationUnits );
         }
 
         return dataset;
@@ -841,14 +878,17 @@ public class ChartFactory
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = first.getPoolMetadata();
+        PoolMetadata exampleMetadata = first.getPoolMetadata();
+        Set<PoolMetadata> metadatas = statistics.stream()
+                                                .map( BoxplotStatisticOuter::getPoolMetadata )
+                                                .collect( Collectors.toSet() );
         BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
         String metricUnits = metric.getUnits();
 
-        EnsembleAverageType ensembleAverageType = metadata.getPool()
-                                                          .getEnsembleAverageType();
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
+                                                                 .getEnsembleAverageType();
 
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
 
@@ -865,7 +905,7 @@ public class ChartFactory
                                                                  .getTimeWindow() )
                                                      .collect( Collectors.toSet() );
         TimeWindowOuter aggregateTimeWindow = this.getAggregateTimeWindow( timeWindows );
-        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+        ChartTitleParameters parameters = new ChartTitleParameters( metadatas,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, null ),
                                                                     durationUnits,
@@ -932,7 +972,10 @@ public class ChartFactory
     {
         // Use the metadata from the first element, plus the aggregate time window
         DoubleScoreComponentOuter example = statistics.get( 0 );
-        PoolMetadata metadata = example.getPoolMetadata();
+        PoolMetadata exampleMetadata = example.getPoolMetadata();
+        Set<PoolMetadata> metadatas = statistics.stream()
+                                                .map( DoubleScoreComponentOuter::getPoolMetadata )
+                                                .collect( Collectors.toSet() );
         String metricUnits = example.getStatistic()
                                     .getMetric()
                                     .getUnits();
@@ -942,8 +985,8 @@ public class ChartFactory
         // Component name
         MetricConstants metricComponentName = example.getMetricName();
 
-        EnsembleAverageType ensembleAverageType = metadata.getPool()
-                                                          .getEnsembleAverageType();
+        EnsembleAverageType ensembleAverageType = exampleMetadata.getPoolDescription()
+                                                                 .getEnsembleAverageType();
 
         // Do not qualify a "main" score component because it is qualified by the overall metric name
         if ( metricComponentName == MetricConstants.MAIN )
@@ -954,8 +997,8 @@ public class ChartFactory
         // Determine the chart type
         ChartType chartType = ChartFactory.getChartType( metricName, graphicShape );
 
-        String thresholdUnits = metadata.getEvaluation()
-                                        .getMeasurementUnit();
+        String thresholdUnits = exampleMetadata.getEvaluation()
+                                               .getMeasurementUnit();
 
         String leadUnits = durationUnits.toString()
                                         .toUpperCase();
@@ -975,7 +1018,7 @@ public class ChartFactory
                                                  timeWindows,
                                                  thresholdUnits );
 
-        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+        ChartTitleParameters parameters = new ChartTitleParameters( metadatas,
                                                                     aggregateTimeWindow,
                                                                     Pair.of( metricName, metricComponentName ),
                                                                     durationUnits,
@@ -1121,25 +1164,25 @@ public class ChartFactory
 
         if ( leadThreshold )
         {
-            sampleSize = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( statistics,
-                                                                                   MetricDimension.FORECAST_PROBABILITY,
-                                                                                   MetricDimension.SAMPLE_SIZE,
-                                                                                   durationUnits );
-            reliability = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( statistics,
-                                                                                    MetricDimension.FORECAST_PROBABILITY,
-                                                                                    MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                                    durationUnits );
+            sampleSize = ChartDataFactory.ofDiagramStatisticsByLeadAndThreshold( statistics,
+                                                                                 MetricDimension.FORECAST_PROBABILITY,
+                                                                                 MetricDimension.SAMPLE_SIZE,
+                                                                                 durationUnits );
+            reliability = ChartDataFactory.ofDiagramStatisticsByLeadAndThreshold( statistics,
+                                                                                  MetricDimension.FORECAST_PROBABILITY,
+                                                                                  MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                                  durationUnits );
         }
         else
         {
-            sampleSize = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( statistics,
-                                                                                   MetricDimension.FORECAST_PROBABILITY,
-                                                                                   MetricDimension.SAMPLE_SIZE,
-                                                                                   durationUnits );
-            reliability = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( statistics,
-                                                                                    MetricDimension.FORECAST_PROBABILITY,
-                                                                                    MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                                    durationUnits );
+            sampleSize = ChartDataFactory.ofDiagramStatisticsByThresholdAndLead( statistics,
+                                                                                 MetricDimension.FORECAST_PROBABILITY,
+                                                                                 MetricDimension.SAMPLE_SIZE,
+                                                                                 durationUnits );
+            reliability = ChartDataFactory.ofDiagramStatisticsByThresholdAndLead( statistics,
+                                                                                  MetricDimension.FORECAST_PROBABILITY,
+                                                                                  MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                                  durationUnits );
         }
 
         ValueAxis domainAxis = new NumberAxis( MetricDimension.FORECAST_PROBABILITY.toString() );
@@ -1469,6 +1512,16 @@ public class ChartFactory
 
         Shape[] shapes = DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE;
 
+        // Map the series indexes by key
+        Map<String, Integer> seriesByKey = new HashMap<>();
+        for ( int i = 0; i < seriesCount; i++ )
+        {
+            seriesByKey.put( plot.getDataset()
+                                 .getSeriesKey( i )
+                                 .toString(),
+                             i );
+        }
+
         for ( int i = 0; i < seriesCount; i++ )
         {
             renderer.setSeriesPaint( i, colors[i] );
@@ -1477,6 +1530,36 @@ public class ChartFactory
             renderer.setSeriesShapesVisible( i, true );
             renderer.setSeriesShapesFilled( i, true );
             renderer.setSeriesLinesVisible( i, true );
+
+            String key = plot.getDataset()
+                             .getSeriesKey( i )
+                             .toString();
+
+            // Multi-series plot? This is indirect/brittle, but a less brittle approach is not straightforward and the
+            // risk is low, i.e., dashed lines when should be solid
+            if ( key.endsWith( "(dashed)" ) )
+            {
+                renderer.setSeriesStroke( i,
+                                          new BasicStroke( 1.0f,
+                                                           BasicStroke.CAP_ROUND,
+                                                           BasicStroke.JOIN_ROUND,
+                                                           1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
+                renderer.setSeriesVisibleInLegend( i, Boolean.FALSE );
+
+                renderer.setSeriesShapesFilled( i, false );
+
+                String test = key.replace( " (dashed)", "" );
+
+                if ( seriesByKey.containsKey( test ) )
+                {
+                    int pairedSeries = seriesByKey.get( test );
+                    Paint pairedPaint = renderer.getSeriesPaint( pairedSeries );
+                    renderer.setSeriesPaint( i, pairedPaint );
+                    Shape pairedShape = renderer.getSeriesShape( pairedSeries );
+                    renderer.setSeriesShape( i, pairedShape );
+                }
+
+            }
         }
 
         return renderer;
@@ -1518,16 +1601,16 @@ public class ChartFactory
     }
 
     /**
-     * Sets the color and shape for each series.
+     * Returns the renderer for a duration score series.
      *
-     * @param plot the category plot
+     * @param seriesCount the series count
+     * @param washAlternate whether to wash colors for alternate row keys
+     * @return the renderer
      * @throws NullPointerException if the plot is null
      */
 
-    private void setSeriesColorAndShape( CategoryPlot plot )
+    private BarRenderer getDurationScoreSeriesRenderer( int seriesCount, boolean washAlternate )
     {
-        Objects.requireNonNull( plot );
-
         BarRenderer renderer = new BarRenderer();
 
         // Solid bar colors
@@ -1539,23 +1622,56 @@ public class ChartFactory
         // No shadow
         renderer.setShadowVisible( false );
 
-        Color[] colors = this.getSeriesColors();
-
-        // Too many series for the default color sequence? Generate a sequence instead.
-        int seriesCount = plot.getDataset()
-                              .getRowCount();
-
-        if ( colors.length < seriesCount )
-        {
-            colors = GraphicsUtils.getColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
-        }
+        Color[] colors = this.getDurationScoreSeriesColors( seriesCount, washAlternate );
 
         for ( int i = 0; i < seriesCount; i++ )
         {
             renderer.setSeriesPaint( i, colors[i] );
         }
 
-        plot.setRenderer( renderer );
+        return renderer;
+    }
+
+    /**
+     * Generates a color pallete for a duration score chart.
+     * @param seriesCount the number of series
+     * @param washAlternate whether every other series should have the same color as the prior series, only brightened
+     * @return the colors
+     */
+
+    private Color[] getDurationScoreSeriesColors( int seriesCount, boolean washAlternate )
+    {
+        int actualSeriesCount = seriesCount;
+        Color[] colors = this.getSeriesColors();
+        if ( washAlternate )
+        {
+            actualSeriesCount = seriesCount / 2;
+        }
+
+        // Too many series for the default color sequence? Generate a sequence instead
+        if ( colors.length < actualSeriesCount )
+        {
+            colors = GraphicsUtils.getColorPalette( actualSeriesCount, Color.BLUE, Color.GREEN, Color.RED );
+        }
+
+        Color[] returnMe = new Color[seriesCount];
+
+        if ( washAlternate )
+        {
+            for ( int i = 0; i < actualSeriesCount; i += 1 )
+            {
+                // Re-use colors but brighten the second series x2
+                returnMe[i * 2] = colors[i];
+                returnMe[( i * 2 ) + 1] = colors[i].brighter()
+                                                   .brighter();
+            }
+        }
+        else
+        {
+            System.arraycopy( colors, 0, returnMe, 0, seriesCount );
+        }
+
+        return returnMe;
     }
 
     /**
@@ -1681,14 +1797,16 @@ public class ChartFactory
         }
 
         // Are decision thresholds defined?
-        PoolMetadata metadata = parameters.metadata();
+        Set<PoolMetadata> metadatas = parameters.metadata();
+        PoolMetadata exampleMetadata = metadatas.iterator()
+                                                .next();
 
         name += this.getEnsembleAverageTypeQualifier( parameters.ensembleAverageType(),
-                                                      metadata,
+                                                      exampleMetadata,
                                                       metricName,
                                                       metricComponentName );
 
-        String geoName = this.getGeoNameForTitle( metadata );
+        String geoName = this.getGeoNameForTitle( exampleMetadata );
 
         // Qualify the geography if not all geographic features
         boolean featuresQualified = !isSummaryStatistic
@@ -1699,25 +1817,52 @@ public class ChartFactory
             name += " at " + geoName;
         }
 
-        String scenarioName = this.getScenarioNameForTitle( metadata, metricName );
+        String scenarioName = this.getScenarioNameForTitle( metadatas, metricName, isSummaryStatistic );
         name += " for" + scenarioName + "predictions of";
 
-        name += this.getVariableNameForTitle( metadata, metricName, metricComponentName );
-        name += this.getBaselineScenarioForTitle( metadata, metricName );
+        name += this.getVariableNameForTitle( exampleMetadata, metricName, metricComponentName );
+
+        if ( !this.isMultiScenarioPlot( metadatas, metricName, isSummaryStatistic ) )
+        {
+            name += this.getBaselineScenarioForTitle( exampleMetadata, metricName );
+        }
 
         ChartType chartType = parameters.chartType();
         StatisticType statisticType = parameters.statisticType();
         ChronoUnit durationUnits = parameters.durationUnits();
 
-        name += this.getTimeScaleForTitle( metadata, durationUnits );
+        name += this.getTimeScaleForTitle( exampleMetadata, durationUnits );
         name += this.getTimeWindowForTitle( parameters.timeWindow(), statisticType, durationUnits );
-        name += this.getThresholdForTitle( metadata, chartType, statisticType );
-        name += this.getCovariateFiltersForTitle( metadata );
+        name += this.getThresholdForTitle( exampleMetadata, chartType, statisticType );
+        name += this.getCovariateFiltersForTitle( exampleMetadata );
         name += this.getQuantilesQualifier( metricName,
                                             parameters.quantiles(),
                                             isSummaryStatistic );
 
         return name;
+    }
+
+    /**
+     * Determines whether there is more than one scenario to plot.
+     *
+     * @param metadatas the metadatas to test
+     * @param metric the metric
+     * @param isSummaryStatistic is true if the statistic is a summary statistic
+     * @return whether this is a multi-scenario plot
+     */
+
+    private boolean isMultiScenarioPlot( Set<PoolMetadata> metadatas,
+                                         MetricConstants metric,
+                                         boolean isSummaryStatistic )
+    {
+        // Must be more than one singleton pool type
+        return GraphicsUtils.isStatisticForPairs( metric, isSummaryStatistic )
+               && metadatas.stream()
+                           .anyMatch( s -> s.getPoolDescription()
+                                            .getIsBaselinePool() )
+               && metadatas.stream()
+                           .anyMatch( s -> !s.getPoolDescription()
+                                             .getIsBaselinePool() );
     }
 
     /**
@@ -1757,7 +1902,7 @@ public class ChartFactory
             String dimension = this.getSummaryStatisticDimensionsQualifier( summaryStatistic );
 
             name = statisticName
-                   + " across the "
+                   + " across "
                    + dimension
                    + OF_THE;
         }
@@ -1923,29 +2068,36 @@ public class ChartFactory
     /**
      * Uncovers the scenario name for the plot title.
      *
-     * @param metadata the sample metadata
+     * @param metadatas the sample metadata
      * @param metric the metric name
      * @return the scenario name
      * @throws NullPointerException if the metadata or metric is null
      */
 
-    private String getScenarioNameForTitle( PoolMetadata metadata, MetricConstants metric )
+    private String getScenarioNameForTitle( Set<PoolMetadata> metadatas,
+                                            MetricConstants metric,
+                                            boolean isSummaryStatistic )
     {
-        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( metadatas );
         Objects.requireNonNull( metric );
 
         String scenarioName = " ";
 
-        Evaluation evaluation = metadata.getEvaluation();
-
-        // Not univariate statistics, except the sample size
-        if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
-             || metric == MetricConstants.SAMPLE_SIZE
-             || metric == MetricConstants.SAMPLE_SIZE_DIFFERENCE )
+        // Not univariate statistics, with exceptions
+        if ( GraphicsUtils.isStatisticForPairs( metric, isSummaryStatistic ) )
         {
             String space = " ";
-            if ( metadata.getPool()
-                         .getIsBaselinePool() )
+
+            PoolMetadata exampleMetadata = metadatas.iterator()
+                                                    .next();
+            Evaluation evaluation = exampleMetadata.getEvaluation();
+
+            if ( this.isMultiScenarioPlot( metadatas, metric, isSummaryStatistic ) )
+            {
+                scenarioName = this.getMultiScenarioNameForTitle( metadatas, metric );
+            }
+            else if ( exampleMetadata.getPoolDescription()
+                                     .getIsBaselinePool() )
             {
                 if ( !evaluation.getBaselineDataName()
                                 .isBlank() )
@@ -1965,6 +2117,76 @@ public class ChartFactory
         }
 
         return scenarioName;
+    }
+
+    /**
+     * Generates a scenario name for a multi-scenario plot.
+     *
+     * @param metadatas the metadatas
+     * @return the scenario name
+     */
+
+    private String getMultiScenarioNameForTitle( Set<PoolMetadata> metadatas, MetricConstants metric )
+    {
+        String baselineScenario = BASELINE_SCENARIO_LABEL;
+        String mainScenarioAppender = PREDICTED_SCENARIO_LABEL;
+        if ( metric.isInGroup( StatisticType.DURATION_SCORE ) )
+        {
+            baselineScenario = " (lighter)";
+            mainScenarioAppender = " (darker)";
+        }
+        String baselineScenarioFinal = baselineScenario;
+        String mainScenarioAppenderFinal = mainScenarioAppender;
+
+        Set<String> scenarioNames = metadatas.stream()
+                                             .filter( s -> !s.getEvaluation()
+                                                             .getRightDataName()
+                                                             .isEmpty() )
+                                             .map( s -> s.getEvaluation()
+                                                         .getRightDataName() + mainScenarioAppenderFinal )
+                                             .collect( Collectors.toSet() );
+
+        if ( scenarioNames.isEmpty() )
+        {
+            scenarioNames.add( "PREDICTED" + mainScenarioAppender );
+        }
+
+        Set<String> baselineScenarioNames = metadatas.stream()
+                                                     .filter( s -> !s.getEvaluation()
+                                                                     .getBaselineDataName()
+                                                                     .isEmpty() )
+                                                     .map( s -> s.getEvaluation()
+                                                                 .getBaselineDataName() + baselineScenarioFinal )
+                                                     .collect( Collectors.toSet() );
+
+        if ( baselineScenarioNames.isEmpty() )
+        {
+            scenarioNames.add( "BASELINE" + baselineScenario );
+        }
+
+        // Add the baseline scenario last
+        Comparator<String> comparator = ( a, b ) ->
+        {
+            if ( a.endsWith( baselineScenarioFinal ) )
+            {
+                return 1;
+            }
+            else if ( b.endsWith( baselineScenarioFinal ) )
+            {
+                return -1;
+            }
+
+            return a.compareTo( b );
+        };
+
+        Set<String> scenarioNamesSorted = new TreeSet<>( comparator );
+        scenarioNamesSorted.addAll( scenarioNames );
+        scenarioNamesSorted.addAll( baselineScenarioNames );
+
+        StringJoiner joiner = new StringJoiner( AND );
+        scenarioNamesSorted.forEach( joiner::add );
+
+        return " " + joiner + " ";
     }
 
     /**
@@ -2182,7 +2404,7 @@ public class ChartFactory
             // Skill scores for baseline use a default reference, which is climatology
             // This is also potentially brittle, so consider a better way, such as adding the default baseline
             // name into the evaluation description
-            if ( metadata.getPool()
+            if ( metadata.getPoolDescription()
                          .getIsBaselinePool() )
             {
                 baselineSuffix = metadata.getEvaluation()
@@ -2226,7 +2448,7 @@ public class ChartFactory
     {
         Objects.requireNonNull( metadata );
 
-        String regionName = metadata.getPool()
+        String regionName = metadata.getPoolDescription()
                                     .getGeometryGroup()
                                     .getRegionName();
 
@@ -2776,7 +2998,7 @@ public class ChartFactory
 
     /**
      * Small value class for chart title creation.
-     * @param metadata the metadata
+     * @param metadata the metadatas
      * @param timeWindow the time window to use for the chart title, possibly an aggregate
      * @param metricNames the metric names
      * @param durationUnits the duration units
@@ -2787,7 +3009,7 @@ public class ChartFactory
      * @param summaryStatistic the summary statistic
      * @param summaryStatisticNameQualifier the name qualifier for a summary statistic
      */
-    private record ChartTitleParameters( PoolMetadata metadata,
+    private record ChartTitleParameters( Set<PoolMetadata> metadata,
                                          TimeWindowOuter timeWindow,
                                          Pair<MetricConstants, MetricConstants> metricNames,
                                          ChronoUnit durationUnits,

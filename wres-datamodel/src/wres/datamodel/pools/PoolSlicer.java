@@ -636,7 +636,7 @@ public class PoolSlicer
 
             PoolSlicer.addRegionName( unionRegionNames, next );
 
-            wres.statistics.generated.Pool pool = next.getPool();
+            wres.statistics.generated.Pool pool = next.getPoolDescription();
             ensembleAverageType.add( pool.getEnsembleAverageType() );
         }
 
@@ -650,7 +650,7 @@ public class PoolSlicer
                       unionRegionNames );
 
         // Copy to builder and clean attributes whose union has been formed
-        wres.statistics.generated.Pool.Builder builder = test.getPool()
+        wres.statistics.generated.Pool.Builder builder = test.getPoolDescription()
                                                              .toBuilder()
                                                              .clearTimeWindow()
                                                              .clearEventThreshold()
@@ -698,12 +698,12 @@ public class PoolSlicer
 
     private static void addRegionName( Set<String> regionNames, PoolMetadata pool )
     {
-        if ( !pool.getPool()
+        if ( !pool.getPoolDescription()
                   .getGeometryGroup()
                   .getRegionName()
                   .isBlank() )
         {
-            regionNames.add( pool.getPool()
+            regionNames.add( pool.getPoolDescription()
                                  .getGeometryGroup()
                                  .getRegionName() );
         }
@@ -784,7 +784,7 @@ public class PoolSlicer
         boolean ignoreTimeScale = !first.hasTimeScale() || !second.hasTimeScale();
 
         // Adjust the pools to remove the information to be ignored
-        wres.statistics.generated.Pool.Builder adjustedPoolFirst = first.getPool()
+        wres.statistics.generated.Pool.Builder adjustedPoolFirst = first.getPoolDescription()
                                                                         .toBuilder()
                                                                         .clearPoolId()
                                                                         .clearTimeWindow()
@@ -795,7 +795,7 @@ public class PoolSlicer
                                                                         .clearGeometryTuples()
                                                                         .clearRegionName();
 
-        wres.statistics.generated.Pool.Builder adjustedPoolSecond = second.getPool()
+        wres.statistics.generated.Pool.Builder adjustedPoolSecond = second.getPoolDescription()
                                                                           .toBuilder()
                                                                           .clearPoolId()
                                                                           .clearTimeWindow()

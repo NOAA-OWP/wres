@@ -1101,6 +1101,26 @@ public class DeclarationUtilities
     }
 
     /**
+     * Determines whether graphics formats are declared.
+     * @param declaration the declaration
+     * @return whether graphics formats are declared
+     */
+
+    public static boolean hasGraphicsFormats( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        return Objects.nonNull( declaration.formats() )
+               && Objects.nonNull( declaration.formats().outputs() )
+               && ( declaration.formats()
+                               .outputs()
+                               .hasPng()
+                    || declaration.formats()
+                                  .outputs()
+                                  .hasSvg() );
+    }
+
+    /**
      * @param builder the builder
      * @return whether a baseline dataset has been declared
      * @throws NullPointerException if the input is null

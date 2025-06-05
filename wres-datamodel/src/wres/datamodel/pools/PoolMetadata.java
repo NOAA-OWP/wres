@@ -145,7 +145,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( thresholds ) )
         {
@@ -174,7 +174,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( timeWindow ) )
         {
@@ -199,7 +199,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( timeScale ) )
         {
@@ -224,7 +224,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( ensembleAverageType ) )
         {
@@ -253,7 +253,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( timeScale ) )
         {
@@ -287,7 +287,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( thresholds ) )
         {
@@ -321,7 +321,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         Evaluation evaluation = input.getEvaluation();
 
-        Pool.Builder pool = input.getPool().toBuilder();
+        Pool.Builder pool = input.getPoolDescription().toBuilder();
 
         if ( Objects.nonNull( featureGroup ) )
         {
@@ -362,7 +362,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             return returnMe;
         }
 
-        return MessageUtilities.compare( this.getPool(), input.getPool() );
+        return MessageUtilities.compare( this.getPoolDescription(), input.getPoolDescription() );
     }
 
     @Override
@@ -379,14 +379,14 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         }
 
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
-               && Objects.equals( this.getPool(), p.getPool() );
+               && Objects.equals( this.getPoolDescription(), p.getPoolDescription() );
     }
 
     @Override
     public int hashCode()
     {
         return Objects.hash( this.getEvaluation(),
-                             this.getPool() );
+                             this.getPoolDescription() );
     }
 
     @Override
@@ -394,7 +394,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     {
         // Use a limited subset of the most important/useful descriptors
         Evaluation innerEvaluation = this.getEvaluation();
-        Pool innerPool = this.getPool();
+        Pool innerPool = this.getPoolDescription();
 
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE ).append( "poolId", innerPool.getPoolId() )
                                                                             .append( "leftDataName",
@@ -552,7 +552,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
      * @return the pool description.
      */
 
-    public Pool getPool()
+    public Pool getPoolDescription()
     {
         return this.pool;
     }
@@ -597,25 +597,25 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         this.measurementUnit = MeasurementUnit.of( unit );
 
         TimeScaleOuter timeScaleInner = null;
-        if ( this.getPool().hasTimeScale() )
+        if ( this.getPoolDescription().hasTimeScale() )
         {
-            timeScaleInner = TimeScaleOuter.of( this.getPool().getTimeScale() );
+            timeScaleInner = TimeScaleOuter.of( this.getPoolDescription().getTimeScale() );
         }
 
         this.timeScale = timeScaleInner;
 
         TimeWindowOuter timeWindowInner = null;
 
-        if ( this.getPool().hasTimeWindow() )
+        if ( this.getPoolDescription().hasTimeWindow() )
         {
-            wres.statistics.generated.TimeWindow window = this.getPool()
+            wres.statistics.generated.TimeWindow window = this.getPoolDescription()
                                                               .getTimeWindow();
             timeWindowInner = TimeWindowOuter.of( window );
         }
 
         this.timeWindow = timeWindowInner;
 
-        Set<FeatureTuple> featureTuples = this.getPool()
+        Set<FeatureTuple> featureTuples = this.getPoolDescription()
                                               .getGeometryGroup()
                                               .getGeometryTuplesList()
                                               .stream()
@@ -626,26 +626,26 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         if ( !featureTuples.isEmpty() )
         {
-            featureGroupInner = FeatureGroup.of( this.getPool().getGeometryGroup() );
+            featureGroupInner = FeatureGroup.of( this.getPoolDescription().getGeometryGroup() );
         }
 
         this.featureGroup = featureGroupInner;
 
         OneOrTwoThresholds thresholdsInner = null;
 
-        if ( this.getPool()
+        if ( this.getPoolDescription()
                  .hasEventThreshold() )
         {
-            wres.statistics.generated.Threshold event = this.getPool()
+            wres.statistics.generated.Threshold event = this.getPoolDescription()
                                                             .getEventThreshold();
 
             ThresholdOuter eventOuter = ThresholdOuter.of( event );
             ThresholdOuter decisionOuter = null;
 
-            if ( this.getPool()
+            if ( this.getPoolDescription()
                      .hasDecisionThreshold() )
             {
-                wres.statistics.generated.Threshold decision = this.getPool()
+                wres.statistics.generated.Threshold decision = this.getPoolDescription()
                                                                    .getDecisionThreshold();
                 decisionOuter = ThresholdOuter.of( decision, ThresholdType.PROBABILITY_CLASSIFIER );
             }

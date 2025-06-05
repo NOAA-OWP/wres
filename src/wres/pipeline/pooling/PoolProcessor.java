@@ -151,7 +151,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // Create the statistics, generating sampling uncertainty estimates as needed
         List<Statistics> statistics = this.createStatistics( pool, this.samplingUncertainty, this.blockSize );
 
-        // Group the statistics by dataset orientation
+        // Group the statistics by dataset orientation for summary statistics calculation
         Map<DatasetOrientation, List<Statistics>> groups = Slicer.getGroupedStatistics( statistics );
 
         // Register the statistics with any summary statistics calculators
@@ -169,6 +169,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         if ( groups.containsKey( DatasetOrientation.BASELINE ) )
         {
             List<Statistics> baseline = groups.get( DatasetOrientation.BASELINE );
+
             baseline.stream()
                     // Ignore quantiles for sampling uncertainty, which is the only type of summary statistic present
                     // for the raw statistics
@@ -492,6 +493,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                   this.traceCountEstimator );
 
         List<Statistics> statistics = new ArrayList<>();
+
         try
         {
             // Generate the nominal values of the statistics
@@ -1010,7 +1012,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             for ( StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
             {
                 StatisticsStore nextStatistics = this.getStatistics( processor, pool );
-
                 returnMe.add( nextStatistics );
 
                 // Estimate the trace count where required
