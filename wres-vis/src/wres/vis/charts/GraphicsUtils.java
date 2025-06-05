@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import org.jfree.chart.plot.DefaultDrawingSupplier;
 
+import wres.config.MetricConstants;
 import wres.statistics.generated.MetricName;
 
 /**
@@ -19,6 +20,9 @@ public class GraphicsUtils
 {
     /** The scenario label to use when plotting a baseline scenario in the same plot as a predicted scenario. */
     public static final String BASELINE_SCENARIO_LABEL = " (dashed)";
+
+    /** The scenario label to use when plotting a baseline scenario in the same plot as a predicted scenario. */
+    public static final String PREDICTED_SCENARIO_LABEL = " (solid)";
 
     /**
      * @return a sequence of base colors.
@@ -106,6 +110,22 @@ public class GraphicsUtils
         }
 
         return palette;
+    }
+
+    /**
+     * Returns whether the statistic represents paired data, otherwise univariate data.
+     * @param metric the metric
+     * @param isSummaryStatistic whether the statistic is a summary statistic
+     * @return whether the statistics is for paired data
+     */
+
+    public static boolean isStatisticForPairs( MetricConstants metric,
+                                               boolean isSummaryStatistic )
+    {
+        return !metric.isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
+               || isSummaryStatistic
+               || metric == MetricConstants.SAMPLE_SIZE
+               || metric == MetricConstants.SAMPLE_SIZE_DIFFERENCE;
     }
 
     /**

@@ -972,6 +972,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         // Group the statistics by main/baseline pool if needed
         if ( format.isGraphicsFormat() )
         {
+
             // Return all statistics as-is for combined writing
             if ( this.getEvaluationDescription()
                      .getOutputs()

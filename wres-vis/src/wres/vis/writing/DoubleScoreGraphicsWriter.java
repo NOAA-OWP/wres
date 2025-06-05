@@ -31,6 +31,7 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Helps write charts comprising {@link DoubleScoreStatisticOuter} to graphics formats.
@@ -265,9 +266,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // summary statistics for bivariate data
         List<DoubleScoreStatisticOuter> univariateMain =
                 statistics.stream()
-                          .filter( s -> s.getMetricName()
-                                         .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
-                                        && !s.isSummaryStatistic()
+                          .filter( s -> !GraphicsUtils.isStatisticForPairs( s.getMetricName(),
+                                                                            s.isSummaryStatistic() )
                                         && !s.getPoolMetadata()
                                              .getPoolDescription()
                                              .getIsBaselinePool() )
@@ -275,9 +275,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
         List<DoubleScoreStatisticOuter> univariateBaseline =
                 statistics.stream()
-                          .filter( s -> s.getMetricName()
-                                         .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
-                                        && !s.isSummaryStatistic()
+                          .filter( s -> !GraphicsUtils.isStatisticForPairs( s.getMetricName(),
+                                                                            s.isSummaryStatistic() )
                                         && s.getPoolMetadata()
                                             .getPoolDescription()
                                             .getIsBaselinePool() )
@@ -285,9 +284,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
         List<DoubleScoreStatisticOuter> bivariate =
                 statistics.stream()
-                          .filter( s -> !s.getMetricName()
-                                          .isInGroup( MetricConstants.MetricGroup.UNIVARIATE_STATISTIC )
-                                        || s.isSummaryStatistic() )
+                          .filter( s -> GraphicsUtils.isStatisticForPairs( s.getMetricName(),
+                                                                           s.isSummaryStatistic() ) )
                           .toList();
         List<List<DoubleScoreStatisticOuter>> returnMe = new ArrayList<>();
 

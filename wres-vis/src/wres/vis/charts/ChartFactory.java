@@ -61,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
+import static wres.vis.charts.GraphicsUtils.PREDICTED_SCENARIO_LABEL;
 
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -68,7 +69,6 @@ import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
-import wres.config.MetricConstants.MetricGroup;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -1856,8 +1856,7 @@ public class ChartFactory
                                          boolean isSummaryStatistic )
     {
         // Must be more than one singleton pool type
-        return ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
-                 || isSummaryStatistic )
+        return GraphicsUtils.isStatisticForPairs( metric, isSummaryStatistic )
                && metadatas.stream()
                            .anyMatch( s -> s.getPoolDescription()
                                             .getIsBaselinePool() )
@@ -2085,10 +2084,7 @@ public class ChartFactory
         String scenarioName = " ";
 
         // Not univariate statistics, with exceptions
-        if ( ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
-               || isSummaryStatistic )
-             || metric == MetricConstants.SAMPLE_SIZE
-             || metric == MetricConstants.SAMPLE_SIZE_DIFFERENCE )
+        if ( GraphicsUtils.isStatisticForPairs( metric, isSummaryStatistic ) )
         {
             String space = " ";
 
@@ -2133,7 +2129,7 @@ public class ChartFactory
     private String getMultiScenarioNameForTitle( Set<PoolMetadata> metadatas, MetricConstants metric )
     {
         String baselineScenario = BASELINE_SCENARIO_LABEL;
-        String mainScenarioAppender = "";
+        String mainScenarioAppender = PREDICTED_SCENARIO_LABEL;
         if ( metric.isInGroup( StatisticType.DURATION_SCORE ) )
         {
             baselineScenario = " (lighter)";
