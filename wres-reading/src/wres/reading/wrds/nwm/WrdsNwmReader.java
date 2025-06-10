@@ -111,10 +111,10 @@ public class WrdsNwmReader implements TimeSeriesReader
         {
             Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
             OkHttpClient client = WebClientUtils.defaultTimeoutHttpClient()
-                                           .newBuilder()
-                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
-                                                              sslContext.getRight() )
-                                           .build();
+                                                .newBuilder()
+                                                .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                                   sslContext.getRight() )
+                                                .build();
             CUSTOM_WEB_CLIENT = new WebClient( client );
         }
         catch ( PreReadException e )
@@ -452,6 +452,17 @@ public class WrdsNwmReader implements TimeSeriesReader
         if ( !( ReaderUtilities.isWrdsNwmSource( dataSource ) ) )
         {
             throw new ReadException( "Expected a WRDS NWM data source, but got: " + dataSource + "." );
+        }
+
+        if ( DeclarationUtilities.isForecast( dataSource.getContext() )
+             && Objects.nonNull( this.getDeclaration() )
+             && Objects.isNull( this.getDeclaration()
+                                    .referenceDates() ) )
+        {
+            throw new ReadException( "Encountered a WRDS NWM forecast data source, which cannot be read without "
+                                     + "'reference_dates'. If this is not a forecast data source, please clarify the "
+                                     + "data 'type' and try again. Otherwise, please declare 'reference_dates' and try "
+                                     + "again. The data source is: " + dataSource + "." );
         }
     }
 

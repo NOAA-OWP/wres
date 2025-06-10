@@ -4931,7 +4931,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         String messageStart = "Discovered '";
-        String messageStartOuter = "' data sources that have a data type of '";
+        String messageStartOuter = "' data sources that have a data 'type' of '";
         String messageMiddleInner = "' and use web services, but the ";
         String messageMiddleOuter =
                 " were incomplete or undefined, which is not allowed. Please declare a complete " + "pair of ";
@@ -4961,8 +4961,8 @@ public class DeclarationValidator
         {
             EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart
                                                                         + orientation
-                                                                        + messageStartOuter
-                                                                        + "null"
+                                                                        + "' data sources that have no declared data "
+                                                                        + "'type"
                                                                         + messageMiddleInner
                                                                         + REFERENCE_DATES
                                                                         + " and/or "
