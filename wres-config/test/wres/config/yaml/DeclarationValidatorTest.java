@@ -369,25 +369,25 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "'observed' data sources that "
-                                                                                + "have a data type of 'observations' "
-                                                                                + "and use web services, but the "
+                                                                                + "have a data 'type' of 'observations'"
+                                                                                + " and use web services, but the "
                                                                                 + "'valid_dates' were incomplete",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "'predicted' data sources that "
-                                                                                + "have a data type of 'ensemble "
+                                                                                + "have a data 'type' of 'ensemble "
                                                                                 + "forecasts' and use web services, "
                                                                                 + "but the 'reference_dates' were "
                                                                                 + "incomplete",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "'baseline' data sources that "
-                                                                                + "have a data type of 'single valued "
-                                                                                + "forecasts' and use web services, "
+                                                                                + "have a data 'type' of 'single valued"
+                                                                                + " forecasts' and use web services, "
                                                                                 + "but the 'reference_dates' were "
                                                                                 + "incomplete",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "'covariate' data sources that "
-                                                                                + "have a data type of 'observations' "
-                                                                                + "and use web services, but the "
+                                                                                + "have a data 'type' of 'observations'"
+                                                                                + " and use web services, but the "
                                                                                 + "'valid_dates' were incomplete",
                                                                         StatusLevel.ERROR ) )
         );

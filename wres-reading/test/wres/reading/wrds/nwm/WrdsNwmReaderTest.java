@@ -2,6 +2,7 @@ package wres.reading.wrds.nwm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
 
 import java.net.URI;
@@ -10,7 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -348,7 +348,7 @@ class WrdsNwmReaderTest
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
             Geometry geometry = MessageUtilities.getGeometry( Integer.toString( NWM_FEATURE_ID ),
                                                               null,
@@ -568,5 +568,75 @@ class WrdsNwmReaderTest
                 LOGGER.debug( "Count: {}.", count );
             }
         } );
+    }
+
+    @Test
+    void testReadDoesNotThrowNullPointerExceptionWhenChunkingFeaturesWithMissingReferenceDatesForForecastType()
+    {
+        URI fakeUri = URI.create( "fake" );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_NWM )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( DataType.SINGLE_VALUED_FORECASTS )
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "streamflow" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
+                                               fakeDeclarationSource,
+                                               dataset,
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               DatasetOrientation.RIGHT,
+                                               null );
+
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )
+                                                     .maximum( Instant.parse( "2022-01-23T00:00:00Z" ) )
+                                                     .build();
+
+        Set<GeometryTuple> geometries
+                = Set.of( GeometryTuple.newBuilder()
+                                       .setRight( Geometry.newBuilder()
+                                                          .setName( Integer.toString( NWM_FEATURE_ID ) ) )
+                                       .build(),
+                          GeometryTuple.newBuilder()
+                                       .setRight( Geometry.newBuilder()
+                                                          .setName( "234442421" ) )
+                                       .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .validDates( validDates )
+                                                                        .features( features )
+                                                                        .build();
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        // Feature chunk size of 1, with 2 features requested
+        WrdsNwmReader reader = WrdsNwmReader.of( declaration, systemSettings, 1 );
+
+        // Expect a ReadException, not an NPE: GitHub #497
+        ReadException exception = assertThrows( ReadException.class, () -> {  // NOSONAR
+            try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+            {
+                long count = tupleStream.count();
+                LOGGER.debug( "Count: {}.", count );
+            }
+        } );
+
+        assertTrue( exception.getMessage()
+                             .contains( "Encountered a WRDS NWM forecast data source" ) );
     }
 }
