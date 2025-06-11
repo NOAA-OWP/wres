@@ -16,7 +16,8 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 
 /**
- * Caches information about the source of forecast and observation data
+ * Caches information about data sources.
+ *
  * @author James Brown
  * @author Christopher Tubbs
  */
@@ -58,7 +59,7 @@ public class DataSources
     }
 
     /**
-     * Creates an instance
+     * Creates an instance.
      * @param database the database
      * @param data the data source
      * @throws NullPointerException if either input is null
@@ -97,7 +98,7 @@ public class DataSources
     /**
      * Gets the source details corresponding to the source hash.
      * @param hash the hash
-     * @return the source details
+     * @return the source details, possibly null
      * @throws SQLException if the source could not be found
      * @throws NullPointerException if the input is null
      */
@@ -113,7 +114,7 @@ public class DataSources
     /**
      * Gets the source details from the corresponding source identifier.
      * @param id the source identifier
-     * @return the source details
+     * @return the source details, possibly null
      * @throws NullPointerException if the input is null
      */
 
@@ -125,9 +126,9 @@ public class DataSources
     }
 
     /**
-     * Gets the ID of source metadata from the instanced cache based on identity
+     * Gets the ID of source metadata from the instanced cache based on identity.
      * @param key the hash code for the source file
-     * @return The ID of the source in the database
+     * @return The ID of the source in the database, possibly null
      * @throws SQLException Thrown when interaction with the database failed
      * @throws NullPointerException if the input is null
      */
@@ -157,7 +158,7 @@ public class DataSources
     /**
      * Gets an existing source based on the source identifier and adds to the cache if required.
      * @param id the source identifier
-     * @return the source details
+     * @return the source details, possible null
      * @throws SQLException if an error occurs when inspecting the database
      * @throws NullPointerException if the input is null
      */
@@ -221,7 +222,7 @@ public class DataSources
     /**
      * Gets an existing source based on the source hash and adds to the cache if required.
      * @param hash the source hash
-     * @return the source details
+     * @return the source details, possibly null
      * @throws SQLException if an error occurs when inspecting the database
      * @throws NullPointerException if the input is null
      */
@@ -280,15 +281,22 @@ public class DataSources
     /**
      * Gets the source identifier corresponding to the source hash.
      * @param hash the hash
-     * @return the source identifier
+     * @return the source identifier, possibly null
      * @throws SQLException if an error was encountered when checking the database
      */
 
     public Long getSourceId( String hash )
             throws SQLException
     {
-        return this.getSource( hash )
-                   .getId();
+        Long sourceId = null;
+        SourceDetails sourceDetails = this.getSource( hash );
+
+        if( Objects.nonNull( sourceDetails ) )
+        {
+            sourceId = sourceDetails.getId();
+        }
+
+        return sourceId;
     }
 
     /**

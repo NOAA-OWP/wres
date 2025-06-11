@@ -1059,7 +1059,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
             // First, try to safely remove it, which requires an exclusive lock
             boolean removed = false;
-            if ( this.lockSource( source, null, this.getLockManager() ) )
+            if ( surrogateKey != KEY_NOT_FOUND
+                 && this.lockSource( source, null, this.getLockManager() ) )
             {
                 try
                 {
