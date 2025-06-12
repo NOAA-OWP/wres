@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -1489,8 +1490,11 @@ public class ChartFactory
 
         Color[] colors = this.getSeriesColors();
 
+        // Determine the number of series and whether they are paired, as in multi-series plots
+        Map<Integer, Integer> seriesIndexes = this.getSeriesIndexes( plot );
+
         // Too many series for the default color sequence? Generate a sequence instead
-        int seriesCount = plot.getSeriesCount();
+        int seriesCount = seriesIndexes.size();
         if ( colors.length < seriesCount )
         {
             colors = GraphicsUtils.getColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
@@ -1512,7 +1516,52 @@ public class ChartFactory
 
         Shape[] shapes = DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE;
 
+        int colorShapeIndex = 0;
+        for ( Map.Entry<Integer, Integer> nextPair : seriesIndexes.entrySet() )
+        {
+            int leftIndex = nextPair.getKey();
+            int rightIndex = nextPair.getValue();
+
+            renderer.setSeriesPaint( leftIndex, colors[colorShapeIndex] );
+            Shape shape = shapes[colorShapeIndex % shapes.length];
+            renderer.setSeriesShape( leftIndex, shape );
+            renderer.setSeriesShapesVisible( leftIndex, true );
+            renderer.setSeriesShapesFilled( leftIndex, true );
+            renderer.setSeriesLinesVisible( leftIndex, true );
+
+            // Paired series? Set this using the same color and shape, but dashed/unfilled
+            if ( leftIndex != rightIndex )
+            {
+                renderer.setSeriesPaint( rightIndex, colors[colorShapeIndex] );
+                renderer.setSeriesShape( rightIndex, shape );
+                renderer.setSeriesShapesVisible( rightIndex, true );
+                renderer.setSeriesShapesFilled( rightIndex, false );
+                renderer.setSeriesLinesVisible( rightIndex, true );
+                renderer.setSeriesVisibleInLegend( rightIndex, false );
+                renderer.setSeriesStroke( rightIndex,
+                                          new BasicStroke( 1.0f,
+                                                           BasicStroke.CAP_ROUND,
+                                                           BasicStroke.JOIN_ROUND,
+                                                           1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
+            }
+
+            colorShapeIndex++;
+        }
+
+        return renderer;
+    }
+
+    /**
+     * Returns the series index pairs. If this is a multi-series plot, the indexes within the pairs will differ,
+     * otherwise they will be the same.
+     * @param plot the plot
+     * @return the series indexes
+     */
+
+    private Map<Integer, Integer> getSeriesIndexes( XYPlot plot )
+    {
         // Map the series indexes by key
+        int seriesCount = plot.getSeriesCount();
         Map<String, Integer> seriesByKey = new HashMap<>();
         for ( int i = 0; i < seriesCount; i++ )
         {
@@ -1522,47 +1571,20 @@ public class ChartFactory
                              i );
         }
 
-        for ( int i = 0; i < seriesCount; i++ )
+        Map<Integer, Integer> indexes = new TreeMap<>();
+        for ( Map.Entry<String, Integer> nextEntry : seriesByKey.entrySet() )
         {
-            renderer.setSeriesPaint( i, colors[i] );
-            Shape shape = shapes[i % shapes.length];
-            renderer.setSeriesShape( i, shape );
-            renderer.setSeriesShapesVisible( i, true );
-            renderer.setSeriesShapesFilled( i, true );
-            renderer.setSeriesLinesVisible( i, true );
+            String key = nextEntry.getKey();
+            Integer index = nextEntry.getValue();
 
-            String key = plot.getDataset()
-                             .getSeriesKey( i )
-                             .toString();
-
-            // Multi-series plot? This is indirect/brittle, but a less brittle approach is not straightforward and the
-            // risk is low, i.e., dashed lines when should be solid
-            if ( key.endsWith( "(dashed)" ) )
+            if ( !key.endsWith( "(dashed)" ) )
             {
-                renderer.setSeriesStroke( i,
-                                          new BasicStroke( 1.0f,
-                                                           BasicStroke.CAP_ROUND,
-                                                           BasicStroke.JOIN_ROUND,
-                                                           1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
-                renderer.setSeriesVisibleInLegend( i, Boolean.FALSE );
-
-                renderer.setSeriesShapesFilled( i, false );
-
-                String test = key.replace( " (dashed)", "" );
-
-                if ( seriesByKey.containsKey( test ) )
-                {
-                    int pairedSeries = seriesByKey.get( test );
-                    Paint pairedPaint = renderer.getSeriesPaint( pairedSeries );
-                    renderer.setSeriesPaint( i, pairedPaint );
-                    Shape pairedShape = renderer.getSeriesShape( pairedSeries );
-                    renderer.setSeriesShape( i, pairedShape );
-                }
-
+                String paired = key + " (dashed)";
+                indexes.put( index, seriesByKey.getOrDefault( paired, index ) );
             }
         }
 
-        return renderer;
+        return Collections.unmodifiableMap( indexes );
     }
 
     /**

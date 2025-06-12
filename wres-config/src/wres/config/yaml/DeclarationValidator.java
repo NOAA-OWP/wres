@@ -3410,8 +3410,8 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> netcdf = DeclarationValidator.validateNetcdfOutput( declaration );
         events.addAll( netcdf );
 
-        // Check that graphics shapes are consistent with other declaration
-        List<EvaluationStatusEvent> shapes = DeclarationValidator.validateGraphicsShapes( declaration );
+        // Check that graphics options are consistent with other declaration
+        List<EvaluationStatusEvent> shapes = DeclarationValidator.validateGraphicsFormats( declaration );
         events.addAll( shapes );
 
         return Collections.unmodifiableList( events );
@@ -3567,11 +3567,11 @@ public class DeclarationValidator
     }
 
     /**
-     * Validates the graphics shapes declaration.
+     * Validates the graphics declaration.
      * @param declaration the declaration
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> validateGraphicsShapes( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> validateGraphicsFormats( EvaluationDeclaration declaration )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -3601,6 +3601,77 @@ public class DeclarationValidator
                                                .build();
                 events.add( event );
             }
+        }
+
+        List<EvaluationStatusEvent> combinedGraphics = DeclarationValidator.validateCombinedGraphics( declaration );
+
+        events.addAll( combinedGraphics );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Validates the combined graphics option.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> validateCombinedGraphics( EvaluationDeclaration declaration )
+    {
+        if ( Boolean.FALSE.equals( declaration.combinedGraphics() ) )
+        {
+            LOGGER.debug( "When validating the declaration for graphics options, the 'combined_graphics' option was "
+                          + "not detected." );
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Graphics formats declared?
+        if ( !DeclarationUtilities.hasGraphicsFormats( declaration ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The declaration includes 'combined_graphics', but the "
+                                                             + "'output_formats' do not contain any graphics formats "
+                                                             + "to write. The 'combined_graphics' option is, "
+                                                             + "therefore, redundant and will be ignored. If this is "
+                                                             + "not intended, please add one or more graphics formats "
+                                                             + "to the 'output_formats' and try again." )
+                                           .build();
+            events.add( event );
+        }
+
+        // Baseline declared?
+        if ( !DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The declaration includes 'combined_graphics', but does "
+                                                             + "not include a 'baseline'. The 'combined_graphics' "
+                                                             + "option is, therefore, redundant and will be ignored. "
+                                                             + "If this is not intended, please add a 'baseline' with "
+                                                             + "'separate_metrics: true' and try again." )
+                                           .build();
+            events.add( event );
+        }
+        // Separate metrics declared?
+        else if ( Boolean.FALSE.equals( declaration.baseline()
+                                                   .separateMetrics() ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The declaration includes 'combined_graphics', but does "
+                                                             + "not include a 'baseline' with "
+                                                             + "'separate_metrics: true'. The 'combined_graphics' "
+                                                             + "option is, therefore, redundant and will be ignored. "
+                                                             + "If this is not intended, please add "
+                                                             + "'separate_metrics: true' to the 'baseline' and try "
+                                                             + "again." )
+                                           .build();
+            events.add( event );
         }
 
         return Collections.unmodifiableList( events );
