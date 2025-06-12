@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -972,19 +973,28 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         // Group the statistics by main/baseline pool if needed
         if ( format.isGraphicsFormat() )
         {
-
-            // Return all statistics as-is for combined writing
+            // Return all statistics as-is for combined writing, unless it is a skill metric for a default baseline
             if ( this.getEvaluationDescription()
                      .getOutputs()
                      .getCombineGraphics() )
             {
-                return List.of( statistics );
+                Predicate<T> predicate = p -> p.getMetricName()
+                                               .isSkillMetric() && p.getPoolMetadata()
+                                                                    .getPoolDescription()
+                                                                    .getIsBaselinePool();
+
+                List<T> skillWithDefaultBaseline = statistics.stream()
+                                                             .filter( predicate )
+                                                             .toList();
+                List<T> everythingElse = statistics.stream()
+                                                   .filter( predicate.negate() )
+                                                   .toList();
+
+                return this.mergeLists( skillWithDefaultBaseline, everythingElse );
             }
             // Separate out the statistics by main/baseline pool
             else
             {
-                List<List<T>> returnMe = new ArrayList<>();
-
                 List<T> main =
                         statistics.stream()
                                   .filter( s -> !s.getPoolMetadata()
@@ -999,17 +1009,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                  .getIsBaselinePool() )
                                   .toList();
 
-                if ( !main.isEmpty() )
-                {
-                    returnMe.add( main );
-                }
-
-                if ( !baseline.isEmpty() )
-                {
-                    returnMe.add( baseline );
-                }
-
-                return Collections.unmodifiableList( returnMe );
+                return this.mergeLists( main, baseline );
             }
         }
         // Return all statistics as-is for non-graphics formats
@@ -1017,6 +1017,31 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         {
             return List.of( statistics );
         }
+    }
+
+    /**
+     * Add each non-empty list to a new list of lists.
+     * @param a the first list
+     * @param b the second list
+     * @return the list of lists
+     * @param <T> the listed data type
+     */
+
+    private <T> List<List<T>> mergeLists( List<T> a, List<T> b )
+    {
+        List<List<T>> merged = new ArrayList<>();
+
+        if ( !a.isEmpty() )
+        {
+            merged.add( a );
+        }
+
+        if ( !b.isEmpty() )
+        {
+            merged.add( b );
+        }
+
+        return Collections.unmodifiableList( merged );
     }
 
     /**

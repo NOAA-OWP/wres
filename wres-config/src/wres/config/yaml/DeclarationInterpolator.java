@@ -1514,7 +1514,7 @@ public class DeclarationInterpolator
     private static void interpolateCombinedGraphics( EvaluationDeclarationBuilder builder )
     {
         if ( DeclarationUtilities.hasGraphicsFormats( builder.build() )
-             && Boolean.TRUE.equals( builder.combineGraphics() ) )
+             && Boolean.TRUE.equals( builder.combinedGraphics() ) )
         {
             LOGGER.debug( "Discovered a request for combined graphics. Transferring this to the formats description." );
             builder.formats( new Formats( Outputs.newBuilder( builder.formats()
