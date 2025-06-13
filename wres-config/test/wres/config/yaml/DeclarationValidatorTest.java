@@ -1025,6 +1025,54 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testMissingTimeIntervalsWithReferenceTimePoolsResultsInError()
+    {
+        // GitHub #506
+        Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                          .period( java.time.Duration.ofHours( 1 ) )
+                                                                          .frequency( java.time.Duration.ofHours( 1 ) )
+                                                                          .build() );
+        TimeInterval interval = new TimeInterval( Instant.parse( "2047-01-01T00:00:00Z" ),
+                                                  Instant.parse( "2047-01-01T00:01:00Z" ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .validDates( interval )
+                                                                        .referenceDatePools( timePools )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "Please remove the "
+                                                               + "'reference_date_pools' or fully "
+                                                               + "declare the 'reference_dates'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMissingTimeIntervalsWithValidTimePoolsResultsInError()
+    {
+        // GitHub #506
+        Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
+                                                                          .period( java.time.Duration.ofHours( 1 ) )
+                                                                          .frequency( java.time.Duration.ofHours( 1 ) )
+                                                                          .build() );
+        TimeInterval interval = new TimeInterval( Instant.parse( "2047-01-01T00:00:00Z" ),
+                                                  Instant.parse( "2047-01-01T00:01:00Z" ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .referenceDates( interval )
+                                                                        .validDatePools( timePools )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "Please remove the "
+                                                               + "'valid_date_pools' or fully "
+                                                               + "declare the 'valid_dates'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testInvalidTimePoolsResultsInErrors()
     {
         Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
