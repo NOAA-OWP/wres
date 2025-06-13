@@ -79,7 +79,7 @@ import wres.statistics.generated.TimeWindow;
  * @param durationFormat the duration format
  * @param decimalFormat the decimal format
  * @param formats the statistics formats to write
- * @param combineGraphics is true to combine predicted and baseline statistics into the same graphics
+ * @param combinedGraphics is true to combine predicted and baseline statistics into the same graphics
  */
 
 @RecordBuilder
@@ -144,7 +144,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
                                      @JsonProperty( "output_formats" ) Formats formats,
                                      @JsonSerialize( using = TrueSerializer.class )
-                                     @JsonProperty( "combine_graphics" ) Boolean combineGraphics )
+                                     @JsonProperty( "combined_graphics" ) Boolean combinedGraphics )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
@@ -190,7 +190,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param decimalFormat the decimal format
      * @param formats the statistics formats to write
      * @param label an optional label or name for the evaluation
-     * @param combineGraphics is true to combine predicted and baseline statistics into the same graphics
+     * @param combinedGraphics is true to combine predicted and baseline statistics into the same graphics
      */
     public EvaluationDeclaration
     {
@@ -231,20 +231,25 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             covariates = Collections.unmodifiableList( covariates );
         }
 
-        if ( Objects.isNull( combineGraphics ) )
+        if ( Objects.isNull( combinedGraphics ) )
         {
-            combineGraphics = false;
+            combinedGraphics = false;
         }
     }
 
-    public Boolean combineGraphics()
+    /**
+     * @return whether the statistics from the predicted and baseline datasets should be plotted together
+     */
+
+    @Override
+    public Boolean combinedGraphics()  // NOSONAR
     {
-        if ( Objects.isNull( this.combineGraphics ) )
+        if ( Objects.isNull( this.combinedGraphics ) )
         {
             return false;
         }
 
-        return this.combineGraphics;
+        return this.combinedGraphics;
     }
 
     /**

@@ -228,7 +228,9 @@ definitions:
           - "$ref": "#/definitions/SummaryStatisticsWithDimensions"
       duration_format:
         "$ref": "#/definitions/DurationEnum"
-      combine_graphics:
+      combined_graphics:
+        description: "Plot the statistics from the predicted and baseline 
+        scenarios in the same graphics."
         type: boolean
       decimal_format:
         type: string

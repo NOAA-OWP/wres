@@ -3191,6 +3191,56 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testCombinedGraphicsWithNoGraphicsFormatsProducesWarning()
+    {
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .combinedGraphics( true )
+                                                                        .build();
+
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The declaration includes 'combined_graphics', but the "
+                                                       + "'output_formats' do not contain any graphics formats",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testCombinedGraphicsWithNoBaselineProducesWarning()
+    {
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .combinedGraphics( true )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The declaration includes 'combined_graphics', but does "
+                                                       + "not include a 'baseline'.",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testCombinedGraphicsWithBaselineAndNoSeparateMetricsProducesWarning()
+    {
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .combinedGraphics( true )
+                                            .baseline( BaselineDatasetBuilder.builder()
+                                                                             .dataset( this.defaultDataset )
+                                                                             .build() )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The declaration includes 'combined_graphics', but does "
+                                                       + "not include a 'baseline' with 'separate_metrics: true'.",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException  // NOSONAR
     {
         // #57969-86
