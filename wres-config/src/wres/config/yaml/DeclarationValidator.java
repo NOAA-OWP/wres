@@ -2278,8 +2278,8 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>( validPools );
 
         List<EvaluationStatusEvent> referencePools =
-                DeclarationValidator.timePoolsAreValid( declaration.validDatePools(),
-                                                        declaration.validDates(),
+                DeclarationValidator.timePoolsAreValid( declaration.referenceDatePools(),
+                                                        declaration.referenceDates(),
                                                         "reference_date_pools",
                                                         "reference_dates" );
         events.addAll( referencePools );
