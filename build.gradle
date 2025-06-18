@@ -1643,17 +1643,10 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.9'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-<<<<<<< HEAD
-        implementation 'com.fasterxml.jackson:jackson-bom:2.18.3'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.3'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.18.3'
-=======
         implementation 'com.fasterxml.jackson:jackson-bom:2.19.0'
         implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
         implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.0'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.19.0'
->>>>>>> 8396da153b3d5fb877a32f0ca849f46daf44f7d4
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.0'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.17.0'
@@ -1790,7 +1783,6 @@ project(':wres-eventsbroker') {
         }
 
         // Because of CVE-2024-47535. TODO: Remove when Artemis catches up.
-<<<<<<< HEAD
         //REMOVE implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
 
         // Include later dependency versions for the excluded dependencies above
@@ -1800,25 +1792,10 @@ project(':wres-eventsbroker') {
         //REMOVE implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.11.0'
 
         // Include later dependency version
-        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.80'
+        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.81'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.40.0') {
-=======
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.2.Final'
-
-        // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.4.8-jre'
-
-        // Include later dependency version
-        implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.12.0'
-
-        // Include later dependency version
-        implementation group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.81'
-
-        // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        implementation('org.apache.activemq:artemis-amqp-protocol:2.41.0') {
->>>>>>> 8396da153b3d5fb877a32f0ca849f46daf44f7d4
+        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.41.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
@@ -1857,13 +1834,8 @@ project(':wres-eventsbroker') {
 
 project(':wres-events') {
     dependencies {
-<<<<<<< HEAD
         api project(':wres-statistics')
-        implementation 'org.slf4j:slf4j-api:2.0.13'
-=======
-        implementation project(':wres-statistics')
         implementation 'org.slf4j:slf4j-api:2.0.17'
->>>>>>> 8396da153b3d5fb877a32f0ca849f46daf44f7d4
 
         // JCIP annotations
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -1884,11 +1856,7 @@ project(':wres-events') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-<<<<<<< HEAD
         //REMOVE implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
-=======
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.2.Final'
->>>>>>> 8396da153b3d5fb877a32f0ca849f46daf44f7d4
 
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
@@ -1937,14 +1905,9 @@ project(':wres-http') {
         //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // JUnit 5 API and runtime
-<<<<<<< HEAD
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
-        testImplementation 'org.mockito:mockito-core:5.2.0'
-=======
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
->>>>>>> 8396da153b3d5fb877a32f0ca849f46daf44f7d4
+        testImplementation 'org.mockito:mockito-core:5.2.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -2208,11 +2171,7 @@ dependencies {
     }
 
     // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-<<<<<<< HEAD
     //REMOVE implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
-=======
-    implementation group: 'io.netty', name: 'netty-all', version: '4.2.2.Final'
->>>>>>> 8396da153b3d5fb877a32f0ca849f46daf44f7d4
 
     implementation('edu.ucar:cdm-core:5.7.0') {
         // Because we use slf4j, not jcl:
