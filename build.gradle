@@ -374,12 +374,12 @@ project(':wres-datamodel') {
         testImplementation 'org.mockito:mockito-core:5.18.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -465,12 +465,12 @@ project(':wres-io') {
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -611,8 +611,8 @@ project(':wres-writing') {
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
@@ -727,12 +727,12 @@ project(':wres-reading') {
         testImplementation 'org.yaml:snakeyaml:2.4'
         
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -763,8 +763,8 @@ project(':wres-eventdetection') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -792,12 +792,12 @@ project(':wres-metrics') {
         testImplementation 'org.mockito:mockito-core:5.18.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
     }
 
     test {
@@ -914,8 +914,8 @@ project(':wres-statistics') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     }
 
     // Facilitate unit tests with JUnit
@@ -1031,12 +1031,12 @@ project(':wres-vis') {
         runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.1.0-alpha1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:5.18.0'
@@ -1107,7 +1107,7 @@ project(':wres-config') {
         implementation 'org.apache.commons:commons-lang3:3.17.0'
 
         // For reading CSV thresholds
-        implementation group: 'com.opencsv', name: 'opencsv', version: '5.11.1'
+        implementation group: 'com.opencsv', name: 'opencsv', version: '5.10'
 
         // YAML/JSON schema validation
         implementation 'com.networknt:json-schema-validator:1.5.7'
@@ -1145,9 +1145,9 @@ project(':wres-config') {
         // Mocking help
         testImplementation 'org.mockito:mockito-core:5.18.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -1356,8 +1356,8 @@ project(':wres-worker') {
         testImplementation 'org.yaml:snakeyaml:2.4'
         
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     }
 
     test {
@@ -1572,9 +1572,9 @@ project(':wres-tasker') {
         runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.10'
 
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // To generate fake certificates and keys for testing
         testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.81'
@@ -1727,8 +1727,8 @@ project(':wres-eventsbroker') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     }
 
     // Facilitate unit tests with JUnit
@@ -1773,8 +1773,8 @@ project(':wres-events') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:5.18.0'
@@ -1809,8 +1809,8 @@ project(':wres-http') {
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
     }
 
     // Facilitate unit tests with JUnit
@@ -2106,12 +2106,12 @@ dependencies {
     compileOnly 'io.soabase.record-builder:record-builder-core:47'
 
     // JUnit 5 API and runtime
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 
     // Backwards compatibility for JUnit 4 tests
     testCompileOnly 'junit:junit:4.13.2'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.3'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
 
     testImplementation 'org.mockito:mockito-core:5.18.0'
 
