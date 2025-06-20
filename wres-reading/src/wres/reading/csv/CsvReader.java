@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
@@ -80,8 +81,8 @@ public class CsvReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
 
-        // Validate the disposition of the data source
-        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
+        // Validate the data source
+        this.validateDataSource( dataSource );
 
         try
         {
@@ -101,8 +102,8 @@ public class CsvReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
 
-        // Validate the disposition of the data source
-        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
+        // Validate the data source
+        this.validateDataSource( dataSource );
 
         try
         {
@@ -534,6 +535,34 @@ public class CsvReader implements TimeSeriesReader
         }
 
         return ensembleName;
+    }
+
+    /**
+     * Validates the data source.
+     *
+     * @param dataSource the data source
+     */
+
+    private void validateDataSource( DataSource dataSource )
+    {
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
+
+        if ( Objects.nonNull( dataSource.getSource() )
+             && Objects.nonNull( dataSource.getSource()
+                                           .timeZoneOffset() )
+             && !Objects.equals( dataSource.getSource()
+                                           .timeZoneOffset(),
+                                 ZoneOffset.UTC ) )
+        {
+            throw new ReadException( "The declared 'time_zone_offset' for the data source at '"
+                                     + dataSource.getUri()
+                                     + "' was '"
+                                     + dataSource.getSource()
+                                                 .timeZoneOffset()
+                                     + "', which is inconsistent with the CSV format requirement that all times are "
+                                     + "supplied in UTC. Please resolve this conflict and try again." );
+        }
     }
 
     /**

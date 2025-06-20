@@ -1,6 +1,8 @@
 package wres.reading.fews;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -33,6 +35,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
+import wres.reading.ReadException;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
 import wres.statistics.MessageUtilities;
@@ -631,6 +634,66 @@ class PublishedInterfaceXmlReaderTest
                 List<TimeSeries<Double>> expected = List.of( expectedOne );
 
                 assertEquals( expected, actual );
+            }
+
+            // Clean up
+            if ( Files.exists( xmlPath ) )
+            {
+                Files.delete( xmlPath );
+            }
+        }
+    }
+
+    // GitHub 494
+    @Test
+    void testReadObservationsWithTimeZoneThatConflictsWithDeclarationProducesExpectedException() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new pi-xml file to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_XML );
+            Path xmlPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( xmlPath ) )
+            {
+                writer.append( PI_STRING_ONE );
+            }
+
+            DataSource dataSource = Mockito.mock( DataSource.class );
+            Mockito.when( dataSource.getUri() )
+                   .thenReturn( xmlPath.toUri() );
+            Mockito.when( dataSource.getVariable() )
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
+            Mockito.when( dataSource.hasSourcePath() )
+                   .thenReturn( true );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
+
+            Dataset dataset = Mockito.mock( Dataset.class );
+            Mockito.when( dataset.unit() )
+                   .thenReturn( "CFS" );
+            Mockito.when( dataSource.getContext() )
+                   .thenReturn( dataset );
+
+            Source source = Mockito.mock( Source.class );
+            Mockito.when( source.timeZoneOffset() )
+                   .thenReturn( ZoneOffset.ofHours( -1 ) );
+            Mockito.when( dataSource.getSource() )
+                   .thenReturn( source );
+
+            PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
+
+            // No reading yet, we are just opening a pipe to the file here
+            try ( Stream<TimeSeriesTuple> tupleStream = reader.read( dataSource ) )
+            {
+                // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series
+                // creates as many reads from the file system as necessary to read that time-series into memory
+                ReadException actual = assertThrows( ReadException.class,
+                                                     tupleStream::toList );
+                assertTrue( actual.getMessage()
+                                  .contains( "does not match the 'timeZone'" ) );
             }
 
             // Clean up
