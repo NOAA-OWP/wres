@@ -18,7 +18,7 @@ jobs:
     # Zips the docker related components of the release to store them
     - name: Tar Docker
       run: |
-        tar -zcvf wres-${{  github.ref_name }}-src.tar.gz scripts/doc*sh */Dockerfile  .dockerignore .gitignore compose*yml Dockerfile
+        tar -zcvf wres-${{  github.ref_name }}-src.tar.gz scripts/doc*sh */Dockerfile  .dockerignore .gitignore podman-compose*yml Dockerfile
 
     # Stores the docker related artifacts for this release
     - name: Create docker-release
@@ -26,5 +26,5 @@ jobs:
       with:
         files: |
           *.tar.gz
-          compose-entry.yml
-          compose-workers.yml
+          podman-compose-entry.yml
+          podman-compose-workers.yml
