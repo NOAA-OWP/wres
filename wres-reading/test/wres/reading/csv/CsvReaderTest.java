@@ -1,6 +1,8 @@
 package wres.reading.csv;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -10,6 +12,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +25,7 @@ import org.mockito.Mockito;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
+import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.Variable;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
@@ -29,6 +33,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
+import wres.reading.ReadException;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
 import wres.statistics.MessageUtilities;
@@ -451,6 +456,54 @@ class CsvReaderTest
 
                 assertEquals( expected, actual );
             }
+
+            // Clean up
+            if ( Files.exists( csvPath ) )
+            {
+                Files.delete( csvPath );
+            }
+        }
+    }
+
+    @Test
+    void testReadObservationsWithInconsistentDeclaredTimeZoneProducesExpectedException() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new csv file to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
+            Path csvPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( csvPath ) )
+            {
+                writer.append( "value_date,variable_name,location,measurement_unit,value\n" )
+                      .append( "1985-06-01T13:00:00Z,QINE,DRRC2,CFS,1\n" )
+                      .append( "1985-06-01T14:00:00Z,QINE,DRRC2,CFS,\n" )
+                      .append( "1985-06-01T15:00:00Z,QINE,DRRC2,CFS,3" );
+            }
+
+            DataSource dataSource = Mockito.mock( DataSource.class );
+            Mockito.when( dataSource.getUri() )
+                   .thenReturn( csvPath.toUri() );
+            Mockito.when( dataSource.getVariable() )
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.CSV_WRES );
+            Mockito.when( dataSource.getSource() )
+                   .thenReturn( SourceBuilder.builder()
+                                             .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
+                                             .build() );
+
+            CsvReader reader = CsvReader.of();
+
+            // Validation happens on stream construction, even if reading happens later
+            ReadException actual = assertThrows( ReadException.class,
+                                                 () -> reader.read( dataSource ) );
+            assertTrue( actual.getMessage()
+                              .contains( "which is inconsistent with the CSV format requirement that all times are "
+                                         + "supplied in UTC" ) );
 
             // Clean up
             if ( Files.exists( csvPath ) )

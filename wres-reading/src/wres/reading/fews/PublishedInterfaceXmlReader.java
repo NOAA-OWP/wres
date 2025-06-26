@@ -480,17 +480,19 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         {
             ZoneOffset configuredOffset = dataSource.getSource()
                                                     .timeZoneOffset();
+
+            // Render this exceptional: GitHub 494
             if ( Objects.nonNull( configuredOffset )
                  && !configuredOffset.equals( ingestedOffset ) )
             {
-                LOGGER.warn( "The declared 'time_zone_offset' for the data source at '{}' was {}, which does not match "
-                             + "the 'timeZone' of {} for a time-series within the source. It is best not to declare "
-                             + "the 'time_zone_offset' for a PI-XML source in the project declaration when the "
-                             + "'timeZone' is available within the data source itself because the declaration will be "
-                             + "ignored.",
-                             dataSource.getUri(),
-                             configuredOffset,
-                             ingestedOffset );
+                throw new ReadException( "The declared 'time_zone_offset' for the data source at '"
+                                         + dataSource.getUri()
+                                         + "' was '"
+                                         + configuredOffset
+                                         + ", which does not match the 'timeZone' of '"
+                                         + ingestedOffset
+                                         + "' for a time-series within the source. Please resolve this conflict and try "
+                                         + "again." );
             }
         }
 
