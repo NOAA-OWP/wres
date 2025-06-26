@@ -273,8 +273,6 @@ project(':wres-system') {
         // For Java 9+ compatibility:
         api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
 
-        //REMOVE api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.13.1'
-
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
         annotationProcessor 'org.projectlombok:lombok:1.18.38'
@@ -283,15 +281,8 @@ project(':wres-system') {
         // acquire connections initially. See #103431
         runtimeOnly 'com.h2database:h2:2.3.232'
 
-        // connection pooling:
-        //REMOVE implementation 'com.zaxxer:HikariCP:5.1.0'
-
         // Java Flight Recorder statistics for JDBC
         runtimeOnly 'com.github.marschall:jfr-jdbc:0.4.0'
-
-        // Because org.postgresql:postgresql uses JUL logging, bridge it, here
-        // at compile time because we need to expose a class to JUL.
-        //REMOVE implementation 'org.slf4j:jul-to-slf4j:2.1.0-alpha1'
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
@@ -319,23 +310,15 @@ project(':wres-system') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        //REMOVE testImplementation('com.jayway.jsonpath:json-path:2.9.0') {
-        //REMOVE     exclude group: 'net.minidev', module: 'json-smart'
-        //REMOVE }
-        //REMOVE testImplementation 'commons-io:commons-io:2.18.0'
         testRuntimeOnly 'com.google.guava:guava:33.4.8-jre'
-        //REMOVE testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2'
         testRuntimeOnly 'io.netty:netty-codec-http:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-codec-http2:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.2.Final'
-        //REMOVE testImplementation 'net.minidev:json-smart:2.5.2'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
         testImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
         testImplementation 'org.apache.httpcomponents:httpcore:4.4.13'
-        //REMOVE testImplementation 'org.xmlunit:xmlunit-core:2.10.0'
-        //REMOVE testImplementation 'org.yaml:snakeyaml:2.3'
     }
 
     test {
@@ -439,12 +422,6 @@ project(':wres-io') {
         // connection pooling:
         implementation 'com.zaxxer:HikariCP:6.3.0'
 
-        // wres.io.utilities uses javax.json.* imports
-        //REMOVE implementation 'org.glassfish:javax.json:1.1.4'
-
-        // Better-than-Java's HTTP client
-        //REMOVE implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-
         // To cache
         implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
             // Not used at runtime, bloat
@@ -453,7 +430,6 @@ project(':wres-io') {
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
-        //REMOVE implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
         // https://github.com/NOAA-OWP/wres/issues/454
@@ -472,12 +448,6 @@ project(':wres-io') {
         // Because cdm and aws sdk uses apache commons logging, bridge to slf4j
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
-        //JB @ 02/16/17
-        //REMOVE testImplementation 'com.google.guava:guava-testlib:33.4.7-jre'
-
-        // Mocking help
-        //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
-
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
@@ -493,10 +463,7 @@ project(':wres-io') {
         api 'org.apache.commons:commons-lang3:3.17.0'
         api 'org.slf4j:slf4j-api:1.7.36'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        //REMOVE testImplementation 'com.google.protobuf:protobuf-java:3.25.6'
-        //REMOVE testImplementation 'org.apache.commons:commons-lang3:3.17.0'
         testImplementation 'org.mockito:mockito-core:5.2.0'
-        //REMOVE testImplementation 'org.slf4j:slf4j-api:1.7.36'
     }
 
     test {
@@ -612,20 +579,11 @@ project(':wres-writing') {
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:33.4.8-jre'
 
-        // Better-than-Java's HTTP client
-        //REMOVE implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-
-        // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
-
         // To accurately detect mime types of files.
         runtimeOnly 'org.apache.tika:tika-core:2.9.2'
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
-        //REMOVE implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         implementation 'org.apache.commons:commons-lang3:3.17.0'
@@ -635,28 +593,15 @@ project(':wres-writing') {
         testImplementation 'org.apache.tika:tika-core:2.9.2'
         testImplementation 'org.mockito:mockito-core:5.2.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.10'
-        //REMOVE api 'com.fasterxml.jackson.core:jackson-annotations:2.18.3'
         runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.18.3'
         runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
-        //REMOVE api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        //REMOVE api 'javax.xml.bind:jaxb-api:2.3.1'
         implementation 'org.apache.commons:commons-lang3:3.17.0'
-        //REMOVE implementation 'com.opencsv:opencsv:5.9'
-        //REMOVE implementation 'org.eclipse.collections:eclipse-collections-api:11.1.0'
         implementation 'org.slf4j:slf4j-api:2.0.16'
         testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.18.3'
         testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
-        //REMOVE testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        //REMOVE testImplementation 'org.apache.commons:commons-lang3:3.17.0'
-        //REMOVE testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
-        //REMOVE testImplementation 'org.mock-server:mockserver-core:5.15.0'
         testImplementation 'org.mockito:mockito-core:5.2.0'
-        //REMOVE testImplementation 'org.slf4j:slf4j-api:2.0.16'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
-
-        // Mocking help
-        //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
@@ -712,7 +657,6 @@ project(':wres-reading') {
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
-        //REMOVE implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
@@ -734,14 +678,10 @@ project(':wres-reading') {
         implementation 'com.opencsv:opencsv:5.9'
         implementation 'org.eclipse.collections:eclipse-collections-api:11.1.0'
         implementation 'org.slf4j:slf4j-api:2.0.16'
-        //REMOVE testImplementation 'com.fasterxml.jackson.core:jackson-core:2.18.3'
-        //REMOVE testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        //REMOVE testImplementation 'org.apache.commons:commons-lang3:3.17.0'
         testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
         testImplementation 'org.mock-server:mockserver-core:5.15.0'
         testImplementation 'org.mockito:mockito-core:5.2.0'
-        //REMOVE testImplementation 'org.slf4j:slf4j-api:2.0.16'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -751,12 +691,6 @@ project(':wres-reading') {
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
         annotationProcessor 'org.projectlombok:lombok:1.18.38'
-
-        //JB @ 02/16/17
-        //REMOVE testImplementation 'com.google.guava:guava-testlib:33.4.8-jre'
-
-        // Mocking help
-        //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // Use mockserver as a mock server for mock API responses
         // Various transitive dependencies need to be overridden to avoid
@@ -776,20 +710,11 @@ project(':wres-reading') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        //REMOVE testImplementation('com.jayway.jsonpath:json-path:2.9.0') {
-        //REMOVE     exclude group: 'net.minidev', module: 'json-smart'
-        //REMOVE }
         implementation 'commons-io:commons-io:2.19.0'
-        //REMOVE testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2'
-        //REMOVE testImplementation 'io.netty:netty-codec-http:4.1.119.Final'
-        //REMOVE testImplementation 'io.netty:netty-codec-http2:4.1.119.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.2.Final'
-        //REMOVE testImplementation 'net.minidev:json-smart:2.5.2'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
-        //REMOVE testImplementation 'org.xmlunit:xmlunit-core:2.10.0'
-        //REMOVE testImplementation 'org.yaml:snakeyaml:2.3'
         
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
@@ -852,7 +777,6 @@ project(':wres-metrics') {
         implementation 'org.eclipse.collections:eclipse-collections-api:11.1.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
         testRuntimeOnly 'org.apache.commons:commons-lang3:3.17.0'
-        //REMOVE testImplementation project(':wres-statistics')
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation 'org.slf4j:slf4j-api:2.0.17'
@@ -1090,7 +1014,6 @@ project(':wres-vis') {
         implementation project(':wres-events')
 
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
-        //REMOVE implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -1115,13 +1038,8 @@ project(':wres-vis') {
         testImplementation 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
 
-        // Mocking help
-        //REMOVE testImplementation 'org.mockito:mockito-core:5.17.0'
-
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         implementation project(':wres-statistics')
-        //REMOVE testImplementation 'com.google.protobuf:protobuf-java:3.25.6'
-        //REMOVE testImplementation project(':wres-statistics')
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -1177,11 +1095,9 @@ project(':wres-config') {
         }
         // Include later dependency versions for the excluded dependencies above
         api 'com.google.protobuf:protobuf-java:3.25.6'
-        //REMOVE implementation 'com.google.guava:guava:33.4.7-jre'
 
         // To validate WKT strings as geometries
         api group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
-        //REMOVE api group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         // Protobuf utilities
         implementation 'com.google.protobuf:protobuf-java-util:3.25.6'
@@ -1214,9 +1130,6 @@ project(':wres-config') {
         // jaxb-xjc transitively includes bind-api and jaxb-core
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.8'
         jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
-
-        // Legacy version required by ancient JAXB dependencies
-        //REMOVE implementation 'jakarta.activation:jakarta.activation-api:1.2.2'
 
         // To accurately detect mime types of files.
         api 'org.apache.tika:tika-core:2.9.2'
@@ -1404,11 +1317,6 @@ project(':wres-worker') {
         testImplementation 'org.mock-server:mockserver-core:5.15.0'
         testImplementation 'org.mockito:mockito-core:5.2.0'
 
-        //REMOVE testImplementation 'junit:junit:4.13.2'
-
-        // Mocking help
-        //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
-
         // Use mockserver as a mock server for mock API responses
         // Use mockserver as a mock server for mock API responses
         // Various transitive dependencies need to be overridden to avoid
@@ -1428,21 +1336,13 @@ project(':wres-worker') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        //REMOVE testImplementation('com.jayway.jsonpath:json-path:2.9.0') {
-        //REMOVE     exclude group: 'net.minidev', module: 'json-smart'
-        //REMOVE }
-        //REMOVE testImplementation 'commons-io:commons-io:2.18.0'
         testRuntimeOnly 'com.google.guava:guava:33.4.8-jre'
-        //REMOVE testImplementation 'com.nimbusds:nimbus-jose-jwt:9.37.2'
         testRuntimeOnly 'io.netty:netty-codec-http:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-codec-http2:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.2.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.2.Final'
-        //REMOVE testImplementation 'net.minidev:json-smart:2.5.2'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
-        //REMOVE testImplementation 'org.xmlunit:xmlunit-core:2.10.0'
-        //REMOVE testImplementation 'org.yaml:snakeyaml:2.3'
         
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
@@ -1580,7 +1480,6 @@ project(':wres-tasker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
         implementation 'com.rabbitmq:amqp-client:5.25.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
-        //REMOVE implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
 
         // Easy byte[] to hex conversion
         implementation 'commons-codec:commons-codec:1.18.0'
@@ -1632,10 +1531,6 @@ project(':wres-tasker') {
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
-        // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
 
         implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.0.alpha1'
         implementation 'org.eclipse.jetty:jetty-http:12.1.0.alpha1'
@@ -1754,11 +1649,6 @@ project(':wres-eventsbroker') {
     dependencies {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        //REMOVE implementation 'org.apache.commons:commons-lang3:3.17.0'
-
-        // Jakarta Messaging API
-        //REMOVE implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
-
         // Apache ActiveMQ Artemis server
         implementation('org.apache.activemq:artemis-server:2.41.0') {
             // TODO: remove when Artemis catches up
@@ -1781,15 +1671,6 @@ project(':wres-eventsbroker') {
             // Because of CVE-2024-47535.
             exclude group: 'io.netty', module: 'io.netty'
         }
-
-        // Because of CVE-2024-47535. TODO: Remove when Artemis catches up.
-        //REMOVE implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
-
-        // Include later dependency versions for the excluded dependencies above
-        //REMOVE implementation 'com.google.guava:guava:33.4.7-jre'
-
-        // Include later dependency version
-        //REMOVE implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.11.0'
 
         // Include later dependency version
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.81'
@@ -1855,9 +1736,6 @@ project(':wres-events') {
             exclude group: 'io.netty'
         }
 
-        // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-        //REMOVE implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
-
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
 
@@ -1874,8 +1752,6 @@ project(':wres-events') {
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:5.18.0'
-        // Mocking final classes
-        //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // To create an embedded broker for unit testing
         testImplementation project(':wres-eventsbroker')
@@ -1895,14 +1771,6 @@ project(':wres-http') {
         api 'com.squareup.okhttp3:okhttp:4.12.0'
 
         implementation 'org.apache.commons:commons-lang3:3.17.0'
-
-        // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
-        //REMOVE implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
-
-        // Mocking help
-        //REMOVE testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
@@ -2113,7 +1981,6 @@ dependencies {
     implementation project(':wres-io')
     implementation project(':wres-writing')
     implementation project(':wres-reading')
-    //REMOVE implementation project(':wres-http')
     implementation project(':wres-metrics')
     implementation project(':wres-config')
     implementation project(':wres-vis')
@@ -2132,22 +1999,14 @@ dependencies {
     implementation 'org.eclipse.jetty:jetty-http:12.1.0.alpha1'
     implementation 'org.eclipse.jetty:jetty-util:12.1.0.alpha1'
     implementation project(':wres-statistics')
-    //REMOVE testImplementation 'com.google.protobuf:protobuf-java:3.25.6'
-    //REMOVE testImplementation 'org.apache.commons:commons-lang3:3.17.0'
-    //REMOVE testImplementation project(':wres-statistics')
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
-    //REMOVE implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
-
-    // For Java 9+ compatibility:
-    //REMOVE implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
     //Jakarta servlet 
     implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
     //Jetty servlet stuff now tied to ee10, with the move to Jetty 12.
     implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.0.alpha1'
-    //REMOVE implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.0.alpha1'
 
     // Servlet container library to run a web application with:
     runtimeOnly 'org.eclipse.jetty:jetty-webapp:11.0.25'
@@ -2170,9 +2029,6 @@ dependencies {
         exclude group: 'io.netty'
     }
 
-    // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-    //REMOVE implementation group: 'io.netty', name: 'netty-all', version: '4.1.119.Final'
-
     implementation('edu.ucar:cdm-core:5.7.0') {
         // Because we use slf4j, not jcl:
         exclude group: 'commons-logging', module: 'commons-logging'
@@ -2183,8 +2039,6 @@ dependencies {
         //Remove older guava version. TODO: remove when the CDM catches up
         exclude group: 'com.google.guava', module: 'guava'
     }
-    // Include later dependency versions for the excluded dependencies above
-    //REMOVE implementation 'com.google.guava:guava:33.4.7-jre'
 
     // JCIP annotations
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -2224,7 +2078,6 @@ dependencies {
 
     testImplementation 'org.mockito:mockito-core:5.18.0'
 
-    //REMOVE testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
 
 test {
@@ -2400,3 +2253,8 @@ configurations.runtimeOnly {
 
 defaultTasks 'installDist', 'test', 'javadoc'
 
+dependencyCheck {
+    nvd {
+        apiKey='8244b740-8895-4ffa-9638-779edc06c556'
+    }
+}
