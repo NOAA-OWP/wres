@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.ValidationMessage;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.mime.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2003,6 +2004,12 @@ public class DeclarationValidator
                                                                                            VALID_DATES );
         events.addAll( validDates );
 
+        // Ignored valid dates as they relate to valid dates
+        List<EvaluationStatusEvent> ignored =
+                DeclarationValidator.ignoredValidDatesAreValid( declaration.validDates(),
+                                                                declaration.ignoredValidDates() );
+        events.addAll( ignored );
+
         // Analysis durations
         List<EvaluationStatusEvent> analysisDurations
                 = DeclarationValidator.analysisTimesAreValid( declaration.analysisTimes() );
@@ -2216,6 +2223,189 @@ public class DeclarationValidator
             }
 
             events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the ignored valid dates are valid.
+     * @param validDates the valid dates
+     * @param ignoredValidDates the ignored valid dates
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> ignoredValidDatesAreValid( TimeInterval validDates,
+                                                                          Set<TimeInterval> ignoredValidDates )
+    {
+        if ( ignoredValidDates.isEmpty() )
+        {
+            LOGGER.debug( "No ignored valid dates intervals were detected for validation." );
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationValidator.ignoredValidDatesDoNotOverlap( ignoredValidDates ) );
+
+        List<EvaluationStatusEvent> someData =
+                DeclarationValidator.ignoredValidDatesDoNotSpanAllValidDates( validDates, ignoredValidDates );
+        events.addAll( someData );
+
+        for ( TimeInterval nextInterval : ignoredValidDates )
+        {
+            List<EvaluationStatusEvent> invalidInterval =
+                    DeclarationValidator.timeIntervalIsValid( nextInterval,
+                                                              "'ignored_valid_dates' ("
+                                                              + nextInterval.minimum()
+                                                              + ", "
+                                                              + nextInterval.maximum()
+                                                              + ")" );
+            events.addAll( invalidInterval );
+        }
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Warns if the ignored valid date intervals overlap.
+     * @param ignoredValidDates the ignored valid dates
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> ignoredValidDatesDoNotOverlap( Set<TimeInterval> ignoredValidDates )
+    {
+        if ( ignoredValidDates.size() == 1 )
+        {
+            LOGGER.debug( "Detected only one interval of valid dates to ignore, which passes the non-overlapping "
+                          + "interval test." );
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Sort the intervals
+        SortedSet<Pair<Instant, Instant>> sorted = ignoredValidDates.stream()
+                                                                    .map( d -> Pair.of( d.minimum(), d.maximum() ) )
+                                                                    .collect( Collectors.toCollection( TreeSet::new ) );
+        Instant lastMaximum = null;
+        for ( Pair<Instant, Instant> nextInterval : sorted )
+        {
+            if ( Objects.isNull( lastMaximum ) )
+            {
+                lastMaximum = nextInterval.getRight();
+            }
+            else if ( nextInterval.getLeft()
+                                  .compareTo( lastMaximum ) <= 0 )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "One or more of the intervals contained in "
+                                                                 + "'ignored_valid_dates' overlap. As it is sufficient "
+                                                                 + "to define the overlapping period only once, this "
+                                                                 + "may not be intended. Please check that the "
+                                                                 + "'ignored_valid_dates' are declared correctly and, "
+                                                                 + "if necessary, adjust them so that they do not "
+                                                                 + "overlap. This evaluation will proceed with the "
+                                                                 + "overlapping intervals." )
+                                               .build();
+                events.add( event );
+                break;
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Produces an error if the ignored valid date intervals exhaust the valid dates interval.
+     * @param validDates the valid dates
+     * @param ignoredValidDates the ignored valid dates
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> ignoredValidDatesDoNotSpanAllValidDates( TimeInterval validDates,
+                                                                                        Set<TimeInterval> ignoredValidDates )
+    {
+        if ( Objects.isNull( validDates ) )
+        {
+            LOGGER.debug( "Detected no valid_dates interval, so the ignored_valid_dates are assumed valid." );
+            return List.of();
+        }
+
+        // Sort the intervals
+        SortedSet<Pair<Instant, Instant>> sorted = ignoredValidDates.stream()
+                                                                    .map( d -> Pair.of( d.minimum(), d.maximum() ) )
+                                                                    .collect( Collectors.toCollection( TreeSet::new ) );
+        if ( validDates.minimum()
+                       .isBefore( sorted.first()
+                                        .getLeft() )
+             || validDates.maximum()
+                          .isAfter( sorted.last()
+                                          .getRight() ) )
+        {
+            LOGGER.debug( "Detected some valid dates before or after the earliest or latest date to ignore, "
+                          + "respectively." );
+
+            return List.of();
+        }
+
+        // Eliminate any overlap between the ignored intervals, which otherwise complicates the comparison
+        SortedSet<Pair<Instant, Instant>> sortedNoOverlaps = new TreeSet<>();
+        Pair<Instant, Instant> last = null;
+        for ( Pair<Instant, Instant> nextPair : sorted )
+        {
+            if ( Objects.isNull( last ) )
+            {
+                last = nextPair;
+                sortedNoOverlaps.add( last );
+            }
+            else
+            {
+                if ( last.getRight()
+                         .isAfter( nextPair.getLeft() ) )
+                {
+                    sortedNoOverlaps.add( Pair.of( last.getRight(), nextPair.getRight() ) );
+                }
+                else
+                {
+                    sortedNoOverlaps.add( nextPair );
+                }
+            }
+        }
+
+        // Find the duration by which each ignored interval overlaps the valid dates.
+        Duration totalOverlapDuration = Duration.ZERO;
+        for ( Pair<Instant, Instant> nextInterval : sortedNoOverlaps )
+        {
+            Instant maximumLower = Collections.max( List.of( nextInterval.getLeft(), validDates.minimum() ) );
+            Instant minimumHigher = Collections.min( List.of( nextInterval.getRight(), validDates.maximum() ) );
+            Duration difference = Duration.between( maximumLower, minimumHigher );
+            totalOverlapDuration = totalOverlapDuration.plus( difference );
+        }
+
+        // The total possible overlap duration is the duration between the earliest date in the first interval and the
+        // latest date in the last interval
+        Instant maximumLower = Collections.max( List.of( sortedNoOverlaps.first()
+                                                                         .getLeft(), validDates.minimum() ) );
+        Instant minimumHigher = Collections.min( List.of( sortedNoOverlaps.last()
+                                                                          .getRight(), validDates.maximum() ) );
+        Duration totalPossibleOverlapDuration = Duration.between( maximumLower, minimumHigher );
+
+        LOGGER.debug( "The total overlapping duration among the ignored intervals and valid dates was: {}, whereas the "
+                      + "total possible duration for overlap was: {}.",
+                      totalOverlapDuration,
+                      totalPossibleOverlapDuration );
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( totalOverlapDuration.equals( totalPossibleOverlapDuration ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The 'ignored_valid_dates' completely overlap the "
+                                                             + "'valid_dates', which is not allowed because the "
+                                                             + "evaluation will contain no data, by definition. Please "
+                                                             + "adjust the 'ignored_valid_dates' and/or the "
+                                                             + "'valid_dates' and try again." )
+                                           .build();
+            events.add( error );
         }
 
         return Collections.unmodifiableList( events );

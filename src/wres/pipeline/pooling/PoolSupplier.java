@@ -121,14 +121,23 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /** Metadata for the baseline pairs. */
     private final PoolMetadata baselineMetadata;
 
-    /** A transformer for left-ish values. */
-    private final UnaryOperator<TimeSeries<L>> leftTransformer;
+    /** A transformer for left-ish values that is applied after rescaling. */
+    private final UnaryOperator<TimeSeries<L>> leftTransformerPostRescaling;
 
-    /** A transformer for right-ish values that can take into account the event context. */
-    private final UnaryOperator<TimeSeries<R>> rightTransformer;
+    /** A transformer for right-ish values that is applied after rescaling. */
+    private final UnaryOperator<TimeSeries<R>> rightTransformerPostRescaling;
 
-    /** A transformer for baseline-ish values that can take into account the event context. */
-    private final UnaryOperator<TimeSeries<R>> baselineTransformer;
+    /** A transformer for baseline-ish values that is applied after rescaling. */
+    private final UnaryOperator<TimeSeries<R>> baselineTransformerPostRescaling;
+
+    /** A transformer for left-ish values that is applied before rescaling. */
+    private final UnaryOperator<TimeSeries<L>> leftTransformerPreRescaling;
+
+    /** A transformer for right-ish values that is applied before rescaling. */
+    private final UnaryOperator<TimeSeries<R>> rightTransformerPreRescaling;
+
+    /** A transformer for baseline-ish values that is applied before rescaling. */
+    private final UnaryOperator<TimeSeries<R>> baselineTransformerPreRescaling;
 
     /** A function that filters left-ish time-series. */
     private final Predicate<TimeSeries<L>> leftFilter;
@@ -335,14 +344,23 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         /** Metadata for the baseline pairs. */
         private PoolMetadata baselineMetadata;
 
-        /** A function that transforms the left-ish data. */
-        private UnaryOperator<TimeSeries<L>> leftTransformer = in -> in;
+        /** A function that transforms the left-ish data pre-rescaling. */
+        private UnaryOperator<TimeSeries<L>> leftTransformerPreRescaling = in -> in;
 
-        /** A function that transforms the right-ish data. */
-        private UnaryOperator<TimeSeries<R>> rightTransformer = in -> in;
+        /** A function that transforms the right-ish data pre-rescaling. */
+        private UnaryOperator<TimeSeries<R>> rightTransformerPreRescaling = in -> in;
 
-        /** A function that transforms baseline-ish data. */
-        private UnaryOperator<TimeSeries<R>> baselineTransformer = in -> in;
+        /** A function that transforms baseline-ish data pre-rescaling. */
+        private UnaryOperator<TimeSeries<R>> baselineTransformerPreRescaling = in -> in;
+
+        /** A function that transforms the left-ish data post-rescaling. */
+        private UnaryOperator<TimeSeries<L>> leftTransformerPostRescaling = in -> in;
+
+        /** A function that transforms the right-ish data post-rescaling. */
+        private UnaryOperator<TimeSeries<R>> rightTransformerPostRescaling = in -> in;
+
+        /** A function that transforms baseline-ish data post-rescaling. */
+        private UnaryOperator<TimeSeries<R>> baselineTransformerPostRescaling = in -> in;
 
         /** A function that filters left-ish time-series. */
         private Predicate<TimeSeries<L>> leftFilter = in -> true;
@@ -555,34 +573,67 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param leftTransformer the transformer for left-style data
+         * @param leftTransformerPreRescaling the transformer for left-style data
          * @return the builder
          */
-        Builder<L, R, B> setLeftTransformer( UnaryOperator<TimeSeries<L>> leftTransformer )
+        Builder<L, R, B> setLeftTransformerPreRescaling( UnaryOperator<TimeSeries<L>> leftTransformerPreRescaling )
         {
-            this.leftTransformer = leftTransformer;
+            this.leftTransformerPreRescaling = leftTransformerPreRescaling;
 
             return this;
         }
 
         /**
-         * @param rightTransformer the transformer for right-style data
+         * @param rightTransformerPreRescaling the transformer for right-style data
          * @return the builder
          */
-        Builder<L, R, B> setRightTransformer( UnaryOperator<TimeSeries<R>> rightTransformer )
+        Builder<L, R, B> setRightTransformerPreRescaling( UnaryOperator<TimeSeries<R>> rightTransformerPreRescaling )
         {
-            this.rightTransformer = rightTransformer;
+            this.rightTransformerPreRescaling = rightTransformerPreRescaling;
 
             return this;
         }
 
         /**
-         * @param baselineTransformer the transformer for baseline-style data
+         * @param baselineTransformerPreRescaling the transformer for baseline-style data
          * @return the builder
          */
-        Builder<L, R, B> setBaselineTransformer( UnaryOperator<TimeSeries<R>> baselineTransformer )
+        Builder<L, R, B> setBaselineTransformerPreRescaling( UnaryOperator<TimeSeries<R>> baselineTransformerPreRescaling )
         {
-            this.baselineTransformer = baselineTransformer;
+            this.baselineTransformerPreRescaling = baselineTransformerPreRescaling;
+
+            return this;
+        }
+
+        /**
+         * @param leftTransformerPostRescaling the transformer for left-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setLeftTransformerPostRescaling( UnaryOperator<TimeSeries<L>> leftTransformerPostRescaling )
+        {
+            this.leftTransformerPostRescaling = leftTransformerPostRescaling;
+
+            return this;
+        }
+
+        /**
+         * @param rightTransformerPostRescaling the transformer for right-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setRightTransformerPostRescaling( UnaryOperator<TimeSeries<R>> rightTransformerPostRescaling )
+        {
+            this.rightTransformerPostRescaling = rightTransformerPostRescaling;
+
+            return this;
+        }
+
+        /**
+         * @param baselineTransformerPostRescaling the transformer for baseline-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setBaselineTransformerPostRescaling( UnaryOperator<TimeSeries<R>> baselineTransformerPostRescaling )
+        {
+            this.baselineTransformerPostRescaling = baselineTransformerPostRescaling;
 
             return this;
         }
@@ -758,13 +809,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         // Pooling is organized to minimize memory usage for right-ish datasets, which tend to be larger (e.g., 
         // forecasts). Thus, each right-ish series is transformed per series in a later loop. However, the left-ish 
-        // series are brought into memory, so transform them now. See #95488.        
-        // Apply any valid time offset to the left-ish data upfront.
+        // series are brought into memory, so apply relevant filters and transformers now. See #95488.
+        // Apply any valid time offset to the left-ish data upfront, as well as event filters.
         Duration leftValidOffset = this.getLeftTimeShift();
         UnaryOperator<TimeSeries<L>> mapper = nextSeries -> this.applyValidTimeOffset( nextSeries,
                                                                                        leftValidOffset,
                                                                                        DatasetOrientation.LEFT );
-        List<TimeSeries<L>> transformedLeft = leftData.map( mapper )
+        UnaryOperator<TimeSeries<L>> eventFilterMapper = this.getLeftTransformerPreRescaling();
+
+        UnaryOperator<TimeSeries<L>> composition = series -> mapper.apply( eventFilterMapper.apply( series ) );
+
+        List<TimeSeries<L>> transformedLeft = leftData.map( composition )
                                                       .toList();
 
         TimeParameters timeParametersMain = new TimeParameters( desiredTimeScaleToUse,
@@ -1085,8 +1140,13 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( rightOrBaseline );
         Objects.requireNonNull( rightOrBaselineOrientation );
 
-        UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer =
-                this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
+        // Get the pre-rescaling transformer
+        UnaryOperator<TimeSeries<R>> rightOrBaselineTransformerPre =
+                this.getRightOrBaselineTransformerPreRescaling( rightOrBaselineOrientation );
+
+        // Get the post-rescaling transformer
+        UnaryOperator<TimeSeries<R>> rightOrBaselineTransformerPost =
+                this.getRightOrBaselineTransformerPostRescaling( rightOrBaselineOrientation );
 
         Predicate<TimeSeries<L>> leftFilterInner = this.getLeftFilter();
         Predicate<TimeSeries<R>> rightOrBaselineFilter = this.getRightOrBaselineFilter( rightOrBaselineOrientation );
@@ -1124,7 +1184,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             baselineGeneratorFunction = generatorSupplier.apply( allBaselineFeatures );
         }
 
-        Transformers<R> rightOrBaselineTransformers = new Transformers<>( rightOrBaselineTransformer,
+        // Assemble the post-rescaling transformers
+        Transformers<R> rightOrBaselineTransformers = new Transformers<>( rightOrBaselineTransformerPost,
                                                                           rightOrBaselineMissingFilter,
                                                                           baselineGeneratorFunction );
 
@@ -1143,9 +1204,11 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 continue;
             }
 
-            TimeSeries<R> transformedRightOrBaseline = this.applyValidTimeOffset( nextRightOrBaselineSeries,
-                                                                                  timeParameters.timeShift(),
-                                                                                  rightOrBaselineOrientation );
+            // Pre-rescaling transformations
+            TimeSeries<R> transformedRightOrBaseline = rightOrBaselineTransformerPre.apply( nextRightOrBaselineSeries );
+            transformedRightOrBaseline = this.applyValidTimeOffset( transformedRightOrBaseline,
+                                                                    timeParameters.timeShift(),
+                                                                    rightOrBaselineOrientation );
 
             Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
                                                                            .getFeature();
@@ -1489,7 +1552,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         // Transform the rescaled values (e.g., this could contain unit transformations, among others)
-        TimeSeries<L> scaledAndTransformedLeft = this.getLeftTransformer()
+        TimeSeries<L> scaledAndTransformedLeft = this.getLeftTransformerPostRescaling()
                                                      .apply( scaledLeft );
 
         TimeSeries<R> scaledAndTransformedRight = rightOrBaselineTransformers.rightTransformer()
@@ -2051,27 +2114,54 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @return the transformer for left-ish data
      */
 
-    private UnaryOperator<TimeSeries<L>> getLeftTransformer()
+    private UnaryOperator<TimeSeries<L>> getLeftTransformerPreRescaling()
     {
-        return this.leftTransformer;
+        return this.leftTransformerPreRescaling;
     }
 
     /**
      * @return the transformer for right-ish data
      */
 
-    private UnaryOperator<TimeSeries<R>> getRightTransformer()
+    private UnaryOperator<TimeSeries<R>> getRightTransformerPreRescaling()
     {
-        return this.rightTransformer;
+        return this.rightTransformerPreRescaling;
     }
 
     /**
      * @return the transformer for baseline-ish data
      */
 
-    private UnaryOperator<TimeSeries<R>> getBaselineTransformer()
+    private UnaryOperator<TimeSeries<R>> getBaselineTransformerPreRescaling()
     {
-        return this.baselineTransformer;
+        return this.baselineTransformerPreRescaling;
+    }
+
+    /**
+     * @return the transformer for left-ish data
+     */
+
+    private UnaryOperator<TimeSeries<L>> getLeftTransformerPostRescaling()
+    {
+        return this.leftTransformerPostRescaling;
+    }
+
+    /**
+     * @return the transformer for right-ish data
+     */
+
+    private UnaryOperator<TimeSeries<R>> getRightTransformerPostRescaling()
+    {
+        return this.rightTransformerPostRescaling;
+    }
+
+    /**
+     * @return the transformer for baseline-ish data
+     */
+
+    private UnaryOperator<TimeSeries<R>> getBaselineTransformerPostRescaling()
+    {
+        return this.baselineTransformerPostRescaling;
     }
 
     /**
@@ -2135,14 +2225,39 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @throws IllegalArgumentException if the orientation is unexpected
      */
 
-    private UnaryOperator<TimeSeries<R>> getRightOrBaselineTransformer( DatasetOrientation lrb )
+    private UnaryOperator<TimeSeries<R>> getRightOrBaselineTransformerPreRescaling( DatasetOrientation lrb )
     {
         Objects.requireNonNull( lrb );
 
         return switch ( lrb )
         {
-            case RIGHT -> this.getRightTransformer();
-            case BASELINE -> this.getBaselineTransformer();
+            case RIGHT -> this.getRightTransformerPreRescaling();
+            case BASELINE -> this.getBaselineTransformerPreRescaling();
+            default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                           + ". "
+                                                           + EXPECTED
+                                                           + DatasetOrientation.RIGHT
+                                                           + " or "
+                                                           + DatasetOrientation.BASELINE
+                                                           + "." );
+        };
+    }
+
+    /**
+     * @param lrb the orientation of the required transformer
+     * @return the transformer
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unexpected
+     */
+
+    private UnaryOperator<TimeSeries<R>> getRightOrBaselineTransformerPostRescaling( DatasetOrientation lrb )
+    {
+        Objects.requireNonNull( lrb );
+
+        return switch ( lrb )
+        {
+            case RIGHT -> this.getRightTransformerPostRescaling();
+            case BASELINE -> this.getBaselineTransformerPostRescaling();
             default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
                                                            + ". "
                                                            + EXPECTED
@@ -2328,7 +2443,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
-     * @return the desired time scale
+     * @return the desired timescale
      */
 
     private TimeScaleOuter getDesiredTimeScale()
@@ -2398,9 +2513,12 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.metadata = builder.metadata;
         this.baselineMetadata = builder.baselineMetadata;
         this.baselineGenerator = builder.baselineGenerator;
-        this.leftTransformer = builder.leftTransformer;
-        this.rightTransformer = builder.rightTransformer;
-        this.baselineTransformer = builder.baselineTransformer;
+        this.leftTransformerPreRescaling = builder.leftTransformerPreRescaling;
+        this.rightTransformerPreRescaling = builder.rightTransformerPreRescaling;
+        this.baselineTransformerPreRescaling = builder.baselineTransformerPreRescaling;
+        this.leftTransformerPostRescaling = builder.leftTransformerPostRescaling;
+        this.rightTransformerPostRescaling = builder.rightTransformerPostRescaling;
+        this.baselineTransformerPostRescaling = builder.baselineTransformerPostRescaling;
         this.frequency = builder.frequency;
         this.crossPairer = builder.crossPairer;
         this.crossPair = builder.crossPair;
@@ -2448,10 +2566,18 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( this.right, messageStart + "add a right data source." );
         Objects.requireNonNull( this.pairer, messageStart + "add a pairer, in order to pair the data." );
         Objects.requireNonNull( this.metadata, messageStart + "add the metadata for the main pairs." );
-        Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
-        Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
-        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline "
-                                                          + "data." );
+        Objects.requireNonNull( this.leftTransformerPreRescaling,
+                                messageStart + "add a pre-rescaling transformer for the left data." );
+        Objects.requireNonNull( this.rightTransformerPreRescaling,
+                                messageStart + "add a pre-rescaling transformer for the right data." );
+        Objects.requireNonNull( this.baselineTransformerPreRescaling,
+                                messageStart + "add a pre-rescaling transformer for the baseline data." );
+        Objects.requireNonNull( this.leftTransformerPostRescaling,
+                                messageStart + "add a post-rescaling transformer for the left data." );
+        Objects.requireNonNull( this.rightTransformerPostRescaling,
+                                messageStart + "add a post-rescaling transformer for the right data." );
+        Objects.requireNonNull( this.baselineTransformerPostRescaling,
+                                messageStart + "add a post-rescaling transformer for the baseline data." );
         Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
         Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
         Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );

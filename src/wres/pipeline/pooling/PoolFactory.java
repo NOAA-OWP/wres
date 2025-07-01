@@ -630,7 +630,7 @@ public class PoolFactory
             }
         }
 
-        // Left value transfer, which is a composition of several transformations
+        // Left value transformer, which is a composition of several transformations
         Map<GeometryTuple, Offset> offsets = project.getOffsets();
         Map<Geometry, Offset> leftOffsets = offsets.entrySet()
                                                    .stream()
@@ -642,6 +642,10 @@ public class PoolFactory
         DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueTransformer =
                 this.getValueTransformer( leftOffsetGenerator, valueTransformer );
+
+        // Generate a transformer to filter periods of data to ignore, which is applied before rescaling
+        UnaryOperator<TimeSeries<Double>> preRescalingTransformer =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
 
         // Apply any valid time season transformer based on the right-ish data type
         UnaryOperator<TimeSeries<Double>> validTimeSeasonTransformer =
@@ -708,9 +712,18 @@ public class PoolFactory
                                                                     .setRetrieverFactory( retrieverFactory )
                                                                     .setPoolRequests( poolRequests )
                                                                     .setBaselineGenerator( baselineGenerator )
-                                                                    .setLeftTransformer( composedLeftTransformer )
-                                                                    .setRightTransformer( composedRightTransformer )
-                                                                    .setBaselineTransformer( composedBaselineTransformer )
+                                                                    .setLeftTransformerPreRescaling(
+                                                                            preRescalingTransformer )
+                                                                    .setRightTransformerPreRescaling(
+                                                                            preRescalingTransformer )
+                                                                    .setBaselineTransformerPreRescaling(
+                                                                            preRescalingTransformer )
+                                                                    .setLeftTransformerPostRescaling(
+                                                                            composedLeftTransformer )
+                                                                    .setRightTransformerPostRescaling(
+                                                                            composedRightTransformer )
+                                                                    .setBaselineTransformerPostRescaling(
+                                                                            composedBaselineTransformer )
                                                                     .setLeftFilter( filter )
                                                                     .setRightFilter( filter )
                                                                     .setBaselineFilter( filter )
@@ -801,6 +814,11 @@ public class PoolFactory
         Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
                 this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
 
+        // Generate a transformer to filter periods of data to ignore, which is applied before rescaling
+        UnaryOperator<TimeSeries<Ensemble>> preRescalingTransformer =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
+        UnaryOperator<TimeSeries<Double>> preRescalingTransformerSingleValued =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
 
         DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
@@ -893,9 +911,12 @@ public class PoolFactory
                         .setProject( project )
                         .setRetrieverFactory( retrieverFactory )
                         .setPoolRequests( poolRequests )
-                        .setLeftTransformer( composedLeftTransformer )
-                        .setRightTransformer( composedRightTransformer )
-                        .setBaselineTransformer( composedBaselineTransformer )
+                        .setLeftTransformerPreRescaling( preRescalingTransformerSingleValued )
+                        .setRightTransformerPreRescaling( preRescalingTransformer )
+                        .setBaselineTransformerPreRescaling( preRescalingTransformer )
+                        .setLeftTransformerPostRescaling( composedLeftTransformer )
+                        .setRightTransformerPostRescaling( composedRightTransformer )
+                        .setBaselineTransformerPostRescaling( composedBaselineTransformer )
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
@@ -1079,9 +1100,9 @@ public class PoolFactory
                         .setProject( project )
                         .setRetrieverFactory( retrieverFactory )
                         .setPoolRequests( poolRequests )
-                        .setLeftTransformer( leftValueAndUnitTransformer )
-                        .setRightTransformer( rightValueAndUnitTransformer )
-                        .setBaselineTransformer( baselineValueAndUnitTransformer )
+                        .setLeftTransformerPostRescaling( leftValueAndUnitTransformer )
+                        .setRightTransformerPostRescaling( rightValueAndUnitTransformer )
+                        .setBaselineTransformerPostRescaling( baselineValueAndUnitTransformer )
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )

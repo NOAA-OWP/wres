@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import wres.config.yaml.components.TimeInterval;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.Slicer;
@@ -272,9 +274,9 @@ final class TimeSeriesSlicerTest
         TimeSeries<Pair<Double, Double>> next = durationCheck.get().get( 0 );
         next = TimeSeriesSlicer.filter( next,
                                         TimeWindowOuter.of( MessageUtilities.getTimeWindow( Duration.ofHours(
-                                                                                                                  51 ),
+                                                                                                    51 ),
                                                                                             Duration.ofHours(
-                                                                                                                  51 ) ) ) );
+                                                                                                    51 ) ) ) );
 
         Duration actualDuration = Duration.between( next.getReferenceTimes().values().iterator().next(),
                                                     next.getEvents().first().getTime() );
@@ -1422,6 +1424,97 @@ final class TimeSeriesSlicerTest
 
         Assertions.assertAll( () -> assertEquals( expectedOne, transformer.apply( one ) ),
                               () -> assertEquals( expectedTwo, anotherFilter.apply( one ) ) );
+    }
+
+    @Test
+    void testGetIgnoredValidDatesTransformerFiltersExpectedDates()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                     T1985_01_01T00_00_00Z ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                                             STREAMFLOW,
+                                                             DRRC2,
+                                                             CFS );
+
+        TimeSeries<Double> series =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( T1985_01_01T01_00_00Z, 3.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T02_00_00Z, 4.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T03_00_00Z, 5.0 ) )
+                                                .build();
+
+        TimeInterval firstInterval = new TimeInterval( Instant.parse( "1984-05-01T12:00:00Z" ),
+                                                       T1985_01_01T01_00_00Z );
+        TimeInterval secondInterval = new TimeInterval( T1985_01_01T03_00_00Z,
+                                                        Instant.parse( "1986-05-01T12:00:00Z" ) );
+
+        Set<TimeInterval> ignoredValidDates = Set.of( firstInterval, secondInterval );
+
+        UnaryOperator<TimeSeries<Double>> transformer =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( ignoredValidDates );
+
+        TimeSeries<Double> actual = transformer.apply( series );
+
+        TimeSeries<Double> expected =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( T1985_01_01T02_00_00Z, 4.0 ) )
+                                                .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetIgnoredValidDatesTransformerFiltersNoDates()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                     T1985_01_01T00_00_00Z ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                                             STREAMFLOW,
+                                                             DRRC2,
+                                                             CFS );
+
+        TimeSeries<Double> expected =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( T1985_01_01T01_00_00Z, 3.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T02_00_00Z, 4.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T03_00_00Z, 5.0 ) )
+                                                .build();
+
+        TimeInterval firstInterval = new TimeInterval( Instant.parse( "1986-05-01T12:00:00Z" ),
+                                                       Instant.parse( "1987-05-01T12:00:00Z" ) );
+
+        Set<TimeInterval> ignoredValidDates = Set.of( firstInterval );
+
+        UnaryOperator<TimeSeries<Double>> transformer =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( ignoredValidDates );
+
+        TimeSeries<Double> actual = transformer.apply( expected );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetIgnoredValidDatesTransformerFiltersNoDatesWhenNoIntervalsProvided()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                     T1985_01_01T00_00_00Z ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                                             STREAMFLOW,
+                                                             DRRC2,
+                                                             CFS );
+
+        TimeSeries<Double> expected =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( T1985_01_01T01_00_00Z, 3.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T02_00_00Z, 4.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T03_00_00Z, 5.0 ) )
+                                                .build();
+
+        UnaryOperator<TimeSeries<Double>> transformer =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( Collections.emptySet() );
+
+        TimeSeries<Double> actual = transformer.apply( expected );
+
+        assertEquals( expected, actual );
     }
 
     @Test

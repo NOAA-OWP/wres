@@ -1127,6 +1127,38 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithIgnoredValidDates() throws IOException
+    {
+        String yaml = """
+                 observed: some_file.csv
+                 predicted: another_file.csv
+                 ignored_valid_dates:
+                   - minimum: 2552-03-17T00:00:00Z
+                     maximum: 2552-03-20T00:00:00Z
+                   - minimum: 2553-03-17T00:00:00Z
+                     maximum: 2553-03-20T00:00:00Z
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        TimeInterval ignoredOne = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
+                                                    Instant.parse( "2552-03-20T00:00:00Z" ) );
+        TimeInterval ignoredTwo = new TimeInterval( Instant.parse( "2553-03-17T00:00:00Z" ),
+                                                    Instant.parse( "2553-03-20T00:00:00Z" ) );
+
+        Set<TimeInterval> ignoredValidDates = Set.of( ignoredOne, ignoredTwo );
+
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .ignoredValidDates( ignoredValidDates )
+                                            .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithTimeScale() throws IOException
     {
         String yaml = """

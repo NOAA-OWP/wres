@@ -115,6 +115,8 @@ definitions:
           - "$ref": "#/definitions/TimePoolSequences"
       valid_dates:
         "$ref": "#/definitions/Dates"
+      ignored_valid_dates:
+        "$ref": "#/definitions/IgnoredDates"
       valid_date_pools:
         anyOf:
           - "$ref": "#/definitions/TimePoolSequence"
@@ -953,6 +955,17 @@ definitions:
       maximum:
         type: string
         format: date-time
+
+  IgnoredDates:
+    title: A list of datetime intervals whose values will be ignored.
+    description: "A list of datetime intervals whose values will be ignored  
+    across all time-series data sources."
+    type: array
+    items:
+      "$ref": "#/definitions/Dates"
+    minItems: 1
+    uniqueItems: true
+    additionalProperties: false
 
   LeadTimes:
     title: The lead time constraints on an evaluation.

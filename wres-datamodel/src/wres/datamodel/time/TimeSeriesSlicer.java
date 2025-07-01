@@ -29,6 +29,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.TimeInterval;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -1426,6 +1427,42 @@ public final class TimeSeriesSlicer
 
         // An observation-like data type: the precise type is not important
         return DataType.OBSERVATIONS;
+    }
+
+    /**
+     * Returns a transformer that ignores events whose valid dates fall within one of the prescribed intervals.
+     *
+     * @param ignoredValidDates the valid date intervals whose data should be ignored
+     * @return a transformer
+     * @throws NullPointerException if the input is null
+     */
+
+    public static <T> UnaryOperator<TimeSeries<T>> getIgnoredValidDatesTransformer( Set<TimeInterval> ignoredValidDates )
+    {
+        Objects.requireNonNull( ignoredValidDates );
+
+        if ( ignoredValidDates.isEmpty() )
+        {
+            return in -> in;
+        }
+        return series ->
+        {
+            Set<Event<T>> events = series.getEvents();
+            SortedSet<Event<T>> filtered = new TreeSet<>();
+            for ( Event<T> nextEvent : events )
+            {
+                // If the next event is not contained in any interval whose data should be ignored, then include it
+                if ( ignoredValidDates.stream()
+                                      .noneMatch( t -> nextEvent.getTime()
+                                                                .compareTo( t.minimum() ) >= 0
+                                                       && nextEvent.getTime()
+                                                                   .compareTo( t.maximum() ) <= 0 ) )
+                {
+                    filtered.add( nextEvent );
+                }
+            }
+            return TimeSeries.of( series.getMetadata(), filtered );
+        };
     }
 
     /**
