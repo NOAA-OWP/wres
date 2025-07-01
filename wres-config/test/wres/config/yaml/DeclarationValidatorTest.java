@@ -3115,6 +3115,189 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testOverlappingIgnoredValidDatesProducesWarning()
+    {
+        TimeInterval first = new TimeInterval( Instant.parse( "2023-01-01T00:00:00Z" ),
+                                               Instant.parse( "2023-01-01T23:00:00Z" ) );
+        TimeInterval second = new TimeInterval( Instant.parse( "2023-01-01T22:00:00Z" ),
+                                                Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        Set<TimeInterval> ignoredValidDates = Set.of( first, second );
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .ignoredValidDates( ignoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "One or more of the intervals contained in "
+                                                       + "'ignored_valid_dates' overlap",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testIgnoredValidDatesThatSpanAllValidDatesProducesError()
+    {
+        TimeInterval testOneFirst = new TimeInterval( Instant.parse( "2023-01-01T00:00:00Z" ),
+                                                      Instant.parse( "2023-01-01T23:00:00Z" ) );
+        TimeInterval testOneSecond = new TimeInterval( Instant.parse( "2023-01-01T23:00:00Z" ),
+                                                       Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        TimeInterval testOneValidDates = new TimeInterval( Instant.parse( "2023-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        Set<TimeInterval> testOneIgnoredValidDates = Set.of( testOneFirst, testOneSecond );
+
+        EvaluationDeclaration testOneDeclaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( testOneValidDates )
+                                              .ignoredValidDates( testOneIgnoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> testOneActual = DeclarationValidator.validate( testOneDeclaration );
+
+        String expectedMessage = "The 'ignored_valid_dates' completely overlap the 'valid_dates'";
+
+        TimeInterval testTwoFirst = new TimeInterval( Instant.parse( "2022-01-01T00:00:00Z" ),
+                                                      Instant.parse( "2023-01-01T23:00:00Z" ) );
+        TimeInterval testTwoSecond = new TimeInterval( Instant.parse( "2023-01-01T23:00:00Z" ),
+                                                       Instant.parse( "2024-01-02T00:00:00Z" ) );
+
+        TimeInterval testTwoValidDates = new TimeInterval( Instant.parse( "2023-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        Set<TimeInterval> testTwoIgnoredValidDates = Set.of( testTwoFirst, testTwoSecond );
+
+        EvaluationDeclaration testTwoDeclaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( testTwoValidDates )
+                                              .ignoredValidDates( testTwoIgnoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> testTwoActual = DeclarationValidator.validate( testTwoDeclaration );
+
+        TimeInterval testThreeFirst = new TimeInterval( Instant.parse( "2022-01-01T00:00:00Z" ),
+                                                        Instant.parse( "2023-01-01T23:00:00Z" ) );
+        TimeInterval testThreeSecond = new TimeInterval( Instant.parse( "2023-01-01T23:00:00Z" ),
+                                                         Instant.parse( "2024-01-02T00:00:00Z" ) );
+
+        TimeInterval testThreeValidDates = new TimeInterval( Instant.parse( "2021-12-31T23:59:59Z" ),
+                                                             Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        Set<TimeInterval> testThreeIgnoredValidDates = Set.of( testThreeFirst, testThreeSecond );
+
+        EvaluationDeclaration testThreeDeclaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( testThreeValidDates )
+                                              .ignoredValidDates( testThreeIgnoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> testThreeActual = DeclarationValidator.validate( testThreeDeclaration );
+
+        TimeInterval testFourFirst = new TimeInterval( Instant.parse( "2022-01-01T00:00:00Z" ),
+                                                       Instant.parse( "2023-01-01T23:00:00Z" ) );
+        TimeInterval testFourSecond = new TimeInterval( Instant.parse( "2023-01-02T00:00:00Z" ),
+                                                        Instant.parse( "2024-01-02T00:00:00Z" ) );
+
+        TimeInterval testFourValidDates = new TimeInterval( Instant.parse( "2022-01-01T00:00:00Z" ),
+                                                            Instant.parse( "2024-01-02T00:00:00Z" ) );
+
+        Set<TimeInterval> testFourIgnoredValidDates = Set.of( testFourFirst, testFourSecond );
+
+        EvaluationDeclaration testFourDeclaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( testFourValidDates )
+                                              .ignoredValidDates( testFourIgnoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> testFourActual = DeclarationValidator.validate( testFourDeclaration );
+
+        TimeInterval testFiveFirst = new TimeInterval( Instant.parse( "1988-01-01T00:00:00Z" ),
+                                                       Instant.parse( "1988-12-31T23:59:00Z" ) );
+        TimeInterval testFiveSecond = new TimeInterval( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                        Instant.parse( "1988-06-30T23:59:00Z" ) );
+
+        TimeInterval testFiveValidDates = new TimeInterval( Instant.parse( "1988-01-01T00:00:00Z" ),
+                                                            Instant.parse( "1988-12-31T23:59:00Z" ) );
+
+        Set<TimeInterval> testFiveIgnoredValidDates = Set.of( testFiveFirst, testFiveSecond );
+
+        EvaluationDeclaration testFiveDeclaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( testFiveValidDates )
+                                              .ignoredValidDates( testFiveIgnoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> testFiveActual = DeclarationValidator.validate( testFiveDeclaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( testOneActual,
+                                                                        expectedMessage,
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( testTwoActual,
+                                                                        expectedMessage,
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertFalse( DeclarationValidatorTest.contains( testThreeActual,
+                                                                         expectedMessage,
+                                                                         StatusLevel.ERROR ) ),
+                   () -> assertFalse( DeclarationValidatorTest.contains( testFourActual,
+                                                                         expectedMessage,
+                                                                         StatusLevel.ERROR ) )
+                ,
+                   () -> assertTrue( DeclarationValidatorTest.contains( testFiveActual,
+                                                                        expectedMessage,
+                                                                        StatusLevel.ERROR ) ) );
+    }
+
+    @Test
+    void testIgnoredValidDatesAreProperIntervals()
+    {
+        TimeInterval testOneFirst = new TimeInterval( Instant.parse( "2023-01-01T00:00:00Z" ),
+                                                      Instant.parse( "2022-01-01T23:00:00Z" ) );
+        TimeInterval testOneSecond = new TimeInterval( Instant.parse( "2024-01-01T23:00:00Z" ),
+                                                       Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        TimeInterval testOneValidDates = new TimeInterval( Instant.parse( "2024-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2023-01-02T00:00:00Z" ) );
+
+        Set<TimeInterval> testOneIgnoredValidDates = Set.of( testOneFirst, testOneSecond );
+
+        EvaluationDeclaration testOneDeclaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .validDates( testOneValidDates )
+                                              .ignoredValidDates( testOneIgnoredValidDates )
+                                              .build();
+
+        List<EvaluationStatusEvent> testOneActual = DeclarationValidator.validate( testOneDeclaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( testOneActual,
+                                                                        "'ignored_valid_dates' "
+                                                                        + "(2023-01-01T00:00:00Z, 2022-01-01T23:00:00Z)"
+                                                                        + " interval is invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( testOneActual,
+                                                                        "'ignored_valid_dates' "
+                                                                        + "(2024-01-01T23:00:00Z, 2023-01-02T00:00:00Z)"
+                                                                        + " interval is invalid",
+                                                                        StatusLevel.ERROR ) ) );
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86
