@@ -2252,9 +2252,3 @@ configurations.runtimeOnly {
 }
 
 defaultTasks 'installDist', 'test', 'javadoc'
-
-dependencyCheck {
-    nvd {
-        apiKey='8244b740-8895-4ffa-9638-779edc06c556'
-    }
-}
