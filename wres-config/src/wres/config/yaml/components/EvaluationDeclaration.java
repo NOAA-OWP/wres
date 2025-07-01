@@ -55,6 +55,7 @@ import wres.statistics.generated.TimeWindow;
  * @param referenceDates reference dates
  * @param referenceDatePools reference date pools
  * @param validDates valid dates
+ * @param ignoredValidDates any valid dates whose time-series values should be ignored
  * @param validDatePools valid date pools
  * @param leadTimes lead times
  * @param analysisTimes analysis durations
@@ -99,6 +100,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
                                      @JsonProperty( "reference_date_pools" ) Set<TimePools> referenceDatePools,
                                      @JsonProperty( "valid_dates" ) TimeInterval validDates,
+                                     @JsonProperty( "ignored_valid_dates" ) Set<TimeInterval> ignoredValidDates,
                                      @JsonProperty( "valid_date_pools" ) Set<TimePools> validDatePools,
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
                                      @JsonProperty( "lead_time_pools" ) Set<TimePools> leadTimePools,
@@ -165,6 +167,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param referenceDates reference dates
      * @param referenceDatePools reference date pools
      * @param validDates valid dates
+     * @param ignoredValidDates any valid dates whose time-series values should be ignored
      * @param validDatePools valid date pools
      * @param leadTimes lead times
      * @param analysisTimes analysis durations
@@ -204,6 +207,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
         thresholdSources = this.emptyOrUnmodifiableSet( thresholdSources, "threshold sources" );
         summaryStatistics = this.emptyOrUnmodifiableSet( summaryStatistics, "summary statistics" );
         validDatePools = this.emptyOrUnmodifiableSet( validDatePools, "valid date pools" );
+        ignoredValidDates = this.emptyOrUnmodifiableSet( ignoredValidDates, "ignored valid dates" );
         referenceDatePools = this.emptyOrUnmodifiableSet( referenceDatePools, "reference date pools" );
         leadTimePools = this.emptyOrUnmodifiableSet( leadTimePools, "lead time pools" );
 

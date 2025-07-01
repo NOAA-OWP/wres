@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,6 +29,8 @@ import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.TimeInterval;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.messages.MessageFactory;
@@ -1394,6 +1397,80 @@ class PoolSupplierTest
 
         assertEquals( poolOneExpected, poolOneActual );
     }
+
+    // GitHub #492
+    @Test
+    void testGetReturnsPoolThatContainsFivePairsInOneSeriesWithIgnoredValidTimes()
+    {
+        // Pool One actual
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
+
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastOne ) );
+
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
+
+        TimeWindow inner = MessageUtilities.getTimeWindow( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+                                                           T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                           Duration.ofHours( 0 ),
+                                                           Duration.ofHours( 23 ) );
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
+
+        PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
+                                                        poolOneWindow,
+                                                        this.desiredTimeScale );
+
+        TimeInterval interval = new TimeInterval( T2551_03_18T06_00_00Z, T2551_03_18T09_00_00Z );
+        Set<TimeInterval> intervals = Set.of( interval );
+        UnaryOperator<TimeSeries<Double>> transformer = TimeSeriesSlicer.getIgnoredValidDatesTransformer( intervals );
+
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setLeftTransformerPreRescaling( transformer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
+
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
+
+        // Pool One expected
+        TimeSeriesMetadata poolOneTimeSeriesMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          FEATURE,
+                                                          this.desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> poolOneSeries =
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( poolOneTimeSeriesMetadata )
+                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                   Pair.of( 409.6666666666667,
+                                                                                            73.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                   Pair.of( 428.3333333333333,
+                                                                                            79.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                   Pair.of( 443.6666666666667,
+                                                                                            83.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                   Pair.of( 460.3333333333333,
+                                                                                            89.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                   Pair.of( 477.6666666666667,
+                                                                                            97.0 ) ) )
+                                                              .build();
+
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
+                                                                    .setMetadata( poolOneMetadata )
+                                                                    .build();
+
+        assertEquals( poolOneExpected, poolOneActual );
+    }
+
 
     /**
      * Produces time-series metadata from the inputs.
