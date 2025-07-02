@@ -593,12 +593,12 @@ project(':wres-writing') {
         testImplementation 'org.apache.tika:tika-core:2.9.2'
         testImplementation 'org.mockito:mockito-core:5.2.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.10'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.18.3'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.1'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
         implementation 'org.apache.commons:commons-lang3:3.17.0'
         implementation 'org.slf4j:slf4j-api:2.0.16'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.18.3'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.1'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
         testImplementation 'org.mockito:mockito-core:5.2.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
@@ -669,9 +669,9 @@ project(':wres-reading') {
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '11.1.0'
 
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.18.3'
-        api 'com.fasterxml.jackson.core:jackson-core:2.18.3'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
+        api 'com.fasterxml.jackson.core:jackson-core:2.19.1'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
         api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         api 'javax.xml.bind:jaxb-api:2.3.1'
         api 'org.apache.commons:commons-lang3:3.17.0'
@@ -1080,9 +1080,9 @@ project(':wres-config') {
 
         // For YAML (de)serialization.
         implementation 'com.fasterxml.jackson:jackson-bom:2.19.0'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.0'
-        api 'com.fasterxml.jackson.core:jackson-core:2.19.0'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
+        api 'com.fasterxml.jackson.core:jackson-core:2.19.1'
         implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0'
         api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0'
         implementation('com.hubspot.jackson:jackson-datatype-protobuf:0.9.18') {
@@ -1539,9 +1539,9 @@ project(':wres-tasker') {
 
         // JSON deserialization uses jackson directly. Specify recent version.
         implementation 'com.fasterxml.jackson:jackson-bom:2.19.0'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.0'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.0'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.1'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.17.0'
