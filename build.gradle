@@ -317,7 +317,7 @@ project(':wres-system') {
         testRuntimeOnly 'io.netty:netty-handler:4.2.2.Final'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
-        testImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
+        testImplementation 'org.apache.httpcomponents:httpclient:4.5.14'
         testImplementation 'org.apache.httpcomponents:httpcore:4.4.13'
     }
 
