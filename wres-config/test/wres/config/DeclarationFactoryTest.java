@@ -4056,6 +4056,7 @@ class DeclarationFactoryTest
                 duration_format: hours
                 decimal_format: "#0.000"
                 output_formats:
+                  - netcdf2
                   - csv2
                   - csv
                   - pairs
@@ -4086,6 +4087,7 @@ class DeclarationFactoryTest
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
+                                 .setNetcdf2( Outputs.Netcdf2Format.newBuilder().build() )
                                  .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.000" );
