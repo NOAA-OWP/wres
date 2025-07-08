@@ -22,7 +22,6 @@ import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ValueFilter;
 import wres.statistics.generated.Outputs.CsvFormat;
 import wres.statistics.generated.Outputs.GraphicFormat;
-import wres.statistics.generated.Outputs.NetcdfFormat;
 import wres.statistics.generated.Outputs.NumericFormat;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.ProtobufFormat;
@@ -91,8 +90,7 @@ class MessageUtilitiesTest
                                                                                                               DurationUnit.MINUTES )
                                                                                                       .setShape(
                                                                                                               GraphicShape.LEAD_THRESHOLD ) ) )
-                                                          .setProtobuf( ProtobufFormat.newBuilder() )
-                                                          .setNetcdf( NetcdfFormat.newBuilder() ) )
+                                                          .setProtobuf( ProtobufFormat.newBuilder() ) )
                                       .setValueFilter( ValueFilter.newBuilder()
                                                                   .setMinimumInclusiveValue( 0.0 )
                                                                   .setMinimumInclusiveValue( 1.0 ) )
@@ -230,7 +228,6 @@ class MessageUtilitiesTest
                                                                             .setLeadUnit( DurationUnit.MINUTES )
                                                                             .setShape( GraphicShape.LEAD_THRESHOLD ) ) )
                                 .setProtobuf( ProtobufFormat.newBuilder() )
-                                .setNetcdf( NetcdfFormat.newBuilder() )
                                 .build();
 
         Outputs first = zeroth.toBuilder()
@@ -280,7 +277,6 @@ class MessageUtilitiesTest
 
         Outputs sixth = Outputs.newBuilder()
                                .setProtobuf( ProtobufFormat.newBuilder() )
-                               .setNetcdf( NetcdfFormat.newBuilder() )
                                .build();
 
         assertTrue( MessageUtilities.compare( Outputs.getDefaultInstance(), sixth ) < 0 );

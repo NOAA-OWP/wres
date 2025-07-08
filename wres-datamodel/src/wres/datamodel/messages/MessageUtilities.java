@@ -175,13 +175,6 @@ public class MessageUtilities
             return compare;
         }
 
-        compare = Boolean.compare( first.hasNetcdf(), second.hasNetcdf() );
-
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-
         compare = Boolean.compare( first.hasCsv(), second.hasCsv() );
 
         if ( compare != 0 )
