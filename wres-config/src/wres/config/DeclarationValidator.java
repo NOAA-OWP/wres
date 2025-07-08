@@ -3655,16 +3655,6 @@ public class DeclarationValidator
                                                .build();
                 events.add( event );
             }
-
-            if ( outputs.hasNetcdf() )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage( start + "netcdf" + middle + "netcdf2" + end )
-                                               .build();
-                events.add( event );
-            }
         }
 
         return Collections.unmodifiableList( events );
@@ -3684,8 +3674,7 @@ public class DeclarationValidator
         if ( Objects.nonNull( formats ) )
         {
             Outputs outputs = formats.outputs();
-            if ( outputs.hasNetcdf()
-                 && outputs.hasNetcdf2() )
+            if ( outputs.hasNetcdf2() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -3699,8 +3688,7 @@ public class DeclarationValidator
             }
 
             // Do not allow legacy netcdf together with feature groups
-            if ( outputs.hasNetcdf()
-                 && Objects.nonNull( declaration.featureGroups() ) )
+            if ( Objects.nonNull( declaration.featureGroups() ) )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -3715,8 +3703,7 @@ public class DeclarationValidator
 
             // Check for some score metrics when netcdf is declared, unless the declaration contains no/default metrics,
             // meaning that metrics will be interpolated, of which some will always be scores
-            if ( ( outputs.hasNetcdf()
-                   || outputs.hasNetcdf2() )
+            if ( outputs.hasNetcdf2()
                  && !declaration.metrics()  // Scores will always be interpolated in this case
                                 .isEmpty()
                  && declaration.metrics()

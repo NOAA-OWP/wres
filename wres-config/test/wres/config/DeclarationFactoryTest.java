@@ -1579,8 +1579,6 @@ class DeclarationFactoryTest
                     width: 800
                     height: 600
                     orientation: threshold lead
-                  - format: netcdf
-                    template_path: foo.bar
                 """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
@@ -1606,9 +1604,6 @@ class DeclarationFactoryTest
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
-                                 .setNetcdf( Formats.NETCDF_FORMAT.toBuilder()
-                                                                  .setTemplatePath( "foo.bar" )
-                                                                  .build() )
                                  .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.000000" );
@@ -4064,8 +4059,6 @@ class DeclarationFactoryTest
                   - csv2
                   - csv
                   - pairs
-                  - format: netcdf
-                    template_path: foo.bar
                   - format: png
                     width: 1200
                     height: 800
@@ -4081,8 +4074,6 @@ class DeclarationFactoryTest
                                                                    .setShape( Outputs.GraphicFormat.GraphicShape.THRESHOLD_LEAD )
                                                                    .build();
         Outputs outputs = Outputs.newBuilder()
-                                 .setNetcdf( Outputs.NetcdfFormat.newBuilder()
-                                                                 .setTemplatePath( "foo.bar" ) )
                                  .setPairs( Outputs.PairFormat.newBuilder()
                                                               .setOptions( numericFormat )
                                                               .build() )

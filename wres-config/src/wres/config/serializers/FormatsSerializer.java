@@ -78,21 +78,6 @@ public class FormatsSerializer extends JsonSerializer<Formats>
     private void writeParameterizedFormats( Outputs outputs,
                                             JsonGenerator writer ) throws IOException
     {
-        // Write the formats that allow parameters
-        if ( outputs.hasNetcdf() )
-        {
-            // Non-default parameter values
-            if ( !Formats.NETCDF_FORMAT.equals( outputs.getNetcdf() ) )
-            {
-                this.writeNonDefaultNetcdfFormat( outputs.getNetcdf(),
-                                                  writer );
-            }
-            // All default parameter values, do not write them
-            else
-            {
-                writer.writeString( "netcdf" );
-            }
-        }
         if ( outputs.hasPng() )
         {
             // Non-default parameter values
@@ -163,44 +148,6 @@ public class FormatsSerializer extends JsonSerializer<Formats>
             Outputs.GraphicFormat.GraphicShape shape = parameters.getShape();
             String friendlyShape = DeclarationUtilities.fromEnumName( shape.name() );
             writer.writeStringField( "orientation", friendlyShape );
-        }
-
-        // End
-        writer.writeEndObject();
-    }
-
-    /**
-     * Writes a graphic format with associated (non-default) parameters.
-     * @param parameters the format parameters
-     * @throws IOException if the format could not be written for any reason
-     */
-    private void writeNonDefaultNetcdfFormat( Outputs.NetcdfFormat parameters,
-                                              JsonGenerator writer ) throws IOException
-    {
-        LOGGER.debug( "Discovered a NetCDF format with non-default parameter values." );
-
-        // Start
-        writer.writeStartObject();
-
-        Outputs.NetcdfFormat defaults = Formats.NETCDF_FORMAT;
-
-        writer.writeStringField( "format", "netcdf" );
-
-        if ( ! parameters.getTemplatePath().isBlank()
-             && !Objects.equals( parameters.getTemplatePath(), defaults.getTemplatePath() ) )
-        {
-            writer.writeStringField( "template_path", parameters.getTemplatePath() );
-        }
-
-        if ( ! parameters.getVariableName().isBlank()
-             && !Objects.equals( parameters.getVariableName(), defaults.getVariableName() ) )
-        {
-            writer.writeStringField( "variable_name", parameters.getVariableName() );
-        }
-
-        if ( parameters.getGridded() )
-        {
-            writer.writeBooleanField( "gridded", true );
         }
 
         // End

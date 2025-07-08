@@ -50,12 +50,6 @@ public record Formats( Outputs outputs )
                                                                            .setOptions( DEFAULT_NUMERIC_FORMAT )
                                                                            .build();
 
-    /** Default NetCDF format. **/
-    public static final Outputs.NetcdfFormat NETCDF_FORMAT = Outputs.NetcdfFormat.newBuilder()
-                                                                                 .setGridded( false )
-                                                                                 .setVariableName( "lid" )
-                                                                                 .build();
-
     /** Default NetCDF2 format. **/
     public static final Outputs.Netcdf2Format NETCDF2_FORMAT = Outputs.Netcdf2Format.getDefaultInstance();
 
