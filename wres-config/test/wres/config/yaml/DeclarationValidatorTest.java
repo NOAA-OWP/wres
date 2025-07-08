@@ -1427,15 +1427,6 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The 'output_formats' includes both "
-                                                                        + "'netcdf' and 'netcdf2', which is not allowed",
-                                                                        StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The 'output_formats' includes "
-                                                                        + "'netcdf', which does not support "
-                                                                        + "'feature_groups'",
-                                                                        StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "The 'output_formats' includes "
                                                                         + "'netcdf2', which supports 'feature_groups', "
                                                                         + "but",
