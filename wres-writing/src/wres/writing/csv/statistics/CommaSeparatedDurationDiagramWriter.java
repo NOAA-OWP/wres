@@ -243,8 +243,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      * 
      * @param declaration the project configuration
      * @param outputDirectory the directory into which to write
-     * @throws NullPointerException if either input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing 
+     * @throws NullPointerException if either input is null
      */
 
     private CommaSeparatedDurationDiagramWriter( EvaluationDeclaration declaration,

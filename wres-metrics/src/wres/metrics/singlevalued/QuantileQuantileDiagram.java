@@ -31,12 +31,8 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>, DiagramStatisticOuter>
 {
-
-    /**
-     * Observed quantiles.
-     */
-
-    public static final DiagramMetricComponent OBSERVED_QUANTILES =
+    /** Observed quantiles. */
+    private static final DiagramMetricComponent OBSERVED_QUANTILES =
             DiagramMetricComponent.newBuilder()
                                   .setName( MetricName.OBSERVED_QUANTILES )
                                   .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
@@ -44,31 +40,22 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
                                   .setMaximum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
                                   .build();
 
-    /**
-     * Predicted quantiles.
-     */
-
-    public static final DiagramMetricComponent PREDICTED_QUANTILES =
+    /** Predicted quantiles. */
+    private static final DiagramMetricComponent PREDICTED_QUANTILES =
             DiagramMetricComponent.newBuilder()
                                   .setName( MetricName.PREDICTED_QUANTILES )
                                   .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
-                                  .setMinimum( Double.NEGATIVE_INFINITY )
-                                  .setMaximum( Double.POSITIVE_INFINITY )
+                                  .setMinimum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMinimum() )
+                                  .setMaximum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
                                   .build();
 
-    /**
-     * Basic description of the metric.
-     */
-
+    /** Basic description of the metric. */
     public static final DiagramMetric BASIC_METRIC = DiagramMetric.newBuilder()
                                                                   .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM )
                                                                   .setHasDiagonal( true )
                                                                   .build();
 
-    /**
-     * Full description of the metric.
-     */
-
+    /** Full description of the metric. */
     public static final DiagramMetric METRIC = DiagramMetric.newBuilder()
                                                             .addComponents( QuantileQuantileDiagram.OBSERVED_QUANTILES )
                                                             .addComponents( QuantileQuantileDiagram.PREDICTED_QUANTILES )
@@ -76,22 +63,13 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
                                                             .setName( MetricName.QUANTILE_QUANTILE_DIAGRAM )
                                                             .build();
 
-    /**
-     * The default number of probabilities at which to compute the order statistics.
-     */
-
+    /** The default number of probabilities at which to compute the order statistics. */
     private static final int DEFAULT_PROBABILITY_COUNT = 100;
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( QuantileQuantileDiagram.class );
 
-    /**
-     * The number of probabilities at which to compute the order statistics.
-     */
-
+    /** The number of probabilities at which to compute the order statistics. */
     private final int probCount;
 
     /**
@@ -248,5 +226,4 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
 
         this.probCount = probCount;
     }
-
 }

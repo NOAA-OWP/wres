@@ -1,6 +1,7 @@
 package wres.vis.writing;
 
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +26,7 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
@@ -232,7 +234,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 for ( Map.Entry<TimeWindowOuter, JFreeChart> nextEntry : charts.entrySet() )
                 {
                     TimeWindowOuter appendObject = nextEntry.getKey();
-                    String appendString = GraphicsWriter.getDiagramPathQualifier( appendObject, statistics, helper );
+                    String appendString = BoxplotGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
                     Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                               metadata,
                                                                               appendString,
@@ -257,6 +259,77 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         }
 
         return Collections.unmodifiableSet( pathsWrittenTo );
+    }
+
+    /**
+     * Generates a path qualifier for diagram and box-plot-style graphics based on the statistics provided.
+     *
+     * @param appendObject the object to use in the path qualifier
+     * @param statistics the statistics
+     * @param helper the graphics helper
+     * @return a path qualifier or null if non is required
+     */
+
+    private static String getPathQualifier( Object appendObject,
+                                            List<BoxplotStatisticOuter> statistics,
+                                            GraphicsHelper helper )
+    {
+        String append = "";
+
+        if ( appendObject instanceof TimeWindowOuter timeWindow )
+        {
+            Outputs.GraphicFormat.GraphicShape shape = helper.getGraphicShape();
+            ChronoUnit leadUnits = helper.getDurationUnits();
+
+            // Qualify pooling windows with the latest reference time and valid time
+            if ( shape == Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS
+                 || shape == Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS )
+            {
+                append = DataUtilities.toStringSafe( timeWindow, leadUnits );
+            }
+            // Needs to be fully qualified, but this would change the file names, which is arguably a breaking change
+            // See GitHub ticket #540
+            else if ( !timeWindow.getLatestLeadDuration()
+                                 .equals( TimeWindowOuter.DURATION_MAX ) )
+            {
+                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits )
+                         + "_"
+                         + leadUnits.name()
+                                    .toUpperCase();
+            }
+        }
+        else if ( appendObject instanceof OneOrTwoThresholds threshold )
+        {
+            append = DataUtilities.toStringSafe( threshold );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
+                                                     + "outputImage path" );
+        }
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getPoolMetadata()
+                                             .getPoolDescription()
+                                             .getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN
+                                      && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            append += "_ENSEMBLE_" + type.get()
+                                         .name();
+        }
+
+        return append;
     }
 
     /**

@@ -469,7 +469,8 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
         Optional<EnsembleAverageType> type =
                 types.stream()
-                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                     .filter( next -> next != EnsembleAverageType.MEAN
+                                      && next != EnsembleAverageType.NONE
                                       && next != EnsembleAverageType.UNRECOGNIZED )
                      .findFirst();
 

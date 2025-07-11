@@ -12,9 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,17 +28,13 @@ import org.jfree.svg.SVGUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
-import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
 import wres.statistics.generated.SummaryStatistic;
@@ -210,77 +204,6 @@ abstract class GraphicsWriter
     }
 
     /**
-     * Generates a path qualifier for diagram and box-plot-style graphics based on the statistics provided.
-     *
-     * @param appendObject the object to use in the path qualifier
-     * @param statistics the statistics
-     * @param helper the graphics helper
-     * @return a path qualifier or null if non is required
-     */
-
-    static <T extends Statistic<?>> String getDiagramPathQualifier( Object appendObject,
-                                                                    List<T> statistics,
-                                                                    GraphicsHelper helper )
-    {
-        String append;
-
-        if ( appendObject instanceof TimeWindowOuter timeWindow )
-        {
-            GraphicShape shape = helper.getGraphicShape();
-            ChronoUnit leadUnits = helper.getDurationUnits();
-
-            // Qualify pooling windows with the latest reference time and valid time
-            if ( shape == GraphicShape.ISSUED_DATE_POOLS || shape == GraphicShape.VALID_DATE_POOLS )
-            {
-                append = DataUtilities.toStringSafe( timeWindow, leadUnits );
-            }
-            else
-            {
-                // This is not fully qualified, but making it so will be a breaking change. It will need to be fully 
-                // qualified when arbitrary pools are supported: see #86646. At that time, use the time window safe 
-                // string helpers in the DataUtilities class.
-                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
-
-                if ( !append.endsWith( "MAXDURATION" ) )
-                {
-                    append += "_"
-                              + leadUnits.name()
-                                         .toUpperCase();
-                }
-            }
-        }
-        else if ( appendObject instanceof OneOrTwoThresholds threshold )
-        {
-            append = DataUtilities.toStringSafe( threshold );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
-                                                     + "outputImage path" );
-        }
-
-        // Non-default averaging types that should be qualified?
-        // #51670
-        SortedSet<EnsembleAverageType> types =
-                Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPoolDescription().getEnsembleAverageType() );
-
-        Optional<EnsembleAverageType> type =
-                types.stream()
-                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
-                                      && next != EnsembleAverageType.UNRECOGNIZED )
-                     .findFirst();
-
-        if ( type.isPresent() )
-        {
-            append += "_ENSEMBLE_" + type.get()
-                                         .name();
-        }
-
-        return append;
-    }
-
-    /**
      * Slices the statistics into two groups, one containing summary statistics the other containing raw statistics.
      * @param statistics the statistics to slice
      * @param qualifier a function that generates a grouping qualifier from a statistic
@@ -369,86 +292,6 @@ abstract class GraphicsWriter
 
         return statistics.get( 0 )
                          .getPoolMetadata();
-    }
-
-    /**
-     * Validates that the file object represented by the path does not already exist.
-     *
-     * @return true if the path is valid to write, false if it exists and is, therefore, invalid
-     */
-
-    private static boolean validatePath( Path path )
-    {
-        boolean fileExists = Files.exists( path );
-
-        // #81735-173 and #86077
-        if ( fileExists && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( "Cannot write to path {} because it already exists. This may occur when retrying several "
-                         + "format writers of which only some failed previously, but is otherwise unexpected behavior "
-                         + "that may indicate an error in format writing. The file has been retained and not modified.",
-                         path );
-        }
-
-        return !fileExists;
-    }
-
-    /**
-     * Attempts to delete a set of paths on encountering an error.
-     *
-     * @param pathsToDelete the paths to delete
-     */
-
-    private static void deletePaths( Set<Path> pathsToDelete )
-    {
-        // Clean up. This should happen anyway, but is essential for the writer to be "retry friendly" when the 
-        // failure to write is recoverable
-        LOGGER.debug( "Deleting the following paths that were created before an exception was encountered in the "
-                      + "writer: {}.",
-                      pathsToDelete );
-
-        for ( Path nextPath : pathsToDelete )
-        {
-            try
-            {
-                Files.deleteIfExists( nextPath );
-            }
-            catch ( IOException f )
-            {
-                LOGGER.error( "Failed to delete a path created before an exception was encountered: {}.",
-                              nextPath );
-            }
-        }
-    }
-
-    /**
-     * @param height the height
-     * @return the height if the height is greater than zero, else the {@link GraphicsWriter#DEFAULT_GRAPHIC_HEIGHT}.
-     */
-
-    private static int getGraphicHeight( int height )
-    {
-        if ( height > 0 )
-        {
-            return height;
-        }
-
-        return GraphicsWriter.DEFAULT_GRAPHIC_HEIGHT;
-    }
-
-    /**
-     * @param width the height
-     * @return the width if the width is greater than zero, else the {@link GraphicsWriter#DEFAULT_GRAPHIC_WIDTH}.
-     */
-
-    private static int getGraphicWidth( int width )
-    {
-        if ( width > 0 )
-        {
-            return width;
-        }
-
-        return GraphicsWriter.DEFAULT_GRAPHIC_WIDTH;
     }
 
     /**
@@ -667,5 +510,85 @@ abstract class GraphicsWriter
         this.outputDirectory = outputDirectory;
 
         LOGGER.debug( "Created a graphics format writer." );
+    }
+
+    /**
+     * Validates that the file object represented by the path does not already exist.
+     *
+     * @return true if the path is valid to write, false if it exists and is, therefore, invalid
+     */
+
+    private static boolean validatePath( Path path )
+    {
+        boolean fileExists = Files.exists( path );
+
+        // #81735-173 and #86077
+        if ( fileExists && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "Cannot write to path {} because it already exists. This may occur when retrying several "
+                         + "format writers of which only some failed previously, but is otherwise unexpected behavior "
+                         + "that may indicate an error in format writing. The file has been retained and not modified.",
+                         path );
+        }
+
+        return !fileExists;
+    }
+
+    /**
+     * Attempts to delete a set of paths on encountering an error.
+     *
+     * @param pathsToDelete the paths to delete
+     */
+
+    private static void deletePaths( Set<Path> pathsToDelete )
+    {
+        // Clean up. This should happen anyway, but is essential for the writer to be "retry friendly" when the
+        // failure to write is recoverable
+        LOGGER.debug( "Deleting the following paths that were created before an exception was encountered in the "
+                      + "writer: {}.",
+                      pathsToDelete );
+
+        for ( Path nextPath : pathsToDelete )
+        {
+            try
+            {
+                Files.deleteIfExists( nextPath );
+            }
+            catch ( IOException f )
+            {
+                LOGGER.error( "Failed to delete a path created before an exception was encountered: {}.",
+                              nextPath );
+            }
+        }
+    }
+
+    /**
+     * @param height the height
+     * @return the height if the height is greater than zero, else the {@link GraphicsWriter#DEFAULT_GRAPHIC_HEIGHT}.
+     */
+
+    private static int getGraphicHeight( int height )
+    {
+        if ( height > 0 )
+        {
+            return height;
+        }
+
+        return GraphicsWriter.DEFAULT_GRAPHIC_HEIGHT;
+    }
+
+    /**
+     * @param width the height
+     * @return the width if the width is greater than zero, else the {@link GraphicsWriter#DEFAULT_GRAPHIC_WIDTH}.
+     */
+
+    private static int getGraphicWidth( int width )
+    {
+        if ( width > 0 )
+        {
+            return width;
+        }
+
+        return GraphicsWriter.DEFAULT_GRAPHIC_WIDTH;
     }
 }

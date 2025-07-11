@@ -65,6 +65,7 @@ public class Scenario102
                     Path.of( "LGNN5_LGNN5_ESP_ROOT_MEAN_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_ROOT_MEAN_SQUARE_ERROR_NORMALIZED.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_SAMPLE_SIZE.csv" ),
+                    Path.of( "LGNN5_LGNN5_ESP_SCATTER_PLOT_151200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_STANDARD_DEVIATION.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_SUM_OF_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_THREAT_SCORE.csv" ),

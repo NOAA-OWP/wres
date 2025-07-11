@@ -540,12 +540,12 @@ public class NwmTimeSeriesTest
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
         long featureId = 18384141;
-        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
-                                                               new long[] { featureId },
-                                                               Instant.parse( "2019-10-22T02:00:00Z" ),
-                                                               ReferenceTimeType.T0,
-                                                               URI.create(
-                                                                       "https://example.gov/pub/data/nccf/com/nwm/prod/" ) ) )
+        try ( NwmTimeSeries nwmTimeSeries =
+                      new NwmTimeSeries( nwmProfile,
+                                         new long[] { featureId },
+                                         Instant.parse( "2019-10-22T02:00:00Z" ),
+                                         ReferenceTimeType.T0,
+                                         URI.create( "https://example.gov/pub/data/nccf/com/nwm/prod/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             TimeSeries<?> timeSeries =

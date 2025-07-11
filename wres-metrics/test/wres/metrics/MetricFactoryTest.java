@@ -34,6 +34,7 @@ import wres.metrics.singlevalued.MeanSquareError;
 import wres.metrics.singlevalued.MeanSquareErrorSkillScore;
 import wres.metrics.singlevalued.QuantileQuantileDiagram;
 import wres.metrics.singlevalued.RootMeanSquareError;
+import wres.metrics.singlevalued.ScatterPlot;
 import wres.metrics.singlevalued.SumOfSquareError;
 import wres.metrics.timeseries.TimeToPeakError;
 import wres.metrics.timeseries.TimeToPeakRelativeError;
@@ -134,6 +135,7 @@ public final class MetricFactoryTest
     public void testOfSingleValuedDiagram()
     {
         assertTrue( MetricFactory.ofSingleValuedDiagram( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
+        assertTrue( MetricFactory.ofSingleValuedDiagram( MetricConstants.SCATTER_PLOT ) instanceof ScatterPlot );
 
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,

@@ -15,22 +15,39 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
+import wres.statistics.generated.MetricName;
 
 /**
  * Tests the {@link QuantileQuantileDiagram}.
- * 
+ *
  * @author James Brown
  */
 public final class QuantileQuantileDiagramTest
 {
 
-    /**
-     * Default instance of a {@link QuantileQuantileDiagram}.
-     */
-
+    /** Default instance of a {@link QuantileQuantileDiagram}. */
     private QuantileQuantileDiagram qqd;
+
+    /** Observed quantiles. */
+    private static final DiagramMetric.DiagramMetricComponent OBSERVED_QUANTILES =
+            DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                .setName( MetricName.OBSERVED_QUANTILES )
+                                                .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                                .setMinimum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMinimum() )
+                                                .setMaximum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
+                                                .build();
+
+    /** Predicted quantiles. */
+    private static final DiagramMetric.DiagramMetricComponent PREDICTED_QUANTILES =
+            DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                .setName( MetricName.PREDICTED_QUANTILES )
+                                                .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                .setMinimum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMinimum() )
+                                                .setMaximum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
+                                                .build();
 
     @Before
     public void setupBeforeEachTest()
@@ -65,15 +82,15 @@ public final class QuantileQuantileDiagramTest
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
-                                                                                               .setUnits( "DIMENSIONLESS" ) )
+                                         .setMetric( OBSERVED_QUANTILES.toBuilder()
+                                                                       .setUnits( "DIMENSIONLESS" ) )
                                          .addAllValues( observedQ )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
-                                                                                                .setUnits( "DIMENSIONLESS" ) )
+                                         .setMetric( PREDICTED_QUANTILES.toBuilder()
+                                                                        .setUnits( "DIMENSIONLESS" ) )
                                          .addAllValues( predictedQ )
                                          .build();
 
@@ -97,14 +114,14 @@ public final class QuantileQuantileDiagramTest
 
         DiagramStatisticComponent oqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
-                                                                                               .setUnits( "DIMENSIONLESS" ) )
+                                         .setMetric( OBSERVED_QUANTILES.toBuilder()
+                                                                       .setUnits( "DIMENSIONLESS" ) )
                                          .build();
 
         DiagramStatisticComponent pqs =
                 DiagramStatisticComponent.newBuilder()
-                                         .setMetric( QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
-                                                                                                .setUnits( "DIMENSIONLESS" ) )
+                                         .setMetric( PREDICTED_QUANTILES.toBuilder()
+                                                                        .setUnits( "DIMENSIONLESS" ) )
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
