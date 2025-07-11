@@ -929,8 +929,23 @@ public class ChartDataFactory
                                           Pair<MetricDimension, MetricDimension> dimensions )
     {
         String orientationQualifier = "";
-        if ( scenarioCount > 1
-             && orientation == DatasetOrientation.BASELINE )
+
+        // Scatter plots are a special snowflake, no thresholds and fixed naming of the (up to two) datasets
+        if ( statistics.stream()
+                       .allMatch( s -> s.getMetricName() == MetricConstants.SCATTER_PLOT ) )
+        {
+            baseName = "";
+            if ( orientation == DatasetOrientation.RIGHT )
+            {
+                orientationQualifier = "Predicted";
+            }
+            else
+            {
+                orientationQualifier = "Baseline";
+            }
+        }
+        else if ( scenarioCount > 1
+                  && orientation == DatasetOrientation.BASELINE )
         {
             orientationQualifier = BASELINE_SCENARIO_LABEL;
         }

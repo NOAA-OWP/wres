@@ -69,7 +69,9 @@ public enum MetricConstants
 
     /** Difference in the mean Continuous Ranked Probability Score. */
     CONTINUOUS_RANKED_PROBABILITY_SCORE_DIFFERENCE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
-                                                    new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+                                                    new Limits( Double.NEGATIVE_INFINITY,
+                                                                Double.POSITIVE_INFINITY,
+                                                                Double.NaN ) ),
 
     /** Mean Continuous Ranked Probability Skill Score. */
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
@@ -221,6 +223,10 @@ public enum MetricConstants
     /** Ensemble Quantile-quantile diagram. */
     ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM,
                                         new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
+    /** Scatter plot. */
+    SCATTER_PLOT( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM,
+                  new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Rank Histogram. */
     RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM,
@@ -477,16 +483,32 @@ public enum MetricConstants
     SHARPNESS( MetricGroup.LBR, MetricGroup.CR_AND_LBR ),
 
     /** True positives. */
-    TRUE_POSITIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+    TRUE_POSITIVES( SampleDataGroup.DICHOTOMOUS,
+                    StatisticType.DOUBLE_SCORE,
+                    new Heritage( MetricConstants.CONTINGENCY_TABLE, null, null ),
+                    new Limits( 0.0, Double.POSITIVE_INFINITY, Double.NaN ),
+                    MetricGroup.CONTINGENCY_TABLE ),
 
     /** False positives.*/
-    FALSE_POSITIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+    FALSE_POSITIVES( SampleDataGroup.DICHOTOMOUS,
+                     StatisticType.DOUBLE_SCORE,
+                     new Heritage( MetricConstants.CONTINGENCY_TABLE, null, null ),
+                     new Limits( 0.0, Double.POSITIVE_INFINITY, 0.0 ),
+                     MetricGroup.CONTINGENCY_TABLE ),
 
     /** False negatives.*/
-    FALSE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+    FALSE_NEGATIVES( SampleDataGroup.DICHOTOMOUS,
+                     StatisticType.DOUBLE_SCORE,
+                     new Heritage( MetricConstants.CONTINGENCY_TABLE, null, null ),
+                     new Limits( 0.0, Double.POSITIVE_INFINITY, 0 ),
+                     MetricGroup.CONTINGENCY_TABLE ),
 
     /** True negatives. */
-    TRUE_NEGATIVES( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, MetricGroup.CONTINGENCY_TABLE ),
+    TRUE_NEGATIVES( SampleDataGroup.DICHOTOMOUS,
+                    StatisticType.DOUBLE_SCORE,
+                    new Heritage( MetricConstants.CONTINGENCY_TABLE, null, null ),
+                    new Limits( 0.0, Double.POSITIVE_INFINITY, Double.NaN ),
+                    MetricGroup.CONTINGENCY_TABLE ),
 
     /** The component of a univariate statistic that applies to the left-sided data within a pairing. */
     LEFT( MetricGroup.LRB ),
@@ -735,7 +757,9 @@ public enum MetricConstants
     {
         Objects.requireNonNull( inGroup );
 
-        return Objects.nonNull( this.inGroups ) && Arrays.asList( this.inGroups ).contains( inGroup );
+        return Objects.nonNull( this.inGroups )
+               && Arrays.asList( this.inGroups )
+                        .contains( inGroup );
     }
 
     /**
@@ -755,7 +779,8 @@ public enum MetricConstants
     }
 
     /**
-     * Returns true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise.
+     * Returns true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise. By
+     * default, a metric belongs to the {@link MetricGroup#NONE} group.
      *
      * @param inGroup the {@link MetricGroup}
      * @return true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise
@@ -766,7 +791,12 @@ public enum MetricConstants
     {
         Objects.requireNonNull( inGroup );
 
-        return Arrays.asList( this.metricGroups ).contains( inGroup );
+        if ( this.metricGroups.length == 0 )
+        {
+            return inGroup == MetricGroup.NONE;
+        }
+
+        return inGroup.contains( this );
     }
 
     /**
@@ -782,7 +812,8 @@ public enum MetricConstants
 
     public boolean isInGroup( SampleDataGroup inGroup, StatisticType outGroup )
     {
-        return isInGroup( inGroup ) && isInGroup( outGroup );
+        return isInGroup( inGroup )
+               && isInGroup( outGroup );
     }
 
     /**
@@ -794,9 +825,10 @@ public enum MetricConstants
 
     public boolean isAThresholdMetric()
     {
-        return !( this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
-                  || this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
-                  || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM );
+        return !( this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+                  || this.isInGroup( StatisticType.BOXPLOT_PER_POOL )
+                  || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM
+                  || this == MetricConstants.SCATTER_PLOT );
     }
 
     /**
@@ -807,9 +839,9 @@ public enum MetricConstants
 
     public boolean isContinuous()
     {
-        return !this.isInGroup( SampleDataGroup.DICHOTOMOUS )
-               && !this.isInGroup( SampleDataGroup.MULTICATEGORY )
-               && !this.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY );
+        return !( this.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                  || this.isInGroup( SampleDataGroup.MULTICATEGORY )
+                  || this.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY ) );
     }
 
     /**
@@ -820,8 +852,9 @@ public enum MetricConstants
 
     public boolean isSamplingUncertaintyAllowed()
     {
-        return !this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
-               && !this.isInGroup( StatisticType.BOXPLOT_PER_POOL );
+        return !( this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+                  || this.isInGroup( StatisticType.BOXPLOT_PER_POOL )
+                  || this == SCATTER_PLOT );
     }
 
     /**
@@ -845,7 +878,8 @@ public enum MetricConstants
     }
 
     /**
-     * @return a child metric or null if none is defined.
+     * @return a singleton child metric or null if none is defined, including when there is more than one child defined.
+     * @see #getChildren()
      */
 
     public MetricConstants getChild()
@@ -1183,7 +1217,8 @@ public enum MetricConstants
 
         public boolean contains( MetricConstants input )
         {
-            return getMetrics().contains( input );
+            return this.getMetrics()
+                       .contains( input );
         }
 
         /**
@@ -1200,14 +1235,15 @@ public enum MetricConstants
     }
 
     /**
-     * Collects together multiple parts of a single metric.
+     * Collects together metrics or metric parts into a group. An example of a metric grouping is
+     * {@link MetricGroup#UNIVARIATE_STATISTIC}. An example of a metric component group is a {@link MetricGroup#CR}.
      */
 
     public enum MetricGroup
     {
 
         /**
-         * Indicator for no decomposition.
+         * Indicator for no group, the default.
          */
 
         NONE,
@@ -1361,7 +1397,13 @@ public enum MetricConstants
         COUNT,
 
         /** A statistic. */
-        STATISTIC;
+        STATISTIC,
+
+        /** Observations. */
+        OBSERVATIONS,
+
+        /** Predictions. */
+        PREDICTIONS;
 
         /**
          * Returns a string representation.

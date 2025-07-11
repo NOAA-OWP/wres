@@ -8,7 +8,7 @@ option java_multiple_files = true;
 
 enum MetricName
 {
-    /*An enumeration of metric names.*/
+    /*An enumeration of names for metrics and their components.*/
       
     UNDEFINED = 0;
     BIAS_FRACTION = 1;
@@ -84,8 +84,6 @@ enum MetricName
     PREDICTED_QUANTILES = 71;
     COUNT = 72;
     BIN_UPPER_BOUND = 73;
-
-    // Score differences
     BIAS_FRACTION_DIFFERENCE = 74;
     COEFFICIENT_OF_DETERMINATION_DIFFERENCE = 75;
     PEARSON_CORRELATION_COEFFICIENT_DIFFERENCE = 76;
@@ -110,4 +108,7 @@ enum MetricName
     PROBABILITY_OF_DETECTION_DIFFERENCE = 95;
     PROBABILITY_OF_FALSE_DETECTION_DIFFERENCE = 96;
     FALSE_ALARM_RATIO_DIFFERENCE = 97;
+    SCATTER_PLOT = 98;
+    OBSERVATIONS = 99;
+    PREDICTIONS = 100;
 }

@@ -57,6 +57,7 @@ import wres.metrics.singlevalued.MedianError;
 import wres.metrics.singlevalued.QuantileQuantileDiagram;
 import wres.metrics.singlevalued.RootMeanSquareError;
 import wres.metrics.singlevalued.RootMeanSquareErrorNormalized;
+import wres.metrics.singlevalued.ScatterPlot;
 import wres.metrics.singlevalued.SumOfSquareError;
 import wres.metrics.singlevalued.VolumetricEfficiency;
 import wres.metrics.singlevalued.univariate.Maximum;
@@ -583,6 +584,10 @@ public final class MetricFactory
         if ( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.equals( metric ) )
         {
             return QuantileQuantileDiagram.of();
+        }
+        else if ( MetricConstants.SCATTER_PLOT.equals( metric ) )
+        {
+            return ScatterPlot.of();
         }
         else
         {

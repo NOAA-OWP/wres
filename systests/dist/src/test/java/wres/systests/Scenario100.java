@@ -91,6 +91,8 @@ public class Scenario100
                     Path.of( "LGNN5_LGNN5_HEFS_PROBABILITY_OF_FALSE_DETECTION.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_QUANTILE_QUANTILE_DIAGRAM_151200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_QUANTILE_QUANTILE_DIAGRAM_151200_SECONDS.png" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_SCATTER_PLOT_151200_SECONDS.csv" ),
+                    Path.of( "LGNN5_LGNN5_HEFS_SCATTER_PLOT_151200_SECONDS.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RANK_HISTOGRAM_151200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RANK_HISTOGRAM_151200_SECONDS.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_151200_SECONDS.csv" ),

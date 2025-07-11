@@ -26,7 +26,6 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
-import wres.datamodel.types.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -223,6 +222,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                           declaration,
                                                                           durationUnits,
                                                                           output );
+
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      append,
@@ -362,13 +362,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         {
             for ( MetricDimension nextDimension : dimensions )
             {
-                VectorOfDoubles doubles = CommaSeparatedDiagramWriter.getComponent( next, nextDimension, qualifier );
+                List<Double> doubles = CommaSeparatedDiagramWriter.getComponent( next, nextDimension, qualifier );
 
                 // Populate the values
                 double addMe = Double.NaN;
                 if ( row < doubles.size() )
                 {
-                    addMe = doubles.getDoubles()[row];
+                    addMe = doubles.get( row );
                 }
 
                 valuesToAdd.add( addMe );
@@ -386,13 +386,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @return a vector or null
      */
 
-    private static VectorOfDoubles getComponent( DiagramStatisticOuter diagram,
-                                                 MetricDimension name,
-                                                 String qualifier )
+    private static List<Double> getComponent( DiagramStatisticOuter diagram,
+                                              MetricDimension name,
+                                              String qualifier )
     {
         DiagramStatisticComponent component = diagram.getComponent( name, qualifier );
-        List<Double> values = component.getValuesList();
-        return VectorOfDoubles.of( values.toArray( new Double[0] ) );
+        return component.getValuesList();
     }
 
     /**
@@ -504,12 +503,21 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             return DataUtilities.toStringSafe( timeWindow, leadUnits );
         }
 
-        // Qualify all windows with the latest lead duration
-        return DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                     leadUnits )
-               + "_"
-               + leadUnits.name()
-                          .toUpperCase()
+        // Qualify all windows with the latest lead duration, unless it is the maximum value
+        String windowQualifier = "";
+
+        // Needs to be fully qualified, but this would change the file names, which is arguably a breaking change
+        // See GitHub ticket #540
+        if ( !timeWindow.getLatestLeadDuration()
+                        .equals( TimeWindowOuter.DURATION_MAX ) )
+        {
+            windowQualifier = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits )
+                              + "_"
+                              + leadUnits.name()
+                                         .toUpperCase();
+        }
+
+        return windowQualifier
                + CommaSeparatedDiagramWriter.getEnsembleAverageQualifierString( statistics );
     }
 

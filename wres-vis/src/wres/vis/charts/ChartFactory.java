@@ -1,6 +1,7 @@
 package wres.vis.charts;
 
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.io.File;
 import java.io.IOException;
@@ -343,7 +344,7 @@ public class ChartFactory
     }
 
     /**
-     * Returns a collection of verification diagrams.
+     * Returns a collection of diagrams.
      * @param statistics the statistics
      * @param graphicShape the shape of the graphic to plot
      * @param durationUnits the duration units
@@ -462,9 +463,12 @@ public class ChartFactory
                 XYPlot plot = chart.getXYPlot();
                 plot.setBackgroundPaint( Color.WHITE );
 
-                // Set the series renderer
+                // Set the chart theme
                 this.setChartTheme( chart );
-                this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+
+                // Set the series renderer
+                XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+                plot.setRenderer( renderer );
 
                 // Set the axis offsets to zero. Could abstract to setting chart theme above, but breaks test benchmarks
                 // for graphics scenarios
@@ -504,9 +508,12 @@ public class ChartFactory
                                     hasDiagonal, // Plots with a diagonal are always square, plots without, probably not
                                     !hasDiagonal ); // Plots with a diagonal should not show a zero range marker
 
-                // Set the series renderer
+                // Set the chart theme
                 this.setChartTheme( chart );
-                this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+
+                // Set the series renderer
+                XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+                plot.setRenderer( renderer );
             }
 
             chart.setAntiAlias( true );
@@ -635,7 +642,10 @@ public class ChartFactory
         chart.setAntiAlias( true );
         this.setChartTheme( chart );
         this.setChartPadding( chart );
-        this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+
+        // Set the series renderer
+        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+        plot.setRenderer( renderer );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, false ) )
@@ -1129,7 +1139,10 @@ public class ChartFactory
         this.setChartPadding( chart );
         this.setChartTheme( chart );
         XYPlot plot = chart.getXYPlot();
-        this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+
+        // Set the series renderer
+        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+        plot.setRenderer( renderer );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, false ) )
@@ -1204,7 +1217,12 @@ public class ChartFactory
         XYPlot reliabilityPlot = new XYPlot( reliability, domainAxis, primaryRangeAxis, null );
         this.setXYPlotAxes( reliabilityPlot, 0, 1, 0, 1, true, false );
         this.addDiagonalLine( reliabilityPlot );
-        this.setSeriesColorAndShape( reliabilityPlot, MetricConstants.RELIABILITY_DIAGRAM, !quantiles.isEmpty() );
+
+        // Set the series renderer
+        XYItemRenderer renderer = this.getSeriesColorAndShape( reliabilityPlot,
+                                                               MetricConstants.RELIABILITY_DIAGRAM,
+                                                               !quantiles.isEmpty() );
+        reliabilityPlot.setRenderer( renderer );
 
         XYPlot sampleSizePlot = new XYPlot( sampleSize, domainAxis, secondaryRangeAxis, null );
         this.setXYPlotAxes( sampleSizePlot, 0, 1, 0, 0, false, false );
@@ -1212,7 +1230,12 @@ public class ChartFactory
         // The reliability plot controls the legend, so remove legend items from the sample size plot
         LegendItemCollection noLegendItems = new LegendItemCollection();
         sampleSizePlot.setFixedLegendItems( noLegendItems );
-        this.setSeriesColorAndShape( sampleSizePlot, MetricConstants.RELIABILITY_DIAGRAM, !quantiles.isEmpty() );
+
+        // Set the series renderer
+        XYItemRenderer sampleRenderer = this.getSeriesColorAndShape( sampleSizePlot,
+                                                                     MetricConstants.RELIABILITY_DIAGRAM,
+                                                                     !quantiles.isEmpty() );
+        sampleSizePlot.setRenderer( sampleRenderer );
 
         CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot( domainAxis );
         combinedPlot.setGap( 5.0 );
@@ -1452,27 +1475,41 @@ public class ChartFactory
     }
 
     /**
-     * Sets the color and shape for each series.
+     * Gets the color and shape for each series depending on the parameters supplied
      *
      * @param plot the plot
      * @param metric the metric name
      * @param errorBars is true to plot error bars, false otherwise
+     * @return the renderer
      * @throws NullPointerException if the plot is null
      */
 
-    private void setSeriesColorAndShape( XYPlot plot, MetricConstants metric, boolean errorBars )
+    private XYItemRenderer getSeriesColorAndShape( XYPlot plot, MetricConstants metric, boolean errorBars )
     {
         XYItemRenderer renderer;
         if ( metric == MetricConstants.HISTOGRAM )
         {
             renderer = this.getBarRenderer( plot );
         }
+        else if ( metric == MetricConstants.SCATTER_PLOT )
+        {
+            double size = 4.0;
+            double delta = size / 2.0;
+            Shape shape = new Ellipse2D.Double( -delta, -delta, size, size );
+            renderer = this.getLineAndShapeRenderer( plot,
+                                                     errorBars,
+                                                     false,
+                                                     new Shape[] { shape } );
+        }
         else
         {
-            renderer = this.getLineAndShapeRenderer( plot, errorBars );
+            renderer = this.getLineAndShapeRenderer( plot,
+                                                     errorBars,
+                                                     true,
+                                                     DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
         }
 
-        plot.setRenderer( renderer );
+        return renderer;
     }
 
     /**
@@ -1480,13 +1517,19 @@ public class ChartFactory
      *
      * @param plot the plot
      * @param errorBars is true to plot error bars, false otherwise
+     * @param showLines is true to plot lines, otherwise shapes only
+     * @param shapes the shape sequence to use
      * @return the renderer
-     * @throws NullPointerException if the plot is null
+     * @throws NullPointerException if any nullable input is null
      */
 
-    private XYItemRenderer getLineAndShapeRenderer( XYPlot plot, boolean errorBars )
+    private XYItemRenderer getLineAndShapeRenderer( XYPlot plot,
+                                                    boolean errorBars,
+                                                    boolean showLines,
+                                                    Shape[] shapes )
     {
         Objects.requireNonNull( plot );
+        Objects.requireNonNull( shapes );
 
         Color[] colors = this.getSeriesColors();
 
@@ -1514,8 +1557,6 @@ public class ChartFactory
             renderer = new XYLineAndShapeRenderer();
         }
 
-        Shape[] shapes = DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE;
-
         int colorShapeIndex = 0;
         for ( Map.Entry<Integer, Integer> nextPair : seriesIndexes.entrySet() )
         {
@@ -1527,16 +1568,16 @@ public class ChartFactory
             renderer.setSeriesShape( leftIndex, shape );
             renderer.setSeriesShapesVisible( leftIndex, true );
             renderer.setSeriesShapesFilled( leftIndex, true );
-            renderer.setSeriesLinesVisible( leftIndex, true );
+            renderer.setSeriesLinesVisible( leftIndex, showLines );
 
-            // Paired series? Set this using the same color and shape, but dashed/unfilled
+            // Paired series? Set this using the same color and shape
             if ( leftIndex != rightIndex )
             {
                 renderer.setSeriesPaint( rightIndex, colors[colorShapeIndex] );
                 renderer.setSeriesShape( rightIndex, shape );
                 renderer.setSeriesShapesVisible( rightIndex, true );
                 renderer.setSeriesShapesFilled( rightIndex, false );
-                renderer.setSeriesLinesVisible( rightIndex, true );
+                renderer.setSeriesLinesVisible( rightIndex, showLines );
                 renderer.setSeriesVisibleInLegend( rightIndex, false );
                 renderer.setSeriesStroke( rightIndex,
                                           new BasicStroke( 1.0f,
@@ -2157,6 +2198,12 @@ public class ChartFactory
             baselineScenario = " (lighter)";
             mainScenarioAppender = " (darker)";
         }
+        else if ( metric == MetricConstants.SCATTER_PLOT )
+        {
+            baselineScenario = " (baseline)";
+            mainScenarioAppender = " (predicted)";
+        }
+
         String baselineScenarioFinal = baselineScenario;
         String mainScenarioAppenderFinal = mainScenarioAppender;
 
@@ -2606,6 +2653,11 @@ public class ChartFactory
         if ( metricName == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM )
         {
             legendTitle = "Name: ";
+        }
+        // Another special snowflake
+        else if ( metricName == MetricConstants.SCATTER_PLOT )
+        {
+            legendTitle = "";
         }
         // Lead-threshold
         else if ( chartType == ChartType.LEAD_THRESHOLD

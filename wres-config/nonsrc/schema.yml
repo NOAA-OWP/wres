@@ -1789,6 +1789,7 @@ definitions:
       - volumetric efficiency
       - volumetric efficiency difference
       - mean absolute error skill score
+      - scatter plot
 
   FormatEnum:
     title: The statistics serialization formats.

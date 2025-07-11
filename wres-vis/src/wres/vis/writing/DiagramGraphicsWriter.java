@@ -259,7 +259,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                             List<DiagramStatisticOuter> statistics,
                                             GraphicsHelper helper )
     {
-        String append;
+        String append = "";
 
         if ( appendObject instanceof TimeWindowOuter timeWindow )
         {
@@ -272,19 +272,15 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             {
                 append = DataUtilities.toStringSafe( timeWindow, leadUnits );
             }
-            else
+            // Needs to be fully qualified, but this would change the file names, which is arguably a breaking change
+            // See GitHub ticket #540
+            else if ( !timeWindow.getLatestLeadDuration()
+                                 .equals( TimeWindowOuter.DURATION_MAX ) )
             {
-                // This is not fully qualified, but making it so will be a breaking change. It will need to be fully
-                // qualified when arbitrary pools are supported: see #86646. At that time, use the time window safe
-                // string helpers in the DataUtilities class.
-                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
-
-                if ( !append.endsWith( "MAXDURATION" ) )
-                {
-                    append += "_"
-                              + leadUnits.name()
-                                         .toUpperCase();
-                }
+                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits )
+                         + "_"
+                         + leadUnits.name()
+                                    .toUpperCase();
             }
         }
         else if ( appendObject instanceof OneOrTwoThresholds threshold )
