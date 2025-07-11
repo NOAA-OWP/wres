@@ -430,18 +430,6 @@ class EvaluationUtilities
         Outputs outputs = declaration.formats()
                                      .outputs();
 
-        if ( outputs.hasNetcdf() )
-        {
-            // Use the template-based netcdf writer.
-            NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of( systemSettings,
-                                                                               declaration,
-                                                                               durationUnits,
-                                                                               outputDirectory );
-            writers.add( netcdfWriterDeprecated );
-            LOGGER.warn(
-                    "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
-        }
-
         if ( outputs.hasNetcdf2() )
         {
             // Use the newer from-scratch netcdf writer.
