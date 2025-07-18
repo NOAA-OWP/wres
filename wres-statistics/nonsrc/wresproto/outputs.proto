@@ -103,17 +103,6 @@ message Outputs
         // The units of the lead durations.
     }
 
-    message CsvFormat
-    {
-        // Comma Separated Values (CSV).
-    
-        NumericFormat options = 1;
-        // General format options.
-    }
-
-    CsvFormat csv = 3;
-    // Comma Separated Values.
-
     message NetcdfFormat
     {
         // Network Common Data Form (NetCDF).

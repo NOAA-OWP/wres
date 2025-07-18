@@ -41,7 +41,7 @@ class SubscriberNegotiatorTest
     {
         // Negotiator of PNG and CSV without any restrictions on subscribers 
         SubscriberNegotiator negotiator = new SubscriberNegotiator( this.fakeEvaluation,
-                                                                    Set.of( Format.PNG, Format.CSV ),
+                                                                    Set.of( Format.PNG, Format.CSV2 ),
                                                                     new SubscriberApprover.Builder().build() );
 
         // Register the offers first because the negotiator is blocking and we are testing in a single thread.
@@ -55,15 +55,6 @@ class SubscriberNegotiatorTest
                                                                                           .addFormats( Format.PNG ) )
                                                                     .build() );
 
-        // Register another offer
-        negotiator.registerAnOfferToDeliverFormats( EvaluationStatus.newBuilder()
-                                                                    .setClientId( "anotherClient" )
-                                                                    .setCompletionStatus( CompletionStatus.READY_TO_CONSUME )
-                                                                    .setConsumer( Consumer.newBuilder()
-                                                                                          .setConsumerId( "anotherConsumer" )
-                                                                                          .addFormats( Format.CSV ) )
-                                                                    .build() );
-
         // Register yet another offer
         negotiator.registerAnOfferToDeliverFormats( EvaluationStatus.newBuilder()
                                                                     .setClientId( "yetAnotherClient" )
@@ -71,7 +62,7 @@ class SubscriberNegotiatorTest
                                                                     .setConsumer( Consumer.newBuilder()
                                                                                           .setConsumerId( "yetAnotherConsumer" )
                                                                                           .addFormats( Format.PNG )
-                                                                                          .addFormats( Format.CSV ) )
+                                                                                          .addFormats( Format.CSV2 ) )
                                                                     .build() );
 
         // Register one more offer
@@ -87,8 +78,8 @@ class SubscriberNegotiatorTest
 
         Map<Format, String> expected = new EnumMap<>( Format.class );
         expected.put( Format.PNG, "yetAnotherConsumer" );
-        expected.put( Format.CSV, "yetAnotherConsumer" );
-        
+        expected.put( Format.CSV2, "yetAnotherConsumer" );
+
         assertEquals( expected, actual );
     }
 

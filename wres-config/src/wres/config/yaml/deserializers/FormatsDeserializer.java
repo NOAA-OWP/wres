@@ -104,7 +104,6 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
             case SVG -> builder.setSvg( Formats.SVG_FORMAT );
             case NETCDF -> builder.setNetcdf( Formats.NETCDF_FORMAT );
             case NETCDF2 -> builder.setNetcdf2( Formats.NETCDF2_FORMAT );
-            case CSV -> builder.setCsv( Formats.CSV_FORMAT );
             case CSV2 -> builder.setCsv2( Formats.CSV2_FORMAT );
             case PROTOBUF -> builder.setProtobuf( Formats.PROTOBUF_FORMAT );
             case PAIRS -> builder.setPairs( Formats.PAIR_FORMAT );
@@ -158,7 +157,6 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
             }
             // Formats without parameters that may be declared in a parametrized way (e.g., format: netcdf2)
             case NETCDF2 -> builder.setNetcdf2( Formats.NETCDF2_FORMAT );
-            case CSV -> builder.setCsv( Formats.CSV_FORMAT );
             case CSV2 -> builder.setCsv2( Formats.CSV2_FORMAT );
             case PROTOBUF -> builder.setProtobuf( Formats.PROTOBUF_FORMAT );
             case PAIRS -> builder.setPairs( Formats.PAIR_FORMAT );

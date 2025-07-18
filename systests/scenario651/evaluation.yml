@@ -40,5 +40,5 @@ metrics:
 decimal_format: '#0.000000'
 output_formats:
   - netcdf2
-  - csv
+  - csv2
   - pairs

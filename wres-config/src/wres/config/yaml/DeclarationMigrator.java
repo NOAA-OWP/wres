@@ -741,9 +741,6 @@ public class DeclarationMigrator
 
         switch ( output.getType() )
         {
-            case CSV, NUMERIC -> formatsBuilder.setCsv( Formats.CSV_FORMAT.toBuilder()
-                                                                          .setOptions( numericFormat )
-                                                                          .build() );
             case CSV2 -> formatsBuilder.setCsv2( Formats.CSV2_FORMAT.toBuilder()
                                                                     .setOptions( numericFormat )
                                                                     .build() );
