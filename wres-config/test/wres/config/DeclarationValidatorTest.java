@@ -1324,39 +1324,6 @@ class DeclarationValidatorTest
         );
     }
 
-    @Test
-    void testLegacyCsvWithDiagramMetricAndDatePoolsResultsInWarnings()
-    {
-        Metric metric = new Metric( MetricConstants.RELIABILITY_DIAGRAM, null );
-        Set<Metric> metrics = Set.of( metric );
-        Set<TimePools> timePools = Collections.singleton( TimePoolsBuilder.builder()
-                                                                          .period( java.time.Duration.ofHours( 3 ) )
-                                                                          .frequency( java.time.Duration.ofHours( 1 ) )
-                                                                          .build() );
-        Outputs formats = Outputs.newBuilder()
-                                 .setCsv( Outputs.CsvFormat.getDefaultInstance() )
-                                 .build();
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( this.defaultDataset )
-                                                                        .right( this.defaultDataset )
-                                                                        .validDatePools( timePools )
-                                                                        .referenceDatePools( timePools )
-                                                                        .metrics( metrics )
-                                                                        .formats( new Formats( formats ) )
-                                                                        .build();
-
-        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
-
-        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "does not support these metrics in "
-                                                                        + "combination with 'reference_date_pools",
-                                                                        StatusLevel.WARN ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "does not support these metrics in "
-                                                                        + "combination with 'valid_date_pools",
-                                                                        StatusLevel.WARN ) )
-        );
-    }
 
     @Test
     void testCategoricalMetricsWithoutEventThresholdsResultsInWarningAndError()
@@ -1394,7 +1361,7 @@ class DeclarationValidatorTest
     void testOutputFormatsWithDeprecatedOptionsResultsInWarnings()
     {
         Outputs formats = Outputs.newBuilder()
-                                 .setCsv( Outputs.CsvFormat.getDefaultInstance() )
+                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
                                  .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -1405,7 +1372,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The evaluation requested the 'csv' "
+                                                                        "The evaluation requested the 'netcdf' "
                                                                         + "format, which has been marked deprecated",
                                                                         StatusLevel.WARN ) )
         );

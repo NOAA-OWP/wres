@@ -20,7 +20,6 @@ import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ValueFilter;
-import wres.statistics.generated.Outputs.CsvFormat;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.Netcdf2Format;
 import wres.statistics.generated.Outputs.NumericFormat;
@@ -67,10 +66,6 @@ class MessageUtilitiesTest
                                                         .setEndDay( 2 )
                                                         .setEndMonth( 2 ) )
                                       .setOutputs( Outputs.newBuilder()
-                                                          .setCsv( CsvFormat.newBuilder()
-                                                                            .setOptions( NumericFormat.newBuilder()
-                                                                                                      .setDecimalFormat(
-                                                                                                              "0.0" ) ) )
                                                           .setPng( PngFormat.newBuilder()
                                                                             .setOptions( GraphicFormat.newBuilder()
                                                                                                       .setHeight( 600 )
@@ -186,21 +181,6 @@ class MessageUtilitiesTest
                                            .build();
 
         assertTrue( MessageUtilities.compare( sixteenth, seventeenth ) < 0 );
-
-        Evaluation eighteenth = Evaluation.newBuilder()
-                                          .setMeasurementUnit( "1" )
-                                          .build();
-
-        Evaluation nineteenth = Evaluation.newBuilder()
-                                          .setMeasurementUnit( "1" )
-                                          .setOutputs( Outputs.newBuilder()
-                                                              .setCsv( CsvFormat.newBuilder()
-                                                                                .setOptions( NumericFormat.newBuilder()
-                                                                                                          .setDecimalFormat(
-                                                                                                                  "0.0" ) ) ) )
-                                          .build();
-
-        assertTrue( MessageUtilities.compare( eighteenth, nineteenth ) < 0 );
     }
 
     @Test
@@ -212,9 +192,6 @@ class MessageUtilitiesTest
         assertEquals( 0, MessageUtilities.compare( Outputs.getDefaultInstance(), Outputs.getDefaultInstance() ) );
         // Compare full instance    
         Outputs zeroth = Outputs.newBuilder()
-                                .setCsv( CsvFormat.newBuilder()
-                                                  .setOptions( NumericFormat.newBuilder()
-                                                                            .setDecimalFormat( "0.0" ) ) )
                                 .setPng( PngFormat.newBuilder()
                                                   .setOptions( GraphicFormat.newBuilder()
                                                                             .setHeight( 600 )
@@ -239,22 +216,6 @@ class MessageUtilitiesTest
         assertEquals( zeroth, first );
         assertEquals( 0, MessageUtilities.compare( zeroth, zeroth ) );
         assertEquals( 0, MessageUtilities.compare( zeroth, first ) );
-        // Less than and greater than examples
-        Outputs second = Outputs.newBuilder()
-                                .setCsv( CsvFormat.newBuilder()
-                                                  .setOptions( NumericFormat.newBuilder()
-                                                                            .setDecimalFormat( "0.0" ) ) )
-                                .build();
-
-        assertTrue( MessageUtilities.compare( first, second ) > 0 );
-
-        Outputs third = Outputs.newBuilder()
-                               .setCsv( CsvFormat.newBuilder()
-                                                 .setOptions( NumericFormat.newBuilder()
-                                                                           .setDecimalFormat( "0.00" ) ) )
-                               .build();
-
-        assertTrue( MessageUtilities.compare( second, third ) < 0 );
 
         Outputs fourth = Outputs.newBuilder()
                                 .setPng( PngFormat.newBuilder()

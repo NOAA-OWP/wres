@@ -37,6 +37,5 @@ metrics:
 decimal_format: '#0.000000'
 duration_format: hours
 output_formats:
-  - csv
-  - pairs
   - csv2
+  - pairs

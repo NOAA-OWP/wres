@@ -24,9 +24,6 @@ message Consumer
         SVG = 1;
         // Scalable Vector Graphics (SVG).
 
-        CSV = 2;
-        // Comma Separated Values (CSV).
-
         NETCDF = 3;
         // Network Common Data Form (NetCDF).
 

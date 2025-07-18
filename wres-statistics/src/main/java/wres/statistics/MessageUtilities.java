@@ -67,11 +67,6 @@ public class MessageUtilities
             formats.add( Format.SVG );
         }
 
-        if ( outputs.hasCsv() )
-        {
-            formats.add( Format.CSV );
-        }
-
         if ( outputs.hasCsv2() )
         {
             formats.add( Format.CSV2 );

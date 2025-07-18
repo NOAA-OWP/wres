@@ -21,15 +21,10 @@ import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticsToFormatsRouter;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.events.subscribe.ConsumerFactory;
 import wres.statistics.MessageUtilities;
 import wres.vis.writing.PairsStatisticsGraphicsWriter;
-import wres.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
-import wres.writing.csv.statistics.CommaSeparatedDiagramWriter;
-import wres.writing.csv.statistics.CommaSeparatedDurationDiagramWriter;
-import wres.writing.csv.statistics.CommaSeparatedScoreWriter;
 import wres.writing.csv.statistics.CsvStatisticsWriter;
 import wres.writing.netcdf.NetcdfOutputWriter;
 import wres.writing.protobuf.ProtobufWriter;
@@ -143,13 +138,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                 PairsStatisticsGraphicsWriter.of( outputs, path ) );
         }
 
-        // Old-style CSV
-        if ( formats.contains( Format.CSV ) )
-        {
-            builder.addBoxplotConsumerPerPair( wres.config.components.Format.CSV,
-                                               CommaSeparatedBoxPlotWriter.of( this.declaration,
-                                                                               path ) );
-        }
 
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
                                                                     .build();
@@ -184,36 +172,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
         LOGGER.debug( "Creating a grouped statistics consumer for these formats: {}.", formats );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
-
-        // CSV
-        if ( formats.contains( Format.CSV ) )
-        {
-            // Formatted doubles to write
-            DoubleFunction<String> formatter = this.getDecimalFormatter( this.declaration );
-            Function<DoubleScoreComponentOuter, String> doubleMapper =
-                    format -> formatter.apply( format.getStatistic()
-                                                     .getValue() );
-
-            builder.addDiagramConsumer( wres.config.components.Format.CSV,
-                                        CommaSeparatedDiagramWriter.of( this.declaration,
-                                                                        path ) )
-                   .addBoxplotConsumerPerPool( wres.config.components.Format.CSV,
-                                               CommaSeparatedBoxPlotWriter.of( this.declaration,
-                                                                               path ) )
-                   .addDurationDiagramConsumer( wres.config.components.Format.CSV,
-                                                CommaSeparatedDurationDiagramWriter.of( this.declaration,
-                                                                                        path ) )
-                   .addDurationScoreConsumer( wres.config.components.Format.CSV,
-                                              CommaSeparatedScoreWriter.of( this.declaration,
-                                                                            path,
-                                                                            next -> MessageUtilities.getDuration( next.getStatistic()
-                                                                                                                      .getValue() )
-                                                                                                    .toString() ) )
-                   .addDoubleScoreConsumer( wres.config.components.Format.CSV,
-                                            CommaSeparatedScoreWriter.of( this.declaration,
-                                                                          path,
-                                                                          doubleMapper ) );
-        }
 
         // Graphics
         if ( this.hasGraphics( formats ) )

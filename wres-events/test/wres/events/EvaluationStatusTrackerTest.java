@@ -109,7 +109,7 @@ class EvaluationStatusTrackerTest
                                              "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
-                                                                             Set.of( Format.PNG, Format.CSV ),
+                                                                             Set.of( Format.PNG, Format.CSV2 ),
                                                                              0,
                                                                              subscriberApprover,
                                                                              new ProducerFlowController( evaluation ) ) )
@@ -133,7 +133,7 @@ class EvaluationStatusTrackerTest
             Consumer consumerTwo = Consumer.newBuilder()
                                            .setConsumerId( "anotherConsumer" )
                                            .addFormats( Format.PNG )
-                                           .addFormats( Format.CSV )
+                                           .addFormats( Format.CSV2 )
                                            .build();
 
             EvaluationStatus statusOne = EvaluationStatus.newBuilder()
@@ -154,7 +154,7 @@ class EvaluationStatusTrackerTest
             Map<Format, String> actual = tracker.getNegotiatedSubscribers();
             Map<Format, String> expected = new EnumMap<>( Format.class );
 
-            expected.put( Format.CSV, "anotherConsumer" );
+            expected.put( Format.CSV2, "anotherConsumer" );
             expected.put( Format.PNG, "anotherConsumer" );
 
             assertEquals( expected, actual );

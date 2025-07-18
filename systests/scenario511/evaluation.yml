@@ -40,5 +40,5 @@ threshold_sources:
 metrics:
   - sample size
 output_formats:
-  - csv
+  - csv2
   - pairs

@@ -103,16 +103,22 @@ message Outputs
         // The units of the lead durations.
     }
 
-    message CsvFormat
+    message NetcdfFormat
     {
-        // Comma Separated Values (CSV).
-    
-        NumericFormat options = 1;
-        // General format options.
+        // Network Common Data Form (NetCDF).
+
+        string template_path = 1;
+        // The path to a file that contains the NetCDF template.
+
+        string variable_name = 2;
+        // The name of the variable to use for geospatial information.
+        
+        bool gridded = 3;
+        // Whether the NetCDF is gridded or vector.        
     }
 
-    CsvFormat csv = 3;
-    // Comma Separated Values.
+    NetcdfFormat netcdf = 3;
+    // Network Common Data Form (NetCDF).
 
     message ProtobufFormat
     {

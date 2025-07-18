@@ -55,7 +55,7 @@ metrics:
   - relative operating characteristic diagram
 decimal_format: '#0.000000'
 output_formats:
-  - csv
+  - csv2
   - pairs
   - format: png
     orientation: threshold lead

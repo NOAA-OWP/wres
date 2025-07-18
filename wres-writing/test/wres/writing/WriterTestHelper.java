@@ -71,28 +71,6 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 public class WriterTestHelper
 {
     /**
-     * Returns a fake project configuration for a specified feature.
-     *
-     * @return fake project configuration
-     */
-
-    public static EvaluationDeclaration getMockedDeclaration( DecimalFormat formatter )
-    {
-        Outputs outputs = Outputs.newBuilder()
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                                             .setDecimalFormat( "0.0" )
-                                                                                             .build() ) )
-                                 .build();
-        Formats formats = new Formats( outputs );
-        return EvaluationDeclarationBuilder.builder()
-                                           .formats( formats )
-                                           .decimalFormat( formatter )
-                                           .durationFormat( ChronoUnit.SECONDS )
-                                           .build();
-    }
-
-    /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
      *
      * @return a box plot per pool for two pools

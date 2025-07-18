@@ -22,8 +22,7 @@ class SubscriberApproverTest
         // Empty approver is permissive
         SubscriberApprover approver = new SubscriberApprover.Builder().build();
 
-        assertAll( () -> assertTrue( approver.isApproved( Format.CSV, "goober" ) ),
-                   () -> assertTrue( approver.isApproved( Format.PNG, "doubleGoober" ) ) );
+        assertAll( () -> assertTrue( approver.isApproved( Format.PNG, "doubleGoober" ) ) );
     }
 
     @Test

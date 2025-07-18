@@ -1574,7 +1574,6 @@ class DeclarationFactoryTest
                   - netcdf2
                   - pairs
                   - csv2
-                  - format: csv
                   - format: png
                     width: 800
                     height: 600
@@ -1598,9 +1597,6 @@ class DeclarationFactoryTest
                                  .setCsv2( Outputs.Csv2Format.newBuilder()
                                                              .setOptions( numericFormat )
                                                              .build() )
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( numericFormat )
-                                                           .build() )
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
@@ -4058,7 +4054,6 @@ class DeclarationFactoryTest
                 output_formats:
                   - netcdf2
                   - csv2
-                  - csv
                   - pairs
                   - format: png
                     width: 1200
@@ -4081,9 +4076,6 @@ class DeclarationFactoryTest
                                  .setCsv2( Outputs.Csv2Format.newBuilder()
                                                              .setOptions( numericFormat )
                                                              .build() )
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( numericFormat )
-                                                           .build() )
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
