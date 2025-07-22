@@ -627,7 +627,7 @@ project(':wres-reading') {
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2'
 
         api('edu.ucar:cdm-core:5.7.0') {
             // Because we use slf4j, not jcl:
@@ -1079,12 +1079,12 @@ project(':wres-config') {
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.12'
 
         // For YAML (de)serialization.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.19.0'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.0'
-        api 'com.fasterxml.jackson.core:jackson-core:2.19.0'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0'
-        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
+        api 'com.fasterxml.jackson.core:jackson-core:2.19.2'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2'
+        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.2'
         implementation('com.hubspot.jackson:jackson-datatype-protobuf:0.9.18') {
             // Exclude old modules to eliminate several CVEs
             // Remove older protobuf version and include later version below
@@ -1538,10 +1538,10 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.9'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.19.0'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.0'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.0'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.17.0'
