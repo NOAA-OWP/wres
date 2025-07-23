@@ -14,7 +14,7 @@ import wres.config.MetricConstants.StatisticType;
 
 /**
  * An immutable store of statistics.
- * 
+ *
  * @author James Brown
  */
 
@@ -38,13 +38,16 @@ public class StatisticsStore
     /** Thread safe map for {@link DurationDiagramStatisticOuter}. */
     private final List<Future<List<DurationDiagramStatisticOuter>>> durationDiagrams = new ArrayList<>();
 
+    /** Thread safe map for {@link PairsStatisticOuter}. */
+    private final List<Future<List<PairsStatisticOuter>>> pairsStatistics = new ArrayList<>();
+
     /** Minimum sample size used when forming the statistics. */
     private final int minimumSampleSize;
 
     /**
      * Combines the input store with the current store into a new store (without mutating the current store). This 
      * method is eager and brings forward the calculation of all statistics in both stores.
-     * 
+     *
      * @param input the input store
      * @return the combined store
      * @throws NullPointerException if the input is null
@@ -72,7 +75,7 @@ public class StatisticsStore
 
     /**
      * Returns a {@link List} of {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @return the double score output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
@@ -86,7 +89,7 @@ public class StatisticsStore
 
     /**
      * Returns a {@link List} of {@link DurationScoreStatisticOuter}.
-     * 
+     *
      * @return the duration score output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
@@ -100,7 +103,7 @@ public class StatisticsStore
 
     /**
      * Returns a {@link List} of {@link DiagramStatisticOuter}.
-     * 
+     *
      * @return the diagram output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
@@ -114,7 +117,7 @@ public class StatisticsStore
 
     /**
      * Returns a {@link List} of {@link BoxplotStatisticOuter} per pair.
-     * 
+     *
      * @return the box plot output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
@@ -127,7 +130,7 @@ public class StatisticsStore
 
     /**
      * Returns a {@link List} of {@link BoxplotStatisticOuter} for each pool.
-     * 
+     *
      * @return the box plot output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
@@ -140,7 +143,7 @@ public class StatisticsStore
 
     /**
      * Returns a {@link List} of {@link DurationDiagramStatisticOuter}.
-     * 
+     *
      * @return the paired output
      * @throws StatisticException if the output could not be retrieved
      * @throws InterruptedException if the retrieval was interrupted
@@ -153,8 +156,22 @@ public class StatisticsStore
     }
 
     /**
+     * Returns a {@link List} of {@link PairsStatisticOuter}.
+     *
+     * @return the pairs statistics
+     * @throws StatisticException if the statistics could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
+     */
+
+    public List<PairsStatisticOuter> getPairsStatistics()
+            throws InterruptedException
+    {
+        return this.unwrap( StatisticType.PAIRS, this.pairsStatistics );
+    }
+
+    /**
      * Returns true if results are available for the input type, false otherwise.
-     * 
+     *
      * @param outGroup the {@link StatisticType} to test
      * @return true if results are available for the input, false otherwise
      */
@@ -162,14 +179,15 @@ public class StatisticsStore
     public boolean hasStatistic( StatisticType outGroup )
     {
         return switch ( outGroup )
-                {
-                    case DOUBLE_SCORE -> !this.doubleScores.isEmpty();
-                    case DURATION_SCORE -> !this.durationScores.isEmpty();
-                    case DIAGRAM -> !this.diagrams.isEmpty();
-                    case BOXPLOT_PER_PAIR -> !this.boxplotPerPair.isEmpty();
-                    case BOXPLOT_PER_POOL -> !this.boxplotPerPool.isEmpty();
-                    case DURATION_DIAGRAM -> !this.durationDiagrams.isEmpty();
-                };
+        {
+            case DOUBLE_SCORE -> !this.doubleScores.isEmpty();
+            case DURATION_SCORE -> !this.durationScores.isEmpty();
+            case DIAGRAM -> !this.diagrams.isEmpty();
+            case BOXPLOT_PER_PAIR -> !this.boxplotPerPair.isEmpty();
+            case BOXPLOT_PER_POOL -> !this.boxplotPerPool.isEmpty();
+            case DURATION_DIAGRAM -> !this.durationDiagrams.isEmpty();
+            case PAIRS -> !this.pairsStatistics.isEmpty();
+        };
     }
 
     /**
@@ -187,58 +205,41 @@ public class StatisticsStore
 
     public static class Builder
     {
-        /**
-         * Thread safe map for {@link DoubleScoreStatisticOuter}.
-         */
-
+        /** Thread safe map for {@link DoubleScoreStatisticOuter}. */
         private final ConcurrentLinkedQueue<Future<List<DoubleScoreStatisticOuter>>> doubleScoreInternal =
                 new ConcurrentLinkedQueue<>();
 
-        /**
-         * Thread safe map for {@link DurationScoreStatisticOuter}.
-         */
-
+        /** Thread safe map for {@link DurationScoreStatisticOuter}. */
         private final ConcurrentLinkedQueue<Future<List<DurationScoreStatisticOuter>>> durationScoreInternal =
                 new ConcurrentLinkedQueue<>();
 
-        /**
-         * Thread safe map for {@link DiagramStatisticOuter}.
-         */
-
+        /** Thread safe map for {@link DiagramStatisticOuter}. */
         private final ConcurrentLinkedQueue<Future<List<DiagramStatisticOuter>>> diagramsInternal =
                 new ConcurrentLinkedQueue<>();
 
-        /**
-         * Thread safe map for {@link BoxplotStatisticOuter} for each pair.
-         */
-
+        /** Thread safe map for {@link BoxplotStatisticOuter} for each pair. */
         private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPairInternal =
                 new ConcurrentLinkedQueue<>();
 
-        /**
-         * Thread safe map for {@link BoxplotStatisticOuter} for each pool.
-         */
-
+        /** Thread safe map for {@link BoxplotStatisticOuter} for each pool.*/
         private final ConcurrentLinkedQueue<Future<List<BoxplotStatisticOuter>>> boxplotPerPoolInternal =
                 new ConcurrentLinkedQueue<>();
 
-        /**
-         * Thread safe map for {@link DurationDiagramStatisticOuter}.
-         */
-
+        /** Thread safe map for {@link DurationDiagramStatisticOuter}. */
         private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> durationDiagramsInternal =
                 new ConcurrentLinkedQueue<>();
 
-        /**
-         * Minimum sample size used when forming the statistics.
-         */
+        /** Thread safe map for {@link PairsStatisticOuter}. */
+        private final ConcurrentLinkedQueue<Future<List<PairsStatisticOuter>>> pairsStatisticsInternal =
+                new ConcurrentLinkedQueue<>();
 
+        /** Minimum sample size used when forming the statistics. */
         private int minimumSampleSize;
 
         /**
          * Adds a new {@link DoubleScoreStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
-         * 
+         *
          * @param result the result
          * @return the builder
          */
@@ -253,7 +254,7 @@ public class StatisticsStore
         /**
          * Adds a new {@link DurationScoreStatisticOuter} for a collection of metrics to the internal store, merging with 
          * existing items that share the same key, as required.
-         * 
+         *
          * @param result the result
          * @return the builder
          */
@@ -268,7 +269,7 @@ public class StatisticsStore
         /**
          * Adds a new {@link DiagramStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
-         * 
+         *
          * @param result the result
          * @return the builder
          */
@@ -283,7 +284,7 @@ public class StatisticsStore
         /**
          * Adds a new {@link BoxplotStatisticOuter} per pair for a collection of metrics to the internal store, 
          * merging with existing items that share the same key, as required.
-         * 
+         *
          * @param result the result
          * @return the builder
          */
@@ -298,7 +299,7 @@ public class StatisticsStore
         /**
          * Adds a new {@link BoxplotStatisticOuter} per pool for a collection of metrics to the internal store, 
          * merging with existing items that share the same key, as required.
-         * 
+         *
          * @param result the result
          * @return the builder
          */
@@ -313,7 +314,7 @@ public class StatisticsStore
         /**
          * Adds a new {@link DurationDiagramStatisticOuter} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
-         * 
+         *
          * @param result the result
          * @return the builder
          */
@@ -326,8 +327,23 @@ public class StatisticsStore
         }
 
         /**
+         * Adds a new {@link PairsStatisticOuter} for a collection of metrics to the internal store, merging with
+         * existing  items that share the same key, as required.
+         *
+         * @param result the result
+         * @return the builder
+         */
+
+        public Builder addPairsStatistics( Future<List<PairsStatisticOuter>> result )
+        {
+            this.pairsStatisticsInternal.add( result );
+
+            return this;
+        }
+
+        /**
          * Adds an existing set of statistics to the builder.
-         * 
+         *
          * @param project the statistics
          * @return the builder
          * @throws InterruptedException if the retrieval of the inputs was interrupted
@@ -373,7 +389,7 @@ public class StatisticsStore
 
         /**
          * Sets the minimum sample size for statistics calculation.
-         * 
+         *
          * @param minimumSampleSize the minimum sample size
          * @return the builder
          */
@@ -386,7 +402,7 @@ public class StatisticsStore
 
         /**
          * Returns a {@link StatisticsStore}.
-         * 
+         *
          * @return a {@link StatisticsStore}
          */
 
@@ -399,7 +415,7 @@ public class StatisticsStore
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param builder the builder
      */
 
@@ -411,13 +427,14 @@ public class StatisticsStore
         this.boxplotPerPair.addAll( builder.boxplotPerPairInternal );
         this.boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
         this.durationDiagrams.addAll( builder.durationDiagramsInternal );
+        this.pairsStatistics.addAll( builder.pairsStatisticsInternal );
         this.minimumSampleSize = builder.minimumSampleSize;
     }
 
     /**
      * Unwraps a map of values that are wrapped in {@link Future} by calling {@link Future#get()} on each value and
      * returning a map of the unwrapped entries.
-     * 
+     *
      * @param <T> the type of statistic
      * @param statsGroup the {@link StatisticType} for error logging
      * @param wrapped the list of values wrapped in {@link Future}

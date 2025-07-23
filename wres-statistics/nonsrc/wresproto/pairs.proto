@@ -11,15 +11,21 @@ option java_multiple_files = true;
 
 message Pairs
 {
-    /*A message that encapsulated pairs. The time-series composition of the 
-    paired values is respected by the message. Pairs are decribed with real
+    /*A message that encapsulates pairs. The time-series composition of the 
+    paired values is respected by the message. Pairs are described with real
     numbers, but could be probabilities or categories. When these cases emerge, 
     further clarification will be needed, such as the type and the category
     names associated with the natural numbers that form the pairs.*/
 
     repeated TimeSeriesOfPairs time_series = 1;
     // Zero or more time-series of pairs.
-    
+
+    repeated string left_variable_names = 2;
+    // The variable names of the left values, in order of appearance.
+
+    repeated string right_variable_names = 3;
+    // The variable names of the right values, in order of appearance.
+
     message TimeSeriesOfPairs
     {
         // A time-series of paired values.

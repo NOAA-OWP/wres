@@ -2807,7 +2807,7 @@ public class ChartFactory
 
         return switch ( statisticType )
         {
-            case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM -> ChartType.UNIQUE;
+            case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM, PAIRS -> ChartType.UNIQUE;
             case DIAGRAM, DOUBLE_SCORE, DURATION_SCORE -> ChartType.LEAD_THRESHOLD;
         };
     }

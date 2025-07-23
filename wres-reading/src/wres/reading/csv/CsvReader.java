@@ -201,7 +201,7 @@ public class CsvReader implements TimeSeriesReader
                 {
                     DatasetOrientation lrb = dataSource.getDatasetOrientation();
 
-                    LOGGER.warn( "The following variable names were encountered in a {} forecast csv data source with "
+                    LOGGER.warn( "The following variable names were encountered in a {} csv data source with "
                                  + "URI {} that were not declared in the project: {}",
                                  lrb,
                                  dataSource.getUri(),

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "wresproto/metric_name.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "PairsMetricProto";
+option java_multiple_files = true;
+
+message PairsMetric
+{
+    // A message that encapsulates a metric composed of paired values.
+
+    MetricName name = 1;
+    // Metric name.
+
+    string units = 2;
+    // Units of the metric.
+}

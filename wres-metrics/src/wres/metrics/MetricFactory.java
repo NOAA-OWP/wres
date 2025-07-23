@@ -9,6 +9,7 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.types.Probability;
@@ -64,6 +65,7 @@ import wres.metrics.singlevalued.univariate.Maximum;
 import wres.metrics.singlevalued.univariate.Mean;
 import wres.metrics.singlevalued.univariate.Minimum;
 import wres.metrics.singlevalued.univariate.StandardDeviation;
+import wres.metrics.timeseries.SingleValuedTimeSeriesPlot;
 import wres.metrics.timeseries.TimeToPeakError;
 import wres.metrics.timeseries.TimeToPeakRelativeError;
 import wres.metrics.timeseries.TimingErrorDurationStatistics;
@@ -240,6 +242,24 @@ public final class MetricFactory
     ofSingleValuedTimeSeriesMetrics( MetricConstants... metric )
     {
         return MetricFactory.ofSingleValuedTimeSeriesMetrics( ForkJoinPool.commonPool(), metric );
+    }
+
+    /**
+     * <p>Returns a {@link MetricCollection} of metrics that consume a {@link Pool} with single-valued
+     * pairs and produce {@link PairsStatisticOuter}.</p>
+     *
+     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
+     *
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if a metric identifier is not recognized
+     */
+
+    public static MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, PairsStatisticOuter, PairsStatisticOuter>
+    ofSingleValuedPairsMetrics( MetricConstants... metric )
+    {
+        return MetricFactory.ofSingleValuedPairsMetrics( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -518,6 +538,32 @@ public final class MetricFactory
     }
 
     /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link Pool} with single-valued pairs
+     * and produce {@link PairsStatisticOuter}.
+     *
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if a metric identifier is not recognized
+     */
+
+    public static MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, PairsStatisticOuter, PairsStatisticOuter>
+    ofSingleValuedPairsMetrics( ExecutorService executor,
+                                MetricConstants... metric )
+    {
+        Builder<Pool<TimeSeries<Pair<Double, Double>>>, PairsStatisticOuter, PairsStatisticOuter>
+                builder =
+                Builder.of();
+        for ( MetricConstants next : metric )
+        {
+            builder.addMetric( MetricFactory.ofSingleValuedPairs( next ) );
+        }
+        builder.setExecutorService( executor );
+        return builder.build();
+    }
+
+    /**
      * Returns a {@link Metric} that consumes single-valued pairs and produces {@link DoubleScoreStatisticOuter}.
      *
      * @param metric the metric identifier
@@ -780,6 +826,28 @@ public final class MetricFactory
             case TIME_TO_PEAK_RELATIVE_ERROR -> TimeToPeakRelativeError.of( random );
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         };
+    }
+
+    /**
+     * Returns a {@link Metric} that consumes a {@link Pool} with single-valued pairs and produces
+     * {@link PairsStatisticOuter}.
+     *
+     * @param metric the metric identifier
+     * @return a metric
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public static Metric<Pool<TimeSeries<Pair<Double, Double>>>, PairsStatisticOuter>
+    ofSingleValuedPairs( MetricConstants metric )
+    {
+        if ( metric == MetricConstants.TIME_SERIES_PLOT )
+        {
+            return SingleValuedTimeSeriesPlot.of();
+        }
+        else
+        {
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+        }
     }
 
     /**

@@ -24,6 +24,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.writing.WriterTestHelper;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
@@ -612,6 +613,72 @@ class CsvStatisticsWriterTest
         }
     }
 
+    @Test
+    void testWritePairsStatistics() throws IOException
+    {
+        // Get some statistics with a reliability diagram
+        Statistics statistics = this.getPairsStatistics();
+        Evaluation evaluation = this.getEvaluation();
+
+        // Create a path on an in-memory file system
+        String fileName = "evaluation.csv";
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( "test", fileName );
+            Path csvPath = Files.createFile( pathToStore );
+
+            // Create the writer and write
+            try ( CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
+                                                                       csvPath,
+                                                                       false ) )
+            {
+                writer.apply( statistics );
+            }
+
+            // Assert content
+            List<String> actual = Files.readAllLines( pathToStore );
+
+            assertEquals( 9, actual.size() );
+
+            assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
+
+            // Make selected assertions
+            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+                                     + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
+                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,T0,,"
+                                     + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,,"
+                                     + "1,,,,,,,1.23E7";
+
+            assertEquals( lineOneExpected, actual.get( 1 ) );
+
+            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+                                       + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
+                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                       + "GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,VALID TIME,,"
+                                       + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,"
+                                       + ",1,,,,,,,1.23036E7";
+
+            assertEquals( lineThreeExpected, actual.get( 3 ) );
+
+            String lineSixExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+                                     + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
+                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,observed,,"
+                                     + ",-Infinity,Infinity,,2,,,,,,,12.0";
+
+            assertEquals( lineSixExpected, actual.get( 6 ) );
+
+            String lineEightExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+                                       + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
+                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                       + "GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,predicted,,,-Infinity,Infinity,,2,,,,"
+                                       + ",,,15.7";
+
+            assertEquals( lineEightExpected, actual.get( 8 ) );
+        }
+    }
+
     /**
      * @param isBaselinePool is true for a baseline pool, false for a regular pool
      * @param poolNumber the pool number
@@ -741,16 +808,37 @@ class CsvStatisticsWriterTest
     private Statistics getDiagramStatistics()
     {
         // Get a diagram
-        List<DiagramStatisticOuter> boxes = WriterTestHelper.getReliabilityDiagramForOnePool();
+        List<DiagramStatisticOuter> diagrams = WriterTestHelper.getReliabilityDiagramForOnePool();
 
-        Pool pool = boxes.get( 0 )
+        Pool pool = diagrams.get( 0 )
+                            .getPoolMetadata()
+                            .getPoolDescription();
+
+        return Statistics.newBuilder()
+                         .addAllDiagrams( diagrams.stream()
+                                                  .map( DiagramStatisticOuter::getStatistic )
+                                                  .toList() )
+                         .setPool( pool )
+                         .build();
+    }
+
+    /**
+     * @return statistics that include a reliability diagram.
+     */
+
+    private Statistics getPairsStatistics()
+    {
+        // Get a diagram
+        List<PairsStatisticOuter> pairs = WriterTestHelper.getPairsStatisticsForOnePool();
+
+        Pool pool = pairs.get( 0 )
                          .getPoolMetadata()
                          .getPoolDescription();
 
         return Statistics.newBuilder()
-                         .addAllDiagrams( boxes.stream()
-                                               .map( DiagramStatisticOuter::getStatistic )
-                                               .toList() )
+                         .addAllPairsStatistics( pairs.stream()
+                                                      .map( PairsStatisticOuter::getStatistic )
+                                                      .toList() )
                          .setPool( pool )
                          .build();
     }

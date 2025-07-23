@@ -111,4 +111,5 @@ enum MetricName
     SCATTER_PLOT = 98;
     OBSERVATIONS = 99;
     PREDICTIONS = 100;
+    TIME_SERIES_PLOT = 101;
 }

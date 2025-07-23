@@ -265,7 +265,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
     {
         // Create a filter based on input
         Predicate<MetricConstants> tester;
-        if ( Objects.nonNull( inGroup ) && Objects.nonNull( outGroup ) )
+        if ( Objects.nonNull( inGroup )
+             && Objects.nonNull( outGroup ) )
         {
             tester = a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup );
         }

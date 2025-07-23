@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
+
 import org.junit.Test;
 
 import wres.config.MetricConstants;
@@ -36,12 +37,13 @@ import wres.metrics.singlevalued.QuantileQuantileDiagram;
 import wres.metrics.singlevalued.RootMeanSquareError;
 import wres.metrics.singlevalued.ScatterPlot;
 import wres.metrics.singlevalued.SumOfSquareError;
+import wres.metrics.timeseries.SingleValuedTimeSeriesPlot;
 import wres.metrics.timeseries.TimeToPeakError;
 import wres.metrics.timeseries.TimeToPeakRelativeError;
 
 /**
  * Tests the {@link MetricFactory}.
- * 
+ *
  * @author James Brown
  */
 public final class MetricFactoryTest
@@ -79,7 +81,7 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)} 
+     * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)}
      */
     @Test
     public void testOfDiscreteProbabilityScore()
@@ -90,7 +92,8 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofDiscreteProbabilityScore( MetricConstants.MAIN ) );
+                                                          () -> MetricFactory.ofDiscreteProbabilityScore(
+                                                                  MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
@@ -155,7 +158,8 @@ public final class MetricFactoryTest
 
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofDiscreteProbabilityDiagram( MetricConstants.MAIN ) );
+                                                          () -> MetricFactory.ofDiscreteProbabilityDiagram(
+                                                                  MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
@@ -200,6 +204,20 @@ public final class MetricFactoryTest
         // Unrecognized metric
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
                                                           () -> MetricFactory.ofSingleValuedTimeSeries( MetricConstants.MAIN ) );
+        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedPairs(MetricConstants)}.
+     */
+    @Test
+    public void testSingleValuedPairs()
+    {
+        assertTrue( MetricFactory.ofSingleValuedPairs( MetricConstants.TIME_SERIES_PLOT ) instanceof SingleValuedTimeSeriesPlot );
+
+        // Unrecognized metric
+        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
+                                                          () -> MetricFactory.ofSingleValuedPairs( MetricConstants.MAIN ) );
         assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
     }
 
@@ -297,6 +315,16 @@ public final class MetricFactoryTest
     {
         assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesMetrics( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
         assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesMetrics( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedPairsMetrics(MetricConstants...)}.
+     * @throws MetricParameterException if the metric construction fails
+     */
+    @Test
+    public void testOfSingleValuedPairsCollection() throws MetricParameterException
+    {
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedPairsMetrics( MetricConstants.TIME_SERIES_PLOT ) ) );
     }
 
 }
