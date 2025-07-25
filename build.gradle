@@ -1577,7 +1577,7 @@ project(':wres-tasker') {
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.33'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.34'
     }
 
     apply plugin: 'application'
