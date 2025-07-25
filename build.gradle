@@ -351,10 +351,10 @@ project(':wres-datamodel') {
         api 'javax.measure:unit-api:2.2'
         runtimeOnly 'si.uom:si-units:2.1'
         implementation 'tech.units:indriya:2.2.2'
-        implementation 'systems.uom:systems-ucum:2.1'
+        implementation 'systems.uom:systems-ucum:2.2'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         implementation 'si.uom:si-quantity:2.1'
-        implementation 'systems.uom:systems-quantity:2.1'
+        implementation 'systems.uom:systems-quantity:2.2'
 
         // For geometries
         api group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
