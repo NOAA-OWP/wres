@@ -384,6 +384,11 @@ public class StatisticsStore
                 this.addDurationDiagramStatistics( CompletableFuture.completedFuture( project.getDurationDiagramStatistics() ) );
             }
 
+            if ( project.hasStatistic( StatisticType.PAIRS ) )
+            {
+                this.addPairsStatistics( CompletableFuture.completedFuture( project.getPairsStatistics() ) );
+            }
+
             return this;
         }
 

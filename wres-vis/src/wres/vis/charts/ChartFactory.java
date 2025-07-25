@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TimeZone;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -79,6 +78,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeWindowSlicer;
 import wres.statistics.MessageUtilities;
@@ -92,6 +92,7 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramCom
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.PairsMetric;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.SummaryStatistic;
@@ -154,6 +155,9 @@ public class ChartFactory
 
     /** Re-used string. */
     private static final String OF_THE = " of the ";
+
+    /** Date-time format string. */
+    private static final String YYYY_MM_DD_HH = "yyyy-MM-dd+HH";
 
     /** Series colors. */
     private final Color[] seriesColors;
@@ -349,12 +353,16 @@ public class ChartFactory
      * @param graphicShape the shape of the graphic to plot
      * @param durationUnits the duration units
      * @return a map of diagrams by data slice key
-     * @throws ChartBuildingException If the chart fails to construct for any reason
+     * @throws NullPointerException if any input is null
+     * @throws ChartBuildingException if the chart fails to build for any other reason
      */
     public Map<Object, JFreeChart> getDiagramCharts( List<DiagramStatisticOuter> statistics,
                                                      GraphicShape graphicShape,
                                                      ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( durationUnits );
+
         ConcurrentMap<Object, JFreeChart> results = new ConcurrentSkipListMap<>();
 
         // Use the metadata from the first element
@@ -630,9 +638,10 @@ public class ChartFactory
 
         // Set the date/time format. See GitHub ticket #360
         DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
+
                                               .getDomainAxis();
         TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
-        SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
+        SimpleDateFormat format = new SimpleDateFormat( YYYY_MM_DD_HH );
         format.setTimeZone( timeZone );
         dateAxis.setDateFormatOverride( format );
         dateAxis.setTimeZone( timeZone );
@@ -664,11 +673,15 @@ public class ChartFactory
      * @param statistics the metric output to plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance
-     * @throws ChartBuildingException if the chart fails to build for any reason
+     * @throws NullPointerException if any input is null
+     * @throws ChartBuildingException if the chart fails to build for any other reason
      */
     public JFreeChart getBoxplotChart( List<BoxplotStatisticOuter> statistics,
                                        ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( durationUnits );
+
         // Use the metadata from the first element, plus the aggregate time window
         BoxplotStatisticOuter first = statistics.get( 0 );
 
@@ -773,11 +786,15 @@ public class ChartFactory
      * @param statistics the metric output to plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance for each pool
-     * @throws ChartBuildingException if the chart fails to build for any reason
+     * @throws NullPointerException if any input is null
+     * @throws ChartBuildingException if the chart fails to build for any other reason
      */
     public Map<TimeWindowOuter, JFreeChart> getBoxplotChartPerPool( List<BoxplotStatisticOuter> statistics,
                                                                     ChronoUnit durationUnits )
     {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( durationUnits );
+
         Map<TimeWindowOuter, JFreeChart> results = new ConcurrentSkipListMap<>();
 
         // Find the metadata for the first element, which is sufficient here
@@ -824,6 +841,101 @@ public class ChartFactory
                       results.keySet() );
 
         return Collections.unmodifiableMap( results );
+    }
+
+    /**
+     * Creates a pairs chart.
+     *
+     * @param statistics the metric output to plot
+     * @param durationUnits the duration units
+     * @return a {@link JFreeChart} instance for each pool
+     * @throws NullPointerException if any input is null
+     * @throws ChartBuildingException if the chart fails to build for any other reason
+     */
+    public JFreeChart getPairsChart( PairsStatisticOuter statistics,
+                                     ChronoUnit durationUnits )
+    {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( durationUnits );
+
+        MetricConstants metricName = statistics.getMetricName();
+        PairsMetric metric = statistics.getStatistic()
+                                       .getMetric();
+        String valueUnits = metric.getUnits();
+        PoolMetadata metadata = statistics.getPoolMetadata();
+
+        EnsembleAverageType ensembleAverageType = metadata.getPoolDescription()
+                                                          .getEnsembleAverageType();
+
+        // Determine the output type
+        ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
+
+        // Build the dataset
+        XYDataset source = ChartDataFactory.ofPairsStatistics( statistics );
+
+        TimeWindowOuter timeWindow = metadata.getTimeWindow();
+        ChartTitleParameters parameters = new ChartTitleParameters( Set.of( metadata ),
+                                                                    timeWindow,
+                                                                    Pair.of( metricName, null ),
+                                                                    durationUnits,
+                                                                    chartType,
+                                                                    metricName.getMetricOutputGroup(),
+                                                                    ensembleAverageType,
+                                                                    new TreeSet<>(),
+                                                                    null,
+                                                                    null );
+        String title = this.getChartTitle( parameters );
+
+        // Create the titles
+        String domainTitle = "Time [UTC]";
+
+        String variableName = this.getVariableName( metadata, statistics.getMetricName(), null );
+
+        if ( variableName.isEmpty() )
+        {
+            variableName = "Value";
+        }
+
+        String rangeTitle = variableName
+                            + " ["
+                            + valueUnits
+                            + "]";
+
+        JFreeChart chart = org.jfree.chart.ChartFactory.createTimeSeriesChart( title,
+                                                                               domainTitle,
+                                                                               rangeTitle,
+                                                                               source,
+                                                                               true,
+                                                                               false,
+                                                                               false );
+
+        DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
+                                              .getDomainAxis();
+        TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
+        SimpleDateFormat format = new SimpleDateFormat( YYYY_MM_DD_HH );
+        format.setTimeZone( timeZone );
+        dateAxis.setDateFormatOverride( format );
+        dateAxis.setTimeZone( timeZone );
+
+        XYPlot plot = chart.getXYPlot();
+
+        chart.setAntiAlias( true );
+        this.setChartTheme( chart );
+        this.setChartPadding( chart );
+
+        // Set the series renderer
+        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, false );
+        plot.setRenderer( renderer );
+
+        // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation
+        // indicates that it reduces the quality of the box plots
+        chart.setAntiAlias( false );
+
+        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Autofit axes
+
+        LOGGER.debug( "Created a pairs plot for metric {}.", metricName );
+
+        return chart;
     }
 
     /**
@@ -1118,7 +1230,7 @@ public class ChartFactory
             DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
                                                   .getDomainAxis();
             TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
-            SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
+            SimpleDateFormat format = new SimpleDateFormat( YYYY_MM_DD_HH );
             format.setTimeZone( timeZone );
             dateAxis.setDateFormatOverride( format );
             dateAxis.setTimeZone( timeZone );
@@ -1499,12 +1611,26 @@ public class ChartFactory
             renderer = this.getLineAndShapeRenderer( plot,
                                                      errorBars,
                                                      false,
+                                                     true,
+                                                     false,
                                                      new Shape[] { shape } );
+        }
+        // Omit shapes and do not dash duplicate series
+        else if ( metric.isInGroup( StatisticType.PAIRS ) )
+        {
+            renderer = this.getLineAndShapeRenderer( plot,
+                                                     errorBars,
+                                                     true,
+                                                     false,
+                                                     false,
+                                                     DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
         }
         else
         {
             renderer = this.getLineAndShapeRenderer( plot,
                                                      errorBars,
+                                                     true,
+                                                     true,
                                                      true,
                                                      DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
         }
@@ -1517,8 +1643,10 @@ public class ChartFactory
      *
      * @param plot the plot
      * @param errorBars is true to plot error bars, false otherwise
-     * @param showLines is true to plot lines, otherwise shapes only
+     * @param showLines is true to plot lines
+     * @param showShapes is true to plot shapes
      * @param shapes the shape sequence to use
+     * @param dashMultiSeries is true to use a dashed line for plots with multiple overlapping series
      * @return the renderer
      * @throws NullPointerException if any nullable input is null
      */
@@ -1526,6 +1654,8 @@ public class ChartFactory
     private XYItemRenderer getLineAndShapeRenderer( XYPlot plot,
                                                     boolean errorBars,
                                                     boolean showLines,
+                                                    boolean showShapes,
+                                                    boolean dashMultiSeries,
                                                     Shape[] shapes )
     {
         Objects.requireNonNull( plot );
@@ -1534,7 +1664,7 @@ public class ChartFactory
         Color[] colors = this.getSeriesColors();
 
         // Determine the number of series and whether they are paired, as in multi-series plots
-        Map<Integer, Integer> seriesIndexes = this.getSeriesIndexes( plot );
+        Map<Integer, SortedSet<Integer>> seriesIndexes = this.getPairedSeriesIndexes( plot );
 
         // Too many series for the default color sequence? Generate a sequence instead
         int seriesCount = seriesIndexes.size();
@@ -1558,32 +1688,40 @@ public class ChartFactory
         }
 
         int colorShapeIndex = 0;
-        for ( Map.Entry<Integer, Integer> nextPair : seriesIndexes.entrySet() )
+        for ( Map.Entry<Integer, SortedSet<Integer>> nextPair : seriesIndexes.entrySet() )
         {
             int leftIndex = nextPair.getKey();
-            int rightIndex = nextPair.getValue();
+            SortedSet<Integer> rightIndexes = nextPair.getValue();
 
             renderer.setSeriesPaint( leftIndex, colors[colorShapeIndex] );
             Shape shape = shapes[colorShapeIndex % shapes.length];
             renderer.setSeriesShape( leftIndex, shape );
-            renderer.setSeriesShapesVisible( leftIndex, true );
+            renderer.setSeriesShapesVisible( leftIndex, showShapes );
             renderer.setSeriesShapesFilled( leftIndex, true );
             renderer.setSeriesLinesVisible( leftIndex, showLines );
 
             // Paired series? Set this using the same color and shape
-            if ( leftIndex != rightIndex )
+            if ( !Objects.equals( Set.of( leftIndex ), rightIndexes ) )
             {
-                renderer.setSeriesPaint( rightIndex, colors[colorShapeIndex] );
-                renderer.setSeriesShape( rightIndex, shape );
-                renderer.setSeriesShapesVisible( rightIndex, true );
-                renderer.setSeriesShapesFilled( rightIndex, false );
-                renderer.setSeriesLinesVisible( rightIndex, showLines );
-                renderer.setSeriesVisibleInLegend( rightIndex, false );
-                renderer.setSeriesStroke( rightIndex,
-                                          new BasicStroke( 1.0f,
-                                                           BasicStroke.CAP_ROUND,
-                                                           BasicStroke.JOIN_ROUND,
-                                                           1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
+                for ( int rightIndex : rightIndexes )
+                {
+                    renderer.setSeriesPaint( rightIndex, colors[colorShapeIndex] );
+                    renderer.setSeriesShape( rightIndex, shape );
+                    renderer.setSeriesShapesVisible( rightIndex, showShapes );
+                    renderer.setSeriesShapesFilled( rightIndex, false );
+                    renderer.setSeriesLinesVisible( rightIndex, showLines );
+                    renderer.setSeriesVisibleInLegend( rightIndex, false );
+
+                    // Use a dashed line for the duplicate series in multi-series plots?
+                    if ( dashMultiSeries )
+                    {
+                        renderer.setSeriesStroke( rightIndex,
+                                                  new BasicStroke( 1.0f,
+                                                                   BasicStroke.CAP_ROUND,
+                                                                   BasicStroke.JOIN_ROUND,
+                                                                   1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
+                    }
+                }
             }
 
             colorShapeIndex++;
@@ -1593,35 +1731,55 @@ public class ChartFactory
     }
 
     /**
-     * Returns the series index pairs. If this is a multi-series plot, the indexes within the pairs will differ,
-     * otherwise they will be the same.
+     * Returns the series index pairs for coordinating renderers across common datasets. If this is a multi-series
+     * plot, the indexes within the pairs will differ and there could be multiple indexes on the right hand side,
+     * otherwise they will be the same, i.e., no series whose rendering should be coordinated.
+     *
      * @param plot the plot
      * @return the series indexes
      */
 
-    private Map<Integer, Integer> getSeriesIndexes( XYPlot plot )
+    private Map<Integer, SortedSet<Integer>> getPairedSeriesIndexes( XYPlot plot )
     {
-        // Map the series indexes by key
+        // Map the series indexes by key, accounting for series with duplicate names
         int seriesCount = plot.getSeriesCount();
-        Map<String, Integer> seriesByKey = new HashMap<>();
+        Map<String, SortedSet<Integer>> seriesByKey = new HashMap<>();
         for ( int i = 0; i < seriesCount; i++ )
         {
-            seriesByKey.put( plot.getDataset()
-                                 .getSeriesKey( i )
-                                 .toString(),
-                             i );
+            String seriesName = plot.getDataset()
+                                    .getSeriesKey( i )
+                                    .toString();
+            if ( seriesByKey.containsKey( seriesName ) )
+            {
+                seriesByKey.get( seriesName )
+                           .add( i );
+            }
+            else
+            {
+                SortedSet<Integer> container = new TreeSet<>();
+                container.add( i );
+                seriesByKey.put( seriesName,
+                                 container );
+            }
         }
 
-        Map<Integer, Integer> indexes = new TreeMap<>();
-        for ( Map.Entry<String, Integer> nextEntry : seriesByKey.entrySet() )
+        Map<Integer, SortedSet<Integer>> indexes = new HashMap<>();
+        for ( Map.Entry<String, SortedSet<Integer>> nextEntry : seriesByKey.entrySet() )
         {
             String key = nextEntry.getKey();
-            Integer index = nextEntry.getValue();
+            SortedSet<Integer> existing = nextEntry.getValue();
 
-            if ( !key.endsWith( "(dashed)" ) )
+            // For plots that merge a predicted and a baseline scenario into one plot, ensure that the first (predicted)
+            // key points to the baseline key for merging. In all other cases, retain the existing pairings created
+            // above
+            if ( !key.endsWith( BASELINE_SCENARIO_LABEL ) )
             {
-                String paired = key + " (dashed)";
-                indexes.put( index, seriesByKey.getOrDefault( paired, index ) );
+                String paired = key + BASELINE_SCENARIO_LABEL;
+                Set<Integer> dashedKeys = seriesByKey.getOrDefault( paired, existing );
+                SortedSet<Integer> combined = new TreeSet<>( existing );
+                combined.addAll( dashedKeys );
+                combined.remove( existing.first() );
+                indexes.put( existing.first(), combined );
             }
         }
 
@@ -1883,7 +2041,7 @@ public class ChartFactory
         String scenarioName = this.getScenarioNameForTitle( metadatas, metricName, isSummaryStatistic );
         name += " for" + scenarioName + "predictions of";
 
-        name += this.getVariableNameForTitle( exampleMetadata, metricName, metricComponentName );
+        name += " " + this.getVariableName( exampleMetadata, metricName, metricComponentName );
 
         if ( !this.isMultiScenarioPlot( metadatas, metricName, isSummaryStatistic ) )
         {
@@ -2259,7 +2417,7 @@ public class ChartFactory
     }
 
     /**
-     * Uncovers the variable name for the plot title.
+     * Uncovers the variable name.
      *
      * @param metadata the sample metadata
      * @param metric the metric name
@@ -2268,7 +2426,7 @@ public class ChartFactory
      * @throws NullPointerException if the metadata or metric is null
      */
 
-    private String getVariableNameForTitle( PoolMetadata metadata, MetricConstants metric, MetricConstants component )
+    private String getVariableName( PoolMetadata metadata, MetricConstants metric, MetricConstants component )
     {
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( metric );
@@ -2276,7 +2434,7 @@ public class ChartFactory
         Evaluation evaluation = metadata.getEvaluation();
 
         // Default to left
-        String variableName = " ";
+        String variableName = "";
 
         if ( Objects.nonNull( component ) )
         {
