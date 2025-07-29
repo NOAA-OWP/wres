@@ -366,8 +366,8 @@ project(':wres-datamodel') {
         testImplementation 'org.mockito:mockito-core:5.18.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
@@ -449,8 +449,8 @@ project(':wres-io') {
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
@@ -604,8 +604,8 @@ project(':wres-writing') {
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
@@ -717,8 +717,8 @@ project(':wres-reading') {
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
         
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
@@ -757,8 +757,8 @@ project(':wres-eventdetection') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -793,8 +793,8 @@ project(':wres-metrics') {
         testImplementation 'org.mockito:mockito-core:5.18.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
@@ -915,8 +915,8 @@ project(':wres-statistics') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
     }
 
     // Facilitate unit tests with JUnit
@@ -1031,8 +1031,8 @@ project(':wres-vis') {
         runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.1.0-alpha1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
@@ -1142,9 +1142,9 @@ project(':wres-config') {
         // Mocking help
         testImplementation 'org.mockito:mockito-core:5.18.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -1345,8 +1345,8 @@ project(':wres-worker') {
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
         
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
     }
 
     test {
@@ -1562,8 +1562,8 @@ project(':wres-tasker') {
 
         testImplementation 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.4'
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // To generate fake certificates and keys for testing
         testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.81'
@@ -1702,8 +1702,8 @@ project(':wres-eventsbroker') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
     }
 
     // Facilitate unit tests with JUnit
@@ -1747,8 +1747,8 @@ project(':wres-events') {
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-core:5.18.0'
@@ -1773,8 +1773,8 @@ project(':wres-http') {
         implementation 'org.apache.commons:commons-lang3:3.17.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
         testImplementation 'org.mockito:mockito-core:5.2.0'
     }
 
@@ -2069,8 +2069,8 @@ dependencies {
     compileOnly 'io.soabase.record-builder:record-builder-core:47'
 
     // JUnit 5 API and runtime
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
 
     // Backwards compatibility for JUnit 4 tests
     testCompileOnly 'junit:junit:4.13.2'
