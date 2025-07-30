@@ -1,5 +1,6 @@
 package wres.vis.charts;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,11 +16,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.vis.TestDataGenerator;
@@ -45,7 +48,7 @@ class ChartFactoryTest
     }
 
     @Test
-    void getScoreChartsProducesOneChartWithFourSeriesAndTenItems()
+    void testGetScoreChartsProducesOneChartWithFourSeriesAndTenItems()
     {
         List<DoubleScoreStatisticOuter> statistics = TestDataGenerator.getScoresForIssuedTimeAndLeadDurationPools();
 
@@ -68,7 +71,7 @@ class ChartFactoryTest
     }
 
     @Test
-    void getScoreChartsProducesOneChartWithOneSeriesAndTwentyFourItems()
+    void testGetScoreChartsProducesOneChartWithOneSeriesAndTwentyFourItems()
     {
         List<DoubleScoreStatisticOuter> statistics = TestDataGenerator.getScoresForIssuedTimePools();
 
@@ -91,7 +94,7 @@ class ChartFactoryTest
     }
 
     @Test
-    void getDiagramChartByLeadAndThresholdProducesThreeChartsWithTwoSeries()
+    void testGetDiagramChartByLeadAndThresholdProducesThreeChartsWithTwoSeries()
     {
         List<DiagramStatisticOuter> statistics =
                 TestDataGenerator.getDiagramStatisticsForTwoThresholdsAndThreeLeadDurations();
@@ -113,7 +116,7 @@ class ChartFactoryTest
     }
 
     @Test
-    void getDiagramChartByThresholdAndLeadProducesTwoChartsWithThreeSeries()
+    void testGetDiagramChartByThresholdAndLeadProducesTwoChartsWithThreeSeries()
     {
         List<DiagramStatisticOuter> statistics =
                 TestDataGenerator.getDiagramStatisticsForTwoThresholdsAndThreeLeadDurations();
@@ -135,7 +138,7 @@ class ChartFactoryTest
     }
 
     @Test
-    void getDurationScoreChartProducesOneChartWithSixStatistics()
+    void testGetDurationScoreChartProducesOneChartWithSixStatistics()
     {
         List<DurationScoreStatisticOuter> statistics = TestDataGenerator.getTimeToPeakErrorStatistics();
 
@@ -150,7 +153,7 @@ class ChartFactoryTest
     }
 
     @Test
-    void getDurationDiagramChartProducesOneChartWithTenStatistics()
+    void testGetDurationDiagramChartProducesOneChartWithTenStatistics()
     {
         List<DurationDiagramStatisticOuter> statistics = TestDataGenerator.getTimeToPeakErrors();
 
@@ -198,4 +201,47 @@ class ChartFactoryTest
             assertEquals( 3, dataset.getItemCount( 0 ) ); // Boxes
         }
     }
+
+    @Test
+    void testGetPairsChartProducesOneChartWithFourSeries()
+    {
+        PairsStatisticOuter statistics = TestDataGenerator.getPairsStatisticsForOnePoolWithTwoTimeSeries();
+
+        JFreeChart chart = this.chartFactory.getPairsChart( statistics, ChronoUnit.HOURS );
+
+        XYDataset dataset = chart.getXYPlot()
+                                 .getDataset();
+
+        assertAll( () -> assertEquals( 4, dataset.getSeriesCount() ),
+                   () -> assertEquals( DatasetOrientation.LEFT
+                                       + GraphicsUtils.PAIR_THEME_SEPARATOR
+                                       + 1,
+                                       dataset.getSeriesKey( 0 ) ),
+                   () -> assertEquals( DatasetOrientation.RIGHT
+                                       + GraphicsUtils.PAIR_THEME_SEPARATOR
+                                       + 1,
+                                       dataset.getSeriesKey( 1 ) ),
+                   () -> assertEquals( DatasetOrientation.LEFT
+                                       + GraphicsUtils.PAIR_THEME_SEPARATOR
+                                       + 2,
+                                       dataset.getSeriesKey( 2 ) ),
+                   () -> assertEquals( DatasetOrientation.RIGHT
+                                       + GraphicsUtils.PAIR_THEME_SEPARATOR
+                                       + 2,
+                                       dataset.getSeriesKey( 3 ) ),
+                   () -> assertEquals( DatasetOrientation.LEFT.toString(),
+                                       chart.getLegend()
+                                            .getSources()[0]
+                                               .getLegendItems()
+                                               .get( 0 )
+                                               .getLabel() ),
+                   () -> assertEquals( DatasetOrientation.RIGHT.toString(),
+                                       chart.getLegend()
+                                            .getSources()[0]
+                                               .getLegendItems()
+                                               .get( 1 )
+                                               .getLabel() ) );
+
+    }
+
 }

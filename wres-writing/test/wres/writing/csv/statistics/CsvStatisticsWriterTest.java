@@ -829,16 +829,13 @@ class CsvStatisticsWriterTest
     private Statistics getPairsStatistics()
     {
         // Get a diagram
-        List<PairsStatisticOuter> pairs = WriterTestHelper.getPairsStatisticsForOnePool();
+        PairsStatisticOuter pairs = WriterTestHelper.getPairsStatisticsForOnePool();
 
-        Pool pool = pairs.get( 0 )
-                         .getPoolMetadata()
+        Pool pool = pairs.getPoolMetadata()
                          .getPoolDescription();
 
         return Statistics.newBuilder()
-                         .addAllPairsStatistics( pairs.stream()
-                                                      .map( PairsStatisticOuter::getStatistic )
-                                                      .toList() )
+                         .addPairsStatistics( pairs.getStatistic() )
                          .setPool( pool )
                          .build();
     }

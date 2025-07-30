@@ -62,6 +62,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
+import static wres.vis.charts.GraphicsUtils.PAIR_THEME_LABEL_GENERATOR;
+import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 import static wres.vis.charts.GraphicsUtils.PREDICTED_SCENARIO_LABEL;
 
 import wres.datamodel.pools.PoolMetadata;
@@ -662,7 +664,7 @@ public class ChartFactory
             this.setLegendTitle( chart, legendTitle, false );
         }
 
-        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Autofit axes
+        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Auto-fit axes
 
         return chart;
     }
@@ -775,7 +777,7 @@ public class ChartFactory
         this.setChartTheme( chart );
         this.setDomainAxisForLeadDurations( plot );
         this.setChartPadding( chart );
-        this.setXYPlotAxes( plot, 0, 0, 0, 0, false, true ); // Autofit axes
+        this.setXYPlotAxes( plot, 0, 0, 0, 0, false, true ); // Auto-fit axes
 
         return chart;
     }
@@ -881,7 +883,7 @@ public class ChartFactory
                                                                     chartType,
                                                                     metricName.getMetricOutputGroup(),
                                                                     ensembleAverageType,
-                                                                    new TreeSet<>(),
+                                                                    Collections.emptySortedSet(),
                                                                     null,
                                                                     null );
         String title = this.getChartTitle( parameters );
@@ -931,7 +933,13 @@ public class ChartFactory
         // indicates that it reduces the quality of the box plots
         chart.setAntiAlias( false );
 
-        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Autofit axes
+        this.setXYPlotAxes( chart.getXYPlot(),
+                            0,
+                            0,
+                            0,
+                            0,
+                            false,
+                            true ); // Auto-fit axes
 
         LOGGER.debug( "Created a pairs plot for metric {}.", metricName );
 
@@ -1073,7 +1081,7 @@ public class ChartFactory
 
         this.setChartTheme( chart );
         this.setChartPadding( chart );
-        this.setXYPlotAxes( plot, 0, 0, 0, 0, false, true ); // Autofit axes
+        this.setXYPlotAxes( plot, 0, 0, 0, 0, false, true ); // Auto-fit axes
 
         return chart;
     }
@@ -1262,7 +1270,7 @@ public class ChartFactory
             this.setLegendTitle( chart, legendTitle, false );
         }
 
-        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Autofit axes
+        this.setXYPlotAxes( chart.getXYPlot(), 0, 0, 0, 0, false, true ); // Auto-fit axes
 
         return chart;
     }
@@ -1699,6 +1707,7 @@ public class ChartFactory
             renderer.setSeriesShapesVisible( leftIndex, showShapes );
             renderer.setSeriesShapesFilled( leftIndex, true );
             renderer.setSeriesLinesVisible( leftIndex, showLines );
+            renderer.setLegendItemLabelGenerator( PAIR_THEME_LABEL_GENERATOR );
 
             // Paired series? Set this using the same color and shape
             if ( !Objects.equals( Set.of( leftIndex ), rightIndexes ) )
@@ -1749,6 +1758,12 @@ public class ChartFactory
             String seriesName = plot.getDataset()
                                     .getSeriesKey( i )
                                     .toString();
+
+            if ( seriesName.contains( PAIR_THEME_SEPARATOR ) )
+            {
+                seriesName = seriesName.substring( 0, seriesName.indexOf( PAIR_THEME_SEPARATOR ) );
+            }
+
             if ( seriesByKey.containsKey( seriesName ) )
             {
                 seriesByKey.get( seriesName )
@@ -2199,7 +2214,9 @@ public class ChartFactory
              && ensembleAverageType != EnsembleAverageType.NONE
              // Single-valued metrics or dichotomous metrics defined for single-valued pairs only
              && ( metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
-                  || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS ) && !hasDecisionThresholds ) )
+                  || metricName.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
+                  || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                       && !hasDecisionThresholds ) )
              && metricName != MetricConstants.SAMPLE_SIZE
              && metricComponentName != MetricConstants.LEFT )
         {
@@ -2370,7 +2387,8 @@ public class ChartFactory
                                                              .getRightDataName()
                                                              .isEmpty() )
                                              .map( s -> s.getEvaluation()
-                                                         .getRightDataName() + mainScenarioAppenderFinal )
+                                                         .getRightDataName()
+                                                        + mainScenarioAppenderFinal )
                                              .collect( Collectors.toSet() );
 
         if ( scenarioNames.isEmpty() )
@@ -2383,7 +2401,8 @@ public class ChartFactory
                                                                      .getBaselineDataName()
                                                                      .isEmpty() )
                                                      .map( s -> s.getEvaluation()
-                                                                 .getBaselineDataName() + baselineScenarioFinal )
+                                                                 .getBaselineDataName()
+                                                                + baselineScenarioFinal )
                                                      .collect( Collectors.toSet() );
 
         if ( baselineScenarioNames.isEmpty() )

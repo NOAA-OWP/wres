@@ -729,12 +729,12 @@ public class WriterTestHelper
     }
 
     /**
-     * Returns a {@link List} containing a {@link PairsStatisticOuter} for one pool.
+     * Returns a {@link PairsStatisticOuter} for one pool.
      *
      * @return the pairs statistics for one pool
      */
 
-    public static List<PairsStatisticOuter> getPairsStatisticsForOnePool()
+    public static PairsStatisticOuter getPairsStatisticsForOnePool()
     {
         wres.datamodel.scale.TimeScaleOuter timeScale =
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
@@ -819,7 +819,7 @@ public class WriterTestHelper
                                                  .build();
 
         // Fake output wrapper.
-        return List.of( PairsStatisticOuter.of( statistic, metadata ) );
+        return PairsStatisticOuter.of( statistic, metadata );
     }
 
 }

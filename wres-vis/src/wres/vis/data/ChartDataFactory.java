@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
+import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
@@ -683,7 +684,7 @@ public class ChartDataFactory
                                             .getStatistics()
                                             .getRightVariableNamesList();
 
-
+        int seriesNumber = 1;
         for ( Pairs.TimeSeriesOfPairs nextSeries : statistics.getStatistic()
                                                              .getStatistics()
                                                              .getTimeSeriesList() )
@@ -695,12 +696,12 @@ public class ChartDataFactory
             // Create a placeholder time-series for each variable
             for ( String nextLeftName : leftNames )
             {
-                TimeSeries next = new TimeSeries( nextLeftName );
+                TimeSeries next = new TimeSeries( nextLeftName + PAIR_THEME_SEPARATOR + seriesNumber );
                 leftSeries.add( next );
             }
             for ( String nextRightName : rightNames )
             {
-                TimeSeries next = new TimeSeries( nextRightName );
+                TimeSeries next = new TimeSeries( nextRightName + PAIR_THEME_SEPARATOR + seriesNumber );
                 rightSeries.add( next );
             }
 
@@ -733,6 +734,7 @@ public class ChartDataFactory
 
             leftSeries.forEach( returnMe::addSeries );
             rightSeries.forEach( returnMe::addSeries );
+            seriesNumber++;
         }
 
         return returnMe;
