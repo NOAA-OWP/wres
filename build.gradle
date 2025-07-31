@@ -1076,7 +1076,7 @@ project(':wres-config') {
 
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
 
-        runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.12'
+        runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:4.0.7'
 
         // For YAML (de)serialization.
         implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
