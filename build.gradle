@@ -642,7 +642,7 @@ project(':wres-reading') {
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:33.4.8-jre'
 
-        implementation 'org.apache.commons:commons-compress:1.27.1'
+        implementation 'org.apache.commons:commons-compress:1.28.0'
 
         // CDM-S3 dependency for reading NetCDF from S3/GCS
         runtimeOnly 'edu.ucar:cdm-s3:5.8.0'
