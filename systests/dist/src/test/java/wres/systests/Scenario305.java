@@ -27,9 +27,9 @@ public class Scenario305
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.csv" ),
+            Set.of( Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv.gz" ) );
 

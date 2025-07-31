@@ -27,13 +27,11 @@ public class Scenario1001
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR.csv" ),
+            Set.of( Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR.png" ),
-                    Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR_STATISTIC.csv" ),
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR_STATISTIC.png" ),
-                    Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_RELATIVE_ERROR.csv" ),
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_RELATIVE_ERROR.png" ),
-                    Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC.csv" ),
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC.png" ),
                     Path.of( "pairs.csv.gz" ) );
     
