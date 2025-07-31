@@ -28,11 +28,10 @@ public class Scenario404
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "baseline_pairs.csv.gz" ),
-                    Path.of( "GLOO2X_GLOO2_GLOO2X_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
+                    Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "GLOO2X_GLOO2_GLOO2X_Operational_Single-Valued_Forecasts_MEAN_ERROR.png" ),
-                    Path.of( "GLOO2X_GLOO2_GLOO2X_Operational_Single-Valued_Forecasts_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
                     Path.of( "GLOO2X_GLOO2_GLOO2X_Operational_Single-Valued_Forecasts_MEAN_SQUARE_ERROR_SKILL_SCORE.png" ),
-                    Path.of( "GLOO2X_GLOO2_GLOO2X_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
                     Path.of( "GLOO2X_GLOO2_GLOO2X_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv.gz" ) );
     

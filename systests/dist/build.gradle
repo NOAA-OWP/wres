@@ -360,6 +360,7 @@ dependencies
     testImplementation 'com.google.guava:guava-testlib:31.1-jre'
     testImplementation 'com.google.guava:guava:31.1-jre'
     testImplementation 'junit:junit:4.12'
+    testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation 'org.mockito:mockito-core:4.3.1'
     testImplementation 'org.slf4j:slf4j-api:1.8.0-beta2'
 
