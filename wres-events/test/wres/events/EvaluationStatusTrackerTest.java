@@ -28,7 +28,7 @@ import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Outputs;
-import wres.statistics.generated.Outputs.NetcdfFormat;
+import wres.statistics.generated.Outputs.Netcdf2Format;
 
 /**
  * Tests the {@link EvaluationStatusTracker}.
@@ -103,7 +103,7 @@ class EvaluationStatusTrackerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                             .setNetcdf2( Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationStatusTrackerTest.connections,
                                              "aClient" );
@@ -206,7 +206,7 @@ class EvaluationStatusTrackerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                             .setNetcdf2( Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationStatusTrackerTest.connections,
                                              "aClient" );
@@ -319,7 +319,7 @@ class EvaluationStatusTrackerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                             .setNetcdf2( Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationStatusTrackerTest.connections,
                                              "aClient" );
