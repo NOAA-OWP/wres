@@ -23,7 +23,7 @@ import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.ReferenceTime;
 
 /**
- * A plot of single-valued time-series of pairs.
+ * A plot of time-series of single-valued pairs.
  *
  * @author James Brown
  */

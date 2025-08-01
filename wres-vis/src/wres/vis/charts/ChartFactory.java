@@ -66,6 +66,7 @@ import static wres.vis.charts.GraphicsUtils.PAIR_THEME_LABEL_GENERATOR;
 import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 import static wres.vis.charts.GraphicsUtils.PREDICTED_SCENARIO_LABEL;
 
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.DataUtilities;
@@ -1621,6 +1622,7 @@ public class ChartFactory
                                                      false,
                                                      true,
                                                      false,
+                                                     false,
                                                      new Shape[] { shape } );
         }
         // Omit shapes and do not dash duplicate series
@@ -1631,6 +1633,7 @@ public class ChartFactory
                                                      true,
                                                      false,
                                                      false,
+                                                     metric == MetricConstants.SPAGHETTI_PLOT,
                                                      DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
         }
         else
@@ -1640,6 +1643,7 @@ public class ChartFactory
                                                      true,
                                                      true,
                                                      true,
+                                                     false,
                                                      DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
         }
 
@@ -1655,6 +1659,7 @@ public class ChartFactory
      * @param showShapes is true to plot shapes
      * @param shapes the shape sequence to use
      * @param dashMultiSeries is true to use a dashed line for plots with multiple overlapping series
+     * @param highlightObservations is true to highlight observed series in a time-series plot
      * @return the renderer
      * @throws NullPointerException if any nullable input is null
      */
@@ -1664,6 +1669,7 @@ public class ChartFactory
                                                     boolean showLines,
                                                     boolean showShapes,
                                                     boolean dashMultiSeries,
+                                                    boolean highlightObservations,
                                                     Shape[] shapes )
     {
         Objects.requireNonNull( plot );
@@ -1701,20 +1707,31 @@ public class ChartFactory
             int leftIndex = nextPair.getKey();
             SortedSet<Integer> rightIndexes = nextPair.getValue();
 
-            renderer.setSeriesPaint( leftIndex, colors[colorShapeIndex] );
+            Pair<Color, Stroke> colorStroke = this.getSeriesColorAndStroke( colors[colorShapeIndex],
+                                                                            new BasicStroke( 1.0f ),
+                                                                            plot.getDataset()
+                                                                                .getSeriesKey( leftIndex )
+                                                                                .toString(),
+                                                                            highlightObservations );
+
+            Color color = colorStroke.getLeft();
+            Stroke stroke = colorStroke.getRight();
+
+            renderer.setSeriesPaint( leftIndex, color );
             Shape shape = shapes[colorShapeIndex % shapes.length];
             renderer.setSeriesShape( leftIndex, shape );
             renderer.setSeriesShapesVisible( leftIndex, showShapes );
             renderer.setSeriesShapesFilled( leftIndex, true );
             renderer.setSeriesLinesVisible( leftIndex, showLines );
             renderer.setLegendItemLabelGenerator( PAIR_THEME_LABEL_GENERATOR );
+            renderer.setSeriesStroke( leftIndex, stroke );
 
             // Paired series? Set this using the same color and shape
             if ( !Objects.equals( Set.of( leftIndex ), rightIndexes ) )
             {
                 for ( int rightIndex : rightIndexes )
                 {
-                    renderer.setSeriesPaint( rightIndex, colors[colorShapeIndex] );
+                    renderer.setSeriesPaint( rightIndex, color );
                     renderer.setSeriesShape( rightIndex, shape );
                     renderer.setSeriesShapesVisible( rightIndex, showShapes );
                     renderer.setSeriesShapesFilled( rightIndex, false );
@@ -1730,6 +1747,10 @@ public class ChartFactory
                                                                    BasicStroke.JOIN_ROUND,
                                                                    1.0f, new float[] { 6.0f, 6.0f }, 0.0f ) );
                     }
+                    else
+                    {
+                        renderer.setSeriesStroke( rightIndex, stroke );
+                    }
                 }
             }
 
@@ -1737,6 +1758,34 @@ public class ChartFactory
         }
 
         return renderer;
+    }
+
+    /**
+     * Generates a series color and stroke from the inputs.
+     * @param baseColor the base color
+     * @param baseStroke the base stroke
+     * @param seriesKey the series name
+     * @param highlightObservations whether to highlight a series with a name that sounds like the left/observed data
+     * @return the color and stroke
+     */
+
+    private Pair<Color, Stroke> getSeriesColorAndStroke( Color baseColor,
+                                                         Stroke baseStroke,
+                                                         String seriesKey,
+                                                         boolean highlightObservations )
+    {
+        Color color = baseColor;
+        Stroke stroke = baseStroke;
+
+        if ( highlightObservations
+             && seriesKey.toLowerCase()
+                         .startsWith( DatasetOrientation.LEFT.toString() ) )
+        {
+            color = Color.BLACK;
+            stroke = new BasicStroke( 1.5f );
+        }
+
+        return Pair.of( color, stroke );
     }
 
     /**

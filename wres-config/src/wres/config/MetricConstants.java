@@ -314,6 +314,9 @@ public enum MetricConstants
     /** A time-series of single-valued pairs. */
     TIME_SERIES_PLOT( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRS ),
 
+    /** Ensemble variant of the {@link #TIME_SERIES_PLOT}. */
+    SPAGHETTI_PLOT( SampleDataGroup.ENSEMBLE_TIME_SERIES, StatisticType.PAIRS ),
+
     /** Mean statistic. */
     MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
           new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
@@ -1081,42 +1084,26 @@ public enum MetricConstants
 
     public enum SampleDataGroup
     {
-
-        /**
-         * Metrics that consume single-valued data.
-         */
-
+        /** Metrics that consume single-valued data.*/
         SINGLE_VALUED,
 
-        /**
-         * Metrics that consume single-valued time-series data.
-         */
-
+        /** Metrics that consume single-valued time-series data. */
         SINGLE_VALUED_TIME_SERIES,
 
-        /**
-         * Metrics that consume discrete probability data.
-         */
-
+        /** Metrics that consume discrete probability data. */
         DISCRETE_PROBABILITY,
 
-        /**
-         * Metrics that consume dichotomous data.
-         */
-
+        /** Metrics that consume dichotomous data. */
         DICHOTOMOUS,
 
-        /**
-         * Metrics that consume multi-category data.
-         */
-
+        /** Metrics that consume multi-category data. */
         MULTICATEGORY,
 
-        /**
-         * Metrics that consume ensemble data.
-         */
+        /** Metrics that consume ensemble data. */
+        ENSEMBLE,
 
-        ENSEMBLE;
+        /** Metrics that consume ensemble time-series data. */
+        ENSEMBLE_TIME_SERIES;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link SampleDataGroup}.

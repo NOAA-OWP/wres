@@ -112,4 +112,5 @@ enum MetricName
     OBSERVATIONS = 99;
     PREDICTIONS = 100;
     TIME_SERIES_PLOT = 101;
+    SPAGHETTI_PLOT = 102;
 }
