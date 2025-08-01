@@ -1708,7 +1708,7 @@ public class ChartFactory
             SortedSet<Integer> rightIndexes = nextPair.getValue();
 
             Pair<Color, Stroke> colorStroke = this.getSeriesColorAndStroke( colors[colorShapeIndex],
-                                                                            new BasicStroke( 1.0f ),
+                                                                            renderer.getSeriesStroke( leftIndex ),
                                                                             plot.getDataset()
                                                                                 .getSeriesKey( leftIndex )
                                                                                 .toString(),
