@@ -24,6 +24,5 @@ metrics:
   - mean error
 decimal_format: '#0.000000'
 output_formats:
-  - csv
-  - pairs
   - csv2
+  - pairs

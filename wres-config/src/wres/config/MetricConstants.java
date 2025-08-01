@@ -511,10 +511,10 @@ public enum MetricConstants
                     MetricGroup.CONTINGENCY_TABLE ),
 
     /** The component of a univariate statistic that applies to the left-sided data within a pairing. */
-    LEFT( MetricGroup.LRB ),
+    OBSERVED( MetricGroup.LRB ),
 
     /** The component of a univariate statistic that applies to the right-sided data within a pairing. */
-    RIGHT( MetricGroup.LRB ),
+    PREDICTED( MetricGroup.LRB ),
 
     /** The component of a univariate statistic that applies to the baseline-sided data within a pairing. */
     BASELINE( MetricGroup.LRB );

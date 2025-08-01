@@ -2992,11 +2992,6 @@ public class DeclarationValidator
                 DeclarationValidator.checkMetricParametersAreConsistent( declaration );
         events.addAll( parameters );
 
-        // Warning when non-score metrics are combined with date pools for legacy CSV
-        List<EvaluationStatusEvent> legacyCsv =
-                DeclarationValidator.checkMetricsForLegacyCsvAndDatePools( declaration );
-        events.addAll( legacyCsv );
-
         return Collections.unmodifiableList( events );
     }
 
@@ -3626,15 +3621,6 @@ public class DeclarationValidator
                     "' format, which has been marked deprecated and may be removed from a future version of the "
                     + "software without warning. It is recommended that you substitute this format with the '";
             String end = "' format.";
-            if ( outputs.hasCsv() )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage( start + "csv" + middle + "csv2" + end )
-                                               .build();
-                events.add( event );
-            }
 
             if ( outputs.hasNetcdf() )
             {
@@ -4093,68 +4079,6 @@ public class DeclarationValidator
         return Collections.unmodifiableList( events );
     }
 
-    /**
-     * Warns if non-score metrics are required alongside the legacy CSV statistics format and pooling windows.
-     * @param declaration the declaration
-     * @return the validation events encountered
-     */
-    private static List<EvaluationStatusEvent> checkMetricsForLegacyCsvAndDatePools( EvaluationDeclaration declaration )
-    {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        // Legacy CSV declared
-        if ( Objects.nonNull( declaration.formats() )
-             && declaration.formats()
-                           .outputs()
-                           .hasCsv() )
-        {
-            // Non-score metrics
-            Predicate<MetricConstants> filter =
-                    next -> !next.isInGroup( MetricConstants.StatisticType.DOUBLE_SCORE )
-                            && !next.isInGroup( MetricConstants.StatisticType.DURATION_SCORE );
-            Set<MetricConstants> metrics = declaration.metrics()
-                                                      .stream()
-                                                      .map( Metric::name )
-                                                      .filter( filter )
-                                                      .collect( Collectors.toSet() );
-
-            if ( !declaration.validDatePools()
-                             .isEmpty() && !metrics.isEmpty() )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage( "Some of the declared metrics cannot be written to "
-                                                                 + "the legacy CSV format because the format does not "
-                                                                 + "support these metrics in combination with "
-                                                                 + "'valid_date_pools'. Please consider using the CSV2 "
-                                                                 + "format instead: "
-                                                                 + metrics
-                                                                 + "." )
-                                               .build();
-                events.add( event );
-            }
-
-            if ( !declaration.referenceDatePools()
-                             .isEmpty() && !metrics.isEmpty() )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage( "Some of the declared metrics cannot be written to "
-                                                                 + "the legacy CSV format because the format does not "
-                                                                 + "support these metrics in combination with "
-                                                                 + "'reference_date_pools'. Please consider using the "
-                                                                 + "CSV2 format instead: "
-                                                                 + metrics
-                                                                 + "." )
-                                               .build();
-                events.add( event );
-            }
-        }
-
-        return Collections.unmodifiableList( events );
-    }
 
     /**
      * Checks that features are declared when the sources need them.

@@ -27,7 +27,8 @@ public class Scenario409
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.csv" ),
+            Set.of( Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_TIME_TO_PEAK_ERROR.png" ),
                     Path.of( "pairs.csv.gz" ) );
     

@@ -40,6 +40,6 @@ metrics:
   - sample size
 decimal_format: '#0.000000'
 output_formats:
-  - csv
+  - csv2
   - pairs
   - png

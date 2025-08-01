@@ -985,19 +985,6 @@ public class DeclarationInterpolator
             formatsBuilder.setCsv2( csv2Builder );
         }
 
-        if ( formatsBuilder.hasCsv() )
-        {
-            Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.getCsvBuilder();
-            Outputs.NumericFormat.Builder numericBuilder = csvBuilder.getOptionsBuilder();
-            if ( Objects.nonNull( builder.decimalFormat() ) )
-            {
-                numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                        .toPattern() );
-            }
-            csvBuilder.setOptions( numericBuilder );
-            formatsBuilder.setCsv( csvBuilder );
-        }
-
         if ( formatsBuilder.hasPairs() )
         {
             Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.getPairsBuilder();
