@@ -9,6 +9,7 @@ import "wresproto/boxplot_statistic.proto";
 import "wresproto/duration_score_statistic.proto";
 import "wresproto/duration_diagram_statistic.proto";
 import "wresproto/summary_statistic.proto";
+import "wresproto/pairs_statistic.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "StatisticsProto";
@@ -72,4 +73,7 @@ message Statistics
     // as an average skill across geographic features and not a raw skill for
     // any single feature. Also, the pool information should not include any
     // geographic features.
+
+    repeated PairsStatistic pairs_statistics = 12;
+    // Zero or more diagrams that contain the time-series of raw pairs.
 }

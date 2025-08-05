@@ -28,14 +28,19 @@ import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.yaml.components.ThresholdType;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -70,6 +75,11 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pairs;
+import wres.statistics.generated.PairsMetric;
+import wres.statistics.generated.PairsStatistic;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -1748,10 +1758,10 @@ class EnsembleStatisticsProcessorTest
         StatisticsStore statistics = this.getAndCombineStatistics( processors,
                                                                    TestDataFactory.getTimeSeriesOfEnsemblePairsFour() );
 
-        //Obtain the results
+        // Obtain the results
         List<DoubleScoreStatisticOuter> results = statistics.getDoubleScoreStatistics();
 
-        //Validate the score outputs
+        // Validate the score outputs
         for ( DoubleScoreStatisticOuter nextMetric : results )
         {
             if ( nextMetric.getMetricName() != MetricConstants.SAMPLE_SIZE )
@@ -1825,7 +1835,8 @@ class EnsembleStatisticsProcessorTest
 
         FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
         GeometryTuple geometryTuple = featureTuple.getGeometryTuple();
-        Features features = FeaturesBuilder.builder().geometries( Set.of( geometryTuple ) )
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Set.of( geometryTuple ) )
                                            .build();
 
         wres.statistics.generated.Threshold one =
@@ -1880,6 +1891,98 @@ class EnsembleStatisticsProcessorTest
         Set<MetricConstants> expectedProbabilityScores = Set.of( MetricConstants.BRIER_SCORE );
 
         assertEquals( expectedProbabilityScores, actualProbabilityScores );
+    }
+
+    @Test
+    void testSpaghettiPlot() throws InterruptedException
+    {
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetrics();
+
+        // Explicitly add a spaghetti plot to override all valid metrics
+        wres.config.yaml.components.Threshold allData =
+                ThresholdBuilder.builder()
+                                .threshold( ThresholdOuter.ALL_DATA.getThreshold() )
+                                .type( ThresholdType.VALUE )
+                                .build();
+        declaration = EvaluationDeclarationBuilder.builder( declaration )
+                                                  .metrics( Set.of( MetricBuilder.builder()
+                                                                                 .name( MetricConstants.SPAGHETTI_PLOT )
+                                                                                 .build() ) )
+                                                  .thresholds( Set.of( allData ) )
+                                                  .build();
+
+        // Interpolate the missing components of the declaration so that it's ready for processing
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
+                EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
+        StatisticsStore statistics = this.getAndCombineStatistics( processors,
+                                                                   TestDataFactory.getTimeSeriesOfEnsemblePairsThree() );
+
+        // Obtain the results
+        List<PairsStatisticOuter> actual = statistics.getPairsStatistics();
+
+        PairsMetric metric = PairsMetric.newBuilder()
+                                        .setName( MetricName.SPAGHETTI_PLOT )
+                                        .setUnits( "MM/DAY" )
+                                        .build();
+
+        Timestamp firstTime = Timestamp.newBuilder()
+                                       .setSeconds( 479412000 )
+                                       .build();
+        Timestamp secondTime = Timestamp.newBuilder()
+                                        .setSeconds( 479433600 )
+                                        .build();
+
+        Pairs.TimeSeriesOfPairs timeSeries =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addReferenceTimes( ReferenceTime.newBuilder()
+                                                                        .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                                                        .setReferenceTime( firstTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 22.9 )
+                                                            .addRight( 22.8 )
+                                                            .addRight( 23.9 )
+                                                            .setValidTime( secondTime ) )
+                                       .build();
+
+        Pairs pairs = Pairs.newBuilder()
+                           .addLeftVariableNames( DatasetOrientation.LEFT.toString()
+                                                                         .toUpperCase() )
+                           .addRightVariableNames( "MEMBER 1" )
+                           .addRightVariableNames( "MEMBER 2" )
+                           .addTimeSeries( timeSeries )
+                           .build();
+
+        PairsStatistic pairsStatistic = PairsStatistic.newBuilder()
+                                                      .setStatistics( pairs )
+                                                      .setMetric( metric )
+                                                      .build();
+
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                           Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( "MM/DAY" )
+                                          .build();
+
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
+                                                                      window,
+                                                                      null,
+                                                                      OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA ),
+                                                                      false );
+
+        PoolMetadata metadata = PoolMetadata.of( PoolMetadata.of( evaluation, pool ),
+                                                 wres.statistics.generated.Pool.EnsembleAverageType.MEAN );
+
+        List<PairsStatisticOuter> expected = List.of( PairsStatisticOuter.of( pairsStatistic, metadata ) );
+
+        assertEquals( expected, actual );
     }
 
     /**

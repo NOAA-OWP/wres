@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import wres.config.yaml.components.CovariateDataset;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
@@ -57,6 +58,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Pool.EnsembleAverageType;
@@ -429,6 +431,25 @@ public class MessageFactory
     }
 
     /**
+     * Creates a reference time from the input.
+     *
+     * @param referenceTimeType the type of reference time
+     * @param referenceTime the reference time
+     * @return a reference time
+     */
+
+    public static ReferenceTime getReferenceTime( ReferenceTimeType referenceTimeType, Instant referenceTime )
+    {
+        Objects.requireNonNull( referenceTimeType );
+        Objects.requireNonNull( referenceTime );
+
+        Timestamp referenceTimeProto = MessageUtilities.getTimestamp( referenceTime );
+        return ReferenceTime.newBuilder().setReferenceTimeType( referenceTimeType )
+                            .setReferenceTime( referenceTimeProto )
+                            .build();
+    }
+
+    /**
      * Creates an evaluation for messaging from a declared evaluation.
      *
      * @param evaluation the evaluation declaration
@@ -590,6 +611,22 @@ public class MessageFactory
      */
 
     public static DurationDiagramStatistic parse( wres.datamodel.statistics.DurationDiagramStatisticOuter statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        return statistic.getStatistic();
+    }
+
+    /**
+     * Creates a {@link wres.statistics.generated.PairsStatistic} from a
+     * {@link wres.datamodel.statistics.PairsStatisticOuter} composed of timing
+     * errors.
+     *
+     * @param statistic the statistic from which to create a message
+     * @return the message
+     */
+
+    public static PairsStatistic parse( wres.datamodel.statistics.PairsStatisticOuter statistic )
     {
         Objects.requireNonNull( statistic );
 
@@ -851,6 +888,19 @@ public class MessageFactory
             added = true;
         }
 
+        // Add the pairs plots
+        if ( onePool.hasStatistic( StatisticType.PAIRS ) )
+        {
+            List<wres.datamodel.statistics.PairsStatisticOuter> pairsDiagrams =
+                    onePool.getPairsStatistics();
+            pairsDiagrams.forEach( next -> {
+                statistics.addPairsStatistics( MessageFactory.parse( next ) );
+                metadatas.add( next.getPoolMetadata() );
+            } );
+
+            added = true;
+        }
+
         List<PoolMetadata> unmodifiableMetadatas = Collections.unmodifiableList( metadatas );
         PoolMetadata metadata = PoolSlicer.unionOf( unmodifiableMetadatas );
 
@@ -934,6 +984,14 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxplotStatisticOuter> statistics =
                     statisticsStore.getBoxPlotStatisticsPerPool();
             MessageFactory.addBoxPlotStatisticsToPool( statistics, mappedStatistics, true );
+        }
+
+        // Pairs statistics
+        if ( statisticsStore.hasStatistic( StatisticType.PAIRS ) )
+        {
+            List<wres.datamodel.statistics.PairsStatisticOuter> statistics =
+                    statisticsStore.getPairsStatistics();
+            MessageFactory.addPairsStatisticsToPool( statistics, mappedStatistics );
         }
 
         List<StatisticsStore> returnMe = new ArrayList<>();
@@ -1211,6 +1269,38 @@ public class MessageFactory
             Future<List<DurationDiagramStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addDurationDiagramStatistics( future );
+        }
+    }
+
+    /**
+     * Adds the new statistics to the map.
+     *
+     * @param statistics the statistics to add
+     * @param mappedStatistics the existing statistics which the new statistics should be added
+     * @throws NullPointerException if the input is null
+     */
+
+    private static void addPairsStatisticsToPool( List<PairsStatisticOuter> statistics,
+                                                  Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
+    {
+        Objects.requireNonNull( mappedStatistics );
+
+        for ( PairsStatisticOuter next : statistics )
+        {
+            PoolMetadata metadata = next.getPoolMetadata();
+            PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
+
+            StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
+
+            if ( Objects.isNull( another ) )
+            {
+                another = new StatisticsStore.Builder();
+                mappedStatistics.put( poolBoundaries, another );
+            }
+
+            Future<List<PairsStatisticOuter>> future =
+                    CompletableFuture.completedFuture( List.of( next ) );
+            another.addPairsStatistics( future );
         }
     }
 

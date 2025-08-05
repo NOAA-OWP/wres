@@ -338,8 +338,8 @@ public final class DataUtilities
 
         Objects.requireNonNull( timeWindow, "Enter a non-null time window to establish a path for writing." );
 
-        Objects.requireNonNull( leadUnits,
-                                "Enter a non-null time unit for the lead durations to establish a path for writing." );
+        Objects.requireNonNull( leadUnits, "Enter a non-null time unit for the lead durations to establish a "
+                                           + "path for writing." );
 
         // This is not fully qualified, but making it so will be a breaking change. It will need to be fully qualified
         // when arbitrary pools are supported: see #86646. At that time, use the time window safe string helpers in 

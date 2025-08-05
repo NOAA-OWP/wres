@@ -168,7 +168,6 @@ final class ProjectScriptGenerator
         return script;
     }
 
-
     /**
      * Creates a script that retrieves the mostly commonly occurring measurement unit among the right-ish sources. 
      *
