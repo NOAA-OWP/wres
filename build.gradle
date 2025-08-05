@@ -259,7 +259,7 @@ project(':wres-system') {
     dependencies {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
@@ -332,7 +332,7 @@ project(':wres-datamodel') {
         api project(':wres-config')
         api project(':wres-statistics')
 
-        api 'org.apache.commons:commons-lang3:3.17.0'
+        api 'org.apache.commons:commons-lang3:3.18.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -460,7 +460,7 @@ project(':wres-io') {
         // to test writing of files without actually writing files on the host machine
         testRuntimeOnly group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
 
-        api 'org.apache.commons:commons-lang3:3.17.0'
+        api 'org.apache.commons:commons-lang3:3.18.0'
         api 'org.slf4j:slf4j-api:2.0.17'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         testImplementation 'org.mockito:mockito-core:5.2.0'
@@ -586,16 +586,16 @@ project(':wres-writing') {
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
-        testRuntimeOnly 'org.apache.commons:commons-lang3:3.17.0'
+        testRuntimeOnly 'org.apache.commons:commons-lang3:3.18.0'
         testImplementation 'org.apache.tika:tika-core:2.9.2'
         testImplementation 'org.mockito:mockito-core:5.2.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.17'
         runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
         runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
         testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
         testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
@@ -674,7 +674,7 @@ project(':wres-reading') {
         api 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
         api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         api 'javax.xml.bind:jaxb-api:2.3.1'
-        api 'org.apache.commons:commons-lang3:3.17.0'
+        api 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'com.opencsv:opencsv:5.9'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
@@ -748,7 +748,7 @@ project(':wres-eventdetection') {
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
@@ -773,10 +773,10 @@ project(':wres-metrics') {
         api project(':wres-statistics')
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
-        testRuntimeOnly 'org.apache.commons:commons-lang3:3.17.0'
+        testRuntimeOnly 'org.apache.commons:commons-lang3:3.18.0'
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation 'org.slf4j:slf4j-api:2.0.17'
@@ -1013,7 +1013,7 @@ project(':wres-vis') {
         implementation project(':wres-eventsbroker')
         implementation project(':wres-events')
 
-        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
+        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.18.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -1102,7 +1102,7 @@ project(':wres-config') {
         // Protobuf utilities
         implementation 'com.google.protobuf:protobuf-java-util:3.25.6'
 
-        api 'org.apache.commons:commons-lang3:3.17.0'
+        api 'org.apache.commons:commons-lang3:3.18.0'
 
         // For reading CSV thresholds
         implementation group: 'com.opencsv', name: 'opencsv', version: '5.10'
@@ -1544,7 +1544,7 @@ project(':wres-tasker') {
         runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
 
         // For ToStringBuilder
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
 
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
@@ -1737,7 +1737,7 @@ project(':wres-events') {
         }
 
         // For various utilities
-        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.17.0'
+        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.18.0'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
             // Not used at runtime, bloat
@@ -1770,7 +1770,7 @@ project(':wres-http') {
         // Better-than-Java's HTTP client
         api 'com.squareup.okhttp3:okhttp:4.12.0'
 
-        implementation 'org.apache.commons:commons-lang3:3.17.0'
+        implementation 'org.apache.commons:commons-lang3:3.18.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
@@ -1994,7 +1994,7 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java:3.25.6'
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
-    implementation 'org.apache.commons:commons-lang3:3.17.0'
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
     implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.0.alpha1'
     implementation 'org.eclipse.jetty:jetty-http:12.1.0.alpha1'
     implementation 'org.eclipse.jetty:jetty-util:12.1.0.alpha1'
