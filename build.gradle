@@ -435,7 +435,7 @@ project(':wres-io') {
         // https://github.com/NOAA-OWP/wres/issues/454
         implementation 'org.liquibase:liquibase-core:4.29.2'
 
-        implementation 'commons-codec:commons-codec:1.18.0'
+        implementation 'commons-codec:commons-codec:1.19.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -1482,7 +1482,7 @@ project(':wres-tasker') {
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
 
         // Easy byte[] to hex conversion
-        implementation 'commons-codec:commons-codec:1.18.0'
+        implementation 'commons-codec:commons-codec:1.19.0'
 
         //Jakarta servlet
         implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
