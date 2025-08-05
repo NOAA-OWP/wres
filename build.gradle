@@ -24,7 +24,7 @@ buildscript {
 
         // Forcing a newer version than what comes in with default com.github.seanrl.jaxb
         // plugin below. This addresses a dependabot reported issue. See GitHub #478.
-        resolutionStrategy.force( 'org.codehaus.groovy:groovy-all:2.4.21' )
+        resolutionStrategy.force( 'org.codehaus.groovy:groovy-all:3.0.25' )
     }
     repositories {
         mavenCentral()
