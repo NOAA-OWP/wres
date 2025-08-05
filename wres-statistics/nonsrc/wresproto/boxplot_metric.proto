@@ -63,11 +63,11 @@ message BoxplotMetric
 
     MetricName statistic_name = 9;
     // If this box plot is summarizing a distribution of raw statistics, this 
-    // field contains the name of the raw metric being summarized. For 
+    // field contains the name of the raw statistic being summarized. For 
     // example, if the mean error is calculated across geographic features and 
-    // its distribution is summarized with a box plot, then the metric in this 
-    // context is the mean error.
+    // its distribution is summarized with a box plot, then the statistic in 
+    // this context is the mean error.
 
     MetricName statistic_component_name = 10;
-    // The name of the metric component being summarized.
+    // The name of the statistic component being summarized.
 }

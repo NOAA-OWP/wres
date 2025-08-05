@@ -29,6 +29,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -105,6 +106,20 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             singleValuedBoxPlot;
 
     /**
+     * A {@link MetricCollection} of {@link Metric} that consume a {@link Pool} with single-valued pairs
+     * and produce {@link PairsStatisticOuter}.
+     */
+
+    private final MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, PairsStatisticOuter, PairsStatisticOuter>
+            singleValuedPairs;
+
+    /** Small sample size message for logging. */
+    private static final String SMALL_SAMPLE_MESSAGE = "While processing time-series for pool {}, discovered {} "
+                                                       + "time-series, which is fewer than the minimum sample size of "
+                                                       + "{} time-series. The following metrics will not be computed "
+                                                       + "for this pool: {}.";
+
+    /**
      * Constructor.
      *
      * @param metricsAndThresholds the metrics and thresholds
@@ -135,6 +150,21 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         else
         {
             this.timeSeries = null;
+        }
+
+        // Pairs
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRS ) )
+        {
+            MetricConstants[] pairsMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                    StatisticType.PAIRS );
+            this.singleValuedPairs = MetricFactory.ofSingleValuedPairsMetrics( metricExecutor,
+                                                                               pairsMetrics );
+
+            LOGGER.debug( "Created the single-valued pairs metrics for processing. {}", this.singleValuedPairs );
+        }
+        else
+        {
+            this.singleValuedPairs = null;
         }
 
         // Time-series summary statistics
@@ -256,11 +286,11 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter threshold )
     {
         return switch ( threshold.getOrientation() )
-                {
-                    case LEFT -> Slicer.left( threshold );
-                    case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( threshold );
-                    case RIGHT, ANY_RIGHT, RIGHT_MEAN -> Slicer.right( threshold );
-                };
+        {
+            case LEFT -> Slicer.left( threshold );
+            case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( threshold );
+            case RIGHT, ANY_RIGHT, RIGHT_MEAN -> Slicer.right( threshold );
+        };
     }
 
     /**
@@ -277,12 +307,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter threshold )
     {
         return switch ( threshold.getOrientation() )
-                {
-                    case LEFT -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
-                    case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN ->
-                            TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
-                    case RIGHT, ANY_RIGHT, RIGHT_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
-                };
+        {
+            case LEFT -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
+            case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN ->
+                    TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
+            case RIGHT, ANY_RIGHT, RIGHT_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
+        };
     }
 
     /**
@@ -622,11 +652,19 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                                                              metaTransformer ) );
 
             // Build the future result
-            Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( sliced,
-                                                                                              this.timeSeries );
+            if ( Objects.nonNull( this.timeSeries ) )
+            {
+                Future<List<DurationDiagramStatisticOuter>> durationDiagrams = this.processTimeSeriesPairs( sliced,
+                                                                                                            this.timeSeries );
+                futures.addDurationDiagramStatistics( durationDiagrams );
+            }
 
-            // Add the future result to the store
-            futures.addDurationDiagramStatistics( output );
+            if ( Objects.nonNull( this.singleValuedPairs ) )
+            {
+                Future<List<PairsStatisticOuter>> pairsStatistics = this.processPairsStatistics( sliced,
+                                                                                                 this.singleValuedPairs );
+                futures.addPairsStatistics( pairsStatistics );
+            }
 
             // Summary statistics?
             if ( Objects.nonNull( this.timeSeriesStatistics ) )
@@ -661,9 +699,42 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         {
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "While processing time-series for pool {}, discovered {} time-series, which is fewer "
-                              + "than the minimum sample size of {} time-series. The following metrics will not be "
-                              + "computed for this pool: {}.",
+                LOGGER.debug( SMALL_SAMPLE_MESSAGE,
+                              pairs.getMetadata(),
+                              pairs.get().size(),
+                              minimumSampleSize,
+                              collection.getMetrics() );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        return this.processMetricsRequiredForThisPool( pairs, collection );
+    }
+
+    /**
+     * Builds a metric future for a {@link MetricCollection} that consumes single-valued pairs and produces
+     * {@link DurationDiagramStatisticOuter}.
+     *
+     * @param pairs the pairs
+     * @param collection the collection of metrics
+     * @return the future result
+     */
+
+    private Future<List<PairsStatisticOuter>>
+    processPairsStatistics( Pool<TimeSeries<Pair<Double, Double>>> pairs,
+                            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, PairsStatisticOuter, PairsStatisticOuter> collection )
+    {
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMinimumSampleSize();
+
+        // Log and return an empty result if the sample size is too small
+        if ( pairs.get()
+                  .size() < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( SMALL_SAMPLE_MESSAGE,
                               pairs.getMetadata(),
                               pairs.get().size(),
                               minimumSampleSize,
@@ -698,9 +769,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         {
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "While processing time-series for pool {}, discovered {} time-series, which is fewer "
-                              + "than the minimum sample size of {} time-series. The following metrics will not be "
-                              + "computed for this pool: {}.",
+                LOGGER.debug( SMALL_SAMPLE_MESSAGE,
                               pairs.getMetadata(),
                               pairs.get().size(),
                               minimumSampleSize,

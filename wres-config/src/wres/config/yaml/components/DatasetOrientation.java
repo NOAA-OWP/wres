@@ -21,7 +21,7 @@ public enum DatasetOrientation
 
     /**
      * Create a named instrace.
-     * @param stringName the dataset tyoe name
+     * @param stringName the dataset type name
      */
     DatasetOrientation( String stringName )
     {

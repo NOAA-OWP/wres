@@ -434,7 +434,8 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
         {
             throw new MetricParameterException( "Cannot construct the metric collection without an executor service." );
         }
-        if ( this.metrics.isEmpty() && this.collectableMetrics.isEmpty() )
+        if ( this.metrics.isEmpty()
+             && this.collectableMetrics.isEmpty() )
         {
             throw new MetricParameterException( "Cannot construct a metric collection without any metrics." );
         }

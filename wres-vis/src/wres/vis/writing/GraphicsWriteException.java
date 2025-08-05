@@ -19,6 +19,17 @@ class GraphicsWriteException extends RuntimeException
 
     /**
      * Constructs a {@link GraphicsWriteException} with the specified message.
+     *
+     * @param message the message.
+     */
+
+    GraphicsWriteException( String message )
+    {
+        super( message );
+    }
+
+    /**
+     * Constructs a {@link GraphicsWriteException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception

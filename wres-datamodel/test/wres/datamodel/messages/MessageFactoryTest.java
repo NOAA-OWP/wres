@@ -36,6 +36,7 @@ import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -50,6 +51,7 @@ import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
@@ -88,7 +90,11 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pairs;
+import wres.statistics.generated.PairsMetric;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
@@ -148,15 +154,15 @@ class MessageFactoryTest
     private static final FeatureGroup FEATURE_GROUP =
             FeatureGroup.of( MessageUtilities.getGeometryGroup( null,
                                                                 MessageUtilities.getGeometryTuple(
-                                                                                      LOCATION,
-                                                                                      LOCATION,
-                                                                                      LOCATION ) ) );
+                                                                        LOCATION,
+                                                                        LOCATION,
+                                                                        LOCATION ) ) );
     private static final FeatureGroup ANOTHER_FEATURE_GROUP =
             FeatureGroup.of( MessageUtilities.getGeometryGroup( null,
                                                                 MessageUtilities.getGeometryTuple(
-                                                                                      ANOTHER_LOCATION,
-                                                                                      ANOTHER_LOCATION,
-                                                                                      ANOTHER_LOCATION ) ) );
+                                                                        ANOTHER_LOCATION,
+                                                                        ANOTHER_LOCATION,
+                                                                        ANOTHER_LOCATION ) ) );
 
     /** Scores to serialize. */
     private List<DoubleScoreStatisticOuter> scores = null;
@@ -170,8 +176,11 @@ class MessageFactoryTest
     /** Diagrams to serialize. */
     private List<DiagramStatisticOuter> diagrams = null;
 
-    /** Box plot statistics. */
+    /** Box plot statistics to serialize. */
     private List<BoxplotStatisticOuter> boxplots = null;
+
+    /** Pairs statistics to serialize. */
+    private List<PairsStatisticOuter> pairsStatistics = null;
 
     /** Pairs to serialize. */
     private wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> ensemblePairs = null;
@@ -191,6 +200,7 @@ class MessageFactoryTest
         this.durationDiagrams = this.getDurationDiagramStatisticsForOnePool();
         this.boxplots = this.getBoxPlotsForOnePool();
         this.ensemblePairs = this.getPoolOfEnsemblePairs();
+        this.pairsStatistics = this.getPairsStatisticsForOnePool();
     }
 
     @Test
@@ -366,29 +376,64 @@ class MessageFactoryTest
     }
 
     @Test
+    void testCreationOfOneStatisticsMessageWithOnePairsStatistic() throws IOException, InterruptedException
+    {
+        // Create a statistics message
+        StatisticsStore statistics =
+                new StatisticsStore.Builder().addPairsStatistics( CompletableFuture.completedFuture( this.pairsStatistics ) )
+                                             .build();
+
+        // Create a statistics message
+        Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
+        Assertions.assertNotNull( statisticsOut );
+
+        Path path = this.outputDirectory.resolve( "duration_diagrams_statistics.pb3" );
+
+        try ( OutputStream stream =
+                      Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            statisticsOut.writeTo( stream );
+        }
+
+        Statistics statisticsIn;
+        try ( InputStream stream =
+                      Files.newInputStream( path ) )
+        {
+            statisticsIn = Statistics.parseFrom( stream );
+        }
+
+        assertEquals( statisticsOut, statisticsIn );
+
+        // Delete if succeeded
+        Files.deleteIfExists( path );
+    }
+
+    @Test
     void testGetStatisticsProducesExpectedStatisticsInPoolOrder() throws InterruptedException
     {
         // Create a statistics message composed of scores and diagrams
         StatisticsStore statistics =
                 new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                              .addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                             .addPairsStatistics( CompletableFuture.completedFuture( this.pairsStatistics ) )
                                              .build();
 
-        // Scores and diagrams should be split due to threshold difference
+        // Scores and diagrams/pairs statistics should be split due to threshold difference
         List<Statistics> actual = MessageFactory.getStatistics( statistics );
 
         assertEquals( 2, actual.size() );
 
-        StatisticsStore scores =
+        StatisticsStore scoresInner =
                 new StatisticsStore.Builder().addDoubleScoreStatistics( CompletableFuture.completedFuture( this.scores ) )
                                              .build();
 
-        StatisticsStore diagrams =
+        StatisticsStore diagramsInner =
                 new StatisticsStore.Builder().addDiagramStatistics( CompletableFuture.completedFuture( this.diagrams ) )
+                                             .addPairsStatistics( CompletableFuture.completedFuture( this.pairsStatistics ) )
                                              .build();
 
-        Statistics expectedScores = MessageFactory.parseOnePool( scores );
-        Statistics expectedDiagrams = MessageFactory.parseOnePool( diagrams );
+        Statistics expectedScores = MessageFactory.parseOnePool( scoresInner );
+        Statistics expectedDiagrams = MessageFactory.parseOnePool( diagramsInner );
         Assertions.assertNotNull( expectedDiagrams );
         Assertions.assertNotNull( expectedScores );
 
@@ -639,6 +684,20 @@ class MessageFactoryTest
         GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( sortedSet );
 
         assertEquals( geoGroup, geoGroupTwo );
+    }
+
+    @Test
+    void testGetReferenceTime()
+    {
+        Instant time = Instant.parse( "2029-01-01T12:00:00Z" );
+        ReferenceTime actual = MessageFactory.getReferenceTime( ReferenceTimeType.T0, time );
+        Timestamp timeStamp = MessageUtilities.getTimestamp( time );
+        ReferenceTime expected = ReferenceTime.newBuilder()
+                                              .setReferenceTime( timeStamp )
+                                              .setReferenceTimeType( ReferenceTimeType.T0 )
+                                              .build();
+
+        assertEquals( expected, actual );
     }
 
     /**
@@ -902,6 +961,86 @@ class MessageFactoryTest
         // Fake output wrapper.
         return List.of( BoxplotStatisticOuter.of( boxplotOne, metadata ),
                         BoxplotStatisticOuter.of( boxplotTwo, metadata ) );
+    }
+
+    /**
+     * Returns a {@link List} containing a {@link PairsStatisticOuter} for one pool.
+     *
+     * @return the pairs statistics for one pool
+     */
+
+    private List<PairsStatisticOuter> getPairsStatisticsForOnePool()
+    {
+        wres.datamodel.scale.TimeScaleOuter timeScale =
+                wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
+                                                        TimeScaleFunction.MEAN );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                                             11.94128 ),
+                                                                                                     OneOrTwoDoubles.of(
+                                                                                                             0.9 ),
+                                                                                                     ThresholdOperator.GREATER_EQUAL,
+                                                                                                     ThresholdOrientation.LEFT ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( SQIN )
+                                          .setRightDataName( HEFS )
+                                          .setBaselineDataName( ESP )
+                                          .setMeasurementUnit( CMS.toString() )
+                                          .build();
+
+        Pool pool = MessageFactory.getPool( FEATURE_GROUP,
+                                            TIME_WINDOW,
+                                            timeScale,
+                                            threshold,
+                                            false,
+                                            1 );
+
+        PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
+
+        PairsMetric pairsMetric = PairsMetric.newBuilder()
+                                             .setName( MetricName.TIME_SERIES_PLOT )
+                                             .build();
+
+        Timestamp firstTime = Timestamp.newBuilder()
+                                       .setSeconds( 12300000 )
+                                       .build();
+        Timestamp secondTime = Timestamp.newBuilder()
+                                        .setSeconds( 12303600 )
+                                        .build();
+        Timestamp thirdTime = Timestamp.newBuilder()
+                                       .setSeconds( 12307200 )
+                                       .build();
+
+        Pairs.TimeSeriesOfPairs timeSeries =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addReferenceTimes( ReferenceTime.newBuilder()
+                                                                        .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                                                        .setReferenceTime( firstTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 23.0 )
+                                                            .addRight( 17.6 )
+                                                            .setValidTime( secondTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 12.0 )
+                                                            .addRight( 15.7 )
+                                                            .setValidTime( thirdTime ) )
+                                       .build();
+
+        Pairs pairs = Pairs.newBuilder()
+                           .addLeftVariableNames( DatasetOrientation.LEFT.toString() )
+                           .addRightVariableNames( DatasetOrientation.RIGHT.toString() )
+                           .addTimeSeries( timeSeries )
+                           .build();
+
+        PairsStatistic statistic = PairsStatistic.newBuilder()
+                                                 .setMetric( pairsMetric )
+                                                 .setStatistics( pairs )
+                                                 .build();
+
+        // Fake output wrapper.
+        return List.of( PairsStatisticOuter.of( statistic, metadata ) );
     }
 
     private wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getPoolOfEnsemblePairs()

@@ -3,6 +3,7 @@ package wres.pipeline.statistics;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Features;
@@ -44,6 +46,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
@@ -71,6 +74,10 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pairs;
+import wres.statistics.generated.PairsMetric;
+import wres.statistics.generated.PairsStatistic;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -304,7 +311,8 @@ public final class SingleValuedStatisticsProcessorTest
                                       .type( DataType.SINGLE_VALUED_FORECASTS )
                                       .build();
 
-        Set<Metric> metrics = Set.of( new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null ) );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null ),
+                                      new Metric( MetricConstants.TIME_SERIES_PLOT, null ) );
 
         FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
         GeometryTuple geometryTuple = featureTuple.getGeometryTuple();
@@ -327,11 +335,12 @@ public final class SingleValuedStatisticsProcessorTest
         Pool<TimeSeries<Pair<Double, Double>>> second = TestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         // Compute the metrics
-        List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
         StatisticsStore some = this.getAndCombineStatistics( processors, first );
         StatisticsStore more = this.getAndCombineStatistics( processors, second );
-        actual.addAll( some.getDurationDiagramStatistics() );
-        actual.addAll( more.getDurationDiagramStatistics() );
+        List<DurationDiagramStatisticOuter> actualOne = new ArrayList<>( some.getDurationDiagramStatistics() );
+        actualOne.addAll( more.getDurationDiagramStatistics() );
+        List<PairsStatisticOuter> actualTwo = new ArrayList<>( some.getPairsStatistics() );
+        actualTwo.addAll( more.getPairsStatistics() );
 
         // Validate the outputs
         // Compare the errors against the benchmark
@@ -405,11 +414,102 @@ public final class SingleValuedStatisticsProcessorTest
                                                                           .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                           .build();
 
-        List<DurationDiagramStatisticOuter> expected = new ArrayList<>();
-        expected.add( DurationDiagramStatisticOuter.of( expectedFirst, m1 ) );
-        expected.add( DurationDiagramStatisticOuter.of( expectedSecond, m2 ) );
+        List<DurationDiagramStatisticOuter> expectedOne = new ArrayList<>();
+        expectedOne.add( DurationDiagramStatisticOuter.of( expectedFirst, m1 ) );
+        expectedOne.add( DurationDiagramStatisticOuter.of( expectedSecond, m2 ) );
 
-        assertEquals( expected, actual );
+        Timestamp firstTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-01T06:00:00Z" ) );
+        Timestamp secondTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-01T12:00:00Z" ) );
+        Timestamp thirdTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-01T18:00:00Z" ) );
+
+        Timestamp firstReferenceTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-01T00:00:00Z" ) );
+        ReferenceTime referenceOne = ReferenceTime.newBuilder()
+                                                  .setReferenceTime( firstReferenceTime )
+                                                  .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                                  .build();
+
+        Pairs.TimeSeriesOfPairs timeSeries =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 1.0 )
+                                                            .addRight( 1.0 )
+                                                            .setValidTime( firstTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 1.0 )
+                                                            .addRight( 5.0 )
+                                                            .setValidTime( secondTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 5.0 )
+                                                            .addRight( 1.0 )
+                                                            .setValidTime( thirdTime ) )
+                                       .addReferenceTimes( referenceOne )
+                                       .build();
+
+        Timestamp fourthTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-02T06:00:00Z" ) );
+        Timestamp fifthTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-02T12:00:00Z" ) );
+        Timestamp sixthTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-02T18:00:00Z" ) );
+
+        Timestamp secondReferenceTime = MessageUtilities.getTimestamp( Instant.parse( "1985-01-02T00:00:00Z" ) );
+
+        ReferenceTime referenceTwo = ReferenceTime.newBuilder()
+                                                  .setReferenceTime( secondReferenceTime )
+                                                  .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                                  .build();
+
+        Pairs.TimeSeriesOfPairs secondTimeSeries =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 10.0 )
+                                                            .addRight( 1.0 )
+                                                            .setValidTime( fourthTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 1.0 )
+                                                            .addRight( 1.0 )
+                                                            .setValidTime( fifthTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 1.0 )
+                                                            .addRight( 10.0 )
+                                                            .setValidTime( sixthTime ) )
+                                       .addReferenceTimes( referenceTwo )
+                                       .build();
+
+        Pairs pairs = Pairs.newBuilder()
+                           .addLeftVariableNames( DatasetOrientation.LEFT.toString()
+                                                                         .toUpperCase() )
+                           .addRightVariableNames( DatasetOrientation.RIGHT.toString()
+                                                                           .toUpperCase() )
+                           .addTimeSeries( timeSeries )
+                           .build();
+
+        Pairs pairsTwo = Pairs.newBuilder()
+                              .addLeftVariableNames( DatasetOrientation.LEFT.toString()
+                                                                            .toUpperCase() )
+                              .addRightVariableNames( DatasetOrientation.RIGHT.toString()
+                                                                              .toUpperCase() )
+                              .addTimeSeries( secondTimeSeries )
+                              .build();
+
+        PairsMetric metric = PairsMetric.newBuilder()
+                                        .setName( MetricName.TIME_SERIES_PLOT )
+                                        .setUnits( "CMS" )
+                                        .build();
+
+        PairsStatistic expectedPairsStatisticOne = PairsStatistic.newBuilder()
+                                                                 .setStatistics( pairs )
+                                                                 .setMetric( metric )
+                                                                 .build();
+
+        PairsStatistic expectedPairsStatisticTwo = PairsStatistic.newBuilder()
+                                                                 .setStatistics( pairsTwo )
+                                                                 .setMetric( metric )
+                                                                 .build();
+
+        List<PairsStatisticOuter> expectedTwo = new ArrayList<>();
+        expectedTwo.add( PairsStatisticOuter.of( expectedPairsStatisticOne, m1 ) );
+        expectedTwo.add( PairsStatisticOuter.of( expectedPairsStatisticTwo, m2 ) );
+
+        assertAll( () -> assertEquals( expectedOne, actualOne ),
+                   () -> assertEquals( expectedTwo, actualTwo ) );
     }
 
     @Test

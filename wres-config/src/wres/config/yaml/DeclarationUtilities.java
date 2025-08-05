@@ -1298,7 +1298,8 @@ public class DeclarationUtilities
 
         // Ensemble metrics?  Ignore metrics that also belong to the single-valued group
         Set<String> ensembleMetrics = DeclarationUtilities.getMetricType( builder,
-                                                                          MetricConstants.SampleDataGroup.ENSEMBLE,
+                                                                          Set.of( MetricConstants.SampleDataGroup.ENSEMBLE,
+                                                                                  MetricConstants.SampleDataGroup.ENSEMBLE_TIME_SERIES ),
                                                                           MetricConstants.SampleDataGroup.SINGLE_VALUED );
         if ( !ensembleMetrics.isEmpty() )
         {
@@ -1308,7 +1309,7 @@ public class DeclarationUtilities
         // Discrete probability metrics?
         Set<String> discreteProbabilityMetrics =
                 DeclarationUtilities.getMetricType( builder,
-                                                    MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY,
+                                                    Set.of( MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY ),
                                                     null );
         if ( !discreteProbabilityMetrics.isEmpty() )
         {
@@ -1386,19 +1387,20 @@ public class DeclarationUtilities
 
     /**
      * @param builder the builder
-     * @param groupType the group the metric should be part of
+     * @param groupType the groups the metric should be part of
      * @param notInGroupType the optional group the metric should not be part of, in case it belongs to several groups
      * @return whether there are any metrics with the designated type
      */
 
     private static Set<String> getMetricType( EvaluationDeclarationBuilder builder,
-                                              MetricConstants.SampleDataGroup groupType,
+                                              Set<MetricConstants.SampleDataGroup> groupType,
                                               MetricConstants.SampleDataGroup notInGroupType )
     {
         return builder.metrics()
                       .stream()
-                      .filter( next -> next.name()
-                                           .isInGroup( groupType )
+                      .filter( next -> groupType.stream()
+                                                .anyMatch( g -> next.name()
+                                                                    .isInGroup( g ) )
                                        && ( Objects.isNull( notInGroupType ) || !next.name()
                                                                                      .isInGroup( notInGroupType ) ) )
                       .map( next -> next.name()

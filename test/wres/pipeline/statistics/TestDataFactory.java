@@ -831,7 +831,8 @@ public final class TestDataFactory
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
 
-        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+        Instant forecastRefTime = Instant.parse( "1985-03-11T18:00:00Z" );
+        return builder.addData( TimeSeries.of( TestDataFactory.getBoilerplateMetadataWithT0( forecastRefTime ),
                                                values ) )
                       .setMetadata( meta )
                       .build();
@@ -876,10 +877,10 @@ public final class TestDataFactory
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
 
-        return builder.addData( TimeSeries.of( getBoilerplateMetadata(),
+        return builder.addData( TimeSeries.of( TestDataFactory.getBoilerplateMetadata(),
                                                Collections.emptySortedSet() ) )
                       .setMetadata( meta )
-                      .addDataForBaseline( TimeSeries.of( getBoilerplateMetadata(),
+                      .addDataForBaseline( TimeSeries.of( TestDataFactory.getBoilerplateMetadata(),
                                                           Collections.emptySortedSet() ) )
                       .setMetadataForBaseline( base )
                       .build();
@@ -895,8 +896,7 @@ public final class TestDataFactory
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      Feature.of(
-                                              MessageUtilities.getGeometry( FEATURE_NAME ) ),
+                                      Feature.of( MessageUtilities.getGeometry( FEATURE_NAME ) ),
                                       UNIT );
     }
 
