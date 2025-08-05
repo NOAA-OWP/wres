@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -70,8 +71,12 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pairs;
+import wres.statistics.generated.PairsMetric;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
@@ -130,6 +135,21 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
     /** Repeated string. */
     private static final String PROBABILITY = "PROBABILITY";
+
+    /** Repeated string. */
+    private static final String SECONDS_SINCE_1970_01_01_T_00_00_00_Z = "SECONDS SINCE 1970-01-01T00:00:00Z";
+
+    /** Repeated string. */
+    private static final String T_00_00_00_Z = "0001-01-01T00:00:00Z";
+
+    /** Repeated string. */
+    private static final String T_23_59_59_Z = "9999-12-31T23:59:59Z";
+
+    /** Repeated string. */
+    private static final String NEGATIVE_INFINITY_STRING = Double.toString( Double.NEGATIVE_INFINITY );
+
+    /** Repeated string. */
+    private static final String POSITIVE_INFINITY_STRING = Double.toString( Double.POSITIVE_INFINITY );
 
     /** Lock for writing csv to the {@link #path} for which this writer is built. */
     private final ReentrantLock writeLock;
@@ -774,8 +794,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // Write the double scores
-        if ( !statistics.getScoresList()
-                        .isEmpty() )
+        if ( statistics.getScoresCount() > 0 )
         {
             this.writeDoubleScores( mergeDescription,
                                     statistics.getScoresList(),
@@ -786,8 +805,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // Write the duration scores
-        if ( !statistics.getDurationScoresList()
-                        .isEmpty() )
+        if ( statistics.getDurationScoresCount() > 0 )
         {
             this.writeDurationScores( mergeDescription,
                                       statistics.getDurationScoresList(),
@@ -799,8 +817,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // Write the diagrams
-        if ( !statistics.getDiagramsList()
-                        .isEmpty() )
+        if ( statistics.getDiagramsCount() > 0 )
         {
             this.writeDiagrams( mergeDescription,
                                 statistics.getDiagramsList(),
@@ -811,8 +828,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // Write the box plots per pair (per pool)
-        if ( !statistics.getOneBoxPerPairList()
-                        .isEmpty() )
+        if ( statistics.getOneBoxPerPairCount() > 0 )
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPairList(),
@@ -823,8 +839,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // Write the box plots per pool
-        if ( !statistics.getOneBoxPerPoolList()
-                        .isEmpty() )
+        if ( statistics.getOneBoxPerPoolCount() > 0 )
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPoolList(),
@@ -835,8 +850,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
 
         // Write the timing error diagrams
-        if ( !statistics.getDurationDiagramsList()
-                        .isEmpty() )
+        if ( statistics.getDurationDiagramsCount() > 0 )
         {
             this.writeDurationDiagrams( mergeDescription,
                                         statistics.getDurationDiagramsList(),
@@ -845,6 +859,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                         groupNumber,
                                         ensembleAverageType,
                                         summaryStatistic );
+        }
+
+        // Write the pairs statistics
+        if ( statistics.getPairsStatisticsCount() > 0 )
+        {
+            this.writePairsStatistics( mergeDescription,
+                                       statistics.getPairsStatisticsList(),
+                                       writer,
+                                       groupNumber,
+                                       ensembleAverageType );
         }
     }
 
@@ -953,6 +977,42 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         for ( DiagramStatistic next : sorted )
         {
             this.writeDiagram( poolDescription, next, writer, groupNumber, ensembleAverageType, summaryStatistic );
+        }
+    }
+
+    /**
+     * Writes a list of pairs statistics to the CSV file.
+     *
+     * @param poolDescription the pool description
+     * @param statistics the statistics
+     * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
+     * @throws IOException if any of the scores could not be written
+     */
+
+    private void writePairsStatistics( StringJoiner poolDescription,
+                                       List<PairsStatistic> statistics,
+                                       BufferedOutputStream writer,
+                                       AtomicInteger groupNumber,
+                                       EnsembleAverageType ensembleAverageType )
+            throws IOException
+    {
+        // Sort in metric name order
+        Comparator<PairsStatistic> comparator =
+                Comparator.comparing( a -> a.getMetric()
+                                            .getName() );
+
+        List<PairsStatistic> sorted = new ArrayList<>( statistics );
+        sorted.sort( comparator );
+
+        for ( PairsStatistic next : sorted )
+        {
+            this.writePairsStatistic( poolDescription,
+                                      next,
+                                      writer,
+                                      groupNumber,
+                                      ensembleAverageType );
         }
     }
 
@@ -1494,6 +1554,239 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                   optimum,
                                   summaryStatisticMetricName,
                                   summaryStatisticMetricComponentName );
+    }
+
+    /**
+     * Writes a pairs statistic.
+     *
+     * @param poolDescription the pool description
+     * @param pairs the pairs statistic
+     * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
+     * @throws IOException if the score could not be written
+     */
+
+    private void writePairsStatistic( StringJoiner poolDescription,
+                                      PairsStatistic pairs,
+                                      BufferedOutputStream writer,
+                                      AtomicInteger groupNumber,
+                                      EnsembleAverageType ensembleAverageType )
+            throws IOException
+    {
+        PairsMetric metric = pairs.getMetric();
+        Pairs statistic = pairs.getStatistics();
+        int leftCount = statistic.getLeftVariableNamesCount();
+        int rightCount = statistic.getRightVariableNamesCount();
+
+        // Variable names
+        List<String> leftNames = statistic.getLeftVariableNamesList();
+        List<String> rightNames = statistic.getRightVariableNamesList();
+
+        // Write the components in the same way as diagram components, i.e., write the reference datetime first, which
+        // must be written as an integer relative to the epoch (which should be clarified in the units) and then write
+        // the valid times, which are again relative to the epoch, and then write the variable values for each named
+        // variable, all tied together with the same statistics group number for each row.
+        int rowCount = 0;
+        for ( Pairs.TimeSeriesOfPairs nextSeries : statistic.getTimeSeriesList() )
+        {
+            // Write the reference times
+            for ( ReferenceTime time : nextSeries.getReferenceTimesList() )
+            {
+                double[] referenceTimes = Collections.nCopies( nextSeries.getPairsCount(),
+                                                               time.getReferenceTime() )
+                                                     .stream()
+                                                     .mapToDouble( t -> ( double ) t.getSeconds() )
+                                                     .toArray();
+
+                MetricDetails details = new MetricDetails( metric.getName()
+                                                                 .toString(),
+                                                           time.getReferenceTimeType()
+                                                               .toString(),
+                                                           SECONDS_SINCE_1970_01_01_T_00_00_00_Z,
+                                                           T_00_00_00_Z,
+                                                           T_23_59_59_Z,
+                                                           null,
+                                                           null,
+                                                           null );
+
+                this.writeVariable( referenceTimes,
+                                    poolDescription,
+                                    writer,
+                                    groupNumber,
+                                    ensembleAverageType,
+                                    details );
+            }
+
+            // Write the valid times
+            double[] validTimes = nextSeries.getPairsList()
+                                            .stream()
+                                            .map( Pairs.Pair::getValidTime )
+                                            .mapToDouble( t -> ( double ) t.getSeconds() )
+                                            .toArray();
+
+            MetricDetails details = new MetricDetails( metric.getName()
+                                                             .toString(),
+                                                       "VALID TIME",
+                                                       SECONDS_SINCE_1970_01_01_T_00_00_00_Z,
+                                                       T_00_00_00_Z,
+                                                       T_23_59_59_Z,
+                                                       null,
+                                                       null,
+                                                       null );
+
+            this.writeVariable( validTimes,
+                                poolDescription,
+                                writer,
+                                groupNumber,
+                                ensembleAverageType,
+                                details );
+
+            // Write the variable values, starting with the left variables then the right
+            for ( int i = 0; i < leftCount; i++ )
+            {
+                MetricDetails nextDetails = new MetricDetails( metric.getName()
+                                                                     .toString(),
+                                                               leftNames.get( i ),
+                                                               metric.getUnits(),
+                                                               NEGATIVE_INFINITY_STRING,
+                                                               POSITIVE_INFINITY_STRING,
+                                                               null,
+                                                               null,
+                                                               null );
+
+                final int finalI = i;
+                double[] nextLeft = nextSeries.getPairsList()
+                                              .stream()
+                                              .mapToDouble( n -> n.getLeft( finalI ) )
+                                              .toArray();
+                this.writeVariable( nextLeft,
+                                    poolDescription,
+                                    writer,
+                                    groupNumber,
+                                    ensembleAverageType,
+                                    nextDetails );
+            }
+
+            for ( int i = 0; i < rightCount; i++ )
+            {
+                final int finalI = i;
+
+                MetricDetails nextDetails = new MetricDetails( metric.getName()
+                                                                     .toString(),
+                                                               rightNames.get( i ),
+                                                               metric.getUnits(),
+                                                               NEGATIVE_INFINITY_STRING,
+                                                               POSITIVE_INFINITY_STRING,
+                                                               null,
+                                                               null,
+                                                               null );
+
+                double[] nextRight = nextSeries.getPairsList()
+                                               .stream()
+                                               .mapToDouble( n -> n.getRight( finalI ) )
+                                               .toArray();
+                this.writeVariable( nextRight,
+                                    poolDescription,
+                                    writer,
+                                    groupNumber,
+                                    ensembleAverageType,
+                                    nextDetails );
+            }
+
+            rowCount += nextSeries.getPairsCount();
+        }
+
+        // Increment the group number by the number of elements in one variable because they are all equal in
+        // size
+        groupNumber.getAndAdd( rowCount );
+    }
+
+    /**
+     * Writes a variable.
+     *
+     * @param values the variable values
+     * @param poolDescription the pool description
+     * @param writer a shared writer, not to be closed
+     * @param groupNumber the statistics group number
+     * @param ensembleAverageType the ensemble average type
+     * @param details the metric details
+     * @throws IOException if the score could not be written
+     */
+
+    private void writeVariable( double[] values,
+                                StringJoiner poolDescription,
+                                BufferedOutputStream writer,
+                                AtomicInteger groupNumber,
+                                EnsembleAverageType ensembleAverageType,
+                                MetricDetails details )
+            throws IOException
+    {
+        String variableName = details.metricComponentName();
+
+        int innerGroupNumber = groupNumber.get();
+        for ( double nextValue : values )
+        {
+            // Add a line separator for the next row
+            writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
+
+            StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
+
+            // Add the pool description
+            joiner.merge( poolDescription );
+
+            // Add the metric information
+
+            // Add the metric name
+            this.append( joiner, details.metricName(), false );
+
+            // Add the metric component name
+            this.append( joiner, variableName, false );
+
+            // Name qualifier: use an explicit name qualifier first, else the ensemble average type for
+            // single-valued metrics. These two things do not overlap.
+            MetricConstants metricName = MetricConstants.valueOf( details.metricName() );
+            String qualifier = this.getMetricComponentQualifier( metricName, ensembleAverageType );
+
+            this.append( joiner, qualifier, false );
+
+            // Add the metric component units
+            this.append( joiner, details.units(), false );
+
+            this.append( joiner, details.minimum(), false );
+
+            // Add the maximum value
+            this.append( joiner, details.maximum(), false );
+
+            // Optimum value
+            this.append( joiner, details.optimum(), false );
+
+            // Add the statistic group number
+            this.append( joiner, String.valueOf( innerGroupNumber ), false );
+
+            // Add the summary statistic, if available
+            this.writeSummaryStatistic( null,
+                                        details.summaryStatisticMetricName(),
+                                        details.summaryStatisticMetricComponentName(),
+                                        details.units(),
+                                        joiner );
+
+            // Add the statistic value
+            String formattedValue = this.getDecimalFormatter()
+                                        .apply( nextValue );
+
+            this.append( joiner, formattedValue, false );
+
+            // Join the row string and get the row bytes in utf8.
+            byte[] row = joiner.toString()
+                               .getBytes( StandardCharsets.UTF_8 );
+
+            // Write the row
+            writer.write( row );
+
+            // Increment the group number
+            innerGroupNumber++;
+        }
     }
 
     /**

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.ThresholdType;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.types.Probability;
@@ -75,6 +76,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right )
                                                                              .average()
                                                                              .orElse( MissingValues.DOUBLE );
+    private static final String SKIPPING_THE_CALCULATION_OF_STATISTICS_FOR_AN_EMPTY_POOL_OF_PAIRS_WITH_METADATA =
+            "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.";
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume discrete probability pairs and produce
@@ -114,6 +117,14 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
     private final MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
             ensembleBoxPlot;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce
+     * {@link BoxplotStatisticOuter}.
+     */
+
+    private final MetricCollection<Pool<TimeSeries<Pair<Double, Ensemble>>>, PairsStatisticOuter, PairsStatisticOuter>
+            ensemblePairs;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.
@@ -224,6 +235,20 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         {
             this.ensembleBoxPlot = null;
         }
+        // Ensemble time-series input, pairs output
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE_TIME_SERIES, StatisticType.PAIRS ) )
+        {
+            this.ensemblePairs = MetricFactory.ofEnsemblePairsMetrics( metricExecutor,
+                                                                       this.getMetrics( SampleDataGroup.ENSEMBLE_TIME_SERIES,
+                                                                                        StatisticType.PAIRS ) );
+
+            LOGGER.debug( "Created the statistics for processing that consume ensemble time-series of pairs. {}",
+                          this.ensemblePairs );
+        }
+        else
+        {
+            this.ensemblePairs = null;
+        }
 
         this.toSingleValues = this.getSingleValuedTransformer( this.ensembleAverageType );
 
@@ -279,6 +304,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             this.processEnsemblePairs( unpacked, futures );
         }
 
+        // Process the metrics that consume time-series of ensemble pairs
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE_TIME_SERIES ) )
+        {
+            this.processEnsembleTimeSeriesPairs( adjustedPool, futures );
+        }
+
         // Process the metrics that consume discrete probability pairs derived from the ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
         {
@@ -286,7 +317,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         }
 
         // Process the metrics that consume dichotomous pairs derived from the ensemble pairs
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) && this.hasDecisionThresholds() )
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS )
+             && this.hasDecisionThresholds() )
         {
             LOGGER.debug( "Encountered dichotomous metrics and decision thresholds, which means that dichtomous "
                           + "metrics will be computed for the ensemble pairs." );
@@ -435,15 +467,33 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
+            this.processEnsemblePairsByThreshold( input, futures, StatisticType.DOUBLE_SCORE );
         }
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticType.DIAGRAM );
+            this.processEnsemblePairsByThreshold( input, futures, StatisticType.DIAGRAM );
         }
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
         {
-            processEnsemblePairsByThreshold( input, futures, StatisticType.BOXPLOT_PER_PAIR );
+            this.processEnsemblePairsByThreshold( input, futures, StatisticType.BOXPLOT_PER_PAIR );
+        }
+    }
+
+    /**
+     * <p>Processes a set of metric futures that consume ensemble pairs, which are mapped from the input pairs,
+     * ensemble pairs, using a configured mapping function.
+     *
+     * @param input the input pairs
+     * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private void processEnsembleTimeSeriesPairs( Pool<TimeSeries<Pair<Double, Ensemble>>> input,
+                                                 StatisticsStore.Builder futures )
+    {
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE_TIME_SERIES, StatisticType.PAIRS ) )
+        {
+            this.processEnsembleTimeSeriesPairsByThreshold( input, futures );
         }
     }
 
@@ -549,7 +599,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Don't waste cpu cycles computing statistics for empty pairs
         if ( pairs.get().isEmpty() )
         {
-            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+            LOGGER.debug( SKIPPING_THE_CALCULATION_OF_STATISTICS_FOR_AN_EMPTY_POOL_OF_PAIRS_WITH_METADATA,
                           pairs.getMetadata() );
 
             return;
@@ -644,7 +694,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // example, a logical threshold is a threshold that is consistently named "banana" across all features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
-        //Define a mapper to convert the single-valued pairs to dichotomous pairs
+        // Define a mapper to convert the single-valued pairs to dichotomous pairs
         Function<ThresholdOuter, Function<Pair<Double, Ensemble>, Pair<Probability, Probability>>>
                 transformerGenerator =
                 threshold -> pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
@@ -680,6 +730,81 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     }
 
     /**
+     * Processes all thresholds for metrics that consume time-series of ensemble pairs and produce a specified
+     * {@link StatisticType}.
+     *
+     * @param pool the input pairs
+     * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private void processEnsembleTimeSeriesPairsByThreshold( Pool<TimeSeries<Pair<Double, Ensemble>>> pool,
+                                                            StatisticsStore.Builder futures )
+    {
+        // Filter the thresholds for the feature group associated with this pool and for the required types
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = super.getThresholds();
+
+        FeatureGroup featureGroup = pool.getMetadata()
+                                        .getFeatureGroup();
+        Map<FeatureTuple, Set<ThresholdOuter>> filteredThresholds =
+                super.getFilteredThresholds( thresholdsByFeature,
+                                             featureGroup,
+                                             ThresholdType.PROBABILITY,
+                                             ThresholdType.VALUE );
+
+        if ( filteredThresholds.isEmpty() )
+        {
+            throw new MetricCalculationException( "Could not find any thresholds for feature tuples within feature "
+                                                  + "group "
+                                                  + featureGroup
+                                                  + ". Thresholds were available for these feature tuples: "
+                                                  + thresholdsByFeature.keySet()
+                                                  + "." );
+        }
+
+        // Add the quantiles
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( filteredThresholds,
+                                                                                             pool.getClimatology() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+
+        // Decompose the thresholds into groups whereby each group contains one "logical" threshold per feature. For
+        // example, a logical threshold is a threshold that is consistently named "banana" across all features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
+
+        // Iterate the thresholds
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
+        {
+            // use a no-up filter as there are no thresholds applied to time-series of ensemble pairs
+            Map<FeatureTuple, Predicate<TimeSeries<Pair<Double, Ensemble>>>> slicers =
+                    ThresholdSlicer.getFiltersFromThresholds( thresholds, t -> series -> true );
+
+            // Add the threshold to the pool metadata
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    untransformed -> PoolMetadata.of( untransformed, composed );
+
+            // Decompose by feature
+            Map<FeatureTuple, Pool<TimeSeries<Pair<Double, Ensemble>>>> pools =
+                    PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
+
+            // Filter by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<TimeSeries<Pair<Double, Ensemble>>> sliced =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.filter( pools,
+                                                                             slicers,
+                                                                             pool.getMetadata(),
+                                                                             super.getBaselineMetadata( pool ),
+                                                                             metaTransformer ) );
+
+            this.processEnsembleTimeSeriesPairsForPairedStatistics( sliced,
+                                                                    futures );
+        }
+    }
+
+    /**
      * Processes one threshold for metrics that consume discrete probability pairs for a given {@link StatisticType}.
      *
      * @param pairs the input pairs
@@ -694,7 +819,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Don't waste cpu cycles computing statistics for empty pairs
         if ( pairs.get().isEmpty() )
         {
-            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+            LOGGER.debug( SKIPPING_THE_CALCULATION_OF_STATISTICS_FOR_AN_EMPTY_POOL_OF_PAIRS_WITH_METADATA,
                           pairs.getMetadata() );
 
             return;
@@ -710,6 +835,30 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             futures.addDiagramStatistics( this.processDiscreteProbabilityPairs( pairs,
                                                                                 this.discreteProbabilityDiagrams ) );
         }
+    }
+
+    /**
+     * Processes one threshold for metrics that consume time-series of ensemble pairs for a given {@link StatisticType}.
+     *
+     * @param pairs the input pairs
+     * @param futures the metric futures
+     */
+
+    private void processEnsembleTimeSeriesPairsForPairedStatistics( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs,
+                                                                    StatisticsStore.Builder futures )
+    {
+        // Don't waste cpu cycles computing statistics for empty pairs
+        if ( pairs.get().isEmpty() )
+        {
+            LOGGER.debug( SKIPPING_THE_CALCULATION_OF_STATISTICS_FOR_AN_EMPTY_POOL_OF_PAIRS_WITH_METADATA,
+                          pairs.getMetadata() );
+
+            return;
+        }
+
+        Future<List<PairsStatisticOuter>> pairStatistics =
+                this.processEnsembleTimeSeriesPairs( pairs, this.ensemblePairs );
+        futures.addPairsStatistics( pairStatistics );
     }
 
     /**
@@ -794,6 +943,49 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                 Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
                 return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
                                                       this.getSlicingExecutor() );
+            }
+
+            return CompletableFuture.completedFuture( List.of() );
+        }
+
+        // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
+        return super.processMetricsRequiredForThisPool( pairs, collection );
+    }
+
+    /**
+     * Builds a metric future for a {@link MetricCollection} that consumes time-series of ensemble pairs and appends it
+     * to the input map of futures.
+     *
+     * @param <T> the type of {@link Statistic}
+     * @param pairs the pairs
+     * @param collection the metric collection
+     * @return the future result
+     */
+
+    private <T extends Statistic<?>> Future<List<T>>
+    processEnsembleTimeSeriesPairs( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs,
+                                    MetricCollection<Pool<TimeSeries<Pair<Double, Ensemble>>>, T, T> collection )
+    {
+
+        // More samples than the minimum sample size?
+        int minimumSampleSize = super.getMinimumSampleSize();
+        int actualSampleSize = pairs.get().size();
+
+        // Log and return an empty result if the sample size is too small
+        if ( actualSampleSize < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                Set<MetricConstants> collected = new HashSet<>( collection.getMetrics() );
+                collected.remove( MetricConstants.SAMPLE_SIZE );
+
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} pairs, which is fewer than the "
+                              + "minimum sample size of {} pairs. The following metrics will not be computed for this "
+                              + "pool: {}.",
+                              pairs.getMetadata(),
+                              actualSampleSize,
+                              minimumSampleSize,
+                              collected );
             }
 
             return CompletableFuture.completedFuture( List.of() );

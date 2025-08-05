@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "wresproto/pairs_metric.proto";
+import "wresproto/pairs.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "PairsStatisticProto";
+option java_multiple_files = true;
+
+message PairsStatistic
+{
+    /*A message that encapsulates a statistic composed of paired values. */
+
+    PairsMetric metric = 1;
+    // The metric.
+    
+    Pairs statistics = 2;
+    // The paired values.
+}

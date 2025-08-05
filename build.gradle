@@ -350,7 +350,7 @@ project(':wres-datamodel') {
         // The following five libraries together provide units of measure.
         api 'javax.measure:unit-api:2.2'
         runtimeOnly 'si.uom:si-units:2.1'
-        implementation 'tech.units:indriya:2.2.2'
+        implementation 'tech.units:indriya:2.2.3'
         implementation 'systems.uom:systems-ucum:2.2'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         implementation 'si.uom:si-quantity:2.1'

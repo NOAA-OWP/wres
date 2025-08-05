@@ -25,6 +25,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.events.subscribe.ConsumerFactory;
 import wres.statistics.MessageUtilities;
+import wres.vis.writing.PairsStatisticsGraphicsWriter;
 import wres.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
 import wres.writing.csv.statistics.CommaSeparatedDiagramWriter;
 import wres.writing.csv.statistics.CommaSeparatedDurationDiagramWriter;
@@ -226,7 +227,9 @@ class StatisticsConsumerFactory implements ConsumerFactory
                    .addDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                         DiagramGraphicsWriter.of( outputs, path ) )
                    .addDurationDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
-                                                DurationDiagramGraphicsWriter.of( outputs, path ) );
+                                                DurationDiagramGraphicsWriter.of( outputs, path ) )
+                   .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                                                PairsStatisticsGraphicsWriter.of( outputs, path ) );
         }
 
         // Note that diagrams are always written by group, even if all the statistics could be written per pool because

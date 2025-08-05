@@ -23,6 +23,8 @@ import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.PairsMetric;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.Statistics;
 
 /**
@@ -41,7 +43,7 @@ class StatisticsToFormatsRouterTest
             actual.put( Format.PNG, MetricConstants.StatisticType.DOUBLE_SCORE );
             return Set.of();
         } );
-        builder.addDurationScoreConsumer( Format.CSV, a -> {
+        builder.addDurationScoreConsumer( Format.NETCDF2, a -> {
             actual.put( Format.NETCDF2, MetricConstants.StatisticType.DURATION_SCORE );
             return Set.of();
         } );
@@ -58,7 +60,11 @@ class StatisticsToFormatsRouterTest
             return Set.of();
         } );
         builder.addBoxplotConsumerPerPool( Format.GRAPHIC, a -> {
-            actual.put( Format.CSV2, MetricConstants.StatisticType.BOXPLOT_PER_POOL );
+            actual.put( Format.GRAPHIC, MetricConstants.StatisticType.BOXPLOT_PER_POOL );
+            return Set.of();
+        } );
+        builder.addPairsStatisticsConsumer( Format.CSV2, a -> {
+            actual.put( Format.CSV2, MetricConstants.StatisticType.PAIRS );
             return Set.of();
         } );
         builder.addStatisticsConsumer( Format.NETCDF, a -> {
@@ -102,6 +108,12 @@ class StatisticsToFormatsRouterTest
                                                                             .build() )
                                                    .build();
 
+        PairsStatistic pairsStatistic = PairsStatistic.newBuilder()
+                                                      .setMetric( PairsMetric.newBuilder()
+                                                                             .setName( MetricName.TIME_SERIES_PLOT )
+                                                                             .build() )
+                                                      .build();
+
         Statistics statistics = Statistics.newBuilder()
                                           .addOneBoxPerPool( boxPlot )
                                           .addOneBoxPerPair( boxPlot )
@@ -109,6 +121,7 @@ class StatisticsToFormatsRouterTest
                                           .addScores( doubleScore )
                                           .addDurationDiagrams( durationDiagram )
                                           .addDurationScores( durationScore )
+                                          .addPairsStatistics( pairsStatistic )
                                           .build();
 
         router.apply( List.of( statistics ) );
@@ -119,7 +132,8 @@ class StatisticsToFormatsRouterTest
                         Format.PROTOBUF, MetricConstants.StatisticType.DURATION_DIAGRAM,
                         Format.SVG, MetricConstants.StatisticType.DIAGRAM,
                         Format.CSV, MetricConstants.StatisticType.BOXPLOT_PER_PAIR,
-                        Format.CSV2, MetricConstants.StatisticType.BOXPLOT_PER_POOL,
+                        Format.CSV2, MetricConstants.StatisticType.PAIRS,
+                        Format.GRAPHIC, MetricConstants.StatisticType.BOXPLOT_PER_POOL,
                         Format.NETCDF, MetricConstants.StatisticType.DOUBLE_SCORE );
 
         assertEquals( expected, actual );

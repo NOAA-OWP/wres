@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Paint;
 import java.util.ArrayList;
 
+import org.jfree.chart.labels.XYSeriesLabelGenerator;
 import org.jfree.chart.plot.DefaultDrawingSupplier;
 
 import wres.config.MetricConstants;
@@ -23,6 +24,23 @@ public class GraphicsUtils
 
     /** The scenario label to use when plotting a baseline scenario in the same plot as a predicted scenario. */
     public static final String PREDICTED_SCENARIO_LABEL = " (solid)";
+
+    /** A separator string to use when identifying series that should be treated as common for the purposes of labeling
+     *  and rendering. The string that appears before the separator is the common name. */
+
+    public static final String PAIR_THEME_SEPARATOR = "_*£$%_";
+
+    /** A label generator for paired series. */
+    public static final XYSeriesLabelGenerator PAIR_THEME_LABEL_GENERATOR = ( xyDataset, i ) -> {
+        String label = xyDataset.getSeriesKey( i )
+                                .toString();
+        if ( label.contains( PAIR_THEME_SEPARATOR ) )
+        {
+            label = label.substring( 0, label.indexOf( PAIR_THEME_SEPARATOR ) );
+        }
+
+        return label;
+    };
 
     /**
      * @return a sequence of base colors.

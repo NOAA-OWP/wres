@@ -28,6 +28,7 @@ import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -48,79 +49,50 @@ import wres.statistics.generated.SummaryStatistic;
 
 public class StatisticsToFormatsRouter implements Function<Collection<Statistics>, Set<Path>>
 {
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsToFormatsRouter.class );
 
-    /**
-     * Null output error string
-     */
-
+    /** Null output error string */
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
-    /**
-     * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link Format}.
-     */
-
+    /** Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link Format}. */
     private final Map<Format, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> doubleScoreConsumers =
             new EnumMap<>( Format.class );
 
-    /**
-     * Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link Format}.
-     */
-
+    /** Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link Format}. */
     private final Map<Format, Function<List<DurationScoreStatisticOuter>, Set<Path>>> durationScoreConsumers =
             new EnumMap<>( Format.class );
 
-    /**
-     * Store of consumers for processing {@link DiagramStatisticOuter} by {@link Format}.
-     */
-
+    /** Store of consumers for processing {@link DiagramStatisticOuter} by {@link Format}. */
     private final Map<Format, Function<List<DiagramStatisticOuter>, Set<Path>>> diagramConsumers =
             new EnumMap<>( Format.class );
 
-    /**
-     * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots
-     * contain one box per pair.
-     */
-
+    /** Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots contain one
+     * box per pair. */
     private final Map<Format, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPair =
             new EnumMap<>( Format.class );
 
-    /**
-     * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots
-     * contain one box per pool.
-     */
-
+    /** Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots contain one
+     * box per pool. */
     private final Map<Format, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPool =
             new EnumMap<>( Format.class );
 
-    /**
-     * Store of consumers for processing {@link DurationDiagramStatisticOuter} by {@link Format} format.
-     */
-
+    /** Store of consumers for processing {@link DurationDiagramStatisticOuter} by {@link Format} format. */
     private final Map<Format, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> durationDiagramConsumers =
             new EnumMap<>( Format.class );
 
-    /**
-     * Store of consumers for processing {@link Statistics} by {@link Format} format.
-     */
+    /** Store of consumers for processing {@link PairsStatisticOuter} by {@link Format} format. */
+    private final Map<Format, Function<List<PairsStatisticOuter>, Set<Path>>> pairsStatisticsConsumers =
+            new EnumMap<>( Format.class );
 
+    /** Store of consumers for processing {@link Statistics} by {@link Format} format. */
     private final Map<Format, Function<Statistics, Set<Path>>> allStatisticsConsumers =
             new EnumMap<>( Format.class );
 
-    /**
-     * A map of output formats for which specific metrics should not be written. 
-     */
-
+    /** A map of output formats for which specific metrics should not be written. */
     private final Map<Format, Set<MetricConstants>> suppressTheseFormatsForTheseMetrics;
 
-    /**
-     * The evaluation description.
-     */
-
+    /** The evaluation description. */
     private final Evaluation evaluationDescription;
 
     /**
@@ -129,60 +101,40 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      */
     public static class Builder
     {
-        /**
-         * The evaluation description.
-         */
-
+        /** The evaluation description. */
         private Evaluation evaluationDescription;
 
-        /**
-         * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link Format} format.
-         */
-
+        /** Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link Format} format. */
         private final Map<Format, Function<List<DoubleScoreStatisticOuter>, Set<Path>>> doubleScoreConsumers =
                 new EnumMap<>( Format.class );
 
-        /**
-         * Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link Format} format.
-         */
-
+        /** Store of consumers for processing {@link DurationScoreStatisticOuter} by {@link Format} format. */
         private final Map<Format, Function<List<DurationScoreStatisticOuter>, Set<Path>>> durationScoreConsumers =
                 new EnumMap<>( Format.class );
 
-        /**
-         * Store of consumers for processing {@link DiagramStatisticOuter} by {@link Format} format.
-         */
-
+        /** Store of consumers for processing {@link DiagramStatisticOuter} by {@link Format} format. */
         private final Map<Format, Function<List<DiagramStatisticOuter>, Set<Path>>> diagramConsumers =
                 new EnumMap<>( Format.class );
 
-        /**
-         * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots
-         * contain one box per pair.
-         */
-
+        /** Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots contain
+         * one box per pair. */
         private final Map<Format, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPair =
                 new EnumMap<>( Format.class );
 
-        /**
-         * Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots
-         * contain one box per pool.
-         */
-
+        /** Store of consumers for processing {@link BoxplotStatisticOuter} by {@link Format} format. The plots contain
+         * one box per pool. */
         private final Map<Format, Function<List<BoxplotStatisticOuter>, Set<Path>>> boxplotConsumersPerPool =
                 new EnumMap<>( Format.class );
 
-        /**
-         * Store of consumers for processing {@link DurationDiagramStatisticOuter} by {@link Format} format.
-         */
-
+        /** Store of consumers for processing {@link DurationDiagramStatisticOuter} by {@link Format} format. */
         private final Map<Format, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> durationDiagramConsumers =
                 new EnumMap<>( Format.class );
 
-        /**
-         * Store of consumers for processing {@link Statistics} by {@link Format} format.
-         */
+        /** Store of consumers for processing {@link PairsStatisticOuter} by {@link Format} format. */
+        private final Map<Format, Function<List<PairsStatisticOuter>, Set<Path>>> pairsStatisticsConsumers =
+                new EnumMap<>( Format.class );
 
+        /** Store of consumers for processing {@link Statistics} by {@link Format} format. */
         private final Map<Format, Function<Statistics, Set<Path>>> allStatisticsConsumers =
                 new EnumMap<>( Format.class );
 
@@ -300,6 +252,23 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         /**
+         * Adds a diagram consumer to the builder for a given format type.
+         * @param format the format type
+         * @param consumer the consumer
+         * @return the builder
+         * @throws NullPointerException if any input is null
+         */
+        public Builder addPairsStatisticsConsumer( Format format,
+                                                   Function<List<PairsStatisticOuter>, Set<Path>> consumer )
+        {
+            Objects.requireNonNull( format );
+            Objects.requireNonNull( consumer );
+
+            this.pairsStatisticsConsumers.put( format, consumer );
+            return this;
+        }
+
+        /**
          * Adds a consumer for all types of statistics to the builder for a given format type.
          * @param format the format type
          * @param consumer the consumer
@@ -398,9 +367,10 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                        .anyMatch( next -> next.getOneBoxPerPairCount() > 0 ) )
         {
             Function<Statistics, List<BoxplotStatistic>> supplier = Statistics::getOneBoxPerPairList;
-            List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                      this.getBoxplotMapper( supplier,
-                                                                                                             poolSupplier ) );
+            List<BoxplotStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics,
+                                                        this.getBoxplotMapper( supplier,
+                                                                               poolSupplier ) );
             Set<Path> innerPaths = this.processBoxPlotOutputsPerPair( wrapped );
             paths.addAll( innerPaths );
         }
@@ -410,9 +380,10 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                        .anyMatch( next -> next.getOneBoxPerPoolCount() > 0 ) )
         {
             Function<Statistics, List<BoxplotStatistic>> supplier = Statistics::getOneBoxPerPoolList;
-            List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                      this.getBoxplotMapper( supplier,
-                                                                                                             poolSupplier ) );
+            List<BoxplotStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics,
+                                                        this.getBoxplotMapper( supplier,
+                                                                               poolSupplier ) );
 
             Set<Path> innerPaths = this.processBoxPlotOutputsPerPool( wrapped );
             paths.addAll( innerPaths );
@@ -444,11 +415,23 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         if ( statistics.stream()
                        .anyMatch( next -> next.getDurationDiagramsCount() > 0 ) )
         {
-            List<DurationDiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                              this.getDurationDiagramMapper(
-                                                                                                      poolSupplier ) );
+            List<DurationDiagramStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics,
+                                                        this.getDurationDiagramMapper( poolSupplier ) );
 
             Set<Path> innerPaths = this.processDurationDiagramStatistic( wrapped );
+            paths.addAll( innerPaths );
+        }
+
+        // Pairs statistics available
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getPairsStatisticsCount() > 0 ) )
+        {
+            List<PairsStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics,
+                                                        this.getPairsStatisticsMapper( poolSupplier ) );
+
+            Set<Path> innerPaths = this.processPairsStatistics( wrapped );
             paths.addAll( innerPaths );
         }
 
@@ -596,6 +579,26 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             return diagrams.stream()
                            .map( innerMapper )
                            .toList();
+        };
+    }
+
+    /**
+     * Returns a mapper function that maps between raw statistics and wrapped pairs statistics.
+     *
+     * @param poolSupplier the pool supplier
+     * @return the mapper
+     */
+
+    private Function<Statistics, List<PairsStatisticOuter>> getPairsStatisticsMapper( Function<Statistics, Pool> poolSupplier )
+    {
+        return someStats -> {
+            List<PairsStatistic> pairsStatistics = someStats.getPairsStatisticsList();
+            Function<PairsStatistic, PairsStatisticOuter> innerMapper =
+                    next -> PairsStatisticOuter.of( next, PoolMetadata.of( this.getEvaluationDescription(),
+                                                                           poolSupplier.apply( someStats ) ) );
+            return pairsStatistics.stream()
+                                  .map( innerMapper )
+                                  .toList();
         };
     }
 
@@ -837,6 +840,50 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             {
                 List<DurationDiagramStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( nextStatistics,
                                                                                                         next.getKey() );
+
+                // Consume the output
+                Set<Path> innerPaths = next.getValue()
+                                           .apply( filtered );
+                paths.addAll( innerPaths );
+            }
+
+            this.log( outputs, next.getKey(), false );
+        }
+
+        return Collections.unmodifiableSet( paths );
+    }
+
+    /**
+     * Processes {@link DiagramStatisticOuter}.
+     *
+     * @param outputs the outputs to consume
+     * @return the paths written
+     * @throws NullPointerException if the input is null
+     */
+
+    private Set<Path> processPairsStatistics( List<PairsStatisticOuter> outputs )
+    {
+        Objects.requireNonNull( outputs, NULL_OUTPUT_STRING );
+
+        Set<Path> paths = new HashSet<>();
+
+        LOGGER.debug( "Routing {} pairs statistics to {} format writers with format types {}.",
+                      outputs.size(),
+                      this.diagramConsumers.size(),
+                      this.diagramConsumers.keySet() );
+
+        // Iterate through the consumers
+        for ( Entry<Format, Function<List<PairsStatisticOuter>, Set<Path>>> next : this.pairsStatisticsConsumers.entrySet() )
+        {
+            this.log( outputs, next.getKey(), true );
+
+            List<List<PairsStatisticOuter>> grouped = this.getGroupedStatisticsForThisFormat( outputs,
+                                                                                              next.getKey() );
+
+            for ( List<PairsStatisticOuter> nextStatistics : grouped )
+            {
+                List<PairsStatisticOuter> filtered = this.getFilteredStatisticsForThisFormat( nextStatistics,
+                                                                                              next.getKey() );
 
                 // Consume the output
                 Set<Path> innerPaths = next.getValue()
@@ -1156,6 +1203,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         this.durationDiagramConsumers.putAll( builder.durationDiagramConsumers );
         this.boxplotConsumersPerPair.putAll( builder.boxplotConsumersPerPair );
         this.boxplotConsumersPerPool.putAll( builder.boxplotConsumersPerPool );
+        this.pairsStatisticsConsumers.putAll( builder.pairsStatisticsConsumers );
         this.allStatisticsConsumers.putAll( builder.allStatisticsConsumers );
     }
 
