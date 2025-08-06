@@ -45,7 +45,9 @@ class MetricConstantsTest
         assertAll( () -> assertTrue( MetricConstants.BRIER_SCORE.isAThresholdMetric() ),
                    () -> assertFalse( MetricConstants.BOX_PLOT_OF_ERRORS.isAThresholdMetric() ),
                    () -> assertFalse( MetricConstants.SCATTER_PLOT.isAThresholdMetric() ),
-                   () -> assertFalse( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM.isAThresholdMetric() ) );
+                   () -> assertFalse( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM.isAThresholdMetric() ),
+                   () -> assertFalse( MetricConstants.SPAGHETTI_PLOT.isAThresholdMetric() ),
+                   () -> assertFalse( MetricConstants.TIME_SERIES_PLOT.isAThresholdMetric() ) );
     }
 
     @Test

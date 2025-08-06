@@ -833,6 +833,7 @@ public enum MetricConstants
     public boolean isAThresholdMetric()
     {
         return !( this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+                  || this.isInGroup( StatisticType.PAIRS )
                   || this.isInGroup( StatisticType.BOXPLOT_PER_POOL )
                   || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM
                   || this == MetricConstants.SCATTER_PLOT );
