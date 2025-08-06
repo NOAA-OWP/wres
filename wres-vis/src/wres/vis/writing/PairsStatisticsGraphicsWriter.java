@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -15,6 +16,7 @@ import java.util.function.Function;
 import org.jfree.chart.JFreeChart;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolMetadata;
@@ -79,10 +81,10 @@ public class PairsStatisticsGraphicsWriter extends GraphicsWriter
 
             for ( List<PairsStatisticOuter> nextSlice : sliced )
             {
-                if ( sliced.size() > 1 )
+                if ( nextSlice.size() > 1 )
                 {
                     throw new GraphicsWriteException( "When writing pairs statistics, encountered "
-                                                      + sliced.size()
+                                                      + nextSlice.size()
                                                       + " pairs statistics, but only 1 was expected. " );
                 }
 
@@ -176,9 +178,13 @@ public class PairsStatisticsGraphicsWriter extends GraphicsWriter
                                                                   value -> type == value.getPoolMetadata()
                                                                                         .getPoolDescription()
                                                                                         .getEnsembleAverageType() );
+
+            // Slice by dataset orientation, i.e., pairs statistics do not support combined graphics
             if ( !innerSlice.isEmpty() )
             {
-                sliced.add( innerSlice );
+                Map<DatasetOrientation, List<PairsStatisticOuter>> dataSliced
+                        = Slicer.getGroupedStatistics( innerSlice );
+                sliced.addAll( dataSliced.values() );
             }
         }
 
