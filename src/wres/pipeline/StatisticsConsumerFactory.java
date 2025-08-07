@@ -138,7 +138,9 @@ class StatisticsConsumerFactory implements ConsumerFactory
             // Specific formats are filtered at runtime via the router using the Outputs declaration
             BoxplotGraphicsWriter boxPlotWriter = BoxplotGraphicsWriter.of( outputs, path );
             builder.addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
-                                               boxPlotWriter );
+                                               boxPlotWriter )
+                   .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                                                PairsStatisticsGraphicsWriter.of( outputs, path ) );
         }
 
         // Old-style CSV
@@ -227,9 +229,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                    .addDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                         DiagramGraphicsWriter.of( outputs, path ) )
                    .addDurationDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
-                                                DurationDiagramGraphicsWriter.of( outputs, path ) )
-                   .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
-                                                PairsStatisticsGraphicsWriter.of( outputs, path ) );
+                                                DurationDiagramGraphicsWriter.of( outputs, path ) );
         }
 
         // Note that diagrams are always written by group, even if all the statistics could be written per pool because

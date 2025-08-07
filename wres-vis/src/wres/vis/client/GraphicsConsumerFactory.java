@@ -64,6 +64,8 @@ class GraphicsConsumerFactory implements ConsumerFactory
                 = builder.setEvaluationDescription( evaluation )
                          .addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
                                                      BoxplotGraphicsWriter.of( outputs, path ) )
+                         .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                                                      PairsStatisticsGraphicsWriter.of( outputs, path ) )
                          .build();
 
 
@@ -104,8 +106,6 @@ class GraphicsConsumerFactory implements ConsumerFactory
                                              DiagramGraphicsWriter.of( outputs, path ) )
                         .addDurationDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                                      DurationDiagramGraphicsWriter.of( outputs, path ) )
-                        .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
-                                                     PairsStatisticsGraphicsWriter.of( outputs, path ) )
                         .build();
 
         return StatisticsConsumer.getResourceFreeConsumer( router );
