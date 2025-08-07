@@ -478,7 +478,7 @@ public class ChartFactory
                 this.setChartTheme( chart );
 
                 // Set the series renderer
-                XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+                XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty(), true );
                 plot.setRenderer( renderer );
 
                 // Set the axis offsets to zero. Could abstract to setting chart theme above, but breaks test benchmarks
@@ -523,7 +523,7 @@ public class ChartFactory
                 this.setChartTheme( chart );
 
                 // Set the series renderer
-                XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+                XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty(), true );
                 plot.setRenderer( renderer );
             }
 
@@ -656,7 +656,7 @@ public class ChartFactory
         this.setChartPadding( chart );
 
         // Set the series renderer
-        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty(), true );
         plot.setRenderer( renderer );
 
         // Set the legend on/off and the title
@@ -876,6 +876,13 @@ public class ChartFactory
         // Build the dataset
         XYDataset source = ChartDataFactory.ofPairsStatistics( statistics );
 
+        int seriesCount = source.getSeriesCount();
+        int maxPairs = 0;
+        for ( int i = 0; i < seriesCount; i++ )
+        {
+            maxPairs = Math.max( source.getItemCount( i ), maxPairs );
+        }
+
         TimeWindowOuter timeWindow = metadata.getTimeWindow();
         ChartTitleParameters parameters = new ChartTitleParameters( Set.of( metadata ),
                                                                     timeWindow,
@@ -927,7 +934,10 @@ public class ChartFactory
         this.setChartPadding( chart );
 
         // Set the series renderer
-        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, false );
+        XYItemRenderer renderer = this.getSeriesColorAndShape( plot,
+                                                               metricName,
+                                                               false,
+                                                               maxPairs <= 1 );
         plot.setRenderer( renderer );
 
         // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation
@@ -1262,7 +1272,10 @@ public class ChartFactory
         XYPlot plot = chart.getXYPlot();
 
         // Set the series renderer
-        XYItemRenderer renderer = this.getSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+        XYItemRenderer renderer = this.getSeriesColorAndShape( plot,
+                                                               metricName,
+                                                               !quantiles.isEmpty(),
+                                                               true );
         plot.setRenderer( renderer );
 
         // Set the legend on/off and the title
@@ -1342,7 +1355,8 @@ public class ChartFactory
         // Set the series renderer
         XYItemRenderer renderer = this.getSeriesColorAndShape( reliabilityPlot,
                                                                MetricConstants.RELIABILITY_DIAGRAM,
-                                                               !quantiles.isEmpty() );
+                                                               !quantiles.isEmpty(),
+                                                               true );
         reliabilityPlot.setRenderer( renderer );
 
         XYPlot sampleSizePlot = new XYPlot( sampleSize, domainAxis, secondaryRangeAxis, null );
@@ -1355,7 +1369,8 @@ public class ChartFactory
         // Set the series renderer
         XYItemRenderer sampleRenderer = this.getSeriesColorAndShape( sampleSizePlot,
                                                                      MetricConstants.RELIABILITY_DIAGRAM,
-                                                                     !quantiles.isEmpty() );
+                                                                     !quantiles.isEmpty(),
+                                                                     true );
         sampleSizePlot.setRenderer( sampleRenderer );
 
         CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot( domainAxis );
@@ -1601,11 +1616,15 @@ public class ChartFactory
      * @param plot the plot
      * @param metric the metric name
      * @param errorBars is true to plot error bars, false otherwise
+     * @param showShapes is true to show shapes in a line and shape renderer, false for lines only
      * @return the renderer
      * @throws NullPointerException if the plot is null
      */
 
-    private XYItemRenderer getSeriesColorAndShape( XYPlot plot, MetricConstants metric, boolean errorBars )
+    private XYItemRenderer getSeriesColorAndShape( XYPlot plot,
+                                                   MetricConstants metric,
+                                                   boolean errorBars,
+                                                   boolean showShapes )
     {
         XYItemRenderer renderer;
         if ( metric == MetricConstants.HISTOGRAM )
@@ -1620,7 +1639,7 @@ public class ChartFactory
             renderer = this.getLineAndShapeRenderer( plot,
                                                      errorBars,
                                                      false,
-                                                     true,
+                                                     showShapes,
                                                      false,
                                                      false,
                                                      new Shape[] { shape } );
@@ -1631,7 +1650,7 @@ public class ChartFactory
             renderer = this.getLineAndShapeRenderer( plot,
                                                      errorBars,
                                                      true,
-                                                     false,
+                                                     showShapes,
                                                      false,
                                                      metric == MetricConstants.SPAGHETTI_PLOT,
                                                      DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
@@ -1641,7 +1660,7 @@ public class ChartFactory
             renderer = this.getLineAndShapeRenderer( plot,
                                                      errorBars,
                                                      true,
-                                                     true,
+                                                     showShapes,
                                                      true,
                                                      false,
                                                      DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE );
@@ -1734,7 +1753,7 @@ public class ChartFactory
                     renderer.setSeriesPaint( rightIndex, color );
                     renderer.setSeriesShape( rightIndex, shape );
                     renderer.setSeriesShapesVisible( rightIndex, showShapes );
-                    renderer.setSeriesShapesFilled( rightIndex, false );
+                    renderer.setSeriesShapesFilled( rightIndex, true );
                     renderer.setSeriesLinesVisible( rightIndex, showLines );
                     renderer.setSeriesVisibleInLegend( rightIndex, false );
 
