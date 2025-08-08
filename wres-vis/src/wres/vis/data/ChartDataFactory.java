@@ -674,8 +674,6 @@ public class ChartDataFactory
     {
         Objects.requireNonNull( statistics );
 
-        TimeSeriesCollection returnMe = new TimeSeriesCollection();
-
         List<String> leftNames = statistics.getStatistic()
                                            .getStatistics()
                                            .getLeftVariableNamesList();
@@ -685,6 +683,7 @@ public class ChartDataFactory
                                             .getRightVariableNamesList();
 
         int seriesNumber = 1;
+        List<TimeSeries> allSeries = new ArrayList<>();
         for ( Pairs.TimeSeriesOfPairs nextSeries : statistics.getStatistic()
                                                              .getStatistics()
                                                              .getTimeSeriesList() )
@@ -720,7 +719,7 @@ public class ChartDataFactory
                 {
                     double nextValue = pair.getLeft( i );
                     leftSeries.get( i )
-                            .add( time, nextValue );
+                              .add( time, nextValue );
                 }
 
                 // Add the values for each right series
@@ -728,16 +727,16 @@ public class ChartDataFactory
                 {
                     double nextValue = pair.getRight( i );
                     rightSeries.get( i )
-                            .add( time, nextValue );
+                               .add( time, nextValue );
                 }
             }
 
-            leftSeries.forEach( returnMe::addSeries );
-            rightSeries.forEach( returnMe::addSeries );
+            allSeries.addAll( leftSeries );
+            allSeries.addAll( rightSeries );
             seriesNumber++;
         }
 
-        return returnMe;
+        return PerformantTimeSeriesCollection.of( Collections.unmodifiableList( allSeries ) );
     }
 
     /**

@@ -1433,6 +1433,7 @@ public final class TimeSeriesSlicer
      * Returns a transformer that ignores events whose valid dates fall within one of the prescribed intervals.
      *
      * @param ignoredValidDates the valid date intervals whose data should be ignored
+     * @param <T> the time-series data type
      * @return a transformer
      * @throws NullPointerException if the input is null
      */
