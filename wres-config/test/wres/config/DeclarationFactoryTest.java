@@ -675,7 +675,7 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         Threshold aValueThreshold = Threshold.newBuilder()
-                                             .setLeftThresholdValue( 0.3 )
+                                             .setObservedThresholdValue( 0.3 )
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .build();
         wres.config.components.Threshold valueThreshold =
@@ -694,7 +694,7 @@ class DeclarationFactoryTest
                                     .build();
 
         Threshold aThreshold = Threshold.newBuilder()
-                                        .setLeftThresholdProbability( 0.1 )
+                                        .setObservedThresholdProbability( 0.1 )
                                         .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                         .build();
         wres.config.components.Threshold probabilityThreshold =
@@ -1666,15 +1666,15 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
         Threshold pThree = Threshold.newBuilder()
-                                    .setLeftThresholdProbability( 0.9 )
+                                    .setObservedThresholdProbability( 0.9 )
                                     .setOperator( Threshold.ThresholdOperator.GREATER )
                                     .build();
 
@@ -1700,14 +1700,14 @@ class DeclarationFactoryTest
         probabilityThresholds.add( pThreeWrapped );
 
         Threshold vOne = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 23.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 23.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
         Threshold vTwo = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 27.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 27.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
@@ -1733,12 +1733,12 @@ class DeclarationFactoryTest
         thresholds.add( vTwoWrapped );
 
         Threshold cOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "COLONEL DROUGHT" )
                                   .build();
         Threshold cTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.3 )
+                                  .setObservedThresholdProbability( 0.3 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "COLONEL DROUGHT" )
                                   .build();
@@ -1797,8 +1797,8 @@ class DeclarationFactoryTest
         EvaluationDeclaration actualEvaluation = DeclarationFactory.from( yaml );
 
         Threshold vOne = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 23.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 23.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
@@ -1847,17 +1847,17 @@ class DeclarationFactoryTest
         EvaluationDeclaration actualEvaluation = DeclarationFactory.from( yaml );
 
         Threshold vOne = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 23.0 )
-                                  .setRightThresholdValue( 25.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 23.0 )
+                                  .setPredictedThresholdValue( 25.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
 
         Threshold vTwo = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 27.0 )
-                                  .setRightThresholdValue( 29.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 27.0 )
+                                  .setPredictedThresholdValue( 29.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
@@ -1913,17 +1913,17 @@ class DeclarationFactoryTest
         EvaluationDeclaration actualEvaluation = DeclarationFactory.from( yaml );
 
         Threshold vOne = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 23.0 )
-                                  .setRightThresholdValue( Double.POSITIVE_INFINITY )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 23.0 )
+                                  .setPredictedThresholdValue( Double.POSITIVE_INFINITY )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
 
         Threshold vTwo = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 27.0 )
-                                  .setRightThresholdValue( Double.POSITIVE_INFINITY )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 27.0 )
+                                  .setPredictedThresholdValue( Double.POSITIVE_INFINITY )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
@@ -1972,12 +1972,12 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdValue( 0.1 )
+                                                              .setObservedThresholdValue( 0.1 )
                                                               .setName( "moon" )
                                                               .build();
         Threshold vTwo =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdValue( 0.2 )
+                                                              .setObservedThresholdValue( 0.2 )
                                                               .setName( "bat" )
                                                               .build();
 
@@ -2019,7 +2019,7 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdValue( 0.1 )
+                                                              .setObservedThresholdValue( 0.1 )
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
@@ -2055,7 +2055,7 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdProbability( 0.5 )
+                                                              .setObservedThresholdProbability( 0.5 )
                                                               .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                                               .build();
 
@@ -2092,8 +2092,8 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdValue( 0.1 )
-                                                              .setRightThresholdValue( 0.2 )
+                                                              .setObservedThresholdValue( 0.1 )
+                                                              .setPredictedThresholdValue( 0.2 )
                                                               .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                                               .build();
 
@@ -2130,8 +2130,8 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdProbability( 0.1 )
-                                                              .setRightThresholdProbability( 1.0 )
+                                                              .setObservedThresholdProbability( 0.1 )
+                                                              .setPredictedThresholdProbability( 1.0 )
                                                               .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                                               .build();
 
@@ -2168,8 +2168,8 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdProbability( 0.1 )
-                                                              .setRightThresholdProbability( 1.0 )
+                                                              .setObservedThresholdProbability( 0.1 )
+                                                              .setPredictedThresholdProbability( 1.0 )
                                                               .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                                               .build();
 
@@ -2206,8 +2206,8 @@ class DeclarationFactoryTest
 
         Threshold vOne =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
-                                                              .setLeftThresholdValue( 0.1 )
-                                                              .setRightThresholdValue( Double.POSITIVE_INFINITY )
+                                                              .setObservedThresholdValue( 0.1 )
+                                                              .setPredictedThresholdValue( Double.POSITIVE_INFINITY )
                                                               .setOperator( Threshold.ThresholdOperator.BETWEEN )
                                                               .build();
 
@@ -2315,11 +2315,11 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                   .build();
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                   .build();
 
@@ -2512,14 +2512,14 @@ class DeclarationFactoryTest
         summaryStatistics.add( mean );
 
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( 183.0 )
+                                 .setObservedThresholdValue( 183.0 )
                                  .setOperator( Threshold.ThresholdOperator.GREATER )
-                                 .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                 .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                  .build();
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( 184.0 )
+                                 .setObservedThresholdValue( 184.0 )
                                  .setOperator( Threshold.ThresholdOperator.GREATER )
-                                 .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                 .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                  .build();
 
         wres.config.components.Threshold oneWrapped = ThresholdBuilder.builder()
@@ -3502,7 +3502,7 @@ class DeclarationFactoryTest
                 """;
 
         Threshold aValueThreshold = Threshold.newBuilder()
-                                             .setLeftThresholdValue( 0.3 )
+                                             .setObservedThresholdValue( 0.3 )
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .build();
         wres.config.components.Threshold valueThreshold =
@@ -3521,7 +3521,7 @@ class DeclarationFactoryTest
                                     .build();
 
         Threshold aThreshold = Threshold.newBuilder()
-                                        .setLeftThresholdProbability( 0.1 )
+                                        .setObservedThresholdProbability( 0.1 )
                                         .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                         .build();
         wres.config.components.Threshold probabilityThreshold =
@@ -4120,15 +4120,15 @@ class DeclarationFactoryTest
                 """;
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
         Threshold pThree = Threshold.newBuilder()
-                                    .setLeftThresholdProbability( 0.9 )
+                                    .setObservedThresholdProbability( 0.9 )
                                     .setOperator( Threshold.ThresholdOperator.GREATER )
                                     .build();
 
@@ -4154,14 +4154,14 @@ class DeclarationFactoryTest
         probabilityThresholds.add( pThreeWrapped );
 
         Threshold vOne = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 27.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 27.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
         Threshold vTwo = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 23.0 )
-                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setObservedThresholdValue( 23.0 )
+                                  .setDataType( Threshold.ThresholdDataType.PREDICTED )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
@@ -4187,12 +4187,12 @@ class DeclarationFactoryTest
         thresholds.add( vTwoWrapped );
 
         Threshold cOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.3 )
+                                  .setObservedThresholdProbability( 0.3 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "COLONEL DROUGHT" )
                                   .build();
         Threshold cTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "COLONEL DROUGHT" )
                                   .build();
@@ -4245,11 +4245,11 @@ class DeclarationFactoryTest
                 """;
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                   .build();
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                   .build();
 
@@ -4365,9 +4365,9 @@ class DeclarationFactoryTest
                 """;
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.05 )
+                                  .setObservedThresholdProbability( 0.05 )
                                   .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
-                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                   .build();
 
         wres.config.components.Threshold pOneWrapped
@@ -4377,9 +4377,9 @@ class DeclarationFactoryTest
                                   .build();
 
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
-                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                   .build();
 
         wres.config.components.Threshold pTwoWrapped
@@ -4389,9 +4389,9 @@ class DeclarationFactoryTest
                                   .build();
 
         Threshold pThree = Threshold.newBuilder()
-                                    .setLeftThresholdProbability( 0.05 )
+                                    .setObservedThresholdProbability( 0.05 )
                                     .setOperator( Threshold.ThresholdOperator.EQUAL )
-                                    .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                    .setDataType( Threshold.ThresholdDataType.ANY_PREDICTED )
                                     .build();
 
         wres.config.components.Threshold pThreeWrapped =
@@ -4401,9 +4401,9 @@ class DeclarationFactoryTest
                                 .build();
 
         Threshold pFour = Threshold.newBuilder()
-                                   .setLeftThresholdProbability( 0.1 )
+                                   .setObservedThresholdProbability( 0.1 )
                                    .setOperator( Threshold.ThresholdOperator.EQUAL )
-                                   .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                   .setDataType( Threshold.ThresholdDataType.ANY_PREDICTED )
                                    .build();
 
         wres.config.components.Threshold pFourWrapped =

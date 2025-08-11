@@ -98,31 +98,31 @@ class EnsembleStatisticsProcessorTest
         wres.config.components.ThresholdOperator condition = wres.config.components.ThresholdOperator.GREATER;
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.LEFT ) ) );
+                                                                                                 ThresholdOrientation.OBSERVED ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.RIGHT ) ) );
+                                                                                                 ThresholdOrientation.PREDICTED ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.LEFT_AND_RIGHT ) ) );
+                                                                                                 ThresholdOrientation.OBSERVED_AND_PREDICTED ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.LEFT_AND_ANY_RIGHT ) ) );
+                                                                                                 ThresholdOrientation.OBSERVED_AND_ANY_PREDICTED ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.LEFT_AND_RIGHT_MEAN ) ) );
+                                                                                                 ThresholdOrientation.OBSERVED_AND_PREDICTED_MEAN ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.ANY_RIGHT ) ) );
+                                                                                                 ThresholdOrientation.ANY_PREDICTED ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                                  condition,
-                                                                                                 ThresholdOrientation.RIGHT_MEAN ) ) );
+                                                                                                 ThresholdOrientation.PREDICTED_MEAN ) ) );
         // Check that average works        
         Pair<Double, Ensemble> pair = Pair.of( 1.0, Ensemble.of( 1.5, 2.0 ) );
 
         assertTrue( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                               condition,
-                                                                                              ThresholdOrientation.RIGHT_MEAN ) )
+                                                                                              ThresholdOrientation.PREDICTED_MEAN ) )
                                                .test( pair ) );
     }
 
@@ -559,9 +559,9 @@ class EnsembleStatisticsProcessorTest
         Set<wres.config.components.Threshold> thresholds = new HashSet<>();
         wres.statistics.generated.Threshold threshold =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue( 1.0 )
+                                                   .setObservedThresholdValue( 1.0 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
-                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
+                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.OBSERVED )
                                                    .build();
         wres.config.components.Threshold thresholdOuter = ThresholdBuilder.builder()
                                                                                .threshold( threshold )
@@ -575,9 +575,9 @@ class EnsembleStatisticsProcessorTest
                                            .build();
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( 0.5 )
+                                                   .setObservedThresholdProbability( 0.5 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
-                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
+                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.OBSERVED )
                                                    .build();
         wres.config.components.Threshold oneOuter = ThresholdBuilder.builder()
                                                                          .threshold( one )
@@ -1048,9 +1048,9 @@ class EnsembleStatisticsProcessorTest
 
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( 0.1 )
+                                                   .setObservedThresholdProbability( 0.1 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
-                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
+                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.OBSERVED )
                                                    .build();
         wres.config.components.Threshold oneOuter = ThresholdBuilder.builder()
                                                                          .threshold( one )
@@ -1513,16 +1513,17 @@ class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierOne = Threshold.newBuilder()
-                                           .setLeftThresholdProbability( 0.05 )
+                                           .setObservedThresholdProbability( 0.05 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setDataType( Threshold.ThresholdDataType.LEFT )
+                                           .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                            .build();
         ThresholdOuter classifierOneWrapped =
                 ThresholdOuter.of( classifierOne, wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER );
 
         ThresholdOuter valueThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                           wres.config.components.ThresholdOperator.GREATER,
-                                                           ThresholdOrientation.LEFT,
+
+                                                           wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                           ThresholdOrientation.OBSERVED,
                                                            MeasurementUnit.of( "CFS" ) );
         OneOrTwoThresholds first = OneOrTwoThresholds.of( valueThreshold,
                                                           classifierOneWrapped );
@@ -1559,9 +1560,9 @@ class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierTwo = Threshold.newBuilder()
-                                           .setLeftThresholdProbability( 0.25 )
+                                           .setObservedThresholdProbability( 0.25 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setDataType( Threshold.ThresholdDataType.LEFT )
+                                           .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                            .build();
         ThresholdOuter classifierTwoWrapped =
                 ThresholdOuter.of( classifierTwo, wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER );
@@ -1600,9 +1601,9 @@ class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierThree = Threshold.newBuilder()
-                                             .setLeftThresholdProbability( 0.5 )
+                                             .setObservedThresholdProbability( 0.5 )
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setDataType( Threshold.ThresholdDataType.LEFT )
+                                             .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                              .build();
         ThresholdOuter classifierThreeWrapped =
                 ThresholdOuter.of( classifierThree, wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER );
@@ -1641,9 +1642,9 @@ class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierFour = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( 0.75 )
+                                            .setObservedThresholdProbability( 0.75 )
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setDataType( Threshold.ThresholdDataType.LEFT )
+                                            .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                             .build();
         ThresholdOuter classifierFourWrapped =
                 ThresholdOuter.of( classifierFour, wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER );
@@ -1681,9 +1682,9 @@ class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierFive = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( 0.9 )
+                                            .setObservedThresholdProbability( 0.9 )
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setDataType( Threshold.ThresholdDataType.LEFT )
+                                            .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                             .build();
         ThresholdOuter classifierFiveWrapped =
                 ThresholdOuter.of( classifierFive
@@ -1723,9 +1724,9 @@ class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierSix = Threshold.newBuilder()
-                                           .setLeftThresholdProbability( 0.95 )
+                                           .setObservedThresholdProbability( 0.95 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setDataType( Threshold.ThresholdDataType.LEFT )
+                                           .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                            .build();
         ThresholdOuter classifierSixWrapped =
                 ThresholdOuter.of( classifierSix, wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER );
@@ -1841,9 +1842,9 @@ class EnsembleStatisticsProcessorTest
 
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( 0.1 )
+                                                   .setObservedThresholdProbability( 0.1 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
-                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
+                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.OBSERVED )
                                                    .build();
         wres.config.components.Threshold oneOuter = ThresholdBuilder.builder()
                                                                          .threshold( one )

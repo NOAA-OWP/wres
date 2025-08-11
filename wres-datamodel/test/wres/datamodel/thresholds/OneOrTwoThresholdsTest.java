@@ -29,11 +29,11 @@ public final class OneOrTwoThresholdsTest
     {
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ) );
+                                                                                  ThresholdOrientation.OBSERVED ) );
         assertEquals( "The threshold has an unexpected first threshold.",
                       ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                          ThresholdOperator.GREATER,
-                                         ThresholdOrientation.LEFT ),
+                                         ThresholdOrientation.OBSERVED ),
                       thresholds.first() );
     }
 
@@ -47,14 +47,14 @@ public final class OneOrTwoThresholdsTest
     {
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ),
+                                                                                  ThresholdOrientation.OBSERVED ),
                                                                ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ) );
+                                                                                  ThresholdOrientation.OBSERVED ) );
         assertEquals( "The threshold has an unexpected first threshold.",
                       ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                          ThresholdOperator.GREATER,
-                                         ThresholdOrientation.LEFT ),
+                                         ThresholdOrientation.OBSERVED ),
                       thresholds.second() );
     }
 
@@ -68,7 +68,7 @@ public final class OneOrTwoThresholdsTest
         // Reflexive 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ) );
+                                                                                  ThresholdOrientation.OBSERVED ) );
         assertEquals( "The thresholds instance does not meet the equals contract for reflexivity.",
                       thresholds,
                       thresholds );
@@ -76,14 +76,14 @@ public final class OneOrTwoThresholdsTest
         OneOrTwoThresholds otherThresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         assertTrue( "The thresholds instances do not meet the equals contract for symmetry.",
                     thresholds.equals( otherThresholds ) && otherThresholds.equals( thresholds ) );
         // Transitive
         OneOrTwoThresholds oneMoreThresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         assertTrue( "The thresholds instances do not meet the equals contract for transitivity.",
                     thresholds.equals( otherThresholds ) && otherThresholds.equals( oneMoreThresholds )
                                                                                                   && thresholds.equals( oneMoreThresholds ) );
@@ -101,27 +101,27 @@ public final class OneOrTwoThresholdsTest
         OneOrTwoThresholds unequalOnFirst =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ),
+                                                          ThresholdOrientation.OBSERVED ),
                                        ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         assertNotEquals( "Expected the thresholds to differ.", thresholds, unequalOnFirst );
         // Differences on nullity of second
         OneOrTwoThresholds unequalOnNullity =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ),
+                                                          ThresholdOrientation.OBSERVED ),
                                        ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         assertNotEquals( "Expected the threshold to differ on value.", thresholds, unequalOnNullity );
         OneOrTwoThresholds unequalOnSecond =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ),
+                                                          ThresholdOrientation.OBSERVED ),
                                        ThresholdOuter.of( OneOrTwoDoubles.of( 0.4 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         assertNotEquals( "Expected the threshold to differ on value.", unequalOnNullity, unequalOnSecond );
     }
 
@@ -136,11 +136,11 @@ public final class OneOrTwoThresholdsTest
         // Consistent with equals
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ) );
+                                                                                  ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds otherThresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         assertTrue( "The hashcode of the thresholds is inconsistent with equals.",
                     thresholds.equals( otherThresholds ) && thresholds.hashCode() == otherThresholds.hashCode() );
         // Consistent when called repeatedly
@@ -163,16 +163,16 @@ public final class OneOrTwoThresholdsTest
         // Consistent with equals
         OneOrTwoThresholds first = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                              ThresholdOperator.GREATER,
-                                                                             ThresholdOrientation.LEFT ) );
+                                                                             ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds second = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
                                                                               ThresholdOperator.GREATER,
-                                                                              ThresholdOrientation.LEFT ) );
+                                                                              ThresholdOrientation.OBSERVED ) );
 
         assertEquals( "The thresholds are not comparable.", 0, first.compareTo( second ) );
 
         OneOrTwoThresholds third = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
                                                                              ThresholdOperator.GREATER,
-                                                                             ThresholdOrientation.LEFT ) );
+                                                                             ThresholdOrientation.OBSERVED ) );
 
         // Anticommutative
         assertEquals( 0, third.compareTo( first ) + first.compareTo( third ) );
@@ -185,7 +185,7 @@ public final class OneOrTwoThresholdsTest
         // Transitive 
         OneOrTwoThresholds fourth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
                                                                               ThresholdOperator.GREATER,
-                                                                              ThresholdOrientation.LEFT ) );
+                                                                              ThresholdOrientation.OBSERVED ) );
 
         assertTrue( "Expected transitive behaviour.",
                     fourth.compareTo( third ) > 0 && third.compareTo( first ) > 0
@@ -204,7 +204,7 @@ public final class OneOrTwoThresholdsTest
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
                                                                            OneOrTwoDoubles.of( 0.5 ),
                                                                            ThresholdOperator.GREATER_EQUAL,
-                                                                           ThresholdOrientation.LEFT ) );
+                                                                           ThresholdOrientation.OBSERVED ) );
 
         assertEquals( ">= 27.0 [Pr = 0.5]", testString.toString() );
 
@@ -212,10 +212,10 @@ public final class OneOrTwoThresholdsTest
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
                                                                            OneOrTwoDoubles.of( 0.2 ),
                                                                            ThresholdOperator.GREATER,
-                                                                           ThresholdOrientation.LEFT ),
+                                                                           ThresholdOrientation.OBSERVED ),
                                        ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                               ThresholdOperator.GREATER,
-                                                                              ThresholdOrientation.LEFT ) );
+                                                                              ThresholdOrientation.OBSERVED ) );
 
         assertEquals( "> 23.0 [Pr = 0.2] AND Pr > 0.1", secondTestString.toString() );
     }

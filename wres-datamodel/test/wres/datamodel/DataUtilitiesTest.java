@@ -91,13 +91,13 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         Pair<TimeWindowOuter, ThresholdOuter> second =
                 Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
@@ -106,7 +106,7 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( third.compareTo( first ) > 0 );
         assertEquals( 0, first.compareTo( third ) + third.compareTo( first ) );
         //Latest date
@@ -115,7 +115,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( third.compareTo( fourth ) > 0 );
         assertEquals( 0, third.compareTo( fourth ) + fourth.compareTo( third ) );
         //Valid time
@@ -126,7 +126,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( fourth.compareTo( fifth ) < 0 );
         assertEquals( 0, fourth.compareTo( fifth ) + fifth.compareTo( fourth ) );
         //Threshold
@@ -137,7 +137,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( fifth.compareTo( sixth ) > 0 );
         assertEquals( 0, fifth.compareTo( sixth ) + sixth.compareTo( fifth ) );
 
@@ -154,19 +154,19 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         Pair<TimeWindowOuter, ThresholdOuter> first =
                 Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         Pair<TimeWindowOuter, ThresholdOuter> second =
                 Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         //Reflexive
         assertEquals( first, first );
 
@@ -189,7 +189,7 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( third, first );
 
         //Latest date
@@ -198,7 +198,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( third, fourth );
 
         //Valid time
@@ -209,7 +209,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( fourth, fifth );
 
         //Threshold
@@ -220,7 +220,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( fifth, sixth );
     }
 
@@ -231,7 +231,7 @@ final class DataUtilitiesTest
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
                                                                            OneOrTwoDoubles.of( 0.5 ),
                                                                            ThresholdOperator.GREATER_EQUAL,
-                                                                           ThresholdOrientation.LEFT ) );
+                                                                           ThresholdOrientation.OBSERVED ) );
 
         assertEquals( "GTE_27.0_Pr_EQ_0.5", DataUtilities.toStringSafe( testString ) );
 
@@ -239,10 +239,10 @@ final class DataUtilitiesTest
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
                                                                            OneOrTwoDoubles.of( 0.2 ),
                                                                            ThresholdOperator.GREATER,
-                                                                           ThresholdOrientation.LEFT ),
+                                                                           ThresholdOrientation.OBSERVED ),
                                        ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                               ThresholdOperator.GREATER,
-                                                                              ThresholdOrientation.LEFT ) );
+                                                                              ThresholdOrientation.OBSERVED ) );
 
         assertEquals( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1", DataUtilities.toStringSafe( secondTestString ) );
     }
@@ -254,7 +254,7 @@ final class DataUtilitiesTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .build();
 
@@ -271,7 +271,7 @@ final class DataUtilitiesTest
     {
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 23.0 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setUnits( MeasurementUnit.of( "ft3/s" ) )
                                                 .build();
 
@@ -285,7 +285,7 @@ final class DataUtilitiesTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "CMS" ) )
                                                 .build();
@@ -307,7 +307,7 @@ final class DataUtilitiesTest
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "[ft_i]3/s" ) )
                                                 .build();

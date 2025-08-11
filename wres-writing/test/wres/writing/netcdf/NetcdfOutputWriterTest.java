@@ -197,21 +197,21 @@ class NetcdfOutputWriterTest
 
             // Create the thresholds
             Threshold thresholdOne = Threshold.newBuilder()
-                                              .setLeftThresholdValue( 6440.34 )
+                                              .setObservedThresholdValue( 6440.34 )
                                               .setThresholdValueUnits( "CFS" )
                                               .setOperator( Threshold.ThresholdOperator.GREATER )
                                               .setName( "1_5_year_recurrence_flow" )
                                               .build();
 
             Threshold thresholdTwo = Threshold.newBuilder()
-                                              .setLeftThresholdValue( 295.94 )
+                                              .setObservedThresholdValue( 295.94 )
                                               .setThresholdValueUnits( "CFS" )
                                               .setOperator( Threshold.ThresholdOperator.GREATER )
                                               .setName( "1_5_year_recurrence_flow" )
                                               .build();
 
             Threshold thresholdThree = Threshold.newBuilder()
-                                                .setLeftThresholdValue( 0.5 )
+                                                .setObservedThresholdValue( 0.5 )
                                                 .setOperator( Threshold.ThresholdOperator.GREATER )
                                                 .build();
 

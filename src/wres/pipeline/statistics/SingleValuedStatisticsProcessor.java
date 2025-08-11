@@ -286,11 +286,11 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter threshold )
     {
         return switch ( threshold.getOrientation() )
-        {
-            case LEFT -> Slicer.left( threshold );
-            case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( threshold );
-            case RIGHT, ANY_RIGHT, RIGHT_MEAN -> Slicer.right( threshold );
-        };
+            {
+                case OBSERVED -> Slicer.left( threshold );
+                case OBSERVED_AND_PREDICTED, OBSERVED_AND_ANY_PREDICTED, OBSERVED_AND_PREDICTED_MEAN -> Slicer.leftAndRight( threshold );
+                case PREDICTED, ANY_PREDICTED, PREDICTED_MEAN -> Slicer.right( threshold );
+            };
     }
 
     /**
@@ -307,12 +307,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter threshold )
     {
         return switch ( threshold.getOrientation() )
-        {
-            case LEFT -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
-            case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN ->
-                    TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
-            case RIGHT, ANY_RIGHT, RIGHT_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
-        };
+            {
+                case OBSERVED -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
+                case OBSERVED_AND_PREDICTED, OBSERVED_AND_ANY_PREDICTED, OBSERVED_AND_PREDICTED_MEAN ->
+                        TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
+                case PREDICTED, ANY_PREDICTED, PREDICTED_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
+            };
     }
 
     /**

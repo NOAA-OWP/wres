@@ -94,13 +94,13 @@ public class TestDataGenerator
     private static final OneOrTwoThresholds THRESHOLD_ONE =
             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT,
+                                                      ThresholdOrientation.OBSERVED,
                                                       MeasurementUnit.of( CMS ) ) );
 
     private static final OneOrTwoThresholds THRESHOLD_TWO =
             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 7.8 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT,
+                                                      ThresholdOrientation.OBSERVED,
                                                       MeasurementUnit.of( CMS ) ) );
 
     private static final OneOrTwoThresholds ALL_DATA_THRESHOLD = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
@@ -675,7 +675,7 @@ public class TestDataGenerator
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "Streamflow" )

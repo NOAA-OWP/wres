@@ -41,7 +41,7 @@ class ThresholdExtractor
 
     /** The side of the data to apply the threshold to. */
     @Builder.Default
-    private final ThresholdOrientation orientation = ThresholdOrientation.LEFT;
+    private final ThresholdOrientation orientation = ThresholdOrientation.OBSERVED;
 
     /** Warnings received while reading or filtering thresholds. */
     private final Set<String> warnings = new HashSet<>();

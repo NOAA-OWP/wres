@@ -76,7 +76,7 @@ class PoolSlicerTest
         double[] expected = new double[] { 1, 1, 1 };
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT );
+                                                      ThresholdOrientation.OBSERVED );
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Double>> sliced =
@@ -103,7 +103,7 @@ class PoolSlicerTest
         double[] expected = new double[] { 1, 1, 1 };
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT );
+                                                      ThresholdOrientation.OBSERVED );
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Ensemble>> sliced =
@@ -200,7 +200,7 @@ class PoolSlicerTest
         PoolMetadata meta = PoolMetadata.of();
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT );
+                                                      ThresholdOrientation.OBSERVED );
 
         List<Pair<Probability, Probability>> expectedPairs = new ArrayList<>();
         expectedPairs.add( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) );
@@ -570,7 +570,7 @@ class PoolSlicerTest
                                         TimeScaleOuter.of(),
                                         OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ) ),
+                                                                                  ThresholdOrientation.OBSERVED ) ),
                                         false,
                                         1 );
 
@@ -583,7 +583,7 @@ class PoolSlicerTest
                                         TimeScaleOuter.of(),
                                         OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                                                   ThresholdOperator.GREATER,
-                                                                                  ThresholdOrientation.LEFT ) ),
+                                                                                  ThresholdOrientation.OBSERVED ) ),
                                         false,
                                         1 );
 
@@ -656,10 +656,10 @@ class PoolSlicerTest
         Map<FeatureTuple, Predicate<Pair<Double, Double>>> predicates = new HashMap<>();
         ThresholdOuter thresholdOne = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                          ThresholdOperator.GREATER_EQUAL,
-                                                         ThresholdOrientation.LEFT );
+                                                         ThresholdOrientation.OBSERVED );
         ThresholdOuter thresholdTwo = ThresholdOuter.of( OneOrTwoDoubles.of( 9.0 ),
                                                          ThresholdOperator.GREATER_EQUAL,
-                                                         ThresholdOrientation.LEFT );
+                                                         ThresholdOrientation.OBSERVED );
         Predicate<Pair<Double, Double>> predicateOne = Slicer.left( thresholdOne );
         Predicate<Pair<Double, Double>> predicateTwo = Slicer.left( thresholdTwo );
 

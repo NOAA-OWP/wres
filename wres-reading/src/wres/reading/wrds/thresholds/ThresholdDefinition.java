@@ -363,7 +363,7 @@ class ThresholdDefinition implements Serializable
         }
 
         return Threshold.newBuilder()
-                        .setLeftThresholdValue( threshold )
+                        .setObservedThresholdValue( threshold )
                         .setOperator( Threshold.ThresholdOperator.valueOf( thresholdOperator.name() ) )
                         .setDataType( Threshold.ThresholdDataType.valueOf( dataType.name() ) )
                         .setName( name )

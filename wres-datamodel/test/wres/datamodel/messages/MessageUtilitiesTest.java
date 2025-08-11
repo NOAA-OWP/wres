@@ -361,11 +361,11 @@ class MessageUtilitiesTest
                                                                                                                      "POINT( 1 2 )" ) ) ) )
                          .setIsBaselinePool( false )
                          .setEventThreshold( Threshold.newBuilder()
-                                                      .setLeftThresholdValue( 1.0 )
-                                                      .setRightThresholdValue( 1.0 ) )
+                                                      .setObservedThresholdValue( 1.0 )
+                                                      .setPredictedThresholdValue( 1.0 ) )
                          .setDecisionThreshold( Threshold.newBuilder()
-                                                         .setLeftThresholdValue( 2.0 )
-                                                         .setRightThresholdValue( 2.0 ) )
+                                                         .setObservedThresholdValue( 2.0 )
+                                                         .setPredictedThresholdValue( 2.0 ) )
                          .setTimeScale( TimeScale.newBuilder()
                                                  .setFunction( TimeScale.TimeScaleFunction.MAXIMUM )
                                                  .setPeriod( Duration.newBuilder()
@@ -433,28 +433,28 @@ class MessageUtilitiesTest
 
         Pool seventh = Pool.newBuilder()
                            .setEventThreshold( Threshold.newBuilder()
-                                                        .setLeftThresholdValue( 1.0 )
-                                                        .setRightThresholdValue( 1.0 ) )
+                                                        .setObservedThresholdValue( 1.0 )
+                                                        .setPredictedThresholdValue( 1.0 ) )
                            .build();
 
         Pool eighth = Pool.newBuilder()
                           .setEventThreshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 2.0 )
-                                                       .setRightThresholdValue( 2.0 ) )
+                                                       .setObservedThresholdValue( 2.0 )
+                                                       .setPredictedThresholdValue( 2.0 ) )
                           .build();
 
         assertTrue( MessageUtilities.compare( seventh, eighth ) < 0 );
 
         Pool ninth = Pool.newBuilder()
                          .setDecisionThreshold( Threshold.newBuilder()
-                                                         .setLeftThresholdValue( 1.0 )
-                                                         .setRightThresholdValue( 1.0 ) )
+                                                         .setObservedThresholdValue( 1.0 )
+                                                         .setPredictedThresholdValue( 1.0 ) )
                          .build();
 
         Pool tenth = Pool.newBuilder()
                          .setDecisionThreshold( Threshold.newBuilder()
-                                                         .setLeftThresholdValue( 2.0 )
-                                                         .setRightThresholdValue( 2.0 ) )
+                                                         .setObservedThresholdValue( 2.0 )
+                                                         .setPredictedThresholdValue( 2.0 ) )
                          .build();
 
         assertTrue( MessageUtilities.compare( ninth, tenth ) < 0 );

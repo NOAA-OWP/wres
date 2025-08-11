@@ -333,7 +333,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
         else
         {
-            joiner.add( "RIGHT" );
+            joiner.add( "PREDICTED" );
         }
 
         // Merge in geometry description

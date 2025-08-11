@@ -265,7 +265,7 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT );
+                                                      ThresholdOrientation.OBSERVED );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );

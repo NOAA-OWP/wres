@@ -86,7 +86,7 @@ class PoolMetadataTest
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                   ThresholdOperator.EQUAL,
-                                                                                  ThresholdOrientation.LEFT ) );
+                                                                                  ThresholdOrientation.OBSERVED ) );
 
         assertNotNull( PoolMetadata.of( PoolMetadata.of(), thresholds ) );
 
@@ -263,7 +263,7 @@ class PoolMetadataTest
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,
@@ -472,7 +472,7 @@ class PoolMetadataTest
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Pool poolEight = MessageFactory.getPool( featureGroupTwo,
                                                  thirdWindow,

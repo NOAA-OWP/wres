@@ -508,7 +508,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
         this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                    ThresholdOperator.GREATER,
-                                                   ThresholdOrientation.LEFT_AND_RIGHT );
+                                                   ThresholdOrientation.OBSERVED_AND_PREDICTED );
     }
 
     /**
