@@ -740,13 +740,14 @@ public class WriterTestHelper
                 wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
                                                         TimeScale.TimeScaleFunction.MEAN );
 
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
-                                                                                                             11.94128 ),
-                                                                                                     OneOrTwoDoubles.of(
-                                                                                                             0.9 ),
-                                                                                                     ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+        ThresholdOuter thresholdOuter =
+                wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                      11.94128 ),
+                                                                              OneOrTwoDoubles.of(
+                                                                                      0.9 ),
+                                                                              ThresholdOperator.GREATER_EQUAL,
+                                                                              ThresholdOrientation.LEFT );
+        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( thresholdOuter );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -807,10 +808,26 @@ public class WriterTestHelper
                                                             .setValidTime( thirdTime ) )
                                        .build();
 
+        Pairs.TimeSeriesOfPairs timeSeriesTwo =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addReferenceTimes( ReferenceTime.newBuilder()
+                                                                        .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                                                        .setReferenceTime( firstTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 123.0 )
+                                                            .addRight( 117.6 )
+                                                            .setValidTime( secondTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 112.0 )
+                                                            .addRight( 115.7 )
+                                                            .setValidTime( thirdTime ) )
+                                       .build();
+
         Pairs pairs = Pairs.newBuilder()
                            .addLeftVariableNames( DatasetOrientation.LEFT.toString() )
                            .addRightVariableNames( DatasetOrientation.RIGHT.toString() )
                            .addTimeSeries( timeSeries )
+                           .addTimeSeries( timeSeriesTwo )
                            .build();
 
         PairsStatistic statistic = PairsStatistic.newBuilder()

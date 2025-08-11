@@ -616,7 +616,7 @@ class CsvStatisticsWriterTest
     @Test
     void testWritePairsStatistics() throws IOException
     {
-        // Get some statistics with a reliability diagram
+        // Get some statistics
         Statistics statistics = this.getPairsStatistics();
         Evaluation evaluation = this.getEvaluation();
 
@@ -640,7 +640,7 @@ class CsvStatisticsWriterTest
             // Assert content
             List<String> actual = Files.readAllLines( pathToStore );
 
-            assertEquals( 9, actual.size() );
+            assertEquals( 17, actual.size() );
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
@@ -676,6 +676,38 @@ class CsvStatisticsWriterTest
                                        + ",,,15.7";
 
             assertEquals( lineEightExpected, actual.get( 8 ) );
+
+            String lineTenExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+                                     + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
+                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,T0,,"
+                                     + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,,"
+                                     + "4,,,,,,,1.23E7";
+
+            assertEquals( lineTenExpected, actual.get( 10 ) );
+
+            String lineTwelveExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+                                       + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
+                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                       + "GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,VALID TIME,,"
+                                       + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,"
+                                       + ",4,,,,,,,1.23072E7";
+
+            assertEquals( lineTwelveExpected, actual.get( 12 ) );
+
+            String lineFifteenExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+                                     + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
+                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,predicted,,"
+                                     + ",-Infinity,Infinity,,3,,,,,,,117.6";
+
+            assertEquals( lineFifteenExpected, actual.get( 15 ) );
+
+            String lineSeventeenExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+                                       + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
+                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                       + "GREATER EQUAL,,,,,,,,,TIME_SERIES_PLOT,predicted,,,-Infinity,Infinity,,4,,,,"
+                                       + ",,,115.7";
+
+            assertEquals( lineSeventeenExpected, actual.get( 16 ) );
         }
     }
 

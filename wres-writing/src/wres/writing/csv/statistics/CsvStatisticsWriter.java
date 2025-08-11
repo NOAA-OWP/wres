@@ -1587,7 +1587,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         // must be written as an integer relative to the epoch (which should be clarified in the units) and then write
         // the valid times, which are again relative to the epoch, and then write the variable values for each named
         // variable, all tied together with the same statistics group number for each row.
-        int rowCount = 0;
         for ( Pairs.TimeSeriesOfPairs nextSeries : statistic.getTimeSeriesList() )
         {
             // Write the reference times
@@ -1694,12 +1693,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                     nextDetails );
             }
 
-            rowCount += nextSeries.getPairsCount();
+            // Increment the group number by the number of elements in one variable because they are all equal in
+            // size
+            groupNumber.getAndAdd( nextSeries.getPairsCount() );
         }
-
-        // Increment the group number by the number of elements in one variable because they are all equal in
-        // size
-        groupNumber.getAndAdd( rowCount );
     }
 
     /**
