@@ -104,7 +104,7 @@ public class DeclarationFactory
     public static final ThresholdOperator DEFAULT_THRESHOLD_OPERATOR = ThresholdOperator.GREATER;
 
     /** Default threshold data type. */
-    public static final ThresholdOrientation DEFAULT_THRESHOLD_ORIENTATION = ThresholdOrientation.LEFT;
+    public static final ThresholdOrientation DEFAULT_THRESHOLD_ORIENTATION = ThresholdOrientation.OBSERVED;
 
     /** Default threshold dataset orientation. */
     public static final DatasetOrientation DEFAULT_THRESHOLD_DATASET_ORIENTATION = DatasetOrientation.LEFT;

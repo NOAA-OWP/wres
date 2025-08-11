@@ -80,13 +80,13 @@ class ThresholdSlicerTest
     {
         ThresholdOuter oneThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                          ThresholdOperator.GREATER,
-                                                         ThresholdOrientation.LEFT,
+                                                         ThresholdOrientation.OBSERVED,
                                                          "ACTION",
                                                          MeasurementUnit.of( CMS ) );
 
         ThresholdOuter anotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                              ThresholdOperator.GREATER,
-                                                             ThresholdOrientation.LEFT,
+                                                             ThresholdOrientation.OBSERVED,
                                                              FLOOD,
                                                              MeasurementUnit.of( CMS ) );
 
@@ -94,13 +94,13 @@ class ThresholdSlicerTest
 
         ThresholdOuter oneMoreThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                              ThresholdOperator.GREATER,
-                                                             ThresholdOrientation.LEFT,
+                                                             ThresholdOrientation.OBSERVED,
                                                              "ACTION",
                                                              MeasurementUnit.of( CMS ) );
 
         ThresholdOuter yetAnotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 4.0 ),
                                                                 ThresholdOperator.GREATER,
-                                                                ThresholdOrientation.LEFT,
+                                                                ThresholdOrientation.OBSERVED,
                                                                 FLOOD,
                                                                 MeasurementUnit.of( CMS ) );
 
@@ -134,13 +134,13 @@ class ThresholdSlicerTest
     {
         ThresholdOuter oneThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                          ThresholdOperator.GREATER,
-                                                         ThresholdOrientation.LEFT,
+                                                         ThresholdOrientation.OBSERVED,
                                                          "ACTION",
                                                          MeasurementUnit.of( CMS ) );
 
         ThresholdOuter anotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                              ThresholdOperator.GREATER,
-                                                             ThresholdOrientation.LEFT,
+                                                             ThresholdOrientation.OBSERVED,
                                                              FLOOD,
                                                              MeasurementUnit.of( CMS ) );
 
@@ -148,19 +148,19 @@ class ThresholdSlicerTest
 
         ThresholdOuter oneMoreThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                              ThresholdOperator.GREATER,
-                                                             ThresholdOrientation.LEFT,
+                                                             ThresholdOrientation.OBSERVED,
                                                              "ACTION",
                                                              MeasurementUnit.of( CMS ) );
 
         ThresholdOuter yetAnotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 4.0 ),
                                                                 ThresholdOperator.GREATER,
-                                                                ThresholdOrientation.LEFT,
+                                                                ThresholdOrientation.OBSERVED,
                                                                 FLOOD,
                                                                 MeasurementUnit.of( CMS ) );
 
         ThresholdOuter duplicateOfYetAnotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
                                                                            ThresholdOperator.GREATER,
-                                                                           ThresholdOrientation.LEFT,
+                                                                           ThresholdOrientation.OBSERVED,
                                                                            FLOOD,
                                                                            MeasurementUnit.of( CMS ) );
 
@@ -223,16 +223,16 @@ class ThresholdSlicerTest
                 Map.of( oneTuple,
                         Set.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                        ThresholdOperator.GREATER,
-                                                                       ThresholdOrientation.LEFT ),
+                                                                       ThresholdOrientation.OBSERVED ),
                                 ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                        ThresholdOperator.GREATER_EQUAL,
-                                                                       ThresholdOrientation.LEFT ),
+                                                                       ThresholdOrientation.OBSERVED ),
                                 ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 7.0 / 11.0 ),
                                                                        ThresholdOperator.GREATER,
-                                                                       ThresholdOrientation.LEFT ),
+                                                                       ThresholdOrientation.OBSERVED ),
                                 ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
                                                                        ThresholdOperator.GREATER,
-                                                                       ThresholdOrientation.LEFT ) ) );
+                                                                       ThresholdOrientation.OBSERVED ) ) );
 
         Map<FeatureTuple, Set<ThresholdOuter>> actual =
                 ThresholdSlicer.addQuantiles( thresholds, climatology );
@@ -242,25 +242,25 @@ class ThresholdSlicerTest
                         Set.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
                                                                     OneOrTwoDoubles.of( 0.0 ),
                                                                     ThresholdOperator.GREATER,
-                                                                    ThresholdOrientation.LEFT,
+                                                                    ThresholdOrientation.OBSERVED,
                                                                     null,
                                                                     MeasurementUnit.of( UNIT ) ),
                                 ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 17897.2 ),
                                                                     OneOrTwoDoubles.of( 1.0 ),
                                                                     ThresholdOperator.GREATER_EQUAL,
-                                                                    ThresholdOrientation.LEFT,
+                                                                    ThresholdOrientation.OBSERVED,
                                                                     null,
                                                                     MeasurementUnit.of( UNIT ) ),
                                 ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1647.18182 ),
                                                                     OneOrTwoDoubles.of( 7.0 / 11.0 ),
                                                                     ThresholdOperator.GREATER,
-                                                                    ThresholdOrientation.LEFT,
+                                                                    ThresholdOrientation.OBSERVED,
                                                                     null,
                                                                     MeasurementUnit.of( UNIT ) ),
                                 ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 433.9 ),
                                                                     OneOrTwoDoubles.of( 0.5 ),
                                                                     ThresholdOperator.GREATER,
-                                                                    ThresholdOrientation.LEFT,
+                                                                    ThresholdOrientation.OBSERVED,
                                                                     null,
                                                                     MeasurementUnit.of( UNIT ) ) ) );
 
@@ -272,13 +272,13 @@ class ThresholdSlicerTest
     {
         ThresholdOuter first = ThresholdOuter.of( OneOrTwoDoubles.of( 100.0 ),
                                                   ThresholdOperator.GREATER,
-                                                  ThresholdOrientation.RIGHT,
+                                                  ThresholdOrientation.PREDICTED,
                                                   FLOOD,
                                                   MeasurementUnit.of( CMS ) );
 
         ThresholdOuter second = ThresholdOuter.of( OneOrTwoDoubles.of( 1000.0 ),
                                                    ThresholdOperator.GREATER,
-                                                   ThresholdOrientation.RIGHT,
+                                                   ThresholdOrientation.PREDICTED,
                                                    FLOOD,
                                                    MeasurementUnit.of( CMS ) );
 
@@ -286,7 +286,7 @@ class ThresholdSlicerTest
 
         ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NaN ),
                                                      ThresholdOperator.GREATER,
-                                                     ThresholdOrientation.RIGHT,
+                                                     ThresholdOrientation.PREDICTED,
                                                      FLOOD,
                                                      MeasurementUnit.of( CMS ) );
 
@@ -294,31 +294,31 @@ class ThresholdSlicerTest
 
         ThresholdOuter third = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                       ThresholdOperator.GREATER,
-                                                                      ThresholdOrientation.RIGHT,
+                                                                      ThresholdOrientation.PREDICTED,
                                                                       "aThreshold" );
 
         ThresholdOuter fourth = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                        ThresholdOperator.GREATER,
-                                                                       ThresholdOrientation.RIGHT,
+                                                                       ThresholdOrientation.PREDICTED,
                                                                        "anotherThreshold" );
 
         ThresholdOuter actualTwo = ThresholdSlicer.compose( Set.of( third, fourth ) );
 
         ThresholdOuter expectedTwo = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
                                                                             ThresholdOperator.GREATER,
-                                                                            ThresholdOrientation.RIGHT );
+                                                                            ThresholdOrientation.PREDICTED );
 
         assertEquals( expectedTwo, actualTwo );
 
         ThresholdOuter fifth = ThresholdOuter.of( OneOrTwoDoubles.of( 1269.0 ),
                                                   ThresholdOperator.LESS,
-                                                  ThresholdOrientation.RIGHT,
+                                                  ThresholdOrientation.PREDICTED,
                                                   "aThreshold",
                                                   MeasurementUnit.of( CMS ) );
 
         ThresholdOuter sixth = ThresholdOuter.of( OneOrTwoDoubles.of( 1269.0 ),
                                                   ThresholdOperator.LESS,
-                                                  ThresholdOrientation.RIGHT,
+                                                  ThresholdOrientation.PREDICTED,
                                                   "anotherThreshold",
                                                   MeasurementUnit.of( CMS ) );
 
@@ -326,7 +326,7 @@ class ThresholdSlicerTest
 
         ThresholdOuter expectedThree = ThresholdOuter.of( OneOrTwoDoubles.of( 1269.0 ),
                                                           ThresholdOperator.LESS,
-                                                          ThresholdOrientation.RIGHT,
+                                                          ThresholdOrientation.PREDICTED,
                                                           MeasurementUnit.of( CMS ) );
 
         assertEquals( expectedThree, actualThree );
@@ -334,14 +334,14 @@ class ThresholdSlicerTest
         ThresholdOuter seventh = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1269.0 ),
                                                                      OneOrTwoDoubles.of( 0.83 ),
                                                                      ThresholdOperator.LESS,
-                                                                     ThresholdOrientation.RIGHT,
+                                                                     ThresholdOrientation.PREDICTED,
                                                                      "aThreshold",
                                                                      MeasurementUnit.of( CMS ) );
 
         ThresholdOuter eighth = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1269.0 ),
                                                                     OneOrTwoDoubles.of( 0.83 ),
                                                                     ThresholdOperator.LESS,
-                                                                    ThresholdOrientation.RIGHT,
+                                                                    ThresholdOrientation.PREDICTED,
                                                                     "anotherThreshold",
                                                                     MeasurementUnit.of( CMS ) );
 
@@ -350,7 +350,7 @@ class ThresholdSlicerTest
         ThresholdOuter expectedFour = ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1269.0 ),
                                                                           OneOrTwoDoubles.of( 0.83 ),
                                                                           ThresholdOperator.LESS,
-                                                                          ThresholdOrientation.RIGHT,
+                                                                          ThresholdOrientation.PREDICTED,
                                                                           null,
                                                                           MeasurementUnit.of( CMS ) );
 
@@ -365,12 +365,12 @@ class ThresholdSlicerTest
         ThresholdOuter first = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                            .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                            .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                           .setOrientation( ThresholdOrientation.LEFT )
+                                                           .setOrientation( ThresholdOrientation.OBSERVED )
                                                            .build();
         ThresholdOuter second = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                             .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                                                             .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                            .setOrientation( ThresholdOrientation.LEFT )
+                                                            .setOrientation( ThresholdOrientation.OBSERVED )
                                                             .build();
 
         input.add( first );
@@ -387,13 +387,13 @@ class ThresholdSlicerTest
                                                                   .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                                   .setUnits( MeasurementUnit.of( "UNIT" ) )
                                                                   .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                                  .setOrientation( ThresholdOrientation.LEFT )
+                                                                  .setOrientation( ThresholdOrientation.OBSERVED )
                                                                   .build();
         ThresholdOuter anotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                                    .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                                                                    .setUnits( MeasurementUnit.of( "OTHER_UNIT" ) )
                                                                    .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                                   .setOrientation( ThresholdOrientation.LEFT )
+                                                                   .setOrientation( ThresholdOrientation.OBSERVED )
                                                                    .build();
 
         anotherInput.add( anotherFirst );
@@ -410,14 +410,14 @@ class ThresholdSlicerTest
                                                                      .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                                      .setUnits( MeasurementUnit.of( "UNIT" ) )
                                                                      .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                                     .setOrientation( ThresholdOrientation.LEFT )
+                                                                     .setOrientation( ThresholdOrientation.OBSERVED )
                                                                      .setLabel( "name" )
                                                                      .build();
         ThresholdOuter yetAnotherSecond = new ThresholdOuter.Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                                       .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                                                                       .setUnits( MeasurementUnit.of( "UNIT" ) )
                                                                       .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                                      .setOrientation( ThresholdOrientation.LEFT )
+                                                                      .setOrientation( ThresholdOrientation.OBSERVED )
                                                                       .setLabel( "anotherName" )
                                                                       .build();
 
@@ -434,12 +434,12 @@ class ThresholdSlicerTest
         ThresholdOuter oneMoreFirst = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                                   .setUnits( MeasurementUnit.of( "UNIT" ) )
                                                                   .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                                  .setOrientation( ThresholdOrientation.LEFT )
+                                                                  .setOrientation( ThresholdOrientation.OBSERVED )
                                                                   .build();
         ThresholdOuter oneMoreSecond = new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                                                                    .setUnits( MeasurementUnit.of( "UNIT" ) )
                                                                    .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                                   .setOrientation( ThresholdOrientation.LEFT )
+                                                                   .setOrientation( ThresholdOrientation.OBSERVED )
                                                                    .build();
 
         oneMoreInput.add( oneMoreFirst );
@@ -460,16 +460,16 @@ class ThresholdSlicerTest
 
         ThresholdOuter thresholdOne = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                              ThresholdOperator.GREATER,
-                                                                             ThresholdOrientation.LEFT );
+                                                                             ThresholdOrientation.OBSERVED );
 
         ThresholdOuter thresholdTwo = ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                              ThresholdOperator.GREATER,
-                                                                             ThresholdOrientation.LEFT );
+                                                                             ThresholdOrientation.OBSERVED );
 
         ThresholdOuter thresholdThree =
                 new ThresholdOuter.Builder().setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                                             .setOperator( ThresholdOperator.GREATER )
-                                            .setOrientation( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.OBSERVED )
                                             .setThresholdType( ThresholdType.PROBABILITY_CLASSIFIER )
                                             .build();
 
@@ -506,7 +506,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdOne
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 23.0 )
+                                                       .setObservedThresholdValue( 23.0 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.VALUE )
@@ -516,7 +516,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdTwo
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 25.0 )
+                                                       .setObservedThresholdValue( 25.0 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.VALUE )
@@ -527,7 +527,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdThree
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 0.3 )
+                                                       .setObservedThresholdValue( 0.3 )
                                                        .setOperator( Threshold.ThresholdOperator.LESS )
                                                        .build() )
                                   .type( ThresholdType.PROBABILITY )
@@ -537,7 +537,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdFour
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 0.5 )
+                                                       .setObservedThresholdValue( 0.5 )
                                                        .setOperator( Threshold.ThresholdOperator.LESS )
                                                        .build() )
                                   .type( ThresholdType.PROBABILITY )
@@ -651,7 +651,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdOne
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 23.0 )
+                                                       .setObservedThresholdValue( 23.0 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.VALUE )
@@ -661,7 +661,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdTwo
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( 0.2 )
+                                                       .setObservedThresholdValue( 0.2 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.PROBABILITY )
@@ -739,16 +739,16 @@ class ThresholdSlicerTest
 
         thresholds.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.0 ),
                                                                ThresholdOperator.GREATER,
-                                                               ThresholdOrientation.LEFT ) );
+                                                               ThresholdOrientation.OBSERVED ) );
         thresholds.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                ThresholdOperator.GREATER,
-                                                               ThresholdOrientation.LEFT ) );
+                                                               ThresholdOrientation.OBSERVED ) );
 
         // Probability classifier thresholds
         ThresholdOuter classifier = new ThresholdOuter.Builder()
                 .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                 .setOperator( ThresholdOperator.GREATER )
-                .setOrientation( ThresholdOrientation.LEFT )
+                .setOrientation( ThresholdOrientation.OBSERVED )
                 .setThresholdType( ThresholdType.PROBABILITY_CLASSIFIER )
                 .build();
 

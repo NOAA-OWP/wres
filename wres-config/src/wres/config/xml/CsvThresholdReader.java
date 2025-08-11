@@ -117,7 +117,7 @@ public class CsvThresholdReader
         }
 
         // Data type: default to left
-        Threshold.ThresholdDataType dataType = Threshold.ThresholdDataType.LEFT;
+        Threshold.ThresholdDataType dataType = Threshold.ThresholdDataType.OBSERVED;
         if ( Objects.nonNull( threshold.getApplyTo() ) )
         {
             dataType = Threshold.ThresholdDataType.valueOf( threshold.getApplyTo()
@@ -588,11 +588,11 @@ public class CsvThresholdReader
                                                     + "probability of 1.0." );
             }
 
-            canonical.setLeftThresholdProbability( threshold );
+            canonical.setObservedThresholdProbability( threshold );
         }
         else
         {
-            canonical.setLeftThresholdValue( threshold );
+            canonical.setObservedThresholdValue( threshold );
         }
 
         if ( Objects.nonNull( name ) )

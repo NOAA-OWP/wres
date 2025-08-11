@@ -97,10 +97,10 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
             // Index using a threshold without values/probabilities
             wres.statistics.generated.Threshold nextInner = next.threshold()
                                                                 .toBuilder()
-                                                                .clearRightThresholdValue()
-                                                                .clearRightThresholdProbability()
-                                                                .clearLeftThresholdValue()
-                                                                .clearLeftThresholdProbability()
+                                                                .clearPredictedThresholdValue()
+                                                                .clearPredictedThresholdProbability()
+                                                                .clearObservedThresholdValue()
+                                                                .clearObservedThresholdProbability()
                                                                 .build();
 
             Threshold outer = ThresholdBuilder.builder()

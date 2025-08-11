@@ -586,7 +586,7 @@ class DeclarationMigratorTest
         List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ),
                                                   new MetricConfig( null, MetricConfigName.SAMPLE_SIZE ) );
         ThresholdsConfig someThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY,
-                                                                ThresholdDataType.LEFT, "0.1",
+                                                                ThresholdDataType.OBSERVED, "0.1",
                                                                 ThresholdOperator.GREATER_THAN );
         List<ThresholdsConfig> thresholdSets = List.of( someThresholds );
         MetricsConfig someMetricsWrapped = new MetricsConfig( thresholdSets, null, someMetrics, null, null );
@@ -594,7 +594,7 @@ class DeclarationMigratorTest
         // Second group of metrics with thresholds
         List<MetricConfig> moreMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
         ThresholdsConfig moreThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY,
-                                                                ThresholdDataType.LEFT, "0.2",
+                                                                ThresholdDataType.OBSERVED, "0.2",
                                                                 ThresholdOperator.GREATER_THAN );
         List<ThresholdsConfig> moreThresholdsSets = List.of( moreThresholds );
         MetricsConfig moreMetricsWrapped = new MetricsConfig( moreThresholdsSets, null, moreMetrics, null, null );
@@ -612,7 +612,7 @@ class DeclarationMigratorTest
         EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
 
@@ -632,7 +632,7 @@ class DeclarationMigratorTest
                                         .build();
 
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.2 )
+                                  .setObservedThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
 
@@ -919,7 +919,7 @@ class DeclarationMigratorTest
                                                                          "bats",
                                                                          LeftOrRightOrBaseline.LEFT );
         ThresholdsConfig someThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY,
-                                                                ThresholdDataType.LEFT,
+                                                                ThresholdDataType.OBSERVED,
                                                                 sourceOne,
                                                                 ThresholdOperator.GREATER_THAN );
         List<ThresholdsConfig> thresholdSets = List.of( someThresholds );
@@ -937,7 +937,7 @@ class DeclarationMigratorTest
                                                                          "cats",
                                                                          LeftOrRightOrBaseline.RIGHT );
         ThresholdsConfig moreThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.VALUE,
-                                                                ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                                                ThresholdDataType.OBSERVED_AND_ANY_PREDICTED,
                                                                 sourceTwo,
                                                                 ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
         List<ThresholdsConfig> moreThresholdsSets = List.of( moreThresholds );
@@ -960,7 +960,7 @@ class DeclarationMigratorTest
         ThresholdSource expectedOne =
                 ThresholdSourceBuilder.builder()
                                       .uri( uriOne )
-                                      .applyTo( ThresholdOrientation.LEFT )
+                                      .applyTo( ThresholdOrientation.OBSERVED )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .missingValue( -93.0 )
                                       .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
@@ -974,7 +974,7 @@ class DeclarationMigratorTest
         ThresholdSource expectedTwo =
                 ThresholdSourceBuilder.builder()
                                       .uri( uriTwo )
-                                      .applyTo( ThresholdOrientation.LEFT_AND_ANY_RIGHT )
+                                      .applyTo( ThresholdOrientation.OBSERVED_AND_ANY_PREDICTED )
                                       .featureNameFrom( DatasetOrientation.RIGHT )
                                       .missingValue( -94.0 )
                                       .operator( wres.config.yaml.components.ThresholdOperator.LESS_EQUAL )
@@ -1114,11 +1114,11 @@ class DeclarationMigratorTest
     {
         // #120048
         ThresholdsConfig one = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER,
-                                                     ThresholdDataType.LEFT_AND_RIGHT,
+                                                     ThresholdDataType.OBSERVED_AND_PREDICTED,
                                                      "0.05,0.1",
                                                      ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
         ThresholdsConfig two = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER,
-                                                     ThresholdDataType.ANY_RIGHT,
+                                                     ThresholdDataType.ANY_PREDICTED,
                                                      "0.05,0.1",
                                                      ThresholdOperator.EQUAL_TO );
 
@@ -1137,9 +1137,9 @@ class DeclarationMigratorTest
         EvaluationDeclaration actualEvaluation = DeclarationMigrator.from( project, false );
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.05 )
+                                  .setObservedThresholdProbability( 0.05 )
                                   .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
-                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                   .build();
 
         wres.config.yaml.components.Threshold pOneWrapped
@@ -1149,9 +1149,9 @@ class DeclarationMigratorTest
                                   .build();
 
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( 0.1 )
+                                  .setObservedThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
-                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                   .build();
 
         wres.config.yaml.components.Threshold pTwoWrapped
@@ -1161,9 +1161,9 @@ class DeclarationMigratorTest
                                   .build();
 
         Threshold pThree = Threshold.newBuilder()
-                                    .setLeftThresholdProbability( 0.05 )
+                                    .setObservedThresholdProbability( 0.05 )
                                     .setOperator( Threshold.ThresholdOperator.EQUAL )
-                                    .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                    .setDataType( Threshold.ThresholdDataType.ANY_PREDICTED )
                                     .build();
 
         wres.config.yaml.components.Threshold pThreeWrapped =
@@ -1173,9 +1173,9 @@ class DeclarationMigratorTest
                                 .build();
 
         Threshold pFour = Threshold.newBuilder()
-                                   .setLeftThresholdProbability( 0.1 )
+                                   .setObservedThresholdProbability( 0.1 )
                                    .setOperator( Threshold.ThresholdOperator.EQUAL )
-                                   .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                   .setDataType( Threshold.ThresholdDataType.ANY_PREDICTED )
                                    .build();
 
         wres.config.yaml.components.Threshold pFourWrapped =

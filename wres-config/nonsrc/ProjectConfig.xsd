@@ -482,13 +482,13 @@
     <!-- An enum to specify the scope of the thresholds when filtering paired data. -->
     <xs:simpleType name="thresholdDataType">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="left" />
-            <xs:enumeration value="right" />
-            <xs:enumeration value="left and right" />
-            <xs:enumeration value="any right" />
-            <xs:enumeration value="left and any right" />
-            <xs:enumeration value="right mean" />
-            <xs:enumeration value="left and right mean" />
+            <xs:enumeration value="observed" />
+            <xs:enumeration value="predicted" />
+            <xs:enumeration value="observed and predicted" />
+            <xs:enumeration value="any predicted" />
+            <xs:enumeration value="observed and any predicted" />
+            <xs:enumeration value="predicted mean" />
+            <xs:enumeration value="observed and predicted mean" />
         </xs:restriction>
     </xs:simpleType>
 

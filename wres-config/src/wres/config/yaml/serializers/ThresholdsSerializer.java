@@ -297,7 +297,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         {
             values = thresholds.stream()
                                .mapToDouble( next -> next.threshold()
-                                                         .getLeftThresholdValue() )
+                                                         .getObservedThresholdValue() )
                                .sorted()
                                .toArray();
         }
@@ -305,7 +305,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         {
             values = thresholds.stream()
                                .mapToDouble( next -> next.threshold()
-                                                         .getLeftThresholdProbability() )
+                                                         .getObservedThresholdProbability() )
                                .sorted()
                                .toArray();
         }
@@ -324,10 +324,10 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         {
             wres.statistics.generated.Threshold blank = next.threshold()
                                                             .toBuilder()
-                                                            .clearLeftThresholdProbability()
-                                                            .clearRightThresholdProbability()
-                                                            .clearLeftThresholdValue()
-                                                            .clearRightThresholdValue()
+                                                            .clearObservedThresholdProbability()
+                                                            .clearPredictedThresholdProbability()
+                                                            .clearObservedThresholdValue()
+                                                            .clearPredictedThresholdValue()
                                                             .build();
 
             Threshold blankOuter = ThresholdBuilder.builder()

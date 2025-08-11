@@ -656,7 +656,7 @@ class MessageFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                     ThresholdOperator.GREATER,
-                                                                                    ThresholdOrientation.LEFT ) );
+                                                                                    ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -733,7 +733,7 @@ class MessageFactoryTest
                                                                                                      OneOrTwoDoubles.of(
                                                                                                              0.9 ),
                                                                                                      ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+                                                                                                     ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -817,7 +817,7 @@ class MessageFactoryTest
                                                                                                      OneOrTwoDoubles.of(
                                                                                                              0.9 ),
                                                                                                      ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+                                                                                                     ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -944,7 +944,7 @@ class MessageFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -1010,7 +1010,7 @@ class MessageFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )

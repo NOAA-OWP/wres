@@ -154,7 +154,7 @@ class ThresholdExtractorTest
                                                          .type( ThresholdType.STAGE )
                                                          .provider( "NWS-NRLDB" )
                                                          .operator( ThresholdOperator.GREATER )
-                                                         .orientation( ThresholdOrientation.LEFT )
+                                                         .orientation( ThresholdOrientation.OBSERVED )
                                                          .build();
 
         Map<Location, Set<Threshold>> normalExtraction = extractor.extract();
@@ -177,11 +177,11 @@ class ThresholdExtractorTest
         for ( Threshold threshold : normalOuterThresholds )
         {
             assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
-            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
+            assertEquals( Threshold.ThresholdDataType.OBSERVED, threshold.getDataType() );
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue(),
+                          threshold.getObservedThresholdValue(),
                           EPSILON );
         }
 
@@ -193,7 +193,7 @@ class ThresholdExtractorTest
                                       .provider( "FlavorTown" )
                                       .ratingProvider( "DonkeySauce" )
                                       .operator( ThresholdOperator.GREATER )
-                                      .orientation( ThresholdOrientation.LEFT_AND_ANY_RIGHT )
+                                      .orientation( ThresholdOrientation.OBSERVED_AND_ANY_PREDICTED )
                                       .build();
 
         Map<Location, Set<Threshold>> funExtraction = extractor.extract();
@@ -222,13 +222,13 @@ class ThresholdExtractorTest
 
         for ( Threshold threshold : funExtraction.get( STEAK ) )
         {
-            assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+            assertEquals( Threshold.ThresholdDataType.OBSERVED_AND_ANY_PREDICTED,
                           threshold.getDataType() );
             assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
 
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue(),
+                          threshold.getObservedThresholdValue(),
                           EPSILON );
         }
 
@@ -249,12 +249,12 @@ class ThresholdExtractorTest
 
         for ( Threshold threshold : funExtraction.get( BAKED_POTATO ) )
         {
-            assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT, threshold.getDataType() );
+            assertEquals( Threshold.ThresholdDataType.OBSERVED_AND_ANY_PREDICTED, threshold.getDataType() );
             assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
 
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue(),
+                          threshold.getObservedThresholdValue(),
                           EPSILON );
         }
 
@@ -264,7 +264,7 @@ class ThresholdExtractorTest
                                       .type( ThresholdType.STAGE )
                                       .provider( "NWS-CMS" )
                                       .operator( ThresholdOperator.LESS )
-                                      .orientation( ThresholdOrientation.LEFT )
+                                      .orientation( ThresholdOrientation.OBSERVED )
                                       .build();
 
         Map<Location, Set<Threshold>> alternativeNormalExtraction = extractor.extract();
@@ -283,12 +283,12 @@ class ThresholdExtractorTest
         for ( Threshold threshold : alternativeNormalExtraction.get( MNTG1 ) )
         {
             assertEquals( Threshold.ThresholdOperator.LESS, threshold.getOperator() );
-            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
+            assertEquals( Threshold.ThresholdDataType.OBSERVED, threshold.getDataType() );
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals(
                     thresholdValues.get( threshold.getName() ),
-                    threshold.getLeftThresholdValue(),
+                    threshold.getObservedThresholdValue(),
                     EPSILON );
         }
 
@@ -303,11 +303,11 @@ class ThresholdExtractorTest
         for ( Threshold threshold : alternativeNormalExtraction.get( PTSA1 ) )
         {
             assertEquals( Threshold.ThresholdOperator.LESS, threshold.getOperator() );
-            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
+            assertEquals( Threshold.ThresholdDataType.OBSERVED, threshold.getDataType() );
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue(),
+                          threshold.getObservedThresholdValue(),
                           EPSILON );
         }
 
@@ -317,7 +317,7 @@ class ThresholdExtractorTest
                                       .type( ThresholdType.STAGE )
                                       .provider( "NWS-NRLDB" )
                                       .operator( ThresholdOperator.GREATER )
-                                      .orientation( ThresholdOrientation.LEFT )
+                                      .orientation( ThresholdOrientation.OBSERVED )
                                       .build();
 
         Map<Location, Set<Threshold>> normalButFunExtraction = extractor.extract();
@@ -338,11 +338,11 @@ class ThresholdExtractorTest
         for ( Threshold threshold : normalButFunExtraction.get( BAKED_POTATO ) )
         {
             assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
-            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
+            assertEquals( Threshold.ThresholdDataType.OBSERVED, threshold.getDataType() );
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue(),
+                          threshold.getObservedThresholdValue(),
                           EPSILON );
         }
     }

@@ -125,7 +125,7 @@ class MetricConstantsFactoryTest
         // Mock some thresholds
         List<ThresholdsConfig> thresholds = new ArrayList<>();
         thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                              ThresholdDataType.LEFT,
+                                              ThresholdDataType.OBSERVED,
                                               TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 

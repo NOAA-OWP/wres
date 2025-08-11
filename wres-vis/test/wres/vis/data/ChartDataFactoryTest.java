@@ -253,10 +253,10 @@ class ChartDataFactoryTest
 
         ThresholdOuter first = ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
                                                   ThresholdOperator.GREATER,
-                                                  ThresholdOrientation.LEFT );
+                                                  ThresholdOrientation.OBSERVED );
         ThresholdOuter second = ThresholdOuter.of( OneOrTwoDoubles.of( 29.0 ),
                                                    ThresholdOperator.GREATER,
-                                                   ThresholdOrientation.LEFT );
+                                                   ThresholdOrientation.OBSERVED );
         PoolMetadata metaTwoOne =
                 PoolMetadata.of( PoolMetadata.of(), TimeWindowOuter.of( timeWindow ), OneOrTwoThresholds.of( first ) );
         PoolMetadata metaTwoTwo =

@@ -1966,16 +1966,16 @@ public class DeclarationMigrator
         for ( double next : values )
         {
             // Clear existing values
-            builder.clearLeftThresholdValue()
-                   .clearLeftThresholdProbability();
+            builder.clearObservedThresholdValue()
+                   .clearObservedThresholdProbability();
 
             if ( newType == ThresholdType.VALUE )
             {
-                builder.setLeftThresholdValue( next );
+                builder.setObservedThresholdValue( next );
             }
             else
             {
-                builder.setLeftThresholdProbability( next );
+                builder.setObservedThresholdProbability( next );
             }
 
             wres.statistics.generated.Threshold migratedThreshold = builder.build();

@@ -86,8 +86,8 @@ public class ThresholdSlicer
             {
                 Threshold.Builder builder = next.getThreshold()
                                                 .toBuilder();
-                builder.clearLeftThresholdProbability();
-                builder.clearRightThresholdProbability();
+                builder.clearObservedThresholdProbability();
+                builder.clearPredictedThresholdProbability();
 
                 ThresholdOuter noProbs =
                         new ThresholdOuter.Builder( builder.build() ).build();
@@ -924,16 +924,16 @@ public class ThresholdSlicer
                                      unitMapper.getDesiredMeasurementUnitName() ) )
             {
                 DoubleUnaryOperator mapper = unitMapper.getUnitMapper( inner.getThresholdValueUnits() );
-                double leftValue = mapper.applyAsDouble( inner.getLeftThresholdValue() );
+                double leftValue = mapper.applyAsDouble( inner.getObservedThresholdValue() );
 
                 Threshold.Builder innerAdjusted = inner.toBuilder()
-                                                       .setLeftThresholdValue( leftValue )
+                                                       .setObservedThresholdValue( leftValue )
                                                        .setThresholdValueUnits( unitMapper.getDesiredMeasurementUnitName() );
 
-                if ( inner.hasRightThresholdValue() )
+                if ( inner.hasPredictedThresholdValue() )
                 {
-                    double rightValue = mapper.applyAsDouble( inner.getRightThresholdValue() );
-                    innerAdjusted.setRightThresholdValue( rightValue );
+                    double rightValue = mapper.applyAsDouble( inner.getPredictedThresholdValue() );
+                    innerAdjusted.setPredictedThresholdValue( rightValue );
                 }
 
                 builder.threshold( innerAdjusted.build() );

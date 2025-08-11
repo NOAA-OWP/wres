@@ -58,9 +58,9 @@ class EvaluationUtilitiesTest
                                                   .build();
 
         Threshold pOneValue = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 5 )
+                                       .setObservedThresholdValue( 5 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                        .build();
 
         wres.config.yaml.components.Threshold pOneValueWrapped
@@ -70,9 +70,9 @@ class EvaluationUtilitiesTest
                                   .build();
 
         Threshold pTwoValue = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 10 )
+                                       .setObservedThresholdValue( 10 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                        .build();
 
         wres.config.yaml.components.Threshold pTwoValueWrapped
@@ -86,9 +86,9 @@ class EvaluationUtilitiesTest
         valueThresholds.add( pTwoValueWrapped );
 
         Threshold pOneClassifier = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( 0.05 )
+                                            .setObservedThresholdProbability( 0.05 )
                                             .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
-                                            .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                            .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                             .build();
 
         wres.config.yaml.components.Threshold pOneClassifierWrapped
@@ -98,9 +98,9 @@ class EvaluationUtilitiesTest
                                   .build();
 
         Threshold pTwoClassifier = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( 0.1 )
+                                            .setObservedThresholdProbability( 0.1 )
                                             .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
-                                            .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                            .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                             .build();
 
         wres.config.yaml.components.Threshold pTwoClassifierWrapped
@@ -154,9 +154,9 @@ class EvaluationUtilitiesTest
     {
         // Create the declaration
         Threshold pOneValue = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 5 )
+                                       .setObservedThresholdValue( 5 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
                                        .setName( "FLOOD" )
                                        .build();
 
@@ -192,7 +192,7 @@ class EvaluationUtilitiesTest
 
         // Filter accepts arbitrary statistics with "FLOOD" threshold
         Threshold eventThreshold = pOneValue.toBuilder()
-                                            .setLeftThresholdValue( 23.0 )
+                                            .setObservedThresholdValue( 23.0 )
                                             .build();
 
         TimeWindowOuter big = TimeWindowSlicer.getOneBigTimeWindow( evaluation );
@@ -308,12 +308,12 @@ class EvaluationUtilitiesTest
 
         Threshold one = Threshold.newBuilder()
                                  .setName( "flood" )
-                                 .setLeftThresholdValue( 23.0 )
+                                 .setObservedThresholdValue( 23.0 )
                                  .build();
 
         Threshold two = Threshold.newBuilder()
                                  .setName( "flood" )
-                                 .setLeftThresholdValue( 22.0 )
+                                 .setObservedThresholdValue( 22.0 )
                                  .build();
 
         Geometry oneFeature = Geometry.newBuilder()
@@ -352,12 +352,12 @@ class EvaluationUtilitiesTest
 
         Threshold one = Threshold.newBuilder()
                                  .setName( "flood" )
-                                 .setLeftThresholdValue( 23.0 )
+                                 .setObservedThresholdValue( 23.0 )
                                  .build();
 
         Threshold two = Threshold.newBuilder()
                                  .setName( "flood" )
-                                 .setLeftThresholdValue( 23.0 )
+                                 .setObservedThresholdValue( 23.0 )
                                  .build();
 
         Geometry oneFeature = Geometry.newBuilder()

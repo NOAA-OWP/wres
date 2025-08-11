@@ -173,21 +173,21 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         {
             if ( type.isProbability() )
             {
-                builder.setRightThresholdProbability( 1.0 );
+                builder.setPredictedThresholdProbability( 1.0 );
             }
             else
             {
-                builder.setRightThresholdValue( Double.POSITIVE_INFINITY );
+                builder.setPredictedThresholdValue( Double.POSITIVE_INFINITY );
             }
         }
 
         if ( type.isProbability() )
         {
-            builder.setLeftThresholdProbability( lowerValue );
+            builder.setObservedThresholdProbability( lowerValue );
         }
         else
         {
-            builder.setLeftThresholdValue( lowerValue );
+            builder.setObservedThresholdValue( lowerValue );
         }
 
         wres.statistics.generated.Threshold nextThreshold = builder.build();
@@ -320,25 +320,25 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         for ( int i = 0; i < thresholdCount; i++ )
         {
             // Clear any existing state
-            builder.clearLeftThresholdValue();
-            builder.clearLeftThresholdProbability();
-            builder.clearRightThresholdValue();
-            builder.clearRightThresholdProbability();
+            builder.clearObservedThresholdValue();
+            builder.clearObservedThresholdProbability();
+            builder.clearPredictedThresholdValue();
+            builder.clearPredictedThresholdProbability();
 
             JsonNode nextNode = valuesNode.get( i );
 
-            // Threshold value. Set all as left. Any BETWEEN thresholds are constructed by merging later
+            // Threshold value. Set all as Observed. Any BETWEEN thresholds are constructed by merging later
             if ( nextNode.has( VALUE ) )
             {
                 JsonNode valueNode = nextNode.get( VALUE );
                 double value = valueNode.doubleValue();
                 if ( type.isProbability() )
                 {
-                    builder.setLeftThresholdProbability( value );
+                    builder.setObservedThresholdProbability( value );
                 }
                 else
                 {
-                    builder.setLeftThresholdValue( value );
+                    builder.setObservedThresholdValue( value );
                 }
             }
 
@@ -419,21 +419,21 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
                 if ( type.isProbability() )
                 {
-                    thresholdBuilder.setRightThresholdProbability( upperValue );
+                    thresholdBuilder.setPredictedThresholdProbability( upperValue );
                 }
                 else
                 {
-                    thresholdBuilder.setRightThresholdValue( upperValue );
+                    thresholdBuilder.setPredictedThresholdValue( upperValue );
                 }
             }
 
             if ( type.isProbability() )
             {
-                thresholdBuilder.setLeftThresholdProbability( lowerValue );
+                thresholdBuilder.setObservedThresholdProbability( lowerValue );
             }
             else
             {
-                thresholdBuilder.setLeftThresholdValue( lowerValue );
+                thresholdBuilder.setObservedThresholdValue( lowerValue );
             }
 
             wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();

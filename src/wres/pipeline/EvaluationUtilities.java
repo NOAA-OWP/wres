@@ -1895,11 +1895,11 @@ class EvaluationUtilities
             {
                 // Set to missing rather than clearing: #126545
                 Threshold.Builder builder = mutableBuilder.getEventThresholdBuilder()
-                                                          .setLeftThresholdValue( MissingValues.DOUBLE );
+                                                          .setObservedThresholdValue( MissingValues.DOUBLE );
                 if ( mutableBuilder.getEventThreshold()
                                    .getOperator() == Threshold.ThresholdOperator.BETWEEN )
                 {
-                    builder.setRightThresholdValue( MissingValues.DOUBLE );
+                    builder.setPredictedThresholdValue( MissingValues.DOUBLE );
                 }
             }
 

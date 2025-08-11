@@ -200,7 +200,7 @@ class GraphicsConsumerFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                     ThresholdOperator.GREATER,
-                                                                                    ThresholdOrientation.LEFT ) );
+                                                                                    ThresholdOrientation.OBSERVED ) );
 
         Geometry geometry = MessageUtilities.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
 

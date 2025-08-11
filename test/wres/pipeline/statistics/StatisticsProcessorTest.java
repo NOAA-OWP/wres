@@ -116,7 +116,7 @@ public final class StatisticsProcessorTest
 
         ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      ThresholdOperator.GREATER,
-                                                     ThresholdOrientation.LEFT_AND_RIGHT );
+                                                     ThresholdOrientation.OBSERVED_AND_PREDICTED );
 
         assertEquals( expected, processors.get( 0 )
                                           .getAllDataThreshold() );

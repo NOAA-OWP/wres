@@ -1723,7 +1723,7 @@ class DeclarationValidatorTest
         Set<GeometryTuple> features = Set.of( tupleFooBaz, tupleFooBar, tupleBarBaz );
 
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( 1.0 )
+                                 .setObservedThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
@@ -1732,7 +1732,7 @@ class DeclarationValidatorTest
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( 2.0 )
+                                 .setObservedThresholdValue( 2.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
                                                                            .threshold( two )
@@ -1741,7 +1741,7 @@ class DeclarationValidatorTest
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold three = Threshold.newBuilder()
-                                   .setLeftThresholdValue( 2.0 )
+                                   .setObservedThresholdValue( 2.0 )
                                    .build();
         wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
                                                                              .threshold( three )
@@ -1751,7 +1751,7 @@ class DeclarationValidatorTest
                                                                              .build();
 
         Threshold four = Threshold.newBuilder()
-                                  .setLeftThresholdValue( 2.0 )
+                                  .setObservedThresholdValue( 2.0 )
                                   .build();
         Geometry featureQux = Geometry.newBuilder()
                                       .setName( "qux" )
@@ -1793,7 +1793,7 @@ class DeclarationValidatorTest
                                       .setName( "foo" )
                                       .build();
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( 1.0 )
+                                 .setObservedThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
@@ -1823,7 +1823,7 @@ class DeclarationValidatorTest
                                       .setName( "foo" )
                                       .build();
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( 1.0 )
+                                 .setObservedThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
@@ -1851,7 +1851,7 @@ class DeclarationValidatorTest
     {
         ThresholdSource source = new ThresholdSource( URI.create( "foo" ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT,
+                                                      ThresholdOrientation.OBSERVED,
                                                       ThresholdType.VALUE,
                                                       DatasetOrientation.LEFT,
                                                       "bar",
@@ -1877,7 +1877,7 @@ class DeclarationValidatorTest
     @Test
     void testRealValuedThresholdWithoutUnitProducesWarning()
     {
-        Threshold threshold = Threshold.newBuilder().setLeftThresholdValue( 23 )
+        Threshold threshold = Threshold.newBuilder().setObservedThresholdValue( 23 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .build();
 

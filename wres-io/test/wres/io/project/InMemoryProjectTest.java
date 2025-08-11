@@ -212,7 +212,7 @@ class InMemoryProjectTest
                                      .build();
         wres.statistics.generated.Threshold probThreshold =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue( 0.4 )
+                                                   .setObservedThresholdValue( 0.4 )
                                                    .build();
         Set<Threshold> thresholds =
                 Set.of( ThresholdBuilder.builder()

@@ -11,19 +11,19 @@ import wres.statistics.generated.Threshold;
 public enum ThresholdOrientation
 {
     /** Observed or left orientation. */
-    @JsonProperty( "observed" ) LEFT( "observed" ),
+    @JsonProperty( "observed" ) OBSERVED( "observed" ),
     /** Predicted or right orientation. */
-    @JsonProperty( "predicted" ) RIGHT( "predicted" ),
+    @JsonProperty( "predicted" ) PREDICTED( "predicted" ),
     /** Observed and predicted or left and right. */
-    @JsonProperty( "observed and predicted" ) LEFT_AND_RIGHT( "observed and predicted" ),
+    @JsonProperty( "observed and predicted" ) OBSERVED_AND_PREDICTED( "observed and predicted" ),
     /** Any predicted or right value (e.g., within an ensemble). */
-    @JsonProperty( "any predicted" ) ANY_RIGHT( "any predicted" ),
+    @JsonProperty( "any predicted" ) ANY_PREDICTED( "any predicted" ),
     /** Observed or left and any predicted or right value (e.g., within an ensemble). */
-    @JsonProperty( "observed and any predicted" ) LEFT_AND_ANY_RIGHT( "observed and any predicted" ),
+    @JsonProperty( "observed and any predicted" ) OBSERVED_AND_ANY_PREDICTED( "observed and any predicted" ),
     /** Mean of right or predicted value (e.g., of an ensemble). */
-    @JsonProperty( "predicted mean" ) RIGHT_MEAN( "predicted mean" ),
+    @JsonProperty( "predicted mean" ) PREDICTED_MEAN( "predicted mean" ),
     /** Left and mean right or predicted value (e.g., of an ensemble). */
-    @JsonProperty( "observed and predicted mean" ) LEFT_AND_RIGHT_MEAN( "observed and predicted mean" );
+    @JsonProperty( "observed and predicted mean" ) OBSERVED_AND_PREDICTED_MEAN( "observed and predicted mean" );
 
     /** The string name. */
     private final String stringName;
@@ -44,8 +44,27 @@ public enum ThresholdOrientation
 
     public Threshold.ThresholdDataType canonical()
     {
-        return Threshold.ThresholdDataType.valueOf( this.name() );
+        return Threshold.ThresholdDataType.valueOf( this.toString()
+                                                        .replace( " ", "_" )
+                                                        .toUpperCase() );
     }
+//
+//    /**
+//     * Creates a ThresholdOrientation based on the stringName of the enum
+//     * @param input the stringName of the ThresholdOrientation
+//     * @return A ThresholdOrientation
+//     */
+//    public static ThresholdOrientation fromString(String input)
+//    {
+//        for ( ThresholdOrientation orientation : ThresholdOrientation.values() )
+//        {
+//            if (orientation.toString().equalsIgnoreCase( input ) )
+//            {
+//                return orientation;
+//            }
+//        }
+//        return null;
+//    }
 
     @Override
     public String toString()
