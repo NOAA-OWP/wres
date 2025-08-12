@@ -330,12 +330,15 @@ class DeclarationValidatorTest
     {
         Source source = SourceBuilder.builder()
                                      .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .uri( URI.create( "http://foo" ) )
                                      .build();
         Source anotherSource = SourceBuilder.builder()
                                             .sourceInterface( SourceInterface.WRDS_NWM )
+                                            .uri( URI.create( "http://foo" ) )
                                             .build();
         Source yetAnotherSource = SourceBuilder.builder()
                                                .sourceInterface( SourceInterface.WRDS_AHPS )
+                                               .uri( URI.create( "http://foo" ) )
                                                .build();
         Dataset left = DatasetBuilder.builder()
                                      .sources( List.of( source ) )
@@ -1115,6 +1118,7 @@ class DeclarationValidatorTest
     {
         Source source = SourceBuilder.builder()
                                      .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .uri( URI.create( "http://foo" ) )
                                      .build();
 
         Dataset dataset = DatasetBuilder.builder()

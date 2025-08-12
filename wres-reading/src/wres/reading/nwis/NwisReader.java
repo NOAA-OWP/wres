@@ -90,7 +90,7 @@ public class NwisReader implements TimeSeriesReader
     /**
      * @see #of(EvaluationDeclaration, SystemSettings)
      * @param systemSettings the system settings
-     * @return an instance that does not performing any chunking of the time-series data
+     * @return an instance that does not perform any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
      */
 

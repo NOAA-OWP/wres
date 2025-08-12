@@ -5638,7 +5638,16 @@ public class DeclarationValidator
                                                            SourceInterface.USGS_NWIS,
                                                            SourceInterface.WRDS_AHPS,
                                                            SourceInterface.WRDS_NWM,
-                                                           SourceInterface.WRDS_HEFS );
+                                                           SourceInterface.WRDS_HEFS )
+               && dataset.sources()
+                         .stream()
+                         .anyMatch( s -> Objects.nonNull( s )
+                                         && Objects.nonNull( s.uri() )
+                                         && Objects.nonNull( s.uri()
+                                                              .getScheme() )
+                                         && s.uri()
+                                             .getScheme()
+                                             .startsWith( "http" ) );
     }
 
     /**

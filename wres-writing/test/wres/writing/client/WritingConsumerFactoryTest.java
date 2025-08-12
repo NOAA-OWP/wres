@@ -169,20 +169,19 @@ class WritingConsumerFactoryTest
         }
 
         // Make assertions about the writing written by the single external subscription.
-        Set<Path> expectedPaths = Set.of( basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ABSOLUTE_ERROR.png" ),
-                                          basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ERROR.png" ),
-                                          basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_SQUARE_ERROR.png" ) );
+        Set<Path> expectedPaths = Set.of( basePath.resolve( "evaluation.csv.gz" ),
+                                          basePath.resolve( "evaluation.csvt" ) );
 
         Assertions.assertEquals( expectedPaths, actualPathsWritten );
 
         // Clean up by deleting the paths written
         for ( Path next : actualPathsWritten )
         {
-            boolean ignored = next.toFile()
+            boolean ignored = next.toFile() // NOSONAR
                                   .delete();
         }
 
-        boolean ignored = basePath.toFile()
+        boolean ignored = basePath.toFile() // NOSONAR
                                   .delete();
     }
 
@@ -201,7 +200,7 @@ class WritingConsumerFactoryTest
                                                                                     ThresholdOperator.GREATER,
                                                                                     ThresholdOrientation.LEFT ) );
 
-        Geometry geometry = MessageUtilities.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
+        Geometry geometry = MessageUtilities.getGeometry( "DRRC2", null, null, "POINT (23.45 56.21)" );
 
         Instant earliestValid = Instant.parse( "2551-03-20T01:00:00Z" );
         Instant latestValid = Instant.parse( "2551-03-20T12:00:00Z" );
