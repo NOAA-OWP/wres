@@ -1251,11 +1251,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             DurationScoreMetricComponent metricComponent = next.getMetric();
 
             // Add the metric name, pretty printed
-            MetricConstants namedMetric = MetricConstants.valueOf( metric.getName().name() );
+            MetricConstants namedMetric = MetricConstants.valueOf( metric.getName()
+                                                                         .name() );
             this.append( joiner, namedMetric.toString(), false );
 
             // Add the metric component name, pretty printed
-            MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName().name() );
+            MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName()
+                                                                                           .name() );
             this.append( joiner, namedMetricComponent.toString(), false );
 
             // Name qualifier
@@ -1493,51 +1495,33 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         if ( Objects.nonNull( summaryStatistic )
              && metric.getStatisticName() != MetricName.UNDEFINED )
         {
-            metricName = metric.getStatisticName()
-                               .name()
-                               .replace( "_", " " );
-            metricComponentName = metric.getStatisticComponentName()
-                                        .name()
-                                        .replace( "_", " " );
+            metricName = this.getMetricNamePretty( metric.getStatisticName() );
+            metricComponentName = this.getMetricNamePretty( metric.getStatisticComponentName() );
             units = metricComponent.getUnits();
             minimum = String.valueOf( metric.getStatisticMinimum() );
             maximum = String.valueOf( metric.getStatisticMaximum() );
             optimum = String.valueOf( metric.getStatisticOptimum() );
-            summaryStatisticMetricName = metric.getName()
-                                               .name()
-                                               .replace( "_", " " );
-            summaryStatisticMetricComponentName = metricComponent.getName()
-                                                                 .name()
-                                                                 .replace( "_", " " );
+            summaryStatisticMetricName = this.getMetricNamePretty( metric.getName() );
+            summaryStatisticMetricComponentName = this.getMetricNamePretty( metricComponent.getName() );
         }
         // Diagram that contains summary statistic values, such as a quantile-quantile diagram whose quantiles
         // represent a mean value across geographic features
         else if ( Objects.nonNull( summaryStatistic ) )
         {
-            metricName = metric.getName()
-                               .name()
-                               .replace( "_", " " );
-            metricComponentName = metricComponent.getName()
-                                                 .name()
-                                                 .replace( "_", " " );
+            metricName = this.getMetricNamePretty( metric.getName() );
+            metricComponentName = this.getMetricNamePretty( metricComponent.getName() );
             units = metricComponent.getUnits();
             minimum = String.valueOf( metricComponent.getMinimum() );
             maximum = String.valueOf( metricComponent.getMaximum() );
             optimum = "";
-            summaryStatisticMetricName = summaryStatistic.getStatistic()
-                                                         .name()
-                                                         .replace( "_", " " );
+            summaryStatisticMetricName = this.getStatisticNamePretty( summaryStatistic.getStatistic() );
             summaryStatisticMetricComponentName = "";
         }
         // Diagram is a raw metric (e.g., quantile-quantile diagram for one geographic feature)
         else
         {
-            metricName = metric.getName()
-                               .name()
-                               .replace( "_", " " );
-            metricComponentName = metricComponent.getName()
-                                                 .name()
-                                                 .replace( "_", " " );
+            metricName = this.getMetricNamePretty( metric.getName() );
+            metricComponentName = this.getMetricNamePretty( metricComponent.getName() );
             units = metricComponent.getUnits();
             minimum = String.valueOf( metricComponent.getMinimum() );
             maximum = String.valueOf( metricComponent.getMaximum() );
@@ -1589,6 +1573,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         // variable, all tied together with the same statistics group number for each row.
         for ( Pairs.TimeSeriesOfPairs nextSeries : statistic.getTimeSeriesList() )
         {
+            String metricName = this.getMetricNamePretty( metric.getName() );
+
             // Write the reference times
             for ( ReferenceTime time : nextSeries.getReferenceTimesList() )
             {
@@ -1598,8 +1584,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                                      .mapToDouble( t -> ( double ) t.getSeconds() )
                                                      .toArray();
 
-                MetricDetails details = new MetricDetails( metric.getName()
-                                                                 .toString(),
+                MetricDetails details = new MetricDetails( metricName,
                                                            time.getReferenceTimeType()
                                                                .toString(),
                                                            SECONDS_SINCE_1970_01_01_T_00_00_00_Z,
@@ -1624,8 +1609,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                             .mapToDouble( t -> ( double ) t.getSeconds() )
                                             .toArray();
 
-            MetricDetails details = new MetricDetails( metric.getName()
-                                                             .toString(),
+            MetricDetails details = new MetricDetails( metricName,
                                                        "VALID TIME",
                                                        SECONDS_SINCE_1970_01_01_T_00_00_00_Z,
                                                        T_00_00_00_Z,
@@ -1644,8 +1628,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Write the variable values, starting with the left variables then the right
             for ( int i = 0; i < leftCount; i++ )
             {
-                MetricDetails nextDetails = new MetricDetails( metric.getName()
-                                                                     .toString(),
+                MetricDetails nextDetails = new MetricDetails( metricName,
                                                                leftNames.get( i ),
                                                                metric.getUnits(),
                                                                NEGATIVE_INFINITY_STRING,
@@ -1671,8 +1654,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             {
                 final int finalI = i;
 
-                MetricDetails nextDetails = new MetricDetails( metric.getName()
-                                                                     .toString(),
+                MetricDetails nextDetails = new MetricDetails( metricName,
                                                                rightNames.get( i ),
                                                                metric.getUnits(),
                                                                NEGATIVE_INFINITY_STRING,
@@ -1742,7 +1724,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
             // Name qualifier: use an explicit name qualifier first, else the ensemble average type for
             // single-valued metrics. These two things do not overlap.
-            MetricConstants metricName = MetricConstants.valueOf( details.metricName() );
+            MetricConstants metricName = MetricConstants.valueOf( details.metricName()
+                                                                         .replace( " ", "_" ) );
             String qualifier = this.getMetricComponentQualifier( metricName, ensembleAverageType );
 
             this.append( joiner, qualifier, false );
@@ -2086,16 +2069,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         if ( Objects.nonNull( summaryStatistic )
              && metric.getStatisticName() != MetricName.UNDEFINED )
         {
-            metricName = metric.getStatisticName()
-                               .name()
-                               .replace( "_", " " );
-            metricComponentName = metric.getStatisticComponentName()
-                                        .name()
-                                        .replace( "_", " " );
+            metricName = this.getMetricNamePretty( metric.getStatisticName() );
+            metricComponentName = this.getMetricNamePretty( metric.getStatisticComponentName() );
 
-            summaryStatisticMetricName = metric.getName()
-                                               .name()
-                                               .replace( "_", " " );
+            summaryStatisticMetricName = this.getMetricNamePretty( metric.getName() );
             summaryStatisticMetricComponentName = boxplotElement.metricComponentName()
                                                                 .replace( "_", " " );
         }
@@ -2103,22 +2080,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         // represent a mean value across geographic features
         else if ( Objects.nonNull( summaryStatistic ) )
         {
-            metricName = metric.getName()
-                               .name()
-                               .replace( "_", " " );
+            metricName = this.getMetricNamePretty( metric.getName() );
             metricComponentName = boxplotElement.metricComponentName()
                                                 .replace( "_", " " );
-            summaryStatisticMetricName = summaryStatistic.getStatistic()
-                                                         .name()
-                                                         .replace( "_", " " );
+            summaryStatisticMetricName = this.getStatisticNamePretty( summaryStatistic.getStatistic() );
             summaryStatisticMetricComponentName = "";
         }
         // Diagram is a raw metric (e.g., quantile-quantile diagram for one geographic feature)
         else
         {
-            metricName = metric.getName()
-                               .name()
-                               .replace( "_", " " );
+            metricName = this.getMetricNamePretty( metric.getName() );
             metricComponentName = boxplotElement.metricComponentName()
                                                 .replace( "_", " " );
             summaryStatisticMetricName = "";
@@ -2304,9 +2275,33 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     private boolean hasQuantileSamplingUncertainty( SummaryStatistic summaryStatistic )
     {
         return Objects.nonNull( summaryStatistic )
-               && !summaryStatistic.getDimensionList()
-                                   .contains( SummaryStatistic.StatisticDimension.RESAMPLED )
+               && summaryStatistic.getDimensionList()
+                                  .contains( SummaryStatistic.StatisticDimension.RESAMPLED )
                && summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE;
+    }
+
+    /**
+     * Returns a pretty string representation of the metric name.
+     * @param metricName the metric name
+     * @return a pretty string representation
+     */
+
+    private String getMetricNamePretty( MetricName metricName )
+    {
+        return metricName.name()
+                         .replace( "_", " " );
+    }
+
+    /**
+     * Returns a pretty string representation of the statistic name.
+     * @param statisticName the statistic name
+     * @return a pretty string representation
+     */
+
+    private String getStatisticNamePretty( SummaryStatistic.StatisticName statisticName )
+    {
+        return statisticName.name()
+                            .replace( "_", " " );
     }
 
     /**
