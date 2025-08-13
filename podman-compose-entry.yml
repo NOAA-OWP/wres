@@ -36,7 +36,7 @@ services:
       restart: always
       ports:
         - 8080:8080
-      volumes: ["/:/rootfs:ro", "/sys:/sys:ro", "/sys/fs/cgroup:/sys/fs/cgroup:ro", "/dev/disk/:/dev/disk:ro", "/mnt/wres_share/testing:/sys/fs/cgroup/user.slice/user-1370913505.slice", "/mnt/wres_share/testing:/sys/fs/cgroup/user.slice/user-982.slice", "/mnt/wres_share/testing:/sys/fs/cgroup/user.slice/user-1370900564.slice", "/mnt/wres_share/testing:/sys/fs/cgroup/user.slice/user-1370900572.slice", "/mnt/wres_share/testing:/sys/fs/cgroup/user.slice/user-1370913505.slice", "/mnt/wres_share/testing:/sys/fs/cgroup/ensl_tp_oas", "/run/user/1370913513/podman/podman.sock:/var/run/podman/podman.sock:rw"]
+      volumes: ["/:/rootfs:ro", "/sys:/sys:ro", "/sys/fs/cgroup:/sys/fs/cgroup:ro", "/dev/disk/:/dev/disk:ro"]
       command:
         - --disable_metrics=network
         - --disable_metrics=referenced_memory
