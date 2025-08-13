@@ -327,6 +327,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             return null;
         }
 
+        // Natural order of keys, i.e., declaration order of the enums
         Map<ReferenceTimeType, Instant> datetimes = new EnumMap<>( ReferenceTimeType.class );
 
         // Set the reference times, if available (WRDS AHPS supports observations too)
@@ -342,6 +343,13 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             Instant issuedDateTime = forecast.getIssuedTime()
                                              .toInstant();
             datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
+        }
+
+        if ( Objects.nonNull( forecast.getGenerationTime() ) )
+        {
+            Instant generationDateTime = forecast.getGenerationTime()
+                                                 .toInstant();
+            datetimes.put( ReferenceTimeType.GENERATION_TIME, generationDateTime );
         }
 
         // Get the timescale information, if available

@@ -393,8 +393,13 @@ class WrdsAhpsJsonReaderTest
                                                               null,
                                                               null );
 
+            Instant generationTime = Instant.parse( "2021-11-14T13:54:18Z" );
+            Instant issuedTime = Instant.parse( "2021-11-14T13:46:00Z" );
+
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
-                                                                         Instant.parse( "2021-11-14T13:46:00Z" ) ),
+                                                                         issuedTime,
+                                                                         ReferenceTimeType.GENERATION_TIME,
+                                                                         generationTime ),
                                                                  TimeScaleOuter.of(),
                                                                  "QR",
                                                                  Feature.of( geometry ),
@@ -449,7 +454,10 @@ class WrdsAhpsJsonReaderTest
                                                               null,
                                                               null );
 
-            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+            Instant generationTime = Instant.parse( "2023-12-01T00:09:28Z" );
+
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.GENERATION_TIME,
+                                                                         generationTime ),
                                                                  TimeScaleOuter.of(),
                                                                  "QR",
                                                                  Feature.of( geometry ),

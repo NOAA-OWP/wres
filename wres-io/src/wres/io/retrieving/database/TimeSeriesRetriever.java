@@ -1087,7 +1087,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 }
 
                 // If there was a final series (of which there may be replicates), build and return it 
-                if ( !emptyRetrieval.get() && !returnedFinal.getAndSet( true ) )
+                if ( !emptyRetrieval.get()
+                     && !returnedFinal.getAndSet( true ) )
                 {
                     TimeSeries<S> finalSeries = lastBuilder.build();
                     List<TimeSeries<S>> replicates = this.getReplicates( finalSeries, replicateCount.get() );
@@ -1136,7 +1137,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         List<TimeSeries<S>> returnMe = new ArrayList<>();
 
         // New series id encountered: reset and return the time-series
-        if ( lastSeriesIdInner != -1 && lastSeriesIdInner != seriesId )
+        if ( lastSeriesIdInner != -1
+             && lastSeriesIdInner != seriesId )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -1194,6 +1196,20 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             referenceTimes = new EnumMap<>( ReferenceTimeType.class );
             referenceTimes.put( type, referenceTime );
             referenceTimes = Collections.unmodifiableMap( referenceTimes );
+        }
+
+        // Adding a new reference time to an existing series or adding events to a new series?
+        if ( this.hasNewReferenceTimes( lastBuilder, referenceTimes ) )
+        {
+            TimeSeriesMetadata oldMetadata = lastBuilder.getMetadata();
+            Map<ReferenceTimeType, Instant> aggregateReferenceTimes = new EnumMap<>( ReferenceTimeType.class );
+            aggregateReferenceTimes.putAll( oldMetadata.getReferenceTimes() );
+            aggregateReferenceTimes.putAll( referenceTimes );
+            TimeSeriesMetadata adjustedMetadata = new TimeSeriesMetadata.Builder( oldMetadata )
+                    .setReferenceTimes( aggregateReferenceTimes )
+                    .build();
+            lastBuilder.setMetadata( adjustedMetadata );
+            return Collections.unmodifiableList( returnMe );
         }
 
         // Add the event     
@@ -1261,6 +1277,24 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         lastSeriesId.set( seriesId );
 
         return Collections.unmodifiableList( returnMe );
+    }
+
+    /**
+     * @param builder the time-series builder
+     * @param <S> the time-series data type
+     * @return whether the builder contains reference times that do not match the new reference times
+     */
+
+    private <S> boolean hasNewReferenceTimes( TimeSeries.Builder<S> builder,
+                                              Map<ReferenceTimeType, Instant> newReferenceTimes )
+    {
+        return Objects.nonNull( builder.getMetadata() )
+               && !builder.getMetadata()
+                          .getReferenceTimes()
+                          .isEmpty()
+               && !Objects.equals( builder.getMetadata()
+                                          .getReferenceTimes(),
+                                   newReferenceTimes );
     }
 
     /**

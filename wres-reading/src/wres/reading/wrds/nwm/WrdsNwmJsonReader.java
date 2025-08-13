@@ -227,7 +227,8 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                      + "ensure the most up-to-date base "
                                      + "URL is declared in the source tag."
                                      + " The invalid document was from "
-                                     + uri );
+                                     + uri + ". The invalid parameters were: "
+                                     + variable );
         }
 
         String variableName = variable.get( "name" );

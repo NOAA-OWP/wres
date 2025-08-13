@@ -491,7 +491,12 @@ public class DataSource
         else
         {
             if ( start.contains( "wrds" )
-                 && start.contains( "nwm" ) )
+                 && start.contains( "observedDataCount" ) )
+            {
+                innerDisposition = DataDisposition.JSON_WRDS_AHPS;
+            }
+            else if ( start.contains( "wrds" )
+                      && start.contains( "nwm" ) )
             {
                 innerDisposition = DataDisposition.JSON_WRDS_NWM;
             }
