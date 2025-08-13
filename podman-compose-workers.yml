@@ -45,7 +45,7 @@ services:
       networks:
         wres_net:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20250618-919a11788"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20250812-8fc550459"
         restart: always
         depends_on:
             eventsbroker:
@@ -89,7 +89,7 @@ services:
         networks:
             wres_net:
     worker2:
-      image: "${DOCKER_REGISTRY}/wres/wres-worker:20250618-919a11788"
+      image: "${DOCKER_REGISTRY}/wres/wres-worker:20250812-8fc550459"
       restart: always
       depends_on:
         eventsbroker:
@@ -133,7 +133,7 @@ services:
       networks:
         wres_net:
     worker3:
-      image: "${DOCKER_REGISTRY}/wres/wres-worker:20250618-919a11788"
+      image: "${DOCKER_REGISTRY}/wres/wres-worker:20250812-8fc550459"
       restart: always
       depends_on:
         eventsbroker:
@@ -181,7 +181,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20250618-8396da1"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20250812-43bfce9"
         restart: always
         volumes:
          # For heap-dump files
@@ -208,7 +208,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20250618-919a11788"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20250812-8fc550459"
         restart: always
         volumes:
          # To write graphics outputs
@@ -231,7 +231,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-writing:20250618-919a11788"
+        image: "${DOCKER_REGISTRY}/wres/wres-writing:20250812-8fc550459"
         restart: always
         volumes:
          # To write numeric outputs
@@ -254,7 +254,7 @@ services:
       depends_on:
         eventsbroker:
           condition: service_started
-      image: "${DOCKER_REGISTRY}/wres/wres-graphics:20250618-919a11788"
+      image: "${DOCKER_REGISTRY}/wres/wres-graphics:20250812-8fc550459"
       restart: always
       volumes:
         # To write graphics outputs
@@ -277,7 +277,7 @@ services:
       depends_on:
         eventsbroker:
           condition: service_started
-      image: "${DOCKER_REGISTRY}/wres/wres-writing:20250618-919a11788"
+      image: "${DOCKER_REGISTRY}/wres/wres-writing:20250812-8fc550459"
       restart: always
       volumes:
         # To write numeric outputs
@@ -300,7 +300,7 @@ services:
       depends_on:
         eventsbroker:
           condition: service_started
-      image: "${DOCKER_REGISTRY}/wres/wres-graphics:20250618-919a11788"
+      image: "${DOCKER_REGISTRY}/wres/wres-graphics:20250812-8fc550459"
       restart: always
       volumes:
         # To write graphics outputs
@@ -323,7 +323,7 @@ services:
       depends_on:
         eventsbroker:
           condition: service_started
-      image: "${DOCKER_REGISTRY}/wres/wres-writing:20250618-919a11788"
+      image: "${DOCKER_REGISTRY}/wres/wres-writing:20250812-8fc550459"
       restart: always
       volumes:
         # To write numeric outputs
