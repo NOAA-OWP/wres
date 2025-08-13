@@ -8,8 +8,8 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 
 /**
- * Helps caller determine whether a given source has completed ingest and/or to mark the source as completed. The
- * source must have a database-instance-specific numeric id already.
+ * Helps caller determine whether a given time-series (aka source) has completed ingest and/or to mark the series as
+ * completed. The time-series must have a database-instance-specific numeric id already.
  */
 public class SourceCompletedDetails
 {

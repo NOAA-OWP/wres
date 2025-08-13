@@ -305,6 +305,15 @@ public class TimeSeries<T>
         }
 
         /**
+         * @return the metadata for inspection
+         */
+
+        public TimeSeriesMetadata getMetadata()
+        {
+            return this.metadata;
+        }
+
+        /**
          * Builds the time-series.
          *
          * @return a time-series
@@ -351,7 +360,8 @@ public class TimeSeries<T>
             .forEach( Objects::requireNonNull );
 
         // Log absence of timescale
-        if ( Objects.isNull( this.getMetadata().getTimeScale() ) )
+        if ( Objects.isNull( this.getMetadata()
+                                 .getTimeScale() ) )
         {
             LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
                           builder,

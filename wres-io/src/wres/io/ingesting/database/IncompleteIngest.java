@@ -18,7 +18,7 @@ import wres.io.database.Database;
 /**
  * <p>Deals with partial/orphaned/incomplete ingested data, both detection and removal. Locking semantics should be
  * handled by the caller.
- * 
+ *
  * <p>TODO: consider adding a guard to the script that remove incomplete data to select only those rows where the
  * source is marked complete because completed sources are, by definition, not within the scope of incomplete ingest
  * and no guards in code are as good as a guard within the select that chooses rows to delete.
@@ -92,9 +92,9 @@ public class IncompleteIngest
 
         if ( wasIngested )
         {
-            LOGGER.warn( "This task was asked to inspect a source for incomplete ingest but the source was "
-                         + "subsequently completed by another task, so it will not be removed. The source was: {}.",
-                         source );
+            LOGGER.debug( "This task was asked to inspect a source for incomplete ingest but the source was "
+                          + "subsequently completed by another task, so it will not be removed. The source was: {}.",
+                          source );
             return false;
         }
 

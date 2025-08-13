@@ -91,12 +91,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             LoggerFactory.getLogger( DatabaseTimeSeriesIngester.class );
 
     /** The maximum number of ingest retries. */
-    private static final int MAXIMUM_RETRIES = 10;
+    private static final int MAXIMUM_RETRIES = 100;
+
+    /** The number of ingest retries after which to begin backoff. */
+    private static final int BACKOFF_RETRIES = 10;
 
     /** The default key value for a data source when not discovered in the cache. */
     private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
 
-    /** Level of patience in waiting for the ingest of a source to be marked complete. */
+    /** Level of patience in waiting for ingest to be marked complete. */
     private static final Duration PATIENCE_LEVEL = Duration.ofMinutes( 30 );
 
     /** System settings. */
@@ -232,10 +235,12 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     TimeSeries<Double> nextSeries =
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries(),
                                                                                    innerSource.getUri() );
+                    String timeSeriesId = this.identifyTimeSeries( nextSeries );
 
                     Future<List<IngestResult>> innerResults =
                             this.getExecutor()
                                 .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
+                                                                                             timeSeriesId,
                                                                                              innerSource ) );
 
                     // Add the future ingest results to the ingest queue
@@ -250,10 +255,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     TimeSeries<Ensemble> nextSeries =
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries(),
                                                                                    innerSource.getUri() );
-
+                    String timeSeriesId = this.identifyTimeSeries( nextSeries );
                     Future<List<IngestResult>> innerResults =
                             this.getExecutor()
                                 .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
+                                                                                         timeSeriesId,
                                                                                          innerSource ) );
 
                     // Add the future ingest results to the ingest queue
@@ -369,19 +375,19 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * the {@link #MAXIMUM_RETRIES}.
      *
      * @param timeSeries the time-series to ingest, not null
+     * @param timeSeriesId the time-series identity or content hash
      * @param dataSource the data source
      * @return the ingest results
      */
 
     private List<IngestResult> ingestSingleValuedTimeSeriesWithRetries( TimeSeries<Double> timeSeries,
+                                                                        String timeSeriesId,
                                                                         DataSource dataSource )
     {
         long sleepMillis = 1000;
         for ( int i = 0; i <= DatabaseTimeSeriesIngester.MAXIMUM_RETRIES; i++ )
         {
-            sleepMillis = this.sleepBetweenRetries( sleepMillis, i, dataSource, timeSeries );
-
-            List<IngestResult> results = this.ingestSingleValuedTimeSeries( timeSeries, dataSource );
+            List<IngestResult> results = this.ingestSingleValuedTimeSeries( timeSeries, timeSeriesId, dataSource );
 
             // Success
             if ( this.isIngestComplete( results ) )
@@ -403,6 +409,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
                 return results;
             }
+
+            sleepMillis = this.sleepBetweenRetries( sleepMillis, i, dataSource, timeSeries, timeSeriesId );
         }
 
         throw new IngestException( "Failed to ingest a time-series after " + DatabaseTimeSeriesIngester.MAXIMUM_RETRIES
@@ -414,11 +422,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     /**
      * Ingests a time-series whose events are {@link Double}.
      * @param timeSeries the time-series to ingest, not null
+     * @param timeSeriesId the time-series identity or content hash
      * @param dataSource the data source
      * @return the ingest results
      */
 
-    private List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries, DataSource dataSource )
+    private List<IngestResult> ingestSingleValuedTimeSeries( TimeSeries<Double> timeSeries,
+                                                             String timeSeriesId,
+                                                             DataSource dataSource )
     {
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( dataSource );
@@ -435,7 +446,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         LOGGER.debug( "Ingesting a single-valued time-series from source {}.", dataSource.getUri() );
 
         // Try to insert a row into wres.Source for the time-series
-        SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
+        SourceDetails source = this.saveTimeSeriesSource( timeSeries, timeSeriesId, dataSource.getUri() );
 
         DataType dataType = TimeSeriesSlicer.getDataType( timeSeries );
 
@@ -488,7 +499,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                            true );
             }
         }
-        // Source was not inserted, so this is an existing source. But was it completed or abandoned?
+        // Source was not inserted by this thread, so this is an existing source. But was it completed or abandoned?
         else
         {
             results = this.finalizeExistingSource( source, dataType, dataSource );
@@ -528,19 +539,19 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * the {@link #MAXIMUM_RETRIES}.
      *
      * @param timeSeries the time-series to ingest, not null
+     * @param timeSeriesId the time-series identity or content hash
      * @param dataSource the data source
      * @return the ingest results
      */
 
     private List<IngestResult> ingestEnsembleTimeSeriesWithRetries( TimeSeries<Ensemble> timeSeries,
+                                                                    String timeSeriesId,
                                                                     DataSource dataSource )
     {
         long sleepMillis = 1000;
         for ( int i = 0; i <= DatabaseTimeSeriesIngester.MAXIMUM_RETRIES; i++ )
         {
-            sleepMillis = this.sleepBetweenRetries( sleepMillis, i, dataSource, timeSeries );
-
-            List<IngestResult> result = this.ingestEnsembleTimeSeries( timeSeries, dataSource );
+            List<IngestResult> result = this.ingestEnsembleTimeSeries( timeSeries, timeSeriesId, dataSource );
 
             // Success
             if ( this.isIngestComplete( result ) )
@@ -562,6 +573,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
                 return result;
             }
+
+            sleepMillis = this.sleepBetweenRetries( sleepMillis, i, dataSource, timeSeries, timeSeriesId );
         }
 
         throw new IngestException( "Failed to ingest a time-series after " + DatabaseTimeSeriesIngester.MAXIMUM_RETRIES
@@ -571,62 +584,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
-     * Sleeps between ingest retries.
-     * @param sleepMillis the number of milliseconds to sleep
-     * @param retryNumber the retry number
-     * @param dataSource the data source
-     * @param timeSeries the time-series
-     * @return the adjusted sleep time for the next retry
-     * @param <T> the time-series data type
-     */
-    private <T> long sleepBetweenRetries( long sleepMillis,
-                                          int retryNumber,
-                                          DataSource dataSource,
-                                          TimeSeries<T> timeSeries )
-    {
-        long newMillis = sleepMillis;
-        if ( retryNumber > 0 )
-        {
-            try
-            {
-                Thread.sleep( sleepMillis );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread()
-                      .interrupt();
-
-                throw new IngestException( "Interrupted while attempting to ingest a time-series with metadata: "
-                                           + timeSeries.getMetadata()
-                                           + "." );
-            }
-
-            // Exponential back-off
-            newMillis *= 2;
-
-            LOGGER.debug( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing "
-                          + "to retry until the maximum retry count of {} is reached. There are {} attempts "
-                          + "remaining.",
-                          dataSource,
-                          retryNumber,
-                          DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
-                          Thread.currentThread()
-                                .getName(),
-                          DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
-                          DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - retryNumber );
-        }
-
-        return newMillis;
-    }
-
-    /**
      * Ingests a time-series whose events are {@link Ensemble}.
      * @param timeSeries the time-series to ingest, not null
+     * @param timeSeriesId the time-series identity or content hash
      * @param dataSource the data source
      * @return the ingest results
      */
 
-    private List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries, DataSource dataSource )
+    private List<IngestResult> ingestEnsembleTimeSeries( TimeSeries<Ensemble> timeSeries,
+                                                         String timeSeriesId,
+                                                         DataSource dataSource )
     {
         Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( dataSource );
@@ -643,7 +610,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         LOGGER.debug( "Ingesting an ensemble time-series from source {}.", dataSource.getUri() );
 
         // Try to insert a row into wres.Source for the time-series
-        SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
+        SourceDetails source = this.saveTimeSeriesSource( timeSeries, timeSeriesId, dataSource.getUri() );
 
         DataType dataType = TimeSeriesSlicer.getDataType( timeSeries );
 
@@ -696,7 +663,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                            true );
             }
         }
-        // Source was not inserted, so this is an existing source. But was it completed or abandoned?
+        // Source was not inserted by this thread, so this is an existing source. But was it completed or abandoned?
         else
         {
             results = this.finalizeExistingSource( source, dataType, dataSource );
@@ -739,6 +706,70 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     {
         return results.stream()
                       .noneMatch( IngestResult::requiresRetry );
+    }
+
+    /**
+     * Sleeps between ingest retries.
+     * @param sleepMillis the number of milliseconds to sleep
+     * @param retryNumber the retry number
+     * @param dataSource the data source
+     * @param timeSeries the time-series
+     * @param timeSeriesId the time-series identity or content hash
+     * @return the adjusted sleep time for the next retry
+     * @param <T> the time-series data type
+     */
+    private <T> long sleepBetweenRetries( long sleepMillis,
+                                          int retryNumber,
+                                          DataSource dataSource,
+                                          TimeSeries<T> timeSeries,
+                                          String timeSeriesId )
+    {
+        if ( retryNumber <= BACKOFF_RETRIES )
+        {
+            LOGGER.debug( "Retrying without backoff as the retry number is {}, which is less than or equal to the "
+                          + "number of retries after which backoff should begin ({}).", retryNumber,
+                          BACKOFF_RETRIES );
+
+            return sleepMillis;
+        }
+
+        LOGGER.warn( "Encountered an unusually large number of retries while attempting to ingest a time-series into "
+                     + "the database. This is retry {} of {} for time-series {}. The remaining retries will experience "
+                     + "exponential backoff, which may slow down ingest.",
+                     retryNumber,
+                     MAXIMUM_RETRIES,
+                     timeSeriesId );
+
+        long newMillis = sleepMillis;
+        try
+        {
+            Thread.sleep( sleepMillis );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread()
+                  .interrupt();
+
+            throw new IngestException( "Interrupted while attempting to ingest a time-series with metadata: "
+                                       + timeSeries.getMetadata()
+                                       + "." );
+        }
+
+        // Exponential back-off
+        newMillis *= 2;
+
+        LOGGER.debug( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing "
+                      + "to retry until the maximum retry count of {} is reached. There are {} attempts "
+                      + "remaining.",
+                      dataSource,
+                      retryNumber,
+                      DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                      Thread.currentThread()
+                            .getName(),
+                      DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                      DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - retryNumber );
+
+        return newMillis;
     }
 
     /**
@@ -801,13 +832,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * @return whether the lock was acquired
      */
 
-    private <T> boolean lockSource( SourceDetails source, TimeSeries<T> timeSeries, DatabaseLockManager lockManager )
+    private <T> boolean lockSource( SourceDetails source,
+                                    TimeSeries<T> timeSeries,
+                                    DatabaseLockManager lockManager )
     {
-        if ( LOGGER.isDebugEnabled() && Objects.nonNull( timeSeries ) )
+        if ( LOGGER.isDebugEnabled()
+             && Objects.nonNull( timeSeries ) )
         {
-            byte[] rawHash = this.identifyTimeSeries( timeSeries );
-            String hash = Hex.encodeHexString( rawHash, false );
-            LOGGER.debug( "{} is responsible for source {}", this, hash );
+            LOGGER.debug( "{} is responsible for source {}", this, source.getId() );
         }
 
         try
@@ -870,17 +902,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * Attempts to save the source information associated with the time-series.
      * @param <T> the type of time-series event value
      * @param timeSeries the time-series whose source information should be saved
+     * @param timeSeriesId the time-series identity or content hash
      * @param uri the data source uri
      * @return the source details
      */
 
-    private <T> SourceDetails saveTimeSeriesSource( TimeSeries<T> timeSeries, URI uri )
+    private <T> SourceDetails saveTimeSeriesSource( TimeSeries<T> timeSeries, String timeSeriesId, URI uri )
     {
-        byte[] rawHash = this.identifyTimeSeries( timeSeries );
-        String hash = Hex.encodeHexString( rawHash, false );
-
         Database innerDatabase = this.getDatabase();
-        SourceDetails source = this.createSourceDetails( hash );
+        SourceDetails source = this.createSourceDetails( timeSeriesId );
 
         // Lead column is only for raster data as of 2022-01
         source.setLead( null );
@@ -1340,11 +1370,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                        + "permit zero." );
         }
 
-        if ( rowCount != 1 )
-        {
-            throw new IngestException( "Exactly one reference datetime is required until we allow callers to "
-                                       + "declare which one to use at evaluation time." );
-        }
+        //        if ( rowCount != 1 )
+        //        {
+        //            throw new IngestException( "Exactly one reference datetime is required until we allow callers to "
+        //                                       + "declare which one to use at evaluation time." );
+        //        }
 
         List<String[]> rows = new ArrayList<>( rowCount );
 
@@ -1667,10 +1697,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
     /**
      * @param timeSeries the time-series
-     * @return the time-series MD5 checksum
+     * @return the time-series MD5 checksum as a hex string
      */
 
-    private byte[] identifyTimeSeries( TimeSeries<?> timeSeries )
+    private String identifyTimeSeries( TimeSeries<?> timeSeries )
     {
         MessageDigest md5Name;
 
@@ -1695,7 +1725,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                        + " was shorter than expected." );
         }
 
-        return hash;
+        return Hex.encodeHexString( hash, false );
     }
 
     /**

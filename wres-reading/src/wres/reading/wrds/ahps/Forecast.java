@@ -5,21 +5,49 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A forecast.
  */
 
+@Getter
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class Forecast
 {
-    /**
-     * @return the location
-     */
-    public Location getLocation()
-    {
-        return location;
-    }
+    @Setter
+    Location location;
+
+    @Setter
+    String issuer;
+
+    @Setter
+    String distributor;
+
+    @Setter
+    String type;
+
+    @Setter
+    ForecastUnits units;
+
+    @Setter
+    ParameterCodes parameterCodes;
+
+    @Setter
+    String producer;
+
+    @Setter
+    @JsonAlias( { "timeseries" } )
+    Member[] members;
+
+    OffsetDateTime basisTime;
+
+    OffsetDateTime issuedTime;
+
+    OffsetDateTime generationTime;
 
     /**
      * Sets the basis time.
@@ -27,19 +55,11 @@ public class Forecast
      */
     public void setBasisTime( String basisTime )
     {
-        if ( Objects.nonNull( basisTime ) && ! basisTime.isBlank() )
+        if ( Objects.nonNull( basisTime )
+             && !basisTime.isBlank() )
         {
             this.basisTime = OffsetDateTime.parse( basisTime );
         }
-    }
-
-    /**
-     * Sets the distributor.
-     * @param distributor the distributor
-     */
-    public void setDistributor( String distributor )
-    {
-        this.distributor = distributor;
     }
 
     /**
@@ -48,184 +68,41 @@ public class Forecast
      */
     public void setIssuedTime( String issuedTime )
     {
-        if ( Objects.nonNull( issuedTime ) && !issuedTime.isBlank() )
+        if ( Objects.nonNull( issuedTime )
+             && !issuedTime.isBlank() )
         {
             this.issuedTime = OffsetDateTime.parse( issuedTime );
         }
     }
 
     /**
-     * Sets the issuer.
-     * @param issuer the issuer
+     * Sets the generation time.
+     * @param generationTime the generation time
      */
-    public void setIssuer( String issuer )
+    public void setGenerationTime( String generationTime )
     {
-        this.issuer = issuer;
+        if ( Objects.nonNull( generationTime )
+             && !generationTime.isBlank() )
+        {
+            this.generationTime = OffsetDateTime.parse( generationTime );
+        }
     }
-
-    /**
-     * Sets the location.
-     * @param location the location.
-     */
-
-    public void setLocation( Location location )
-    {
-        this.location = location;
-    }
-
-    /**
-     * Sets the producer.
-     *
-     * @param producer the producer.
-     */
-    public void setProducer( String producer )
-    {
-        this.producer = producer;
-    }
-
-    /**
-     * Sets the type.
-     * @param type the type
-     */
-    public void setType( String type )
-    {
-        this.type = type;
-    }
-
-    /**
-     * Sets the units.
-     * @param units the units
-     */
-    public void setUnits( ForecastUnits units )
-    {
-        this.units = units;
-    }
-
-    /**
-     * @return the units
-     */
-    public ForecastUnits getUnits()
-    {
-        return units;
-    }
-
-    /**
-     * @return the basis time
-     */
-    public OffsetDateTime getBasisTime()
-    {
-        return basisTime;
-    }
-
-    /**
-     * @return the distributor
-     */
-    public String getDistributor()
-    {
-        return distributor;
-    }
-
-    /**
-     * @return the issued time
-     */
-    public OffsetDateTime getIssuedTime()
-    {
-        return issuedTime;
-    }
-
-    /**
-     * @return the issuer
-     */
-    public String getIssuer()
-    {
-        return issuer;
-    }
-
-    /**
-     * @return the producer
-     */
-    public String getProducer()
-    {
-        return producer;
-    }
-
-    /**
-     * @return the type
-     */
-    public String getType()
-    {
-        return type;
-    }
-
-    /**
-     * @return the parameter codes
-     */
-    public ParameterCodes getParameterCodes()
-    {
-        return parameterCodes;
-    }
-
-    /**
-     * Sets the parameter codes.
-     * @param parameterCodes the parameter codes
-     */
-
-    public void setParameterCodes( ParameterCodes parameterCodes )
-    {
-        this.parameterCodes = parameterCodes;
-    }
-
-    /**
-     * @return the members
-     */
-
-    public Member[] getMembers()
-    {
-        return members;
-    }
-
-    /**
-     * Sets the members.
-     * @param members the members
-     */
-    public void setMembers( Member[] members )
-    {
-        this.members = members;
-    }
-
-    Location location;
-    String producer;
-    String issuer;
-    String distributor;
-    String type;
-    OffsetDateTime basisTime;
-    OffsetDateTime issuedTime;
-    ForecastUnits units;
-    ParameterCodes parameterCodes;
-
-    @JsonAlias( { "timeseries" } )
-    Member[] members;
 
     @Override
     public String toString()
     {
-        String locationName = "Unknown Location";
-
-        if ( this.getLocation() != null )
-        {
-            locationName = this.getLocation().toString();
-        }
-
-        String releaseDate = "released at unknown time.";
-
-        if ( this.getBasisTime() != null )
-        {
-            releaseDate = "with a basis time of " + this.getBasisTime().toString();
-        }
-        else if ( this.getIssuedTime() != null )
-        {
-            releaseDate = "issued at " + this.getIssuedTime().toString();
-        }
-        return "Forecast for " + locationName + ", " + releaseDate;
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                .append( "location", this.getLocation() )
+                .append( "issuer", this.getIssuer() )
+                .append( "distributor", this.getDistributor() )
+                .append( "type", this.getType() )
+                .append( "units", this.getUnits() )
+                .append( "parameterCodes", this.getParameterCodes() )
+                .append( "producer", this.getProducer() )
+                .append( "members", this.getMembers() )
+                .append( "issuedTime", this.getIssuedTime() )
+                .append( "basisTime", this.getBasisTime() )
+                .append( "generationTime", this.getGenerationTime() )
+                .toString();
     }
 }

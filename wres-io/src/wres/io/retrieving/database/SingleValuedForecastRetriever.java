@@ -31,8 +31,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * <code>ORDER BY</code> clause, which is repeated several times.
      */
 
-    private static final String ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID =
-            "ORDER BY metadata.series_id;";
+    private static final String ORDER_BY_METADATA = "ORDER BY metadata.series_id;";
 
     /**
      * <code>GROUP BY</code> clause, which is repeated several times.
@@ -109,7 +108,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add ORDER BY clause
-        dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
+        dataScripter.addLine( ORDER_BY_METADATA );
 
         // Log
         super.logScript( dataScripter );
@@ -219,7 +218,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         dataScripter.addLine( GROUP_BY_FEATURE_ID_SERIES_ID_TSV_LEAD_TSV_SERIES_VALUE ); // #56214-272
 
         // Add ORDER BY clause
-        dataScripter.addLine( ORDER_BY_OCCURRENCES_TS_INITIALIZATION_DATE_VALID_TIME_SERIES_ID );
+        dataScripter.addLine( ORDER_BY_METADATA );
 
         // Log
         super.logScript( dataScripter );
