@@ -730,7 +730,6 @@ class DeclarationMigratorTest
                                                                    .build();
         Outputs formats = Outputs.newBuilder()
                                  .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
-                                 .setNetcdf( Formats.NETCDF_FORMAT )
                                  .setPairs( Outputs.PairFormat.newBuilder()
                                                               .setOptions( numericFormat )
                                                               .build() )
@@ -1074,39 +1073,6 @@ class DeclarationMigratorTest
         EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
 
         assertEquals( Pool.EnsembleAverageType.MEDIAN, actual.ensembleAverageType() );
-    }
-
-    @Test
-    void testMigrateProjectWithLegacyNetcdfFormatOptions()
-    {
-        // #120069
-        NetcdfType netcdfType = new NetcdfType( "foo", "bar", null, null, false );
-        DestinationConfig netcdf = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
-                                                          null,
-                                                          netcdfType,
-                                                          DestinationType.NETCDF,
-                                                          null );
-        List<DestinationConfig> destinations = List.of( netcdf );
-        ProjectConfig.Outputs innerOutputs = new ProjectConfig.Outputs( destinations, DurationUnit.HOURS );
-
-        ProjectConfig project = new ProjectConfig( this.inputs,
-                                                   this.pairs,
-                                                   this.metrics,
-                                                   innerOutputs,
-                                                   null,
-                                                   null );
-
-        EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
-
-        Outputs expected = Outputs.newBuilder()
-                                  .setNetcdf( Formats.NETCDF_FORMAT.toBuilder()
-                                                                   .setTemplatePath( "foo" )
-                                                                   .setGridded( false )
-                                                                   .setVariableName( "bar" ) )
-                                  .build();
-
-        assertEquals( expected, actual.formats()
-                                      .outputs() );
     }
 
     @Test

@@ -3635,16 +3635,6 @@ public class DeclarationValidator
                                                .build();
                 events.add( event );
             }
-
-            if ( outputs.hasNetcdf() )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage( start + "netcdf" + middle + "netcdf2" + end )
-                                               .build();
-                events.add( event );
-            }
         }
 
         return Collections.unmodifiableList( events );
@@ -3664,39 +3654,10 @@ public class DeclarationValidator
         if ( Objects.nonNull( formats ) )
         {
             Outputs outputs = formats.outputs();
-            if ( outputs.hasNetcdf()
-                 && outputs.hasNetcdf2() )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The 'output_formats' includes both 'netcdf' and "
-                                                                 + "'netcdf2', which is not allowed. One of these format "
-                                                                 + "options must be removed and it is recommended "
-                                                                 + "that you remove the 'netcdf' option." )
-                                               .build();
-                events.add( event );
-            }
-
-            // Do not allow legacy netcdf together with feature groups
-            if ( outputs.hasNetcdf()
-                 && Objects.nonNull( declaration.featureGroups() ) )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The 'output_formats' includes 'netcdf', which does "
-                                                                 + "not support 'feature_groups'. Please replace the "
-                                                                 + "'netcdf' option with 'netcdf2', which does support "
-                                                                 + "'feature_groups'." )
-                                               .build();
-                events.add( event );
-            }
 
             // Check for some score metrics when netcdf is declared, unless the declaration contains no/default metrics,
             // meaning that metrics will be interpolated, of which some will always be scores
-            if ( ( outputs.hasNetcdf()
-                   || outputs.hasNetcdf2() )
+            if ( outputs.hasNetcdf2()
                  && !declaration.metrics()  // Scores will always be interpolated in this case
                                 .isEmpty()
                  && declaration.metrics()
@@ -3706,7 +3667,7 @@ public class DeclarationValidator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "When declaring the 'netcdf' or 'netcdf2' format "
+                                               .setEventMessage( "When declaring the 'netcdf2' format "
                                                                  + "option, the evaluation must include at least one "
                                                                  + "score metric because these formats only support "
                                                                  + "the writing of verification scores. Please add a "

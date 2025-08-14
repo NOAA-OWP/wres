@@ -114,23 +114,6 @@ message Outputs
     CsvFormat csv = 3;
     // Comma Separated Values.
 
-    message NetcdfFormat
-    {
-        // Network Common Data Form (NetCDF).
-
-        string template_path = 1;
-        // The path to a file that contains the NetCDF template.
-
-        string variable_name = 2;
-        // The name of the variable to use for geospatial information.
-        
-        bool gridded = 3;
-        // Whether the NetCDF is gridded or vector.        
-    }
-
-    NetcdfFormat netcdf = 4;
-    // Network Common Data Form (NetCDF).
-
     message ProtobufFormat
     {
         // Protocol Buffers format without any default options.
