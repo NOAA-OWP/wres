@@ -700,6 +700,15 @@ public class InMemoryProject implements Project
                                                                        baselineFeaturesWithData,
                                                                        hasBaseline );
 
+            if ( !declaredSingletons.isEmpty()
+                 && singletons.isEmpty() )
+            {
+                throw new NoProjectDataException( "Failed to identify any declared geographic features with "
+                                                  + "correspondingly named features inside the time-series data. "
+                                                  + "Please check that the geographic features are declared correctly "
+                                                  + "and try again." );
+            }
+
             // Get the feature tuples within feature groups
             Set<GeometryTuple> groupedFeatures = this.getDeclaredFeatureGroups( declaration )
                                                      .stream()
@@ -713,6 +722,15 @@ public class InMemoryProject implements Project
                                                                           rightFeaturesWithData,
                                                                           baselineFeaturesWithData,
                                                                           hasBaseline );
+
+            if ( !groupedFeatures.isEmpty()
+                 && groupedTuples.isEmpty() )
+            {
+                throw new NoProjectDataException( "Failed to identify any declared geographic feature groups with "
+                                                  + "correspondingly named features inside the time-series data. "
+                                                  + "Please check that the geographic feature groups are declared "
+                                                  + "correctly and try again." );
+            }
 
             // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked
             // upfront. Do this before forming the groups, which include singleton groups
