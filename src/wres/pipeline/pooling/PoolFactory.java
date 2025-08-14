@@ -1,5 +1,6 @@
 package wres.pipeline.pooling;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
@@ -101,6 +102,9 @@ public class PoolFactory
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolFactory.class );
+
+    /** The number of pools at which to emit a warning. */
+    private static final int WARN_POOL_COUNT = 100_000;
 
     /** Part of a message string about data declaration that is re-used. */
     private static final String DATA_IS_DECLARED_AS = "data is declared as '";
@@ -472,6 +476,8 @@ public class PoolFactory
                                                                                    featureGroups,
                                                                                    eventRetriever );
 
+        this.validatePoolCount( timeWindows );
+
         return featureGroups.stream()
                             .flatMap( nextGroup -> this.getPoolRequests( evaluation,
                                                                          declaration,
@@ -480,6 +486,33 @@ public class PoolFactory
                                                                          timeWindows.get( nextGroup ) )
                                                        .stream() )
                             .toList();
+    }
+
+    /**
+     * Warns about a large pool count.
+     * @param timeWindowsByFeature the time windows by feature from which to obtain the pool count
+     */
+
+    private void validatePoolCount( Map<FeatureGroup, Set<TimeWindowOuter>> timeWindowsByFeature )
+    {
+        if ( LOGGER.isWarnEnabled() )
+        {
+            int poolCount = timeWindowsByFeature.values()
+                                                .stream()
+                                                .mapToInt( Set::size )
+                                                .sum();
+            if ( poolCount > WARN_POOL_COUNT )
+            {
+                DecimalFormat formatter = new DecimalFormat( "#,###" );
+                String poolCountString = formatter.format( poolCount );
+                LOGGER.warn( "This evaluation contains an extremely large number of pools to evaluate: {}. A pool is "
+                             + "an atomic unit of work and each pool will generate one set of statistics. This "
+                             + "evaluation may consume significant time and resources, potentially exceeding the "
+                             + "resources available. If this evaluation is larger than intended, you should cancel the "
+                             + "evaluation and fix the declaration.",
+                             poolCountString );
+            }
+        }
     }
 
     /**
