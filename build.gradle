@@ -683,7 +683,7 @@ project(':wres-reading') {
         api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         api 'javax.xml.bind:jaxb-api:2.3.1'
         api 'org.apache.commons:commons-lang3:3.18.0'
-        implementation 'com.opencsv:opencsv:5.9'
+        implementation 'com.opencsv:opencsv:5.12.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
@@ -1118,7 +1118,7 @@ project(':wres-config') {
         api 'org.apache.commons:commons-lang3:3.18.0'
 
         // For reading CSV thresholds
-        implementation group: 'com.opencsv', name: 'opencsv', version: '5.10'
+        implementation group: 'com.opencsv', name: 'opencsv', version: '5.12.0'
 
         // YAML/JSON schema validation
         api 'com.networknt:json-schema-validator:1.5.7'
