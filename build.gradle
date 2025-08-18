@@ -434,7 +434,7 @@ project(':wres-io') {
 
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
         // https://github.com/NOAA-OWP/wres/issues/454
-        implementation 'org.liquibase:liquibase-core:4.29.2'
+        implementation 'org.liquibase:liquibase-core:4.31.1'
 
         implementation 'commons-codec:commons-codec:1.19.0'
 
@@ -673,7 +673,7 @@ project(':wres-reading') {
 
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
         // https://github.com/NOAA-OWP/wres/issues/454
-        runtimeOnly 'org.liquibase:liquibase-core:4.29.2'
+        runtimeOnly 'org.liquibase:liquibase-core:4.31.1'
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
