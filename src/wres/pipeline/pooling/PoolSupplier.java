@@ -839,6 +839,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         // Main pairs indexed by feature tuple
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs = mainPairsPlus.getTimeSeries();
 
+        // Sort the time-series to aid reproducibility. For example, see #575
+        mainPairs = this.sortPairsInTimeOrder( mainPairs );
+
         // Baseline pairs indexed by feature tuple
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs = null;
 
@@ -868,6 +871,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 validationEvents.addAll( basePairsPlus.getEvaluationStatusMessages() );
                 basePairs = basePairsPlus.getTimeSeries();
             }
+
+            // Sort the time-series to aid reproducibility. For example, see #575
+            basePairs = this.sortPairsInTimeOrder( basePairs );
         }
 
         // Cross-pair the main/baseline pairs and/or various sub-pools?
@@ -1040,6 +1046,27 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         return builder.build();
+    }
+
+    /**
+     * Sorts the paired time-series in the natural order of their reference times and first valid time.
+     *
+     * @param pairs the pairs
+     * @return the sorted pairs
+     */
+
+    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> sortPairsInTimeOrder( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pairs )
+    {
+        Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> returnMe = new HashMap<>();
+        for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : pairs.entrySet() )
+        {
+            FeatureTuple nextFeature = nextEntry.getKey();
+            List<TimeSeries<Pair<L, R>>> nextSeries = nextEntry.getValue();
+            List<TimeSeries<Pair<L, R>>> sortedSeries = TimeSeriesSlicer.sort( nextSeries );
+            returnMe.put( nextFeature, sortedSeries );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -1299,7 +1326,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
                 // Strip any empty series
                 nextPairsList = nextPairsList.stream()
-                                             .filter( next -> !next.getEvents().isEmpty() )
+                                             .filter( next -> !next.getEvents()
+                                                                   .isEmpty() )
                                              .toList();
 
                 List<TimeSeries<Pair<L, R>>> nextList = cache.get( nextFeature );
