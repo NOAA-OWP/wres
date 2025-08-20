@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -1770,6 +1771,73 @@ public final class TimeSeriesSlicer
 
         return ( duration.getSeconds() * 1000 + ( duration.getNano() / 1_000_000.0 ) ) / unit.getDuration()
                                                                                              .toMillis();
+    }
+
+    /**
+     * Sorts the input according to the natural order of the reference times and the first valid time, where available.
+     *
+     * @param <T> the time-series event value type
+     * @param unsorted the unsorted series
+     * @return the sorted series
+     */
+
+    public static <T> List<TimeSeries<T>> sort( List<TimeSeries<T>> unsorted )
+    {
+        Comparator<TimeSeries<T>> c = ( a, b ) ->
+        {
+            Map<ReferenceTimeType, Instant> firstReferenceTime = a.getReferenceTimes();
+            Map<ReferenceTimeType, Instant> secondReferenceTime = b.getReferenceTimes();
+
+            int compare = Integer.compare( firstReferenceTime.size(), secondReferenceTime.size() );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            for ( Map.Entry<ReferenceTimeType, Instant> next : firstReferenceTime.entrySet() )
+            {
+                ReferenceTimeType nextType = next.getKey();
+
+                if ( !secondReferenceTime.containsKey( nextType ) )
+                {
+                    return -1;
+                }
+
+                compare = next.getValue()
+                              .compareTo( secondReferenceTime.get( nextType ) );
+
+                if ( compare != 0 )
+                {
+                    return compare;
+                }
+            }
+
+            Instant firstValidTime = null;
+            if ( !a.getEvents()
+                   .isEmpty() )
+            {
+                firstValidTime = a.getEvents()
+                                  .first()
+                                  .getTime();
+            }
+
+            Instant secondValidTime = null;
+            if ( !b.getEvents()
+                   .isEmpty() )
+            {
+                secondValidTime = b.getEvents()
+                                   .first()
+                                   .getTime();
+            }
+
+
+            return Objects.compare( firstValidTime, secondValidTime, Instant::compareTo );
+        };
+
+        List<TimeSeries<T>> sorted = new ArrayList<>( unsorted );
+        sorted.sort( c );
+
+        return Collections.unmodifiableList( sorted );
     }
 
     /**

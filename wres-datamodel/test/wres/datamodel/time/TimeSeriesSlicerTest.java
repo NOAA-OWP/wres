@@ -1605,6 +1605,50 @@ final class TimeSeriesSlicerTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testSort()
+    {
+        TimeSeriesMetadata metaOne = TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( Instant.MIN );
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( metaOne )
+                        .build();
+        TimeSeriesMetadata metaTwo = TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( Instant.MAX );
+        TimeSeries<Double> two =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-02T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( metaTwo )
+                        .build();
+        TimeSeries<Double> three =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-03T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( metaTwo )
+                        .build();
+        TimeSeries<Double> four =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-03T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                        .build();
+        TimeSeriesMetadata metaFive = TimeSeriesSlicerTest.getBoilerplateMetadata()
+                                                          .toBuilder()
+                                                          .setReferenceTimes( Map.of( ReferenceTimeType.GENERATION_TIME,
+                                                                                      Instant.MIN ) )
+                                                          .build();
+        TimeSeries<Double> five =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-03T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( metaFive )
+                        .build();
+
+        List<TimeSeries<Double>> unsorted = List.of( three, one, two, four, five );
+
+        List<TimeSeries<Double>> actual = TimeSeriesSlicer.sort( unsorted );
+        List<TimeSeries<Double>> expected = List.of( four, five, one, two, three );
+
+        assertEquals( expected, actual );
+    }
+
     /**
      * Gets some boilerplate metadata with a reference time.
      * @param t0 the reference time
