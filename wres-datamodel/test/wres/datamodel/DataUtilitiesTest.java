@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -23,12 +25,13 @@ import wres.datamodel.thresholds.ThresholdOuter.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.statistics.MessageUtilities;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>Tests the {@link DataUtilities}.
- * 
+ *
  * <p>TODO: refactor the tests of containers (as opposed to factory methods) into their own test classes.
- * 
+ *
  * @author James Brown
  * @author jesse
  */
@@ -326,5 +329,69 @@ final class DataUtilitiesTest
         String expectedUpperBound = "MAXDATE";
 
         assertEquals( expectedUpperBound, actualUpperBound );
+    }
+
+    @Test
+    void testToStringSafeTimeWindow()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2019-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2020-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2021-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2022-01-01T00:00:00Z" ),
+                                                           Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafe( timeWindow, ChronoUnit.HOURS );
+        String expected = "20190101T000000Z_TO_20200101T000000Z_20210101T000000Z_TO_20220101T000000Z_1_TO_2_HOURS";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeTimeWindowWithUnboundedLeadDurations()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2019-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2020-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2021-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2022-01-01T00:00:00Z" ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafe( timeWindow, ChronoUnit.HOURS );
+        String expected =
+                "20190101T000000Z_TO_20200101T000000Z_20210101T000000Z_TO_20220101T000000Z_MINDURATION_TO_MAXDURATION";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeDateTimesOnly()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2019-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2020-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2021-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2022-01-01T00:00:00Z" ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafeDateTimesOnly( timeWindow );
+        String expected = "20190101T000000Z_TO_20200101T000000Z_20210101T000000Z_TO_20220101T000000Z";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeLeadDurationsOnly()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, ChronoUnit.HOURS );
+        String expected = "1_TO_2_HOURS";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeLeadDurationsOnlyWithEqualDurations()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 1 ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, ChronoUnit.HOURS );
+        String expected = "1_HOURS";
+        assertEquals( expected, actual );
     }
 }
