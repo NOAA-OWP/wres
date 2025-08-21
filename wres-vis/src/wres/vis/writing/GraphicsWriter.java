@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,9 +29,11 @@ import org.jfree.svg.SVGUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.Statistic;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
@@ -48,8 +51,10 @@ import wres.vis.charts.ChartFactory;
 
 abstract class GraphicsWriter
 {
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsWriter.class );
 
+    /** Instance of a {@link ChartFactory}. */
     private static final ChartFactory CHART_FACTORY = ChartFactory.of();
 
     // Do not use a file cache for image outputs
@@ -60,27 +65,16 @@ abstract class GraphicsWriter
         ImageIO.setUseCache( false );
     }
 
-    /**
-     * Default chart height in pixels.
-     */
-
+    /** Default chart height in pixels. */
     private static final int DEFAULT_GRAPHIC_HEIGHT = 600;
 
-    /**
-     * Default chart width in pixels.
-     */
-
+    /** Default chart width in pixels. */
     private static final int DEFAULT_GRAPHIC_WIDTH = 800;
 
-    /**
-     * A description of the outputs required.
-     */
-
+    /** A description of the outputs required. */
     private final Outputs outputs;
 
-    /**
-     * The output directory to use to write
-     */
+    /** The output directory to use to write */
     private final Path outputDirectory;
 
     /**
@@ -339,8 +333,39 @@ abstract class GraphicsWriter
     }
 
     /**
+     * Returns a path qualifier for a time window.
+     * @param timeWindow the time window
+     * @param graphicsShape the graphics shape
+     * @param leadUnits the lead duration units
+     */
+
+    static String getPathQualifier( TimeWindowOuter timeWindow,
+                                    GraphicShape graphicsShape,
+                                    ChronoUnit leadUnits )
+    {
+        Objects.requireNonNull( timeWindow );
+        Objects.requireNonNull( graphicsShape );
+
+        // Qualify the dates even when they are undefined/at limits because the reference times and valid times cannot
+        // otherwise be distinguished when they are alone, leading to overlaps. Only qualify the lead durations if they
+        // are defined
+        StringJoiner joiner = new StringJoiner( "_" );
+        if ( graphicsShape == GraphicShape.ISSUED_DATE_POOLS
+             || graphicsShape == GraphicShape.VALID_DATE_POOLS )
+        {
+            joiner.add( DataUtilities.toStringSafeDateTimesOnly( timeWindow ) );
+        }
+        if ( !timeWindow.bothLeadDurationsAreUnbounded() )
+        {
+            joiner.add( DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, leadUnits ) );
+        }
+
+        return joiner.toString();
+    }
+
+    /**
      * Uncovers the graphic parameters from a description of the outputs. Assumes that all graphics contain the same
-     * graphics declarations. Use {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(Outputs)} to obtain output 
+     * graphics declarations. Use {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(Outputs)} to obtain output
      * groups.
      *
      * @author James Brown

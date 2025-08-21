@@ -235,6 +235,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 {
                     TimeWindowOuter appendObject = nextEntry.getKey();
                     String appendString = BoxplotGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
+
                     Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                               metadata,
                                                                               appendString,
@@ -274,29 +275,14 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                                             List<BoxplotStatisticOuter> statistics,
                                             GraphicsHelper helper )
     {
-        String append = "";
+        String append;
 
         if ( appendObject instanceof TimeWindowOuter timeWindow )
         {
             Outputs.GraphicFormat.GraphicShape shape = helper.getGraphicShape();
             ChronoUnit leadUnits = helper.getDurationUnits();
 
-            // Qualify pooling windows with the latest reference time and valid time
-            if ( shape == Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS
-                 || shape == Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS )
-            {
-                append = DataUtilities.toStringSafe( timeWindow, leadUnits );
-            }
-            // Needs to be fully qualified, but this would change the file names, which is arguably a breaking change
-            // See GitHub ticket #540
-            else if ( !timeWindow.getLatestLeadDuration()
-                                 .equals( TimeWindowOuter.DURATION_MAX ) )
-            {
-                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits )
-                         + "_"
-                         + leadUnits.name()
-                                    .toUpperCase();
-            }
+            append = GraphicsWriter.getPathQualifier( timeWindow, shape, leadUnits );
         }
         else if ( appendObject instanceof OneOrTwoThresholds threshold )
         {
@@ -470,19 +456,16 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                                                 .getTimeWindow();
 
             // Create a time window without lead duration qualifiers
-            TimeWindow adjusted = timeWindow.getTimeWindow()
-                                            .toBuilder()
-                                            .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                  .setSeconds(
-                                                                                                          TimeWindowOuter.DURATION_MIN.getSeconds() )
-                                                                                                  .setNanos(
-                                                                                                          TimeWindowOuter.DURATION_MIN.getNano() ) )
-                                            .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                .setSeconds(
-                                                                                                        TimeWindowOuter.DURATION_MAX.getSeconds() )
-                                                                                                .setNanos(
-                                                                                                        TimeWindowOuter.DURATION_MAX.getNano() ) )
-                                            .build();
+            TimeWindow adjusted =
+                    timeWindow.getTimeWindow()
+                              .toBuilder()
+                              .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                    .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
+                                                                                    .setNanos( TimeWindowOuter.DURATION_MIN.getNano() ) )
+                              .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                  .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
+                                                                                  .setNanos( TimeWindowOuter.DURATION_MAX.getNano() ) )
+                              .build();
 
             return TimeWindowOuter.of( adjusted );
         };
@@ -508,13 +491,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // Qualify the time-based pools in the path if there is more than one plot
         if ( sliceCount > 1 )
         {
-            append = DataUtilities.toStringSafe( timeWindow.getEarliestReferenceTime() )
-                     + "_TO_"
-                     + DataUtilities.toStringSafe( timeWindow.getLatestReferenceTime() )
-                     + "_"
-                     + DataUtilities.toStringSafe( timeWindow.getEarliestValidTime() )
-                     + "_TO_"
-                     + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() );
+            append = DataUtilities.toStringSafeDateTimesOnly( timeWindow );
         }
 
         // Non-default averaging types that should be qualified?
