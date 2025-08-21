@@ -142,8 +142,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 {
                     // Build the output file name
                     Object appendObject = nextEntry.getKey();
-                    String appendString =
-                            DiagramGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
+                    String appendString = DiagramGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
                     Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                               metadata,
                                                                               appendString,
@@ -259,29 +258,14 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                             List<DiagramStatisticOuter> statistics,
                                             GraphicsHelper helper )
     {
-        String append = "";
+        String append;
 
         if ( appendObject instanceof TimeWindowOuter timeWindow )
         {
             GraphicShape shape = helper.getGraphicShape();
             ChronoUnit leadUnits = helper.getDurationUnits();
 
-            // Qualify pooling windows with the latest reference time and valid time
-            if ( shape == GraphicShape.ISSUED_DATE_POOLS
-                 || shape == GraphicShape.VALID_DATE_POOLS )
-            {
-                append = DataUtilities.toStringSafe( timeWindow, leadUnits );
-            }
-            // Needs to be fully qualified, but this would change the file names, which is arguably a breaking change
-            // See GitHub ticket #540
-            else if ( !timeWindow.getLatestLeadDuration()
-                                 .equals( TimeWindowOuter.DURATION_MAX ) )
-            {
-                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits )
-                         + "_"
-                         + leadUnits.name()
-                                    .toUpperCase();
-            }
+            append = GraphicsWriter.getPathQualifier( timeWindow, shape, leadUnits );
         }
         else if ( appendObject instanceof OneOrTwoThresholds threshold )
         {
