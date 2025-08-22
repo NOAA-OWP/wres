@@ -22,6 +22,7 @@ import wres.vis.writing.DiagramGraphicsWriter;
 import wres.vis.writing.DoubleScoreGraphicsWriter;
 import wres.vis.writing.DurationDiagramGraphicsWriter;
 import wres.vis.writing.DurationScoreGraphicsWriter;
+import wres.vis.writing.PairsStatisticsGraphicsWriter;
 
 /**
  * Implementation of a {@link ConsumerFactory} for graphics writing. A single consumer is registered for all graphics
@@ -63,6 +64,8 @@ class GraphicsConsumerFactory implements ConsumerFactory
                 = builder.setEvaluationDescription( evaluation )
                          .addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
                                                      BoxplotGraphicsWriter.of( outputs, path ) )
+                         .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                                                      PairsStatisticsGraphicsWriter.of( outputs, path ) )
                          .build();
 
 

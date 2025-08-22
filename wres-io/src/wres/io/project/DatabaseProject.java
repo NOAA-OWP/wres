@@ -470,36 +470,19 @@ public class DatabaseProject implements Project
         {
             Features fCache = caches.getFeaturesCache();
 
-            // At this point, features should already have been correlated by
-            // the declaration or by a location service. In the latter case, the
-            // WRES will have generated the List<Feature> and replaced them in
-            // a new ProjectConfig, so this code cannot tell the difference.
-
-
             // Deal with the special case of singletons first
-            Set<GeometryTuple> singletonFeatures = this.getDeclaredFeatures( declaration );
+            Set<GeometryTuple> declaredSingletons = this.getDeclaredFeatures( declaration );
 
             // If there are no declared singletons, allow features to be discovered, but only if there are no declared
             // multi-feature groups.
             Set<GeometryGroup> declaredGroups = this.getDeclaredFeatureGroups( declaration );
 
-            if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
-            {
-                DataScripter script =
-                        ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
-                                                                                 projectId,
-                                                                                 singletonFeatures,
-                                                                                 hasBaseline,
-                                                                                 false );
-
-                LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
-                Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache, hasBaseline );
-
-                singletons.addAll( innerSingletons );
-                LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
-                              + "{} features.",
-                              innerSingletons.size() );
-            }
+            Set<FeatureTuple> intersectingSingletons = this.getIntersectingSingletonFeatures( declaredSingletons,
+                                                                                              declaredGroups,
+                                                                                              fCache,
+                                                                                              projectId,
+                                                                                              hasBaseline );
+            singletons.addAll( intersectingSingletons );
 
             // Now deal with feature groups that contain one or more
             Set<GeometryTuple> groupedFeatures = declaredGroups.stream()
@@ -507,21 +490,11 @@ public class DatabaseProject implements Project
                                                                                      .stream() )
                                                                .collect( Collectors.toSet() );
 
-            if ( !groupedFeatures.isEmpty() )
-            {
-                DataScripter scriptForGroups =
-                        ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
-                                                                                 projectId,
-                                                                                 groupedFeatures,
-                                                                                 hasBaseline,
-                                                                                 true );
-
-                LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
-                Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache, hasBaseline );
-                grouped.addAll( innerGroups );
-                LOGGER.debug( "getIntersectingFeatures completed for grouped features, which identified {} features",
-                              innerGroups.size() );
-            }
+            Set<FeatureTuple> intersectingGrouped = this.getIntersectingGroupedFeatures( groupedFeatures,
+                                                                                         fCache,
+                                                                                         projectId,
+                                                                                         hasBaseline );
+            grouped.addAll( intersectingGrouped );
         }
 
         // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked upfront
@@ -576,6 +549,100 @@ public class DatabaseProject implements Project
         return new ProjectUtilities.FeatureSets( Collections.unmodifiableSet( singletons ),
                                                  finalGroups,
                                                  groups.doNotPublish() );
+    }
+
+    /**
+     * Returns the intersecting singleton features.
+     *
+     * @param declaredSingletons the declared singleton features
+     * @param declaredGroups the declared grouped features
+     * @param fCache the feature cache
+     * @param projectId the project identifier
+     * @param hasBaseline whether the evaluation has a baseline
+     * @return the intersecting singleton features
+     */
+
+    private Set<FeatureTuple> getIntersectingSingletonFeatures( Set<GeometryTuple> declaredSingletons,
+                                                                Set<GeometryGroup> declaredGroups,
+                                                                Features fCache,
+                                                                long projectId,
+                                                                boolean hasBaseline )
+    {
+        Set<FeatureTuple> singletons = new HashSet<>();
+
+        if ( !declaredSingletons.isEmpty()
+             || declaredGroups.isEmpty() )
+        {
+            DataScripter script =
+                    ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
+                                                                             projectId,
+                                                                             declaredSingletons,
+                                                                             hasBaseline,
+                                                                             false );
+
+            LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
+            Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache, hasBaseline );
+
+            if ( innerSingletons.isEmpty() )
+            {
+                throw new NoProjectDataException( "Failed to identify any declared geographic features with "
+                                                  + "correspondingly named features inside the time-series data. "
+                                                  + "Please check that the geographic features are declared "
+                                                  + "correctly and try again." );
+            }
+
+            singletons.addAll( innerSingletons );
+            LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
+                          + "{} features.",
+                          innerSingletons.size() );
+        }
+
+        return Collections.unmodifiableSet( singletons );
+    }
+
+    /**
+     * Returns the intersecting grouped features.
+     *
+     * @param groupedFeatures the grouped features
+     * @param fCache the feature cache
+     * @param projectId the project identifier
+     * @param hasBaseline whether the evaluation has a baseline
+     * @return the intersecting singleton features
+     */
+
+    private Set<FeatureTuple> getIntersectingGroupedFeatures( Set<GeometryTuple> groupedFeatures,
+                                                              Features fCache,
+                                                              long projectId,
+                                                              boolean hasBaseline )
+    {
+        Set<FeatureTuple> grouped = new HashSet<>();
+
+        if ( !groupedFeatures.isEmpty() )
+        {
+            DataScripter scriptForGroups =
+                    ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
+                                                                             projectId,
+                                                                             groupedFeatures,
+                                                                             hasBaseline,
+                                                                             true );
+
+            LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
+            Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache, hasBaseline );
+
+            if ( innerGroups.isEmpty() )
+            {
+                throw new NoProjectDataException( "Failed to identify any declared geographic feature groups with "
+                                                  + "correspondingly named features inside the time-series data. "
+                                                  + "Please check that the geographic feature groups are declared "
+                                                  + "correctly and try again." );
+            }
+
+            grouped.addAll( innerGroups );
+            LOGGER.debug( "getIntersectingFeatures completed for grouped features, which identified {} features",
+                          innerGroups.size() );
+        }
+
+        return Collections.unmodifiableSet( grouped );
     }
 
     /**

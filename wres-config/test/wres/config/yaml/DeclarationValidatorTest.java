@@ -330,12 +330,15 @@ class DeclarationValidatorTest
     {
         Source source = SourceBuilder.builder()
                                      .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .uri( URI.create( "http://foo" ) )
                                      .build();
         Source anotherSource = SourceBuilder.builder()
                                             .sourceInterface( SourceInterface.WRDS_NWM )
+                                            .uri( URI.create( "http://foo" ) )
                                             .build();
         Source yetAnotherSource = SourceBuilder.builder()
                                                .sourceInterface( SourceInterface.WRDS_AHPS )
+                                               .uri( URI.create( "http://foo" ) )
                                                .build();
         Dataset left = DatasetBuilder.builder()
                                      .sources( List.of( source ) )
@@ -1115,6 +1118,7 @@ class DeclarationValidatorTest
     {
         Source source = SourceBuilder.builder()
                                      .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .uri( URI.create( "http://foo" ) )
                                      .build();
 
         Dataset dataset = DatasetBuilder.builder()
@@ -3354,7 +3358,6 @@ class DeclarationValidatorTest
     @Test
     void testCombinedGraphicsWithNoBaselineProducesWarning()
     {
-
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .combinedGraphics( true )
                                                                         .build();
@@ -3382,6 +3385,23 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "The declaration includes 'combined_graphics', but does "
                                                        + "not include a 'baseline' with 'separate_metrics: true'.",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testCombinedGraphicsWithUnsupportedMetricsProducesWarning()
+    {
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.TIME_SERIES_PLOT, null ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .combinedGraphics( true )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The declaration includes 'combined_graphics', but one "
+                                                       + "or more of the declared 'metrics' do not support combined "
+                                                       + "graphics. ",
                                                        StatusLevel.WARN ) );
     }
 

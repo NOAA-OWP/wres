@@ -256,9 +256,17 @@ class NetcdfOutputWriterTest
                                                               .setSeconds( 10_800 ) )
                               .build();
 
+            TimeWindow timeWindowTwo = timeWindowOne.toBuilder()
+                                                    .setEarliestLeadDuration( Duration.newBuilder()
+                                                                                      .setSeconds( 10_800 ) )
+                                                    .setLatestLeadDuration( Duration.newBuilder()
+                                                                                    .setSeconds( 21_600 ) )
+                                                    .build();
+
             writer.createBlobsForWriting( featureGroups,
                                           metricsAndThresholdsList,
-                                          Set.of( TimeWindowOuter.of( timeWindowOne ) ) );
+                                          Set.of( TimeWindowOuter.of( timeWindowOne ),
+                                                  TimeWindowOuter.of( timeWindowTwo ) ) );
 
             // Create the statistics to write
             DoubleScoreMetric.DoubleScoreMetricComponent
@@ -294,11 +302,7 @@ class NetcdfOutputWriterTest
 
             Pool poolTwo = Pool.newBuilder()
                                .setGeometryGroup( geoGroupTwo )
-                               .setTimeWindow( timeWindowOne.toBuilder()
-                                                            .setEarliestLeadDuration( Duration.newBuilder()
-                                                                                              .setSeconds( 10_800 ) )
-                                                            .setLatestLeadDuration( Duration.newBuilder()
-                                                                                            .setSeconds( 21_600 ) ) )
+                               .setTimeWindow( timeWindowTwo )
                                .setEventThreshold( thresholdTwo )
                                .setDecisionThreshold( thresholdThree )
                                .build();

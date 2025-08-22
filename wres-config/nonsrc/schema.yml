@@ -1723,6 +1723,7 @@ definitions:
       - reliability diagram
       - sample size
       - standard deviation
+      - spaghetti plot
 
   TimeSeriesMetricEnum:
     title: Time-series metrics.
@@ -1790,6 +1791,7 @@ definitions:
       - volumetric efficiency difference
       - mean absolute error skill score
       - scatter plot
+      - time series plot
 
   FormatEnum:
     title: The statistics serialization formats.

@@ -254,7 +254,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
             script.addArgument( null );
         }
 
-        script.addArgument( this.lead );
+        script.addArgument( this.getLead() );
         script.addArgument( this.getHash() );
         script.addArgument( this.getIsPointData() );
         script.addArgument( this.getFeatureId() );
@@ -262,8 +262,10 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
         script.addArgument( this.getMeasurementUnitId() );
         script.addArgument( this.getVariableName() );
 
-        script.addTab().addLine( "WHERE NOT EXISTS" );
-        script.addTab().addLine( "(" );
+        script.addTab()
+              .addLine( "WHERE NOT EXISTS" );
+        script.addTab()
+              .addLine( "(" );
         script.addTab( 2 )
               .addLine( "SELECT 1" );
         script.addTab( 2 )
@@ -273,7 +275,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
         script.addArgument( this.getHash() );
 
-        script.addTab().addLine( ");" );
+        script.addTab()
+              .addLine( ");" );
 
         return script;
     }

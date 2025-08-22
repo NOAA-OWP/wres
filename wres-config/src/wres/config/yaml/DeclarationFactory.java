@@ -134,7 +134,8 @@ public class DeclarationFactory
                                                  .build();
     /** Default wrapped threshold. */
     public static final Threshold DEFAULT_THRESHOLD =
-            ThresholdBuilder.builder().threshold( DEFAULT_CANONICAL_THRESHOLD )
+            ThresholdBuilder.builder()
+                            .threshold( DEFAULT_CANONICAL_THRESHOLD )
                             .build();
 
     /** To stringify protobufs into presentable JSON. */

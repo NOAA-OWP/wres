@@ -1,4 +1,4 @@
-FROM redis:7.4.1-alpine3.20
+FROM redis:7.4.5-alpine3.21
 
 # Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
 # Instead, very manually create user and group:

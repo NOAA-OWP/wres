@@ -45,7 +45,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Factory class for generating test datasets for metric calculations.
- * 
+ *
  * @author James Brown
  */
 
@@ -183,14 +183,13 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      Feature.of(
-                                              MessageUtilities.getGeometry( DRRC2 ) ),
+                                      Feature.of( MessageUtilities.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
     /**
      * Returns a set of single-valued pairs without a baseline.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -219,7 +218,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a set of single-valued pairs with a baseline.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -325,7 +324,8 @@ public final class MetricTestDataFactory
 
         File file = new File( "testinput/metricTestDataFactory/getSingleValuedPairsFive.asc" );
         try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+                      new BufferedReader( new InputStreamReader( new FileInputStream( file ),
+                                                                 StandardCharsets.UTF_8 ) ) )
         {
             String line;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
@@ -363,7 +363,7 @@ public final class MetricTestDataFactory
     /**
      * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
      * from testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
-     * 
+     *
      * @return ensemble pairs
      * @throws IOException if the read fails
      */
@@ -415,7 +415,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a set of discrete probability pairs without a baseline.
-     * 
+     *
      * @return discrete probability pairs
      */
 
@@ -436,7 +436,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a set of discrete probability pairs with a baseline.
-     * 
+     *
      * @return discrete probability pairs
      */
 
@@ -829,7 +829,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a set of discrete probability pairs without a baseline and comprising observed non-occurrences only.
-     * 
+     *
      * @return discrete probability pairs with observed non-occurrences
      */
 
@@ -849,7 +849,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a pool of single-valued pairs containing fake data.
-     * 
+     *
      * @return a time-series of single-valued pairs
      */
 
@@ -910,7 +910,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a {@link Pool} with single-valued pairs containing no data.
-     * 
+     *
      * @return a time-series of single-valued pairs
      */
 
@@ -949,7 +949,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a {@link Pool} with single-valued pairs containing fake data with the same peak at multiple times.
-     * 
+     *
      * @return a time-series of single-valued pairs
      */
 
@@ -1003,7 +1003,7 @@ public final class MetricTestDataFactory
      * Returns a list of {@link Pool} with single-valued pairs which correspond to the pairs 
      * associated with system test scenario504 as of commit e91b36a8f6b798d1987e78a0f37b38f3ca4501ae.
      * The pairs are reproduced to 2 d.p. only.
-     * 
+     *
      * @return a time series of single-valued pairs
      */
 
@@ -1152,7 +1152,7 @@ public final class MetricTestDataFactory
     /**
      * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
      * from testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
-     * 
+     *
      * @return ensemble pairs
      * @throws IOException if the read fails
      */
@@ -1166,7 +1166,8 @@ public final class MetricTestDataFactory
         File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
         try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+                      new BufferedReader( new InputStreamReader( new FileInputStream( file ),
+                                                                 StandardCharsets.UTF_8 ) ) )
         {
 
             Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
@@ -1233,6 +1234,51 @@ public final class MetricTestDataFactory
                                                           values ) )
                       .setMetadataForBaseline( baseMeta )
                       .setClimatology( clim )
+                      .build();
+    }
+
+    /**
+     * Returns a set of ensemble pairs with three pairs and no baseline.
+     *
+     * @return ensemble pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsTwo()
+    {
+        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        values.add( Event.of( Instant.parse( "1985-03-13T00:00:00Z" ),
+                              Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
+        values.add( Event.of( Instant.parse( "1985-03-13T06:00:00Z" ),
+                              Pair.of( 26.4, Ensemble.of( 23.8, 23.7 ) ) ) );
+        values.add( Event.of( Instant.parse( "1985-03-13T12:00:00Z" ),
+                              Pair.of( 23.2, Ensemble.of( 16.1, 18.4 ) ) ) );
+
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
+
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
+        Pool pool = MessageFactory.getPool( featureGroup,
+                                            window,
+                                            null,
+                                            null,
+                                            false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        Instant refTime = Instant.parse( "1985-03-12T18:00:00Z" );
+        TimeSeriesMetadata metadata = MetricTestDataFactory.getBoilerplateMetadataWithT0( refTime );
+        return builder.addData( TimeSeries.of( metadata, values ) )
+                      .setMetadata( meta )
                       .build();
     }
 

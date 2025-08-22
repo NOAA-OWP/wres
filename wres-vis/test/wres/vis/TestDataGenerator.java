@@ -8,7 +8,9 @@ import java.util.List;
 
 import com.google.protobuf.Timestamp;
 
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.ThresholdOperator;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -42,7 +44,12 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pairs;
+import wres.statistics.generated.PairsMetric;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.ReferenceTime;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
@@ -71,9 +78,9 @@ public class TestDataGenerator
     private static final FeatureGroup FEATURE_GROUP =
             FeatureGroup.of( MessageUtilities.getGeometryGroup( "DRRC2-09165000-18384141",
                                                                 MessageUtilities.getGeometryTuple(
-                                                                                      USGS_FEATURE,
-                                                                                      NWS_FEATURE,
-                                                                                      NWM_FEATURE ) ) );
+                                                                        USGS_FEATURE,
+                                                                        NWS_FEATURE,
+                                                                        NWM_FEATURE ) ) );
 
     private static final String CMS = "CMS";
 
@@ -927,6 +934,101 @@ public class TestDataGenerator
         BoxplotStatisticOuter fakeOutputsTwo = BoxplotStatisticOuter.of( boxTwo, fakeMetadataTwo );
 
         return List.of( fakeOutputsOne, fakeOutputsTwo );
+    }
+
+    /**
+     * Returns a {@link List} containing a {@link PairsStatisticOuter} for one pool.
+     *
+     * @return the pairs statistics for one pool
+     */
+
+    public static PairsStatisticOuter getPairsStatisticsForOnePoolWithTwoTimeSeries()
+    {
+        wres.datamodel.scale.TimeScaleOuter timeScale =
+                wres.datamodel.scale.TimeScaleOuter.of( java.time.Duration.ofHours( 1 ),
+                                                        TimeScale.TimeScaleFunction.MEAN );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                                             11.94128 ),
+                                                                                                     OneOrTwoDoubles.of(
+                                                                                                             0.9 ),
+                                                                                                     ThresholdOperator.GREATER_EQUAL,
+                                                                                                     ThresholdOrientation.LEFT ) );
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "SQIN" )
+                                          .setRightDataName( "HEFS" )
+                                          .setBaselineDataName( "ESP" )
+                                          .setMeasurementUnit( "CMS" )
+                                          .build();
+
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( "DRRC2" )
+                                    .build();
+        GeometryTuple geometryTuple = MessageUtilities.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geometryGroup = MessageUtilities.getGeometryGroup( null, geometryTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geometryGroup );
+
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( Instant.parse( "2551-03-19T00:00:00Z" ),
+                                                                Instant.parse( "2551-03-19T12:00:00Z" ),
+                                                                Instant.parse( "2551-03-20T01:00:00Z" ),
+                                                                Instant.parse( "2551-03-20T12:00:00Z" ),
+                                                                Duration.ofHours( 1 ),
+                                                                Duration.ofHours( 7 ) );
+        wres.datamodel.time.TimeWindowOuter timeWindowOuter = wres.datamodel.time.TimeWindowOuter.of( timeWindow );
+        Pool pool = MessageFactory.getPool( featureGroup,
+                                            timeWindowOuter,
+                                            timeScale,
+                                            threshold,
+                                            false,
+                                            1 );
+
+        PoolMetadata metadata = PoolMetadata.of( evaluation, pool );
+
+        PairsMetric pairsMetric = PairsMetric.newBuilder()
+                                             .setName( MetricName.TIME_SERIES_PLOT )
+                                             .build();
+
+        Timestamp firstTime = Timestamp.newBuilder()
+                                       .setSeconds( 12300000 )
+                                       .build();
+        Timestamp secondTime = Timestamp.newBuilder()
+                                        .setSeconds( 12303600 )
+                                        .build();
+        Timestamp thirdTime = Timestamp.newBuilder()
+                                       .setSeconds( 12307200 )
+                                       .build();
+
+        Pairs.TimeSeriesOfPairs timeSeries =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addReferenceTimes( ReferenceTime.newBuilder()
+                                                                        .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                                                        .setReferenceTime( firstTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 23.0 )
+                                                            .addRight( 17.6 )
+                                                            .setValidTime( secondTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 12.0 )
+                                                            .addRight( 15.7 )
+                                                            .setValidTime( thirdTime ) )
+                                       .build();
+
+        Pairs pairs = Pairs.newBuilder()
+                           .addLeftVariableNames( DatasetOrientation.LEFT.toString() )
+                           .addRightVariableNames( DatasetOrientation.RIGHT.toString() )
+                           .addTimeSeries( timeSeries )
+                           .addTimeSeries( timeSeries )
+                           .build();
+
+        PairsStatistic statistic = PairsStatistic.newBuilder()
+                                                 .setMetric( pairsMetric )
+                                                 .setStatistics( pairs )
+                                                 .build();
+
+        // Fake output wrapper.
+        return PairsStatisticOuter.of( statistic, metadata );
     }
 
 }

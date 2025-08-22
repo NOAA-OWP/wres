@@ -782,7 +782,6 @@ class WrdsAhpsReaderTest
     void startServer()
     {
         System.setProperty("wres.wrdsCertificateFileToTrust", "org/mockserver/socket/CertificateAuthorityCertificate.pem");
-//        System.setProperty("wres.wrdsCertificateFileToTrust", "/ised/wres/hank.herr/git/wres/testcert.pem");
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
@@ -839,8 +838,13 @@ class WrdsAhpsReaderTest
                                                               null,
                                                               null );
 
+            Instant issuedTime = Instant.parse( "2021-11-14T13:46:00Z" );
+            Instant generationTime = Instant.parse( "2021-11-14T13:54:18Z" );
+
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
-                                                                         Instant.parse( "2021-11-14T13:46:00Z" ) ),
+                                                                         issuedTime,
+                                                                         ReferenceTimeType.GENERATION_TIME,
+                                                                         generationTime ),
                                                                  TimeScaleOuter.of(),
                                                                  "QR",
                                                                  Feature.of( geometry ),

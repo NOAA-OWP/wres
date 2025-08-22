@@ -24,6 +24,11 @@ import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.events.subscribe.ConsumerFactory;
 import wres.statistics.MessageUtilities;
+import wres.vis.writing.PairsStatisticsGraphicsWriter;
+import wres.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
+import wres.writing.csv.statistics.CommaSeparatedDiagramWriter;
+import wres.writing.csv.statistics.CommaSeparatedDurationDiagramWriter;
+import wres.writing.csv.statistics.CommaSeparatedScoreWriter;
 import wres.writing.csv.statistics.CsvStatisticsWriter;
 import wres.writing.netcdf.NetcdfOutputWriter;
 import wres.writing.protobuf.ProtobufWriter;
@@ -132,7 +137,9 @@ class StatisticsConsumerFactory implements ConsumerFactory
             // Specific formats are filtered at runtime via the router using the Outputs declaration
             BoxplotGraphicsWriter boxPlotWriter = BoxplotGraphicsWriter.of( outputs, path );
             builder.addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
-                                               boxPlotWriter );
+                                               boxPlotWriter )
+                   .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                                                PairsStatisticsGraphicsWriter.of( outputs, path ) );
         }
 
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )

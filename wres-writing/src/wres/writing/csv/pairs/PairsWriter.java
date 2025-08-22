@@ -415,9 +415,11 @@ public abstract class PairsWriter<L, R>
         Instant referenceTime = null;
         if ( !referenceTimes.isEmpty() )
         {
-            referenceTime = referenceTimes.values()
-                                          .iterator()
-                                          .next();
+            Map.Entry<ReferenceTimeType, Instant> firstReferenceTime = referenceTimes.entrySet()
+                                                                                     .iterator()
+                                                                                     .next();
+            LOGGER.trace( "Using the reference time type of {} when writing a pair.", firstReferenceTime.getKey() );
+            referenceTime = firstReferenceTime.getValue();
         }
 
         return referenceTime;

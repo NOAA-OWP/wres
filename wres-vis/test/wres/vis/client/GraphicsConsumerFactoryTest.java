@@ -179,11 +179,11 @@ class GraphicsConsumerFactoryTest
         // Clean up by deleting the paths written
         for ( Path next : actualPathsWritten )
         {
-            boolean ignored = next.toFile()
+            boolean ignored = next.toFile() // NOSONAR
                                   .delete();
         }
 
-        boolean ignored = basePath.toFile()
+        boolean ignored = basePath.toFile() // NOSONAR
                                   .delete();
     }
 

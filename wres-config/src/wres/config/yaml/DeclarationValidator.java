@@ -3850,6 +3850,32 @@ public class DeclarationValidator
             events.add( event );
         }
 
+        // Metrics that do not support combined graphics?
+        Set<MetricConstants> metrics =
+                declaration.metrics()
+                           .stream()
+                           .map( Metric::name )
+                           .filter( m -> m.isInGroup( MetricConstants.StatisticType.PAIRS )
+                                         || m.isInGroup( MetricConstants.StatisticType.BOXPLOT_PER_POOL )
+                                         || m.isInGroup( MetricConstants.StatisticType.BOXPLOT_PER_PAIR ) )
+                           .collect( Collectors.toSet() );
+
+        if ( !metrics.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The declaration includes 'combined_graphics', but "
+                                                             + "one or more of the declared 'metrics' do not support "
+                                                             + "combined graphics. When generating plots for these "
+                                                             + "metrics, the graphics will not be combined. The "
+                                                             + "following metrics do not support combined graphics: "
+                                                             + metrics
+                                                             + "." )
+                                           .build();
+            events.add( event );
+        }
+
         return Collections.unmodifiableList( events );
     }
 
@@ -5536,7 +5562,16 @@ public class DeclarationValidator
                                                            SourceInterface.USGS_NWIS,
                                                            SourceInterface.WRDS_AHPS,
                                                            SourceInterface.WRDS_NWM,
-                                                           SourceInterface.WRDS_HEFS );
+                                                           SourceInterface.WRDS_HEFS )
+               && dataset.sources()
+                         .stream()
+                         .anyMatch( s -> Objects.nonNull( s )
+                                         && Objects.nonNull( s.uri() )
+                                         && Objects.nonNull( s.uri()
+                                                              .getScheme() )
+                                         && s.uri()
+                                             .getScheme()
+                                             .startsWith( "http" ) );
     }
 
     /**

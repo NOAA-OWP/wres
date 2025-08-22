@@ -22,6 +22,7 @@ import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
+import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
+import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
@@ -50,6 +52,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -58,6 +61,7 @@ import wres.statistics.MessageUtilities;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.Pairs;
 import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartFactory.ChartType;
 
@@ -656,6 +660,83 @@ public class ChartDataFactory
         }
 
         return Boxplot.of( statistics );
+    }
+
+    /**
+     * Returns a dataset for pairs statistics.
+     *
+     * @param statistics the statistics
+     * @return a data source that can be used to draw a plot
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the dataset contains more than one threshold
+     */
+    public static XYDataset ofPairsStatistics( PairsStatisticOuter statistics )
+    {
+        Objects.requireNonNull( statistics );
+
+        List<String> leftNames = statistics.getStatistic()
+                                           .getStatistics()
+                                           .getLeftVariableNamesList();
+
+        List<String> rightNames = statistics.getStatistic()
+                                            .getStatistics()
+                                            .getRightVariableNamesList();
+
+        int seriesNumber = 1;
+        List<TimeSeries> allSeries = new ArrayList<>();
+        for ( Pairs.TimeSeriesOfPairs nextSeries : statistics.getStatistic()
+                                                             .getStatistics()
+                                                             .getTimeSeriesList() )
+        {
+            // Add a placeholder series for each variable
+            List<TimeSeries> leftSeries = new ArrayList<>();
+            List<TimeSeries> rightSeries = new ArrayList<>();
+
+            // Create a placeholder time-series for each variable
+            for ( String nextLeftName : leftNames )
+            {
+                TimeSeries next = new TimeSeries( nextLeftName + PAIR_THEME_SEPARATOR + seriesNumber );
+                leftSeries.add( next );
+            }
+            for ( String nextRightName : rightNames )
+            {
+                TimeSeries next = new TimeSeries( nextRightName + PAIR_THEME_SEPARATOR + seriesNumber );
+                rightSeries.add( next );
+            }
+
+            for ( Pairs.Pair pair : nextSeries.getPairsList() )
+            {
+                Timestamp validTime = pair.getValidTime();
+
+                // Millisecond precision
+                Instant instant = MessageUtilities.getInstant( validTime );
+                long millis = instant.toEpochMilli();
+                FixedMillisecond time = new FixedMillisecond( millis );
+
+                // Add the value for each left series
+                int leftCount = pair.getLeftCount();
+                for ( int i = 0; i < leftCount; i++ )
+                {
+                    double nextValue = pair.getLeft( i );
+                    leftSeries.get( i )
+                              .add( time, nextValue );
+                }
+
+                // Add the values for each right series
+                for ( int i = 0; i < pair.getRightCount(); i++ )
+                {
+                    double nextValue = pair.getRight( i );
+                    rightSeries.get( i )
+                               .add( time, nextValue );
+                }
+            }
+
+            allSeries.addAll( leftSeries );
+            allSeries.addAll( rightSeries );
+            seriesNumber++;
+        }
+
+        return PerformantTimeSeriesCollection.of( Collections.unmodifiableList( allSeries ) );
     }
 
     /**

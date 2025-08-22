@@ -206,6 +206,66 @@ class DataSourceTest
     }
 
     @Test
+    void testDetectFormatIdentifiesJsonAhpsObservations() throws IOException
+    {
+        String formatString = """
+                {
+                  "_documentation": {
+                    "swaggerURL": "http://nwcal-wrds.nwc.nws.noaa.gov/docs/observed/v1.0/swagger/"
+                  },
+                  "_deployment": {
+                    "apiUrl": "https://nwcal-wrds.nwc.nws.noaa.gov/api/observed/v1.0/observed/streamflow/tag/usgs_gages_ii/?validTime=%5B2025-05-25T00:00:00Z%2C2025-06-01T00:00:00Z%5D&proj=HANK",
+                    "stack": "prod",
+                    "version": "v1.1.1",
+                    "apiCaller": "foo"
+                  },
+                  "_nonUrgentIssueReportingLink": "https://vlab.noaa.gov/redmine/projects/wrds-user-support/issues/new?issue[category_id]=2835",
+                  "_metrics": {
+                    "observedDataCount": 4838528,
+                    "locationCount": 7417,
+                    "totalRequestTime": 151.9992790222168
+                  },
+                  "header": {
+                    "request": {
+                      "params": {
+                        "asProvided": {
+                          "validTime": "[2025-05-25T00:00:00Z,2025-06-01T00:00:00Z]"
+                        },
+                        "asUsed": {
+                          "validTime": "[2025-05-25T00:00:00Z,2025-06-01T00:00:00Z]",
+                          "nonUSGSGages": false,
+                          "issuer": null,
+                          "pe": null,
+                          "ts": null
+                        }
+                      }
+                    },
+                    "missingValues": [
+                      -999,
+                      -9999
+                    ]
+                  },
+                  "timeseriesDataset": [
+                    {
+                      "location": {
+                        "names": {
+                          "nwsLid": "AAIT2",
+                          "usgsSiteCode": "08158930",
+                          "nwmFeatureId": 5781731,
+                          "nwsName": "at Manchaca Rd",
+                          "usgsName": "Williamson Ck at Manchaca Rd, Austin, TX"
+                        },
+                """;
+
+        try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "fake.json" );
+
+            assertEquals( DataDisposition.JSON_WRDS_AHPS, DataSource.detectFormat( stream, fakeUri ) );
+        }
+    }
+
+    @Test
     void testDetectFormatIdentifiesJsonWrdsHefs() throws IOException
     {
         String formatString = """

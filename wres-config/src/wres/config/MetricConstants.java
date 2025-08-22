@@ -12,6 +12,7 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.PairsStatistic;
 import wres.statistics.generated.MetricName;
 
 /**
@@ -309,6 +310,12 @@ public enum MetricConstants
 
     /** A statistic derived from the {@link #TIME_TO_PEAK_RELATIVE_ERROR}. */
     TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
+
+    /** A time-series of single-valued pairs. */
+    TIME_SERIES_PLOT( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRS ),
+
+    /** Ensemble variant of the {@link #TIME_SERIES_PLOT}. */
+    SPAGHETTI_PLOT( SampleDataGroup.ENSEMBLE_TIME_SERIES, StatisticType.PAIRS ),
 
     /** Mean statistic. */
     MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
@@ -826,6 +833,7 @@ public enum MetricConstants
     public boolean isAThresholdMetric()
     {
         return !( this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+                  || this.isInGroup( StatisticType.PAIRS )
                   || this.isInGroup( StatisticType.BOXPLOT_PER_POOL )
                   || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM
                   || this == MetricConstants.SCATTER_PLOT );
@@ -1077,42 +1085,26 @@ public enum MetricConstants
 
     public enum SampleDataGroup
     {
-
-        /**
-         * Metrics that consume single-valued data.
-         */
-
+        /** Metrics that consume single-valued data.*/
         SINGLE_VALUED,
 
-        /**
-         * Metrics that consume single-valued time-series data.
-         */
-
+        /** Metrics that consume single-valued time-series data. */
         SINGLE_VALUED_TIME_SERIES,
 
-        /**
-         * Metrics that consume discrete probability data.
-         */
-
+        /** Metrics that consume discrete probability data. */
         DISCRETE_PROBABILITY,
 
-        /**
-         * Metrics that consume dichotomous data.
-         */
-
+        /** Metrics that consume dichotomous data. */
         DICHOTOMOUS,
 
-        /**
-         * Metrics that consume multi-category data.
-         */
-
+        /** Metrics that consume multi-category data. */
         MULTICATEGORY,
 
-        /**
-         * Metrics that consume ensemble data.
-         */
+        /** Metrics that consume ensemble data. */
+        ENSEMBLE,
 
-        ENSEMBLE;
+        /** Metrics that consume ensemble time-series data. */
+        ENSEMBLE_TIME_SERIES;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link SampleDataGroup}.
@@ -1193,7 +1185,13 @@ public enum MetricConstants
          * Metrics that produce a {@link DurationScoreStatistic}.
          */
 
-        DURATION_SCORE;
+        DURATION_SCORE,
+
+        /**
+         * Metrics that produce a {@link PairsStatistic}.
+         */
+
+        PAIRS;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link StatisticType}.

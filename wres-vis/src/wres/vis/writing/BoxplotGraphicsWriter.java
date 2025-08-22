@@ -50,7 +50,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( BoxplotGraphicsWriter.class );
 
-    private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS =
+    private static final String SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_BOX_PLOT_OUTPUTS =
             "Specify non-null input data when writing box plot outputs.";
 
     /**
@@ -80,7 +80,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     @Override
     public Set<Path> apply( List<BoxplotStatisticOuter> output )
     {
-        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
+        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_BOX_PLOT_OUTPUTS );
 
         Set<Path> perPairPaths = this.writeBoxPlotsPerPair( output );
         Set<Path> perPoolPaths = this.writeBoxPlotsPerPool( output );
@@ -102,7 +102,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
     private Set<Path> writeBoxPlotsPerPair( List<BoxplotStatisticOuter> output )
     {
-        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
+        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_BOX_PLOT_OUTPUTS );
 
         Set<Path> paths = new HashSet<>();
 
@@ -146,7 +146,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
     private Set<Path> writeBoxPlotsPerPool( List<BoxplotStatisticOuter> output )
     {
-        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_DIAGRAM_OUTPUTS );
+        Objects.requireNonNull( output, SPECIFY_NON_NULL_INPUT_DATA_WHEN_WRITING_BOX_PLOT_OUTPUTS );
 
         Set<Path> paths = new HashSet<>();
 

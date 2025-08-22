@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +42,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeaturesBuilder;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -104,7 +106,8 @@ public class SingleValuedForecastRetrieverTest
         this.mocks = MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
-        this.testDatabase = new TestDatabase( this.getClass().getName() );
+        this.testDatabase = new TestDatabase( this.getClass()
+                                                  .getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
         this.ingestExecutor = RetrieverTestHelper.getIngestExecutor();
 
@@ -138,7 +141,7 @@ public class SingleValuedForecastRetrieverTest
         this.addTheDatabaseAndTables();
 
         // Add some data for testing
-        this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
+        this.addTimeSeriesToDatabase();
     }
 
     @Test
@@ -385,6 +388,56 @@ public class SingleValuedForecastRetrieverTest
         assertEquals( 2, forecastRetriever.get( identifiers ).count() );
     }
 
+    @Test
+    public void testRetrievalOfOneForecastTimeSeriesWithTwoReferenceTimes()
+    {
+        // Build the retriever
+        Feature feature = Feature.of( MessageUtilities.getGeometry( "G" ) );
+        Set<Feature> features = Set.of( feature );
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
+                                                           .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                           .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
+                                                           .setProjectId( PROJECT_ID )
+                                                           .setVariable( VARIABLE )
+                                                           .setFeatures( features )
+                                                           .setDatasetOrientation( DatasetOrientation.RIGHT )
+                                                           .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = forecastSeries.toList();
+
+        // There is one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeriesOne = actualCollection.get( 0 );
+
+        // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                               T2023_04_01T00_00_00Z,
+                                               ReferenceTimeType.GENERATION_TIME,
+                                               T2023_04_01T00_00_00Z ),
+                                       TimeScaleOuter.of(),
+                                       VARIABLE_NAME,
+                                       feature,
+                                       UNIT );
+        TimeSeries.Builder<Double> builderOne = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeriesOne =
+                builderOne.setMetadata( expectedMetadata )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                          .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                          .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeriesOne, actualSeriesOne );
+    }
+
     @After
     public void tearDown() throws Exception
     {
@@ -424,13 +477,12 @@ public class SingleValuedForecastRetrieverTest
     }
 
     /**
-     * Performs the detailed set-up work to add two time-series to the database. Some assertions are made here, which
-     * could fail, in order to clarify the source of a failure.
+     * Performs the detailed set-up work to add time-series to the database.
      *
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException
+    private void addTimeSeriesToDatabase() throws SQLException
     {
         DataSource leftData = TestData.generateDataSource( DatasetOrientation.LEFT,
                                                            DataType.OBSERVATIONS );
@@ -443,10 +495,17 @@ public class SingleValuedForecastRetrieverTest
         Geometry geometry = Geometry.newBuilder()
                                     .setName( featureName )
                                     .build();
+        Geometry geometryTwo = Geometry.newBuilder()
+                                       .setName( "G" )
+                                       .build();
         Set<GeometryTuple> features =
                 Set.of( GeometryTuple.newBuilder()
                                      .setLeft( geometry )
                                      .setRight( geometry )
+                                     .build(),
+                        GeometryTuple.newBuilder()
+                                     .setLeft( geometryTwo )
+                                     .setRight( geometryTwo )
                                      .build() );
 
         Dataset left = DatasetBuilder.builder()
@@ -510,9 +569,38 @@ public class SingleValuedForecastRetrieverTest
         IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
                                                       .get( 0 );
 
+        TimeSeries<Double> timeSeriesFour = TestData.generateTimeSeriesDoubleOne( T0 );
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<Double>()
+                .addEvents( timeSeriesFour.getEvents() );
+        TimeSeriesMetadata metadata = timeSeriesFour.getMetadata();
+        Map<ReferenceTimeType, Instant> adjustedReferenceTimes = new EnumMap<>( ReferenceTimeType.class );
+        adjustedReferenceTimes.putAll( metadata.getReferenceTimes() );
+        adjustedReferenceTimes.put( ReferenceTimeType.GENERATION_TIME, T2023_04_01T00_00_00Z );
+        TimeSeriesMetadata adjustedMetadata = TimeSeriesMetadata.of( adjustedReferenceTimes,
+                                                                     metadata.getTimeScale(),
+                                                                     metadata.getVariableName(),
+                                                                     Feature.of( geometryTwo ),
+                                                                     metadata.getUnit() );
+        timeSeriesFour = builder.setMetadata( adjustedMetadata )
+                                .build();
+
+        DatabaseTimeSeriesIngester ingesterFour =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setIngestExecutor( this.ingestExecutor )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+
+        Stream<TimeSeriesTuple> tupleStreamFour =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesFour, rightData ) );
+        IngestResult ingestResultFour = ingesterFour.ingest( tupleStreamFour, rightData )
+                                                    .get( 0 );
+
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo,
-                                              ingestResultThree );
+                                              ingestResultThree,
+                                              ingestResultFour );
 
         try ( Statement statement = this.rawConnection.createStatement() )
         {
