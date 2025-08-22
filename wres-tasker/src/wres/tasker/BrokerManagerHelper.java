@@ -18,60 +18,56 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import okhttp3.Authenticator;
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
+
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 import wres.messages.BrokerHelper;
+
+/**
+ * Helper for managing broker messaging.
+ */
 
 public abstract class BrokerManagerHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerManagerHelper.class );
 
-    //Monitor authentication
+    /** Monitor authentication. */
     protected static final String WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME =
             "wres.monitorPassword";
 
-    //Monitor port
+    /** Monitor port. */
     protected static final String BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME =
             "wres.brokerManagerPort";
 
-    //Default port number, if the port is not specified in the environment.
+    /** Default port number, if the port is not specified in the environment. */
     private static final int DEFAULT_MANAGER_PORT = 15671;
 
-    /**
-     * The port used by the broker manager.
-     */
+    /** The port used by the broker manager. */
     private static int managerPort = DEFAULT_MANAGER_PORT;
 
-    /**
-     * Client used to interact with the broker manager API.
-     */
-    private static OkHttpClient httpClient;
+    /** Client used to interact with the broker manager API. */
+    private static final OkHttpClient HTTP_CLIENT;
 
-    /**
-     * The base URL for the manager API endpoint.
-     */
-    private static String managerURL;
+    /** The base URL for the manager API endpoint. */
+    private static final String MANAGER_URL;
 
-    /**
-     * Object mapper used to read JSON.
-     */
-    private static ObjectMapper mapper = new ObjectMapper();
+    /** Object mapper used to read JSON. */
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     //Initialize static variables.
-    static 
+    static
     {
         LOGGER.info( "Initializing the broker manager helper, starting with the monitor password." );
-        
+
         //Obtain the monitor password if available; use blank otherwise.
         String monitorPassword = System.getProperty( WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME );
         if ( monitorPassword == null || monitorPassword.isBlank() )
         {
             LOGGER.warn( "Either no or an empty wres-monitor password was provided "
                          + "via environment variable "
-                         + WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME 
+                         + WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME
                          + ". Assuming a blank password which will cause errors later." );
             monitorPassword = "";
         }
@@ -79,14 +75,14 @@ public abstract class BrokerManagerHelper
 
         //Manager port is not required, but must be valid if specified.
         String managerPortStr = System.getProperty( BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME );
-        if (managerPortStr != null)
+        if ( managerPortStr != null )
         {
             try
             {
-                managerPort = Integer.valueOf(managerPortStr);
+                managerPort = Integer.parseInt( managerPortStr );
                 LOGGER.info( "Environment variable specified manager port to be used is {}.", managerPort );
             }
-            catch (NumberFormatException ex)
+            catch ( NumberFormatException ex )
             {
                 LOGGER.warn( "Broker manager port specified by "
                              + BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME
@@ -96,8 +92,8 @@ public abstract class BrokerManagerHelper
             }
         }
 
-        managerURL = "https://" + BrokerHelper.getBrokerHost() + ":" + managerPort + "/api";
-        LOGGER.info( "Broker manager API URL is {}.", managerURL );
+        MANAGER_URL = "https://" + BrokerHelper.getBrokerHost() + ":" + managerPort + "/api";
+        LOGGER.info( "Broker manager API URL is {}.", MANAGER_URL );
 
         //The SSL context is that used by the tasker to talk to the broker.
         String p12Path = System.getProperty( Tasker.PATH_TO_CLIENT_P12_PNAME );
@@ -113,32 +109,24 @@ public abstract class BrokerManagerHelper
         //The hokey casting below to X509TrustManager is because BrokerHelper.getDefaultTrustManager() is actually
         //guaranteed to return an instance of X509TrustManager, if anything is returned, and that is what this method
         //needs. I'm not sure why the method signature says its just returning a TrustManager.
-        X509TrustManager trustManager = (X509TrustManager) BrokerHelper.getDefaultTrustManager();
+        X509TrustManager trustManager = ( X509TrustManager ) BrokerHelper.getDefaultTrustManager();
 
         //The authenticator handles the username/password requirement for accessing the manager.
-        httpClient = WebClientUtils.defaultTimeoutHttpClient()
-                                   .newBuilder()
-                                   .sslSocketFactory( sslMgmtContext.getSocketFactory(),
-                                                      trustManager )
-                                   .authenticator(
-                                                   new Authenticator()
-                                                   {
-                                                       @Override
-                                                       public okhttp3.Request
-                                                               authenticate( okhttp3.Route route,
-                                                                             okhttp3.Response response )
-                                                                       throws IOException
-                                                       {
-                                                           String credential =
-                                                                   Credentials.basic( "wres-monitor",
-                                                                                      monitorPasswordFinal );
-                                                           return response.request()
-                                                                          .newBuilder()
-                                                                          .header( "Authorization", credential )
-                                                                          .build();
-                                                       }
-                                                   } )
-                                   .build();
+        HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+                                    .newBuilder()
+                                    .sslSocketFactory( sslMgmtContext.getSocketFactory(),
+                                                       trustManager )
+                                    .authenticator(
+                                            ( route, response ) -> {
+                                                String credential =
+                                                        Credentials.basic( "wres-monitor",
+                                                                           monitorPasswordFinal );
+                                                return response.request()
+                                                               .newBuilder()
+                                                               .header( "Authorization", credential )
+                                                               .build();
+                                            } )
+                                    .build();
 
     }
 
@@ -150,7 +138,7 @@ public abstract class BrokerManagerHelper
     public static int getBrokerWorkerConnectionCount() throws IOException
     {
         //Determine the URL.
-        String connectionsURL = managerURL + "/connections";
+        String connectionsURL = MANAGER_URL + "/connections";
         URI mgmtURI = null;
         try
         {
@@ -162,14 +150,14 @@ public abstract class BrokerManagerHelper
         }
 
         //Create the web client.
-        WebClient webClient = new WebClient( httpClient );
+        WebClient webClient = new WebClient( HTTP_CLIENT );
         WebClient.ClientResponse response = webClient.getFromWeb( mgmtURI );
 
         //Turn the response into a string.
         String result =
                 new BufferedReader( new InputStreamReader( response.getResponse() ) ).lines()
                                                                                      .collect( Collectors.joining( "\n" ) );
-        
+
         //Check the status code.
         int httpStatus = response.getStatusCode();
         if ( httpStatus >= 400 )
@@ -179,7 +167,7 @@ public abstract class BrokerManagerHelper
         }
 
         //Read the JSON response.
-        CollectionsResponseItem[] items = mapper.readValue( result, CollectionsResponseItem[].class );
+        CollectionsResponseItem[] items = MAPPER.readValue( result, CollectionsResponseItem[].class );
 
         //Count the workers.
         int workerCount = 0;
@@ -209,7 +197,7 @@ public abstract class BrokerManagerHelper
             return this.user;
         }
 
-        void setUser(String user)
+        void setUser( String user )
         {
             this.user = user;
         }

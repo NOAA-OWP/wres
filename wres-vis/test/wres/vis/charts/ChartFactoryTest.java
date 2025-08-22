@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

@@ -29,12 +29,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.Variable;
+import wres.config.components.DataType;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Source;
+import wres.config.components.Variable;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.ConnectionSupplier;

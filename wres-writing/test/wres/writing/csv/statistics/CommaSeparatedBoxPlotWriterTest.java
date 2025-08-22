@@ -13,7 +13,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 
 import wres.writing.WriterTestHelper;

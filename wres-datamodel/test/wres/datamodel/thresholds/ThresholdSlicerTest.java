@@ -16,20 +16,20 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.MetricBuilder;
-import wres.config.yaml.components.MetricParametersBuilder;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Metric;
+import wres.config.components.MetricBuilder;
+import wres.config.components.MetricParametersBuilder;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
+import wres.config.components.ThresholdType;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
@@ -503,7 +503,7 @@ class ThresholdSlicerTest
                                     .setName( "qux" )
                                     .build();
 
-        wres.config.yaml.components.Threshold thresholdOne
+        wres.config.components.Threshold thresholdOne
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
                                                        .setLeftThresholdValue( 23.0 )
@@ -513,7 +513,7 @@ class ThresholdSlicerTest
                                   .featureNameFrom( DatasetOrientation.LEFT )
                                   .feature( oneLeft )
                                   .build();
-        wres.config.yaml.components.Threshold thresholdTwo
+        wres.config.components.Threshold thresholdTwo
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
                                                        .setLeftThresholdValue( 25.0 )
@@ -524,7 +524,7 @@ class ThresholdSlicerTest
                                   .feature( twoLeft )
                                   .build();
 
-        wres.config.yaml.components.Threshold thresholdThree
+        wres.config.components.Threshold thresholdThree
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
                                                        .setLeftThresholdValue( 0.3 )
@@ -534,7 +534,7 @@ class ThresholdSlicerTest
                                   .featureNameFrom( DatasetOrientation.LEFT )
                                   .feature( oneLeft )
                                   .build();
-        wres.config.yaml.components.Threshold thresholdFour
+        wres.config.components.Threshold thresholdFour
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
                                                        .setLeftThresholdValue( 0.5 )
@@ -648,7 +648,7 @@ class ThresholdSlicerTest
                                     .setName( "qux" )
                                     .build();
 
-        wres.config.yaml.components.Threshold thresholdOne
+        wres.config.components.Threshold thresholdOne
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
                                                        .setLeftThresholdValue( 23.0 )
@@ -658,7 +658,7 @@ class ThresholdSlicerTest
                                   .featureNameFrom( DatasetOrientation.LEFT )
                                   .feature( oneLeft )
                                   .build();
-        wres.config.yaml.components.Threshold thresholdTwo
+        wres.config.components.Threshold thresholdTwo
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
                                                        .setLeftThresholdValue( 0.2 )

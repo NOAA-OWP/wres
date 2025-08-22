@@ -24,8 +24,8 @@ import org.apache.commons.math3.random.Well512a;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.SamplingUncertainty;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.SamplingUncertainty;
 import wres.datamodel.bootstrap.BootstrapUtilities;
 import wres.datamodel.pools.PoolSlicer;
 import wres.metrics.FunctionFactory;

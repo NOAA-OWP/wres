@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import static wres.vis.charts.GraphicsUtils.BASELINE_SCENARIO_LABEL;
 import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;

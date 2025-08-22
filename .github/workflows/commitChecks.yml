@@ -222,25 +222,6 @@ jobs:
         mv outputs h2_in_memory_test_results
         mv systests-*/build/reports/tests/test/* h2_in_memory_test_results
 
-    # Run systests
-    - name: System tests with the legacy XML evaluation language
-      run: |
-        echo "Starting the system tests with the legacy XML evaluation language..."
-
-        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues).
-        # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
-        sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=false -Dwres.externalNumerics=false -Dwres.xml=true/g" $systests_dir/gradle.properties
-       
-        # Run the tests again using a self-contained graphics/eventsbroker process
-        $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario720 --tests=Scenario721
-       
-        # Save the test results
-        mkdir -p legacy_xml_results
-        mkdir -p outputs
-        mv wres_evaluation_* outputs
-        mv outputs legacy_xml_results
-        mv systests-*/build/reports/tests/test/* legacy_xml_results
-
     # Archive the artifacts created from this build
     - name: Archive system tests
       if: always()

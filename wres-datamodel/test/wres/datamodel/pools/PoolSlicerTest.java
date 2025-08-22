@@ -23,8 +23,8 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.types.Probability;

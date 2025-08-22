@@ -51,17 +51,17 @@ import wres.system.SystemSettings;
  * The class makes optional use of environment variables to identify the system
  * tests directory and WRES database information.
  *
- * It then passes through environment variables to  already-unset Java system
+ * It then passes through environment variables to already-unset Java system
  * properties before running the WRES.
  * @author Raymond Chui
  * @author Hank Herr
  * @author Jesse Bickel
+ * @author James Brown
  */
 public class ScenarioHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ScenarioHelper.class );
     private static final String USUAL_EVALUATION_FILE_NAME = "evaluation.yml";
-    private static final String DEPRECATED_EVALUATION_FILE_NAME = "project_config.xml";
     private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
     private static final Database DATABASE;
     static
@@ -107,7 +107,6 @@ public class ScenarioHelper
         LOGGER.info( "    wres.logLevel =  " + System.getProperty( "wres.logLevel" ) );
         LOGGER.info( "    wres.password =  " + System.getProperty( "wres.password" ) + " (its recommended to use the .pgpass file to identify the database password)");
         LOGGER.info( "    wres.dataDirectory =  " + System.getProperty( "wres.dataDirectory" ) );
-        LOGGER.info( "    wres.xml =  " + System.getProperty( "wres.xml" ) );
         LOGGER.info( "    user.dir (working directory) =  " + System.getProperty( "user.dir" ) );
         LOGGER.info( "    java.io.tmpdir =  " + System.getProperty( "java.io.tmpdir" ) );
     }
@@ -122,15 +121,6 @@ public class ScenarioHelper
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName() );
 
         String fileName = ScenarioHelper.USUAL_EVALUATION_FILE_NAME;
-        String deprecated = System.getProperty( "wres.xml" );
-        if( "true".equalsIgnoreCase( deprecated ) )
-        {
-            fileName = ScenarioHelper.DEPRECATED_EVALUATION_FILE_NAME;
-            LOGGER.warn( "Executing system test scenario {} against the old/deprecated evaluation language! The old "
-                         + "declaration is contained in file: {}",
-                         scenarioInfo.getName(),
-                         fileName );
-        }
 
         Path config = scenarioInfo.getScenarioDirectory()
                                   .resolve( fileName );

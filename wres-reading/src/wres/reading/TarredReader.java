@@ -35,7 +35,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.Source;
+import wres.config.components.Source;
 import wres.reading.DataSource.DataDisposition;
 import wres.system.SystemSettings;
 
@@ -429,8 +429,9 @@ public class TarredReader implements TimeSeriesReader
 
         this.readerFactory = readerFactory;
 
-        ThreadFactory tarredSourceFactory = new BasicThreadFactory.Builder().namingPattern( "Tarred Reading Thread %d" )
-                                                                            .build();
+        ThreadFactory tarredSourceFactory = BasicThreadFactory.builder()
+                                                              .namingPattern( "Tarred Reading Thread %d" )
+                                                              .build();
         BlockingQueue<Runnable> tarredSourceQueue =
                 new ArrayBlockingQueue<>( systemSettings.getMaximumArchiveThreads() );
         this.executor = new ThreadPoolExecutor( systemSettings.getMaximumArchiveThreads(),

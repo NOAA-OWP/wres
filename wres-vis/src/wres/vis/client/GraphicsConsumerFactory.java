@@ -58,13 +58,13 @@ class GraphicsConsumerFactory implements ConsumerFactory
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
-        // Use the wres.config.yaml.components.Format.GRAPHIC identifier because there is a single writer for multiple
+        // Use the wres.config.components.Format.GRAPHIC identifier because there is a single writer for multiple
         // graphics formats
         Function<Collection<Statistics>, Set<Path>> router
                 = builder.setEvaluationDescription( evaluation )
-                         .addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
+                         .addBoxplotConsumerPerPair( wres.config.components.Format.GRAPHIC,
                                                      BoxplotGraphicsWriter.of( outputs, path ) )
-                         .addPairsStatisticsConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                         .addPairsStatisticsConsumer( wres.config.components.Format.GRAPHIC,
                                                       PairsStatisticsGraphicsWriter.of( outputs, path ) )
                          .build();
 
@@ -91,20 +91,20 @@ class GraphicsConsumerFactory implements ConsumerFactory
         // Note that diagrams are always written by group, even if all the statistics could be written per pool because
         // grouping is currently done per feature and not, for example, per pool within a feature (grouping over the 
         // various thresholds that are messaged separately). To allow for writing per pool, an additional layer of 
-        // message grouping would be needed. Use the wres.config.yaml.components.Format.GRAPHIC identifier because
+        // message grouping would be needed. Use the wres.config.components.Format.GRAPHIC identifier because
         // there is a single writer for multiple graphics formats
         StatisticsToFormatsRouter router =
                 new StatisticsToFormatsRouter.Builder()
                         .setEvaluationDescription( evaluation )
-                        .addBoxplotConsumerPerPool( wres.config.yaml.components.Format.GRAPHIC,
+                        .addBoxplotConsumerPerPool( wres.config.components.Format.GRAPHIC,
                                                     BoxplotGraphicsWriter.of( outputs, path ) )
-                        .addDoubleScoreConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                        .addDoubleScoreConsumer( wres.config.components.Format.GRAPHIC,
                                                  DoubleScoreGraphicsWriter.of( outputs, path ) )
-                        .addDurationScoreConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                        .addDurationScoreConsumer( wres.config.components.Format.GRAPHIC,
                                                    DurationScoreGraphicsWriter.of( outputs, path ) )
-                        .addDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                        .addDiagramConsumer( wres.config.components.Format.GRAPHIC,
                                              DiagramGraphicsWriter.of( outputs, path ) )
-                        .addDurationDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
+                        .addDurationDiagramConsumer( wres.config.components.Format.GRAPHIC,
                                                      DurationDiagramGraphicsWriter.of( outputs, path ) )
                         .build();
 

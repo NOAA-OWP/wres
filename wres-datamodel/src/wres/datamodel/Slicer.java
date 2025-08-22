@@ -30,8 +30,8 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.Values;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.Values;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -48,7 +48,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.Feature;
 
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.ThresholdType;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.types.Probability;
 import wres.datamodel.types.VectorOfDoubles;

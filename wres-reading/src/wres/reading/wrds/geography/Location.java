@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.FeatureAuthority;
+import wres.config.components.FeatureAuthority;
 
 /**
  * Corresponds to the "identifiers" within an element in the list of "locations".

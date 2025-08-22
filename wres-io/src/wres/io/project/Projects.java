@@ -7,7 +7,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.database.caching.DatabaseCaches;
 import wres.reading.netcdf.grid.GriddedFeatures;
