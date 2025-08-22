@@ -7,7 +7,7 @@ import java.util.Set;
 
 import io.soabase.recordbuilder.core.RecordBuilder;
 
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.time.TimeSeriesStore;

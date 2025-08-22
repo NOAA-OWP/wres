@@ -3,7 +3,7 @@ package wres.pipeline.pooling;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import wres.config.yaml.components.CovariateDataset;
+import wres.config.components.CovariateDataset;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeriesUpscaler;
 

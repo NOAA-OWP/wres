@@ -19,19 +19,19 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationInterpolator;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.FeatureGroups;
-import wres.config.yaml.components.FeatureGroupsBuilder;
-import wres.config.yaml.components.FeatureServiceGroup;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Offset;
+import wres.config.DeclarationException;
+import wres.config.DeclarationInterpolator;
+import wres.config.DeclarationUtilities;
+import wres.config.components.Dataset;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.FeatureGroups;
+import wres.config.components.FeatureGroupsBuilder;
+import wres.config.components.FeatureServiceGroup;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Offset;
 import wres.datamodel.space.FeatureTuple;
 import wres.reading.PreReadException;
 import wres.reading.ReaderUtilities;
@@ -83,7 +83,7 @@ public class FeatureFiller
     {
         Objects.requireNonNull( evaluation );
 
-        wres.config.yaml.components.FeatureService featureService = evaluation.featureService();
+        wres.config.components.FeatureService featureService = evaluation.featureService();
         boolean requiresFeatureRequests = Objects.nonNull( evaluation.featureService() );
 
         // In many cases, no need to declare features, such as evaluations where
@@ -155,7 +155,7 @@ public class FeatureFiller
      */
 
     private static EvaluationDeclaration fillFeatures( EvaluationDeclaration evaluation,
-                                                       wres.config.yaml.components.FeatureService featureService,
+                                                       wres.config.components.FeatureService featureService,
                                                        FeatureAuthority leftAuthority,
                                                        FeatureAuthority rightAuthority,
                                                        FeatureAuthority baselineAuthority )
@@ -322,7 +322,7 @@ public class FeatureFiller
      */
 
     private static Set<GeometryTuple> fillSingletonFeatures( EvaluationDeclaration evaluation,
-                                                             wres.config.yaml.components.FeatureService featureService,
+                                                             wres.config.components.FeatureService featureService,
                                                              FeatureAuthority leftAuthority,
                                                              FeatureAuthority rightAuthority,
                                                              FeatureAuthority baselineAuthority )
@@ -401,7 +401,7 @@ public class FeatureFiller
      */
 
     private static Set<GeometryGroup> fillGroupedFeatures( EvaluationDeclaration evaluation,
-                                                           wres.config.yaml.components.FeatureService featureService,
+                                                           wres.config.components.FeatureService featureService,
                                                            FeatureAuthority leftAuthority,
                                                            FeatureAuthority rightAuthority,
                                                            FeatureAuthority baselineAuthority )
@@ -497,7 +497,7 @@ public class FeatureFiller
      */
 
     private static Set<GeometryTuple> fillFeatures( EvaluationDeclaration evaluation,
-                                                    wres.config.yaml.components.FeatureService featureService,
+                                                    wres.config.components.FeatureService featureService,
                                                     Set<GeometryTuple> sparseFeatures,
                                                     FeatureAuthority leftAuthority,
                                                     FeatureAuthority rightAuthority,
@@ -1206,7 +1206,7 @@ public class FeatureFiller
      * @param hasBaseline whether the evaluation has a baseline dataset
      * @return A list of fully populated features.
      */
-    private static Set<GeometryTuple> getFeatureGroup( wres.config.yaml.components.FeatureService featureService,
+    private static Set<GeometryTuple> getFeatureGroup( wres.config.components.FeatureService featureService,
                                                        FeatureServiceGroup featureGroup,
                                                        FeatureAuthority leftAuthority,
                                                        FeatureAuthority rightAuthority,

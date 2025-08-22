@@ -14,8 +14,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;

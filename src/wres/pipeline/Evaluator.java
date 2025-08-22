@@ -31,10 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.config.MultiDeclarationFactory;
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.DeclarationException;
+import wres.config.DeclarationFactory;
+import wres.config.DeclarationUtilities;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
@@ -160,8 +160,8 @@ public class Evaluator
         try
         {
             FileSystem fileSystem = FileSystems.getDefault();
-            rawDeclaration = MultiDeclarationFactory.getDeclarationString( declarationOrPath, fileSystem );
-            declaration = MultiDeclarationFactory.from( rawDeclaration, fileSystem, true, true );
+            rawDeclaration = DeclarationFactory.getDeclarationString( declarationOrPath, fileSystem );
+            declaration = DeclarationFactory.from( rawDeclaration, fileSystem, true, true );
         }
         catch ( DeclarationException | IOException e )
         {
@@ -212,27 +212,27 @@ public class Evaluator
         // wres.io.ingesting.database.DatabaseTimeSeriesIngester. In principle, those thread pools could be abstracted
         // here too, but ingest is implementation specific (e.g., in-memory ingest is an ingest facade and does not
         // require a thread pool) and some readers, notably archive readers, have their own thread pool
-        ThreadFactory poolFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Pool Thread %d" )
-                .build();
+        ThreadFactory poolFactory = BasicThreadFactory.builder()
+                                                      .namingPattern( "Pool Thread %d" )
+                                                      .build();
         // Use this thread pool for slicing pools and to dispatch metric tasks as ArrayBlockingQueue operates a FIFO
         // policy. If dependent tasks (slicing) are queued ahead of independent ones (metrics) in the same pool, there
         // is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing tasks
         // within pools with the same number of threads in each.
 
         // Inner readers may create additional thread factories (e.g., archives).
-        ThreadFactory readingFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Outer Reading Thread %d" )
-                .build();
-        ThreadFactory slicingFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Slicing Thread %d" )
-                .build();
-        ThreadFactory metricFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Metric Thread %d" )
-                .build();
-        ThreadFactory productFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Format Writing Thread %d" )
-                .build();
+        ThreadFactory readingFactory = BasicThreadFactory.builder()
+                                                         .namingPattern( "Outer Reading Thread %d" )
+                                                         .build();
+        ThreadFactory slicingFactory = BasicThreadFactory.builder()
+                                                         .namingPattern( "Slicing Thread %d" )
+                                                         .build();
+        ThreadFactory metricFactory = BasicThreadFactory.builder()
+                                                        .namingPattern( "Metric Thread %d" )
+                                                        .build();
+        ThreadFactory productFactory = BasicThreadFactory.builder()
+                                                         .namingPattern( "Format Writing Thread %d" )
+                                                         .build();
 
         SystemSettings settings = this.getSystemSettings();
 
@@ -292,9 +292,9 @@ public class Evaluator
 
         if ( Objects.nonNull( declaration.sampleUncertainty() ) )
         {
-            ThreadFactory resamplingFactory = new BasicThreadFactory.Builder()
-                    .namingPattern( "Sampling Uncertainty Thread %d" )
-                    .build();
+            ThreadFactory resamplingFactory = BasicThreadFactory.builder()
+                                                                .namingPattern( "Sampling Uncertainty Thread %d" )
+                                                                .build();
             int threadCount = settings.getMaximumSamplingUncertaintyThreads();
             samplingUncertaintyExecutor = java.util.concurrent.Executors.newFixedThreadPool( threadCount,
                                                                                              resamplingFactory );
@@ -316,9 +316,8 @@ public class Evaluator
             databaseServices = new DatabaseServices( innerDatabase, lockManager );
 
             // Create an ingest executor
-            ThreadFactory ingestFactory =
-                    new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
-                                                    .build();
+            ThreadFactory ingestFactory = BasicThreadFactory.builder().namingPattern( "Ingesting Thread %d" )
+                                                            .build();
             // Queue should be large enough to allow join() call to be reached with zero or few rejected submissions to the
             // executor service.
             BlockingQueue<Runnable> ingestQueue = new ArrayBlockingQueue<>( settings.getMaximumIngestThreads() );

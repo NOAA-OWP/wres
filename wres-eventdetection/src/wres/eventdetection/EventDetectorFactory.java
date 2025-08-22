@@ -2,8 +2,8 @@ package wres.eventdetection;
 
 import java.util.Objects;
 
-import wres.config.yaml.components.EventDetectionMethod;
-import wres.config.yaml.components.EventDetectionParameters;
+import wres.config.components.EventDetectionMethod;
+import wres.config.components.EventDetectionParameters;
 
 /**
  * A factory class that generates {@link EventDetector} for detecting events in time-series data.

@@ -47,11 +47,11 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.TimeInterval;
+import wres.config.DeclarationException;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DataType;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.TimeInterval;
 import wres.http.WebClientUtils;
 import wres.reading.PreReadException;
 import wres.reading.DataSource;
@@ -805,8 +805,9 @@ public class WrdsNwmReader implements TimeSeriesReader
         this.declaration = declaration;
         this.featureChunkSize = featureChunkSize;
 
-        ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "WRDS NWM Reading Thread %d" )
-                                                                         .build();
+        ThreadFactory webClientFactory = BasicThreadFactory.builder()
+                                                           .namingPattern( "WRDS NWM Reading Thread %d" )
+                                                           .build();
 
         // Use a queue with as many places as client threads
         BlockingQueue<Runnable> webClientQueue =

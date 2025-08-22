@@ -26,8 +26,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.components.Source;
+import wres.config.DeclarationException;
+import wres.config.components.Source;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;

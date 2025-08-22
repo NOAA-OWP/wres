@@ -19,8 +19,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.DeclarationException;
+import wres.config.components.ThresholdType;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;

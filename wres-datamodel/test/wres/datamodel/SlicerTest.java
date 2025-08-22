@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.Values;
-import wres.config.yaml.components.ValuesBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.Values;
+import wres.config.components.ValuesBuilder;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -41,7 +41,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.types.Probability;

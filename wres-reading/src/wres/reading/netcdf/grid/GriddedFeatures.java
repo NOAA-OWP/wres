@@ -29,7 +29,7 @@ import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.unidata.geoloc.LatLonPoint;
 
-import wres.config.yaml.components.SpatialMask;
+import wres.config.components.SpatialMask;
 import wres.datamodel.space.Feature;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
