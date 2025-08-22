@@ -15,8 +15,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.Variable;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;

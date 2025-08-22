@@ -13,17 +13,17 @@ import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.yaml.components.BaselineDataset;
-import wres.config.yaml.components.BaselineDatasetBuilder;
-import wres.config.yaml.components.CovariateDataset;
-import wres.config.yaml.components.CovariateDatasetBuilder;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.VariableBuilder;
+import wres.config.components.BaselineDataset;
+import wres.config.components.BaselineDatasetBuilder;
+import wres.config.components.CovariateDataset;
+import wres.config.components.CovariateDatasetBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.VariableBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;

@@ -15,12 +15,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.ThresholdOperator;
+import wres.config.components.ThresholdOperator;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;

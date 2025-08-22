@@ -7,10 +7,8 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -29,11 +27,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.codec.digest.DigestUtils;
 
+/**
+ * The output of an evaluation job.
+ */
+
 @Path( "/job/{jobId}/output" )
 public class WresJobOutput
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJobOutput.class );
 
+    /**
+     * Gets the project resources as plain text.
+     * @param id the job id
+     * @return the project resource
+     */
     @GET
     @Produces( "text/plain; charset=utf-8" )
     public Response getProjectResourcesPlain( @PathParam( "jobId" ) String id )
@@ -68,6 +75,11 @@ public class WresJobOutput
                        .build();
     }
 
+    /**
+     * Gets the project resources as html.
+     * @param id the job id
+     * @return the resources
+     */
 
     @GET
     @Produces( "text/html; charset=utf-8" )
@@ -120,6 +132,12 @@ public class WresJobOutput
                        .build();
     }
 
+    /**
+     * Returns the project resource.
+     * @param id the job id
+     * @param resourceName the resource name
+     * @return the project resource
+     */
 
     @GET
     @Path( "/{resourceName}" )
@@ -216,10 +234,9 @@ public class WresJobOutput
 
 
     /**
-     * Afford the client the ability to remove output resources after the client is
+     * <p>Afford the client the ability to remove output resources after the client is
      * finished reading the resources it cares about.
-     *
-     * It is important that the client not specify an arbitrary path, and that
+     * <p>It is important that the client not specify an arbitrary path, and that
      * the server here do the job of looking for the resources the *server* has
      * associated with the job. Otherwise you could imagine a malicious client
      * deleting anything on the server machine that the server process has

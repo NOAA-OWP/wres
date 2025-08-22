@@ -22,21 +22,21 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationInterpolator;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.Threshold;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdOrientation;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.DeclarationException;
+import wres.config.DeclarationInterpolator;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Metric;
+import wres.config.components.Threshold;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdOrientation;
+import wres.config.components.ThresholdType;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
@@ -229,7 +229,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
@@ -361,7 +361,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -536,7 +536,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                    .build();
-        wres.config.yaml.components.Threshold thresholdOneOuter = ThresholdBuilder.builder()
+        wres.config.components.Threshold thresholdOneOuter = ThresholdBuilder.builder()
                                                                                   .threshold( thresholdOne )
                                                                                   .type( ThresholdType.VALUE )
                                                                                   .build();
@@ -582,10 +582,10 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds firstThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT_AND_RIGHT ) );
         OneOrTwoThresholds secondThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                                       wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                       wres.config.components.ThresholdOperator.GREATER,
                                                                                        ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -694,7 +694,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -877,7 +877,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -1046,9 +1046,9 @@ public final class SingleValuedStatisticsProcessorTest
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();
-        wres.config.yaml.components.Threshold oneOuter = ThresholdBuilder.builder()
+        wres.config.components.Threshold oneOuter = ThresholdBuilder.builder()
                                                                          .threshold( one )
-                                                                         .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                                                         .type( wres.config.components.ThresholdType.PROBABILITY )
                                                                          .build();
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -1186,7 +1186,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 

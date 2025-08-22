@@ -10,10 +10,10 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -349,7 +349,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private TimeScaleOuter getDeclaredExistingTimeScale( Dataset dataset )
     {
         // Declared existing scale, which can be used to augment a source
-        wres.config.yaml.components.TimeScale declaredExistingTimeScaleInner = dataset.timeScale();
+        wres.config.components.TimeScale declaredExistingTimeScaleInner = dataset.timeScale();
         TimeScaleOuter declaredExistingTimeScale = null;
 
         if ( Objects.nonNull( declaredExistingTimeScaleInner ) )

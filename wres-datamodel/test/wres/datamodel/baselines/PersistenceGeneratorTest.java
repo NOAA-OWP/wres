@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.yaml.components.GeneratedBaseline;
-import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.components.GeneratedBaseline;
+import wres.config.components.GeneratedBaselineBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;

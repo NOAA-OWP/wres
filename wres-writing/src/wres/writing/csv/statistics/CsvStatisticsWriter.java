@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;

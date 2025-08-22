@@ -36,8 +36,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.DeclarationUtilities;
+import wres.config.components.EvaluationDeclaration;
 import wres.http.WebClientUtils;
 import wres.reading.PreReadException;
 import wres.reading.DataSource;
@@ -522,7 +522,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Hidden constructor.
      * @param declaration the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
-     * @throws wres.config.yaml.DeclarationException if the project declaration is invalid for this source type
+     * @throws wres.config.DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
@@ -532,8 +532,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         this.declaration = declaration;
 
-        ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "WRDS AHPS Reading Thread %d" )
-                                                                         .build();
+        ThreadFactory webClientFactory = BasicThreadFactory.builder()
+                                                           .namingPattern( "WRDS AHPS Reading Thread %d" )
+                                                           .build();
 
         // Use a queue with as many places as client threads
         BlockingQueue<Runnable> webClientQueue =

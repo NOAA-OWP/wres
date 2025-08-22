@@ -53,10 +53,10 @@ import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.nc2.write.NetcdfFormatWriter;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.SamplingUncertainty;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.SamplingUncertainty;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
@@ -442,7 +442,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // type if the evaluation does not contain ensemble forecasts
         boolean hasEnsembles = this.getDeclaration()
                                    .right()
-                                   .type() == wres.config.yaml.components.DataType.ENSEMBLE_FORECASTS;
+                                   .type() == wres.config.components.DataType.ENSEMBLE_FORECASTS;
         Function<MetricsAndThresholds, EnsembleAverageType> ensembleTypeCalculator = thresholds -> {
             if ( hasEnsembles )
             {

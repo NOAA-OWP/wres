@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import wres.config.yaml.components.Source;
+import wres.config.components.Source;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;

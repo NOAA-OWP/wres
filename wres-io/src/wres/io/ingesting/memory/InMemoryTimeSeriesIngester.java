@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;

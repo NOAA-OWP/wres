@@ -31,13 +31,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.DeclarationException;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.GeneratedBaselines;
+import wres.config.components.ThresholdType;
 import wres.datamodel.bootstrap.BootstrapUtilities;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
@@ -1579,7 +1579,7 @@ class EvaluationUtilities
             LOGGER.debug( "Creating filters for the following geographic feature groups: {}.", featureGroups );
         }
 
-        Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
+        Set<wres.config.components.Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
         List<TimeWindowAndThresholdFilterAdapter> timeWindowAndThresholdFilters =
                 EvaluationUtilities.getTimeWindowAndThresholdFilters( timeWindows,
                                                                       timeWindowComparator,
@@ -1759,11 +1759,11 @@ class EvaluationUtilities
      * @param thresholds the thresholds
      * @return the filters
      */
-    private static List<Predicate<Statistics>> getThresholdFilters( Set<wres.config.yaml.components.Threshold> thresholds )
+    private static List<Predicate<Statistics>> getThresholdFilters( Set<wres.config.components.Threshold> thresholds )
     {
         Set<Threshold> eventThresholds = thresholds.stream()
                                                    .filter( t -> t.type() != ThresholdType.PROBABILITY_CLASSIFIER )
-                                                   .map( wres.config.yaml.components.Threshold::threshold )
+                                                   .map( wres.config.components.Threshold::threshold )
                                                    .collect( Collectors.toSet() );
 
         List<Predicate<Statistics>> eventThresholdFilters =
@@ -1776,7 +1776,7 @@ class EvaluationUtilities
 
         Set<Threshold> decisionThresholds = thresholds.stream()
                                                       .filter( t -> t.type() == ThresholdType.PROBABILITY_CLASSIFIER )
-                                                      .map( wres.config.yaml.components.Threshold::threshold )
+                                                      .map( wres.config.components.Threshold::threshold )
                                                       .collect( Collectors.toSet() );
 
         List<Predicate<Statistics>> decisionThresholdFilters =
@@ -2169,7 +2169,7 @@ class EvaluationUtilities
      */
     private static List<TimeWindowAndThresholdFilterAdapter> getTimeWindowAndThresholdFilters( Set<TimeWindowOuter> timeWindows,
                                                                                                BiPredicate<TimeWindow, TimeWindow> timeWindowEquality,
-                                                                                               Set<wres.config.yaml.components.Threshold> thresholds,
+                                                                                               Set<wres.config.components.Threshold> thresholds,
                                                                                                Set<SummaryStatistic.StatisticDimension> dimensions,
                                                                                                boolean clearThresholdValues )
     {

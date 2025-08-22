@@ -6,12 +6,12 @@ import java.util.function.DoublePredicate;
 
 import net.jcip.annotations.Immutable;
 
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdType;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -42,7 +42,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     public static final ThresholdOuter ALL_DATA =
             ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                               wres.config.yaml.components.ThresholdOperator.GREATER,
+                               wres.config.components.ThresholdOperator.GREATER,
                                ThresholdOrientation.LEFT_AND_RIGHT );
 
     /**
@@ -97,7 +97,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      */
 
     public static ThresholdOuter of( OneOrTwoDoubles values,
-                                     wres.config.yaml.components.ThresholdOperator condition,
+                                     wres.config.components.ThresholdOperator condition,
                                      ThresholdOrientation dataType )
     {
         return ThresholdOuter.of( values, condition, dataType, null, null );
@@ -114,7 +114,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      */
 
     public static ThresholdOuter of( OneOrTwoDoubles values,
-                                     wres.config.yaml.components.ThresholdOperator condition,
+                                     wres.config.components.ThresholdOperator condition,
                                      ThresholdOrientation dataType,
                                      MeasurementUnit units )
     {
@@ -158,7 +158,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     public static ThresholdOuter ofQuantileThreshold( OneOrTwoDoubles values,
                                                       OneOrTwoDoubles probabilities,
-                                                      wres.config.yaml.components.ThresholdOperator condition,
+                                                      wres.config.components.ThresholdOperator condition,
                                                       ThresholdOrientation dataType )
     {
         return ThresholdOuter.ofQuantileThreshold( values, probabilities, condition, dataType, null, null );
@@ -203,7 +203,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      */
 
     public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                         wres.config.yaml.components.ThresholdOperator condition,
+                                                         wres.config.components.ThresholdOperator condition,
                                                          ThresholdOrientation dataType )
     {
         return ThresholdOuter.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
@@ -220,7 +220,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      */
 
     public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                         wres.config.yaml.components.ThresholdOperator condition,
+                                                         wres.config.components.ThresholdOperator condition,
                                                          ThresholdOrientation dataType,
                                                          String label )
     {
@@ -239,7 +239,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      */
 
     public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                         wres.config.yaml.components.ThresholdOperator condition,
+                                                         wres.config.components.ThresholdOperator condition,
                                                          ThresholdOrientation dataType,
                                                          String label,
                                                          MeasurementUnit units )
@@ -352,7 +352,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                              .second();
         }
 
-        wres.config.yaml.components.ThresholdOperator operator = this.getOperator();
+        wres.config.components.ThresholdOperator operator = this.getOperator();
 
         return switch ( operator )
         {
@@ -527,9 +527,9 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      * @return the logical operator associated with the threshold
      */
 
-    public wres.config.yaml.components.ThresholdOperator getOperator()
+    public wres.config.components.ThresholdOperator getOperator()
     {
-        return wres.config.yaml.components.ThresholdOperator.valueOf( this.getThreshold().getOperator().name() );
+        return wres.config.components.ThresholdOperator.valueOf( this.getThreshold().getOperator().name() );
     }
 
     /**
@@ -557,13 +557,13 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns <code>true</code> if the {@link ThresholdOuter} condition corresponds to a {@link ThresholdOperator#BETWEEN} condition.
      *
-     * @return true if the condition is a {@link wres.config.yaml.components.ThresholdOperator#BETWEEN} condition, false otherwise.
+     * @return true if the condition is a {@link wres.config.components.ThresholdOperator#BETWEEN} condition, false otherwise.
      */
 
     public boolean hasBetweenCondition()
     {
         return this.getOperator()
-                   .equals( wres.config.yaml.components.ThresholdOperator.BETWEEN );
+                   .equals( wres.config.components.ThresholdOperator.BETWEEN );
     }
 
     /**
@@ -625,13 +625,13 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         private ThresholdType thresholdType;
 
         /**
-         * Sets the {@link wres.config.yaml.components.ThresholdOperator} associated with the threshold.
+         * Sets the {@link wres.config.components.ThresholdOperator} associated with the threshold.
          *
          * @param operator the threshold operator
          * @return the builder
          */
 
-        public Builder setOperator( wres.config.yaml.components.ThresholdOperator operator )
+        public Builder setOperator( wres.config.components.ThresholdOperator operator )
         {
             if ( Objects.nonNull( operator ) )
             {
@@ -865,7 +865,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
             // Cannot have LESS_THAN on the lower bound
             if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001
-                 && this.getOperator() == wres.config.yaml.components.ThresholdOperator.LESS )
+                 && this.getOperator() == wres.config.components.ThresholdOperator.LESS )
             {
                 throw new ThresholdException( "Cannot apply a threshold operator of '<' to the lower bound "
                                               + "probability of 0.0." );

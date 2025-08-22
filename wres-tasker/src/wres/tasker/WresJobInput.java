@@ -32,12 +32,15 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import wres.config.MultiDeclarationFactory;
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.DeclarationException;
+import wres.config.DeclarationFactory;
+import wres.config.DeclarationUtilities;
+import wres.config.components.EvaluationDeclaration;
 import wres.messages.generated.Job;
+
+/**
+ * The input for an evaluation job.
+ */
 
 @Path( "/job/{jobId}/input" )
 public class WresJobInput
@@ -45,12 +48,10 @@ public class WresJobInput
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJobInput.class );
 
     /**
-     * Add input data to the evaluation associated with the given job id.
-     *
-     * The declaration must have previously been posted with parameter postInput
+     * <p>Add input data to the evaluation associated with the given job id.
+     * <p>The declaration must have previously been posted with parameter postInput
      * set to true.
-     *
-     * After all input data has been posted, the caller must post to
+     * <p>After all input data has been posted, the caller must post to
      * /job/{jobId}/input with query parameter postInputDone=true.
      * @param jobId The job for which to add input data.
      * @param dataset The side on which to add data: left, right or baseline.
@@ -90,8 +91,9 @@ public class WresJobInput
         Set<PosixFilePermission> permissions;
 
         // Indirect way of detecting "is this unix or not"
-        if ( System.getProperty( "file.separator" )
-                   .equals( "/" ) )
+        if ( FileSystems.getDefault()
+                        .getSeparator()
+                        .equals( "/" ) )
         {
             LOGGER.debug( "Detected unix system." );
             permissions = EnumSet.of(
@@ -111,7 +113,7 @@ public class WresJobInput
         }
 
         java.nio.file.Path temp = null;
-        String md5 = "not_computed";
+        String md5;
 
         try
         {
@@ -251,13 +253,13 @@ public class WresJobInput
                            .build();
         }
 
-        String declaration = jobMessage.getProjectConfig();
+        String declarationString = jobMessage.getProjectConfig();
 
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Encountered the following declaration string to which posted sources will be added:{}{}",
                           System.lineSeparator(),
-                          declaration );
+                          declarationString );
         }
 
         List<URI> leftUris = sharedJobResults.getLeftInputs( jobId );
@@ -268,13 +270,13 @@ public class WresJobInput
         try
         {
             // Parse the declaration
-            EvaluationDeclaration oldDeclaration = MultiDeclarationFactory.from( declaration,
-                                                                                 FileSystems.getDefault(),
-                                                                                 false,
-                                                                                 false );
+            EvaluationDeclaration declaration = DeclarationFactory.from( declarationString,
+                                                                         FileSystems.getDefault(),
+                                                                         false,
+                                                                         false );
 
             // Add the data sources
-            EvaluationDeclaration adjusted = DeclarationUtilities.addDataSources( oldDeclaration,
+            EvaluationDeclaration adjusted = DeclarationUtilities.addDataSources( declaration,
                                                                                   leftUris,
                                                                                   rightUris,
                                                                                   baselineUris );
@@ -292,7 +294,7 @@ public class WresJobInput
         catch ( DeclarationException e )
         {
             LOGGER.warn( "Failed to add inputs to posted declaration for job {}:{}{}",
-                         jobId, declaration, "\n", e );
+                         jobId, declarationString, "\n", e );
             sharedJobResults.setFailedBeforeInQueue( jobId );
             sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.BAD_REQUEST )
@@ -307,7 +309,7 @@ public class WresJobInput
         catch ( IOException | RuntimeException e )
         {
             LOGGER.warn( "Failed to add inputs to posted declaration for job {}:{}{}",
-                         jobId, declaration, "\n", e );
+                         jobId, declarationString, "\n", e );
             sharedJobResults.setFailedBeforeInQueue( jobId );
             sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
@@ -340,7 +342,7 @@ public class WresJobInput
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
                                    "Failed to send declaration, this could a be temporary condition, try again in a moment: "
-                                   + e.getMessage() 
+                                   + e.getMessage()
                                    + "\n\nDeclaration posted is below; repost it directly if you opted to keep posted input:\n\n"
                                    + newDeclaration )
                            .build();
@@ -349,7 +351,7 @@ public class WresJobInput
         sharedJobResults.setInQueue( jobId );
 
         return Response.ok( newDeclaration )
-            .header("content-type","text/yaml")
-            .build();
+                       .header( "content-type", "text/yaml" )
+                       .build();
     }
 }

@@ -8,8 +8,8 @@ import java.util.List;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.ThresholdOperator;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.ThresholdOperator;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
@@ -25,7 +25,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.Units;
 import wres.statistics.MessageUtilities;

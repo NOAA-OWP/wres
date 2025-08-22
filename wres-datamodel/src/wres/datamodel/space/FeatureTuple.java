@@ -6,7 +6,7 @@ import java.util.StringJoiner;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.GeometryTuple;
 

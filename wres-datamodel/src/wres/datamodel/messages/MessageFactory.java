@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.yaml.components.CovariateDataset;
+import wres.config.components.CovariateDataset;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.PoolMetadata;
@@ -37,13 +37,13 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.config.yaml.components.BaselineDataset;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.EnsembleFilter;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.Values;
-import wres.config.yaml.components.Variable;
+import wres.config.components.BaselineDataset;
+import wres.config.components.Dataset;
+import wres.config.components.EnsembleFilter;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.Metric;
+import wres.config.components.Values;
+import wres.config.components.Variable;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
 import wres.statistics.MessageUtilities;
@@ -477,7 +477,7 @@ public class MessageFactory
         }
 
         // Set the season
-        wres.config.yaml.components.Season season = evaluation.season();
+        wres.config.components.Season season = evaluation.season();
         if ( Objects.nonNull( season ) )
         {
             Season innerSeason = season.canonical();
@@ -498,7 +498,7 @@ public class MessageFactory
         MessageFactory.addEnsembleMemberFilters( evaluation, builder );
 
         // Set the outputs
-        wres.config.yaml.components.Formats formats = evaluation.formats();
+        wres.config.components.Formats formats = evaluation.formats();
         if ( Objects.nonNull( formats ) )
         {
             Outputs innerOutputs = formats.outputs();
