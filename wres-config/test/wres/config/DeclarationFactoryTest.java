@@ -3204,6 +3204,20 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeOldDeclarationStringProducesExpectedException()
+    {
+        String xml = """
+                <project></project>
+                """;
+
+        DeclarationException exception = assertThrows( DeclarationException.class,
+                                                       () -> DeclarationFactory.from( xml ) );
+
+        assertTrue( exception.getMessage()
+                             .contains( "The XML declaration language has been removed" ) );
+    }
+
+    @Test
     void testSerializeWithShortSources() throws IOException
     {
         String expected = """
