@@ -85,15 +85,15 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     /**
-     * Returns an instance with a prescribed random number generator for resolving ties.
+     * Returns an instance with a prescribed seed for the random number generator, which is used to resolve ties.
      *
-     * @param rng the random number generator for resolving ties
+     * @param seed the seed of the random number generator, which is used to resolve ties
      * @return an instance
      */
 
-    public static TimeToPeakRelativeError of( Random rng )
+    public static TimeToPeakRelativeError of( Long seed )
     {
-        return new TimeToPeakRelativeError( rng );
+        return new TimeToPeakRelativeError( seed );
     }
 
     @Override
@@ -108,6 +108,7 @@ public class TimeToPeakRelativeError extends TimingError
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder()
                                                                            .setMetric( TimeToPeakRelativeError.METRIC );
 
+        Random random = this.getRandomNumberGenerator();
         for ( TimeSeries<Pair<Double, Double>> next : pool.get() )
         {
             // Some events?
@@ -121,8 +122,7 @@ public class TimeToPeakRelativeError extends TimingError
                 ReferenceTimeType referenceTimeType = referenceTimeAndType.getKey();
 
                 // Set the reference time type
-                builder.setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf(
-                        referenceTimeType.name() ) );
+                builder.setReferenceTimeType( ReferenceTimeType.valueOf( referenceTimeType.name() ) );
 
                 if ( LOGGER.isTraceEnabled() )
                 {
@@ -133,7 +133,7 @@ public class TimeToPeakRelativeError extends TimingError
                                   pool.hashCode() );
                 }
 
-                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRandomNumberGenerator() );
+                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, random );
 
                 // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
                 Duration error = Duration.between( peak.getLeft(), peak.getRight() );
@@ -201,12 +201,12 @@ public class TimeToPeakRelativeError extends TimingError
     /**
      * Hidden constructor.
      *
-     * @param rng the random number generator for resolving ties
+     * @param seed the seed of the random number generator, which is used to resolve ties
      */
 
-    private TimeToPeakRelativeError( Random rng )
+    private TimeToPeakRelativeError( Long seed )
     {
-        super( rng );
+        super( seed );
     }
 
 }
