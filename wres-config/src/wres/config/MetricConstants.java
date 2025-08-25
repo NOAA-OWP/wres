@@ -517,10 +517,10 @@ public enum MetricConstants
                     new Limits( 0.0, Double.POSITIVE_INFINITY, Double.NaN ),
                     MetricGroup.CONTINGENCY_TABLE ),
 
-    /** The component of a univariate statistic that applies to the left-sided data within a pairing. */
+    /** The component of a univariate statistic that applies to the left-sided (observed) data within a pairing. */
     OBSERVED( MetricGroup.LRB ),
 
-    /** The component of a univariate statistic that applies to the right-sided data within a pairing. */
+    /** The component of a univariate statistic that applies to the right-sided (predicted) data within a pairing. */
     PREDICTED( MetricGroup.LRB ),
 
     /** The component of a univariate statistic that applies to the baseline-sided data within a pairing. */
