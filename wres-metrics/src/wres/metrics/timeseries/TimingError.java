@@ -12,21 +12,23 @@ import wres.metrics.Metric;
 
 /**
  * Abstract base class for timing error metrics.
- * 
+ *
  * @author James Brown
  */
-public abstract class TimingError implements Metric<Pool<TimeSeries<Pair<Double,Double>>>, DurationDiagramStatisticOuter>
+public abstract class TimingError
+        implements Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter>
 {
     /**
-     * A random number generator for resolving ties.
+     * A seed for a random number generator, used to resolve ties.
      */
-    
-    private final Random rng;
+
+    private final Long seed;
 
     @Override
     public String toString()
     {
-        return this.getMetricName().toString();
+        return this.getMetricName()
+                   .toString();
     }
 
     @Override
@@ -41,36 +43,41 @@ public abstract class TimingError implements Metric<Pool<TimeSeries<Pair<Double,
 
     TimingError()
     {
-        this.rng = new Random();
+        this.seed = null;
     }
-    
+
     /**
      * Hidden constructor.
-     * 
-     * @param rng the random number generator for resolving ties 
+     *
+     * @param seed the seed for the random number generator
      */
 
-    TimingError( Random rng )
+    TimingError( Long seed )
     {
-        if ( Objects.nonNull( rng ) )
+        if ( Objects.nonNull( seed ) )
         {
-            this.rng = rng;
+            this.seed = seed;
         }
         else
         {
-            this.rng = new Random();
+            this.seed = null;
         }
     }
-    
+
     /**
-     * Returns the random number generator used to resolve ties.
-     * 
+     * Returns the random number generator, which is used to resolve ties.
+     *
      * @return the random number generator
      */
 
     Random getRandomNumberGenerator()
     {
-        return this.rng;
+        if ( Objects.isNull( this.seed ) )
+        {
+            return new Random();
+        }
+
+        return new Random( this.seed );
     }
 
 }
