@@ -1,5 +1,6 @@
 package wres.systests;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
@@ -306,11 +307,11 @@ public class ScenarioHelper
                     //Pairs has its own method because it has to sort the lines.
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
-                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedOutput( outputFilePath.toFile(), benchmarkFile );
                     }
                     else if ( outputFileName.endsWith( "evaluation.csv.gz" ) )
                     {
-                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedOutput( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
                     else
@@ -328,7 +329,7 @@ public class ScenarioHelper
                         LOGGER.warn("The pairs file differ from " + benchmarkFile.getAbsolutePath() + " (result code " + pairResultCode + ") for file with name " + outputFileName);
                     }
                     //Otherwise just do the comparison without sorting.
-                    else if ( outputFileName.endsWith( ".csv" ) )
+                    else if ( outputFileName.endsWith( ".csv.gz" ) )
                     {
                         metricCSVResultCode = 32;
                         //LOGGER.warn("The metric CSV file differs from benchmark (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
@@ -469,7 +470,7 @@ public class ScenarioHelper
      * @param benchmarkDirPath
      * @throws IOException
      */
-    private static void assertOutputZippedEqualExpectedPairs( File zippedFile, File benchmarkFile ) throws IOException
+    private static void assertOutputZippedEqualExpectedOutput( File zippedFile, File benchmarkFile ) throws IOException
     {
         //Ensure that the output is a readable file.  The benchmark file has already been established as such.
         assertTrue( zippedFile.isFile() && zippedFile.canRead() );
@@ -482,21 +483,16 @@ public class ScenarioHelper
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
         assertEquals( actualRows.size(), expectedRows.size() );
 
-        // Sort in natural order
-        Collections.sort( actualRows );
-        Collections.sort( expectedRows );
-
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
             LOGGER.trace("Compare output file " + zippedFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
             LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
-            assertEquals( "For zipped file, " + zippedFile.getName()
-                          + ", after sorting alphabetically, row "
-                          + i 
-                          + " differs from benchmark.",
-                          actualRows.get( i ).trim(), //TODO Should this and next be trimmed?
-                          expectedRows.get( i ).trim() );
+            if (!expectedRows.contains(actualRows.get( i ))) {
+                LOGGER.info("DOES NOT CONTAIN ROW: \n" + actualRows.get( i ));
+            }
+
+            assertThat(expectedRows).contains(actualRows.get( i ).trim());
         }
     }
 

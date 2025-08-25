@@ -172,11 +172,11 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
         this.metric = metric;
 
         this.left = template.toBuilder()
-                            .setName( MetricName.LEFT )
+                            .setName( MetricName.OBSERVED )
                             .build();
 
         this.right = template.toBuilder()
-                             .setName( MetricName.RIGHT )
+                             .setName( MetricName.PREDICTED )
                              .build();
 
         this.baseline = template.toBuilder()
