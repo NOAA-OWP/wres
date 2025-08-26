@@ -941,14 +941,17 @@ public class DeclarationUtilities
     }
 
     /**
-     * Determines whether the declaration string is an old-style declaration string.
+     * Determines whether the declaration string is in the legacy XML format, which was removed in v7.0. See GitHub
+     * #487.
      * @param mediaType the media type associated with the declaration string
      * @param declarationString the declaration string
      * @return whether the string is an old-style declaration string
      * @throws NullPointerException if either input is null
+     * @deprecated
      */
 
-    public static boolean isOldDeclarationString( MediaType mediaType, String declarationString )
+    @Deprecated( forRemoval = true, since = "v7.0" )
+    public static boolean isLegacyXmlDeclarationString( MediaType mediaType, String declarationString )
     {
         Objects.requireNonNull( mediaType );
         Objects.requireNonNull( declarationString );

@@ -162,7 +162,7 @@ public class DeclarationValidator
                          yaml.trim() );
         }
 
-        List<EvaluationStatusEvent> oldString = DeclarationValidator.validateAgainstOldDeclarationString( yaml );
+        List<EvaluationStatusEvent> oldString = DeclarationValidator.validateAgainstLegacyXmlDeclarationString( yaml );
 
         if ( !oldString.isEmpty() )
         {
@@ -248,18 +248,21 @@ public class DeclarationValidator
     }
 
     /**
-     * Validates against an old declaration string, returning an error if the string is old.
+     * Validates against the legacy XML declaration string, which was removed in v7.0, and returns an error if the
+     * string is old. See GitHub #487.
      * @param test the test string
      * @return an error if the string is unsupported, else an empty list
      * @throws IOException if the string format cannot be detected
+     * @deprecated
      */
 
-    public static List<EvaluationStatusEvent> validateAgainstOldDeclarationString( String test ) throws IOException
+    @Deprecated( forRemoval = true, since = "v7.0")
+    public static List<EvaluationStatusEvent> validateAgainstLegacyXmlDeclarationString( String test ) throws IOException
     {
         // Is this old-style XML declaration? If so, return an error as this cannot be validated upfront.
         MediaType detectedMediaType = DeclarationUtilities.getMediaType( test );
 
-        if ( DeclarationUtilities.isOldDeclarationString( detectedMediaType, test ) )
+        if ( DeclarationUtilities.isLegacyXmlDeclarationString( detectedMediaType, test ) )
         {
             EvaluationStatusEvent error =
                     EvaluationStatusEvent.newBuilder()

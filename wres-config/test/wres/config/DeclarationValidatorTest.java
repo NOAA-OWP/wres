@@ -3689,7 +3689,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testValidateAgainstOldDeclarationString() throws IOException
+    void testValidateAgainstLegacyXmlDeclarationString() throws IOException
     {
         // Redmine #121176, GitHub #487
         String evaluation = """
@@ -3709,7 +3709,7 @@ class DeclarationValidatorTest
                 </project>
                 """;
 
-        List<EvaluationStatusEvent> events = DeclarationValidator.validateAgainstOldDeclarationString( evaluation );
+        List<EvaluationStatusEvent> events = DeclarationValidator.validateAgainstLegacyXmlDeclarationString( evaluation );
 
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "XML declaration language has been removed",

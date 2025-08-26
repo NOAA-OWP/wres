@@ -562,7 +562,7 @@ public class DeclarationFactory
     private static void validateAgainstOldDeclarationString( String test ) throws IOException
     {
         // Validate against an old declaration string
-        List<EvaluationStatusEvent> oldError = DeclarationValidator.validateAgainstOldDeclarationString( test );
+        List<EvaluationStatusEvent> oldError = DeclarationValidator.validateAgainstLegacyXmlDeclarationString( test );
 
         if ( !oldError.isEmpty() )
         {

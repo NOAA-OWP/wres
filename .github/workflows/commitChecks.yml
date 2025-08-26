@@ -232,8 +232,7 @@ jobs:
         path: |
           zero_external_test_results
           external_graphics_writing_test_results
-          h2_in_memory_test_results
-          legacy_xml_results        
+          h2_in_memory_test_results        
 
   dependency-submission:
     runs-on: ubuntu-latest
