@@ -15,11 +15,11 @@ import com.google.protobuf.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.TimeWindowAggregation;
-import wres.config.yaml.components.LeadTimeInterval;
-import wres.config.yaml.components.TimeInterval;
-import wres.config.yaml.components.TimePools;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.TimeWindowAggregation;
+import wres.config.components.LeadTimeInterval;
+import wres.config.components.TimeInterval;
+import wres.config.components.TimePools;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;

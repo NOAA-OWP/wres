@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.Format;
+import wres.config.components.Format;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;

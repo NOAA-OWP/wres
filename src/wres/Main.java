@@ -1,6 +1,7 @@
 package wres;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.nio.file.FileSystems;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -9,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import wres.config.MultiDeclarationFactory;
+import wres.config.DeclarationFactory;
 import wres.events.broker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.helpers.MainUtilities;
@@ -66,7 +67,8 @@ public class Main
             return;
         }
         // One argument that looks like a project declaration, so default to execute
-        else if ( args.length == 1 && MultiDeclarationFactory.isDeclarationPathOrString( args[0] ) )
+        else if ( args.length == 1
+                  && DeclarationFactory.isValidDeclarationString( args[0], FileSystems.getDefault() ) )
         {
             LOGGER.info( "Interpreting the first argument as project declaration and executing it..." );
 

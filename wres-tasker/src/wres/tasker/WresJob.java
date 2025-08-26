@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 
-import wres.config.yaml.DeclarationValidator;
+import wres.config.DeclarationValidator;
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
@@ -91,7 +91,7 @@ public class WresJob
     private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
     private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
     private static final int DEFAULT_REDIS_PORT = 6379;
-    private static RedissonClient REDISSON_CLIENT = null;
+    private static RedissonClient redissonClient = null;
     private static String redisHost = null;
     private static int redisPort = DEFAULT_REDIS_PORT;
 
@@ -175,29 +175,29 @@ public class WresJob
         catch ( RuntimeException re )
         {
             LOGGER.error( "Failed to initialize Redis database buckets. Aborting WresJob static block.", re );
-            if ( REDISSON_CLIENT != null )
+            if ( redissonClient != null )
             {
-                REDISSON_CLIENT.shutdown();
+                redissonClient.shutdown();
             }
             throw re;
         }
     }
 
-    /** 
+    /**
      * Shared job results, stores information about jobs maintained in the Redis persister. 
      * This must be declared *after* the REDISSON_CLIENT is initialized in teh static block.
      */
     private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
-                                                                  REDISSON_CLIENT );
+                                                                  redissonClient );
 
     /**
      * The broker connection, created once and reused other times.
      */
     private static Connection connection = null;
 
-    /** 
+    /**
      * Guards the broker connection.
-    */
+     */
     private static final Object CONNECTION_LOCK = new Object();
 
     /**
@@ -224,12 +224,12 @@ public class WresJob
                                              e );
         }
         // Test connectivity to persister.
-        if ( REDISSON_CLIENT != null )
+        if ( redissonClient != null )
         {
             String dummyId = "dummyObjectId" + System.currentTimeMillis();
             try
             {
-                RLiveObjectService liveObjectService = REDISSON_CLIENT.getLiveObjectService();
+                RLiveObjectService liveObjectService = redissonClient.getLiveObjectService();
                 DummyLiveObject dummyLiveObject = new DummyLiveObject( dummyId );
                 DummyLiveObject liveObject = liveObjectService.attach( dummyLiveObject );
                 Object idRaw = liveObject.getId();
@@ -263,6 +263,10 @@ public class WresJob
                                              + "." );
         }
     }
+
+    /**
+     * @return whether the endpoint is "Up" or "Down"
+     */
 
     @GET
     @Produces( "text/plain; charset=utf-8" )
@@ -313,13 +317,17 @@ public class WresJob
         return "Up";
     }
 
+    /**
+     * @return the evaluation in queue
+     */
+
     @GET
     @Path( "/info" )
     @Produces( "text/html; charset=utf-8" )
     public Response getEvaluationInQueue()
     {
         int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
-        double queueUsePercentage = ( (double) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
+        double queueUsePercentage = ( ( double ) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
         String totalWorkers = System.getProperty( "wres.numberOfWorkers" );
         int totalWorkersNumber = 0;
         try
@@ -336,7 +344,7 @@ public class WresJob
         double workersUsePercentage = 0;
         if ( totalWorkersNumber != 0 )
         {
-            workersUsePercentage = ( (double) inProgressCount / totalWorkersNumber ) * 100;
+            workersUsePercentage = ( ( double ) inProgressCount / totalWorkersNumber ) * 100;
         }
         DecimalFormat df = new DecimalFormat( "0.00" );
 
@@ -483,6 +491,7 @@ public class WresJob
      * @param adminToken Token required for admin commands.
      * @param verb The verb to run on the declaration, default is execute.
      * @param postInput If the caller wishes to post input, true, default false.
+     * @param keepInput whether to keep the input
      * @param additionalArguments Additional arguments when no projectConfig given.
      * @return HTTP 201 on success, 4XX on client error, 5XX on server error.
      */
@@ -502,7 +511,7 @@ public class WresJob
                      verb,
                      postInput,
                      additionalArguments );
-        
+
         // Reformat the configuration. 
         projectConfig = reformatConfig( projectConfig );
 
@@ -616,7 +625,7 @@ public class WresJob
         // The rest of this method handles evaluations without posted inputs.
         // Send the declaration message to the broker. 
         response = sendDeclarationMessageOrGiveResponse( jobId, jobMessage, messagePriority );
-        if ( Objects.nonNull( response ))
+        if ( Objects.nonNull( response ) )
         {
             return response;
         }
@@ -812,11 +821,11 @@ public class WresJob
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties.Builder()
-                                                      .replyTo( jobStatusExchange )
-                                                      .correlationId( jobId )
-                                                      .deliveryMode( 2 )
-                                                      .priority( priority )
-                                                      .build();
+                            .replyTo( jobStatusExchange )
+                            .correlationId( jobId )
+                            .deliveryMode( 2 )
+                            .priority( priority )
+                            .build();
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
             // I think something needs to be watching the queue or else messages
@@ -862,9 +871,9 @@ public class WresJob
     {
         return Response.serverError()
                        .entity(
-                                "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                               "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
@@ -872,9 +881,9 @@ public class WresJob
     {
         return Response.status( Response.Status.SERVICE_UNAVAILABLE )
                        .entity(
-                                "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                               "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
@@ -928,9 +937,9 @@ public class WresJob
     private static void setDatabaseName( String databaseName )
     {
         activeDatabaseName = databaseName;
-        if ( REDISSON_CLIENT != null )
+        if ( redissonClient != null )
         {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            RBucket<String> bucket = redissonClient.getBucket( "databaseName" );
             bucket.set( databaseName );
         }
     }
@@ -938,9 +947,9 @@ public class WresJob
     private static void setDatabaseHost( String databaseHost )
     {
         activeDatabaseHost = databaseHost;
-        if ( REDISSON_CLIENT != null )
+        if ( redissonClient != null )
         {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            RBucket<String> bucket = redissonClient.getBucket( "databaseHost" );
             bucket.set( databaseHost );
         }
     }
@@ -948,9 +957,9 @@ public class WresJob
     private static void setDatabasePort( String databasePort )
     {
         activeDatabasePort = databasePort;
-        if ( REDISSON_CLIENT != null )
+        if ( redissonClient != null )
         {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            RBucket<String> bucket = redissonClient.getBucket( "databasePort" );
             bucket.set( databasePort );
         }
     }
@@ -1028,9 +1037,9 @@ public class WresJob
     {
         //Define the registered classes for the Kryo codec.
         List<Class<?>> registeredClasses = new ArrayList<>();
-        registeredClasses.add(wres.tasker.JobMetadata.JobState.class);
-        registeredClasses.add(org.redisson.RedissonReference.class);
-        registeredClasses.add(byte[].class);
+        registeredClasses.add( wres.tasker.JobMetadata.JobState.class );
+        registeredClasses.add( org.redisson.RedissonReference.class );
+        registeredClasses.add( byte[].class );
 
         //Redisson config will use KryoCodec.
         Config redissonConfig = new Config();
@@ -1077,11 +1086,11 @@ public class WresJob
             //of the Redisson client. Once the create is called, any later attempt to 
             //fail out during start up must "clean up" the client by calling 
             //REDISSON_CLIENT.shutdown!!!
-            REDISSON_CLIENT = Redisson.create( redissonConfig );
+            redissonClient = Redisson.create( redissonConfig );
         }
         else
         {
-            REDISSON_CLIENT = null;
+            redissonClient = null;
             LOGGER.info( "No redis host specified, using local JVM objects." );
         }
     }
@@ -1096,9 +1105,9 @@ public class WresJob
      */
     private static void initializeRedissonDatabaseBuckets()
     {
-        if ( REDISSON_CLIENT != null )
+        if ( redissonClient != null )
         {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            RBucket<String> bucket = redissonClient.getBucket( "databaseName" );
             if ( bucket.get() != null && !bucket.get().isBlank() )
             {
                 WresJob.activeDatabaseName = bucket.get();
@@ -1107,7 +1116,7 @@ public class WresJob
             {
                 bucket.set( activeDatabaseName );
             }
-            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            RBucket<String> hostBucket = redissonClient.getBucket( "databaseHost" );
             if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
             {
                 WresJob.activeDatabaseHost = hostBucket.get();
@@ -1116,7 +1125,7 @@ public class WresJob
             {
                 hostBucket.set( activeDatabaseHost );
             }
-            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            RBucket<String> portBucket = redissonClient.getBucket( "databasePort" );
             if ( portBucket.get() != null && !portBucket.get().isBlank() )
             {
                 activeDatabasePort = portBucket.get();
@@ -1152,9 +1161,9 @@ public class WresJob
                 }
             }
         }
-        if ( Objects.nonNull( REDISSON_CLIENT ) )
+        if ( Objects.nonNull( redissonClient ) )
         {
-            REDISSON_CLIENT.shutdown();
+            redissonClient.shutdown();
         }
     }
 
@@ -1162,7 +1171,7 @@ public class WresJob
      * Reformat the declaration String, trimming it and making other changes as needed.
      * @param projectConfig The posted declaration String.
      * @return A reformatted version ready for use with the WRES.
-    */
+     */
     private String reformatConfig( String projectConfig )
     {
         return projectConfig.trim();
@@ -1265,7 +1274,7 @@ public class WresJob
     }
 
     /**
-     * 
+     *
      * @param actualVerb The verb to check.
      * @return True if the verb requires an admin token or the admin token
      * hash at start was provided. False otherwise.
@@ -1329,7 +1338,7 @@ public class WresJob
     }
 
     /**
-     * 
+     *
      * @param actualVerb The verb to check.
      * @return True if the verb requires declaration; false otherwise.
      */
@@ -1410,17 +1419,17 @@ public class WresJob
         {
             queueLength = this.getJobQueueLength();
             this.validateQueueLength( queueLength );
-            return Pair.of( Integer.valueOf( queueLength ), null );
+            return Pair.of( queueLength, null );
         }
         catch ( IOException | TimeoutException e )
         {
             LOGGER.error( "Attempt to check queue length failed.", e );
-            return Pair.of( Integer.valueOf( -1 ), WresJob.internalServerError() );
+            return Pair.of( -1, WresJob.internalServerError() );
         }
         catch ( TooManyEvaluationsInQueueException tmeiqe )
         {
             LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
-            return Pair.of( Integer.valueOf( -1 ),
+            return Pair.of( -1,
                             WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." ) );
         }
     }
@@ -1459,7 +1468,7 @@ public class WresJob
         }
 
         //Additional arguments are ignored, so just return a list of three null strings.
-        return Pair.of( Arrays.asList( (String) null, (String) null, (String) null ), null );
+        return Pair.of( Arrays.asList( null, null, null ), null );
     }
 
     /**
@@ -1559,7 +1568,7 @@ public class WresJob
         }
         return builder.build();
     }
-    
+
     /**
      * Calls sendJobMessage, but catches the exception and transforms them into a response.
      * @param jobId The job id.
@@ -1568,7 +1577,7 @@ public class WresJob
      * @return A Response if a problem was encountered which can be forwarded to the user, or null
      * if everything was good.
      */
-    private Response sendDeclarationMessageOrGiveResponse(String jobId, Job.job jobMessage, int messagePriority)
+    private Response sendDeclarationMessageOrGiveResponse( String jobId, Job.job jobMessage, int messagePriority )
     {
         try
         {
@@ -1608,7 +1617,8 @@ public class WresJob
             }
 
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append( "<br>The project declaration contained the following errors, which must be fixed:</br>" );
+            stringBuilder.append(
+                    "<br>The project declaration contained the following errors, which must be fixed:</br>" );
             events.forEach( event -> stringBuilder.append( "<br>" )
                                                   .append( "- " )
                                                   .append( event.getEventMessage() )

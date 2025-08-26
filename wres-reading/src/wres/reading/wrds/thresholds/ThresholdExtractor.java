@@ -1,7 +1,7 @@
 package wres.reading.wrds.thresholds;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.reading.wrds.geography.Location;
 import wres.statistics.generated.Threshold;
 

@@ -30,11 +30,11 @@ import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.FeatureAuthority;
+import wres.config.components.DatasetOrientation;
+import wres.config.DeclarationUtilities;
+import wres.config.components.Dataset;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.FeatureAuthority;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;

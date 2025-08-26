@@ -66,7 +66,7 @@ import static wres.vis.charts.GraphicsUtils.PAIR_THEME_LABEL_GENERATOR;
 import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 import static wres.vis.charts.GraphicsUtils.PREDICTED_SCENARIO_LABEL;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.DataUtilities;

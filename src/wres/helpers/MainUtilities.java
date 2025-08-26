@@ -182,21 +182,8 @@ public final class MainUtilities
                                          "Ingests data supplied in a declaration path or string. Example "
                                          + "usage: ingest /foo/bar/evaluation.yml", false ),
                        Functions::ingest );
-        functions.put( new WresFunction( "-m",
-                                         "migrate",
-                                         "Migrates a project declaration from XML (old-style) to YAML "
-                                         + "(new style). Example usage: migrate /foo/bar/evaluation.yml", true ),
-                       Functions::migrate );
         functions.put( new WresFunction( "-md", "migratedatabase", "Migrate the WRES database.", false ),
                        Functions::migrateDatabase );
-        functions.put( new WresFunction( "-mi",
-                                         "migrateinline",
-                                         "Migrates a project declaration from XML (old-style) to YAML "
-                                         + "(new style). In addition, if the declaration references any external "
-                                         + "sources of CSV thresholds, these will be migrated inline to the "
-                                         + "declaration. Example usage: migrateinline /foo/bar/evaluation.yml",
-                                         true ),
-                       Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
                        Functions::refreshDatabase );
         functions.put( new WresFunction( "-s",

@@ -16,7 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.CovariateDataset;
+import wres.config.components.CovariateDataset;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -210,7 +210,7 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
     /**
      * Returns the name of the first feature in the pool that has the same feature authority as the covariate dataset,
      * defaulting to the feature authority associated with the
-     * {@link wres.config.yaml.components.DatasetOrientation#LEFT} data.
+     * {@link wres.config.components.DatasetOrientation#LEFT} data.
      *
      * @param pool the pool
      * @param covariateDescription the covariate dataset description

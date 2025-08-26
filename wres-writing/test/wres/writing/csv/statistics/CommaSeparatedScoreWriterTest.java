@@ -14,7 +14,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;

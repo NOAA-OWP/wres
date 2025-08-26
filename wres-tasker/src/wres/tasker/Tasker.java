@@ -1,20 +1,11 @@
 package wres.tasker;
 
-import java.io.IOException;
+import java.io.Serial;
 import java.security.Security;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.CustomRequestLog;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -27,8 +18,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.servlet.FilterHolder;
-import org.eclipse.jetty.ee10.servlets.HeaderFilter;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -38,6 +27,10 @@ import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+/**
+ * The tasker, which receives requests for jobs and passes them along.
+ */
 
 public class Tasker
 {
@@ -79,9 +72,13 @@ public class Tasker
                                                                + "89d3bb0a4fe7d14900b3,2}" );
     }
 
+    /** Path to server cert bundle. */
     public static final String PATH_TO_SERVER_P12_PNAME = "wres.taskerPathToServerP12";
+    /** Server cert bundle password. */
     public static final String PASSWORD_TO_SERVER_P12 = "wres.taskerPathToServerP12Password";
+    /** Path to client cert bundle. */
     public static final String PATH_TO_CLIENT_P12_PNAME = "wres.taskerPathToClientP12Bundle";
+    /** Password for client cert bundle.*/
     public static final String PASSWORD_TO_CLIENT_P12 = "wres.taskerPathToClientP12Password";
 
     private static final String PATH_TO_SERVER_P12;
@@ -267,6 +264,7 @@ public class Tasker
 
     private static class TaskerFailedToStartException extends RuntimeException
     {
+        @Serial
         private static final long serialVersionUID = 8797327489673141317L;
 
         private TaskerFailedToStartException( String message, Throwable cause )

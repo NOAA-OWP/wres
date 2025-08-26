@@ -16,6 +16,9 @@ import jakarta.ws.rs.ApplicationPath;
 @ApplicationPath( "/" )
 public class JaxRSApplication extends ResourceConfig
 {
+    /**
+     * Construct.
+     */
     public JaxRSApplication()
     {
         this.register( WresJob.class );

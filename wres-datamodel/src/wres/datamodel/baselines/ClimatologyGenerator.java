@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.GeneratedBaseline;
-import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.components.GeneratedBaseline;
+import wres.config.components.GeneratedBaselineBuilder;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
