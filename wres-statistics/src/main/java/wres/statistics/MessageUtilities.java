@@ -77,11 +77,6 @@ public class MessageUtilities
             formats.add( Format.CSV2 );
         }
 
-        if ( outputs.hasNetcdf() )
-        {
-            formats.add( Format.NETCDF );
-        }
-
         if ( outputs.hasNetcdf2() )
         {
             // Only one style of NetCDF in the format options because a single writer writes both

@@ -1396,7 +1396,6 @@ class DeclarationValidatorTest
     {
         Outputs formats = Outputs.newBuilder()
                                  .setCsv( Outputs.CsvFormat.getDefaultInstance() )
-                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
                                  .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -1409,10 +1408,6 @@ class DeclarationValidatorTest
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "The evaluation requested the 'csv' "
                                                                         + "format, which has been marked deprecated",
-                                                                        StatusLevel.WARN ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The evaluation requested the 'netcdf' "
-                                                                        + "format, which has been marked deprecated",
                                                                         StatusLevel.WARN ) )
         );
     }
@@ -1422,7 +1417,6 @@ class DeclarationValidatorTest
     {
         Outputs formats = Outputs.newBuilder()
                                  .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
-                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
                                  .build();
         FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
                                                           .build();
@@ -1437,15 +1431,6 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The 'output_formats' includes both "
-                                                                        + "'netcdf' and 'netcdf2', which is not allowed",
-                                                                        StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The 'output_formats' includes "
-                                                                        + "'netcdf', which does not support "
-                                                                        + "'feature_groups'",
-                                                                        StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "The 'output_formats' includes "
                                                                         + "'netcdf2', which supports 'feature_groups', "
                                                                         + "but",
