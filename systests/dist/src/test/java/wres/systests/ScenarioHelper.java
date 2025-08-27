@@ -328,7 +328,6 @@ public class ScenarioHelper
                         //LOGGER.warn("The pairs file differ from benchmark (result code " + pairResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The pairs file differ from " + benchmarkFile.getAbsolutePath() + " (result code " + pairResultCode + ") for file with name " + outputFileName);
                     }
-                    //Otherwise just do the comparison without sorting.
                     else if ( outputFileName.endsWith( ".csv.gz" ) )
                     {
                         metricCSVResultCode = 32;
@@ -483,16 +482,21 @@ public class ScenarioHelper
         assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
         assertEquals( actualRows.size(), expectedRows.size() );
 
+        // Sort in natural order
+        Collections.sort( actualRows );
+        Collections.sort( expectedRows );
+
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
             LOGGER.trace("Compare output file " + zippedFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
             LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
-            if (!expectedRows.contains(actualRows.get( i ))) {
-                LOGGER.info("DOES NOT CONTAIN ROW: \n" + actualRows.get( i ));
-            }
-
-            assertThat(expectedRows).contains(actualRows.get( i ).trim());
+            assertEquals( "For zipped file, " + zippedFile.getName()
+                          + ", after sorting alphabetically, row "
+                          + i
+                          + " differs from benchmark.",
+                          actualRows.get( i ).trim(), //TODO Should this and next be trimmed?
+                          expectedRows.get( i ).trim() );
         }
     }
 
