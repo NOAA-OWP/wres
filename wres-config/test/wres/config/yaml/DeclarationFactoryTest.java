@@ -3967,7 +3967,8 @@ class DeclarationFactoryTest
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
-                                 .setNetcdf2( Outputs.Netcdf2Format.newBuilder().build() )
+                                 .setNetcdf2( Outputs.Netcdf2Format.newBuilder()
+                                                                   .build() )
                                  .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.000" );
