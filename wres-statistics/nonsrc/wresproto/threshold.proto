@@ -69,19 +69,19 @@ message Threshold
         // The side of the paired data to which the threshold applies.
         
         OBSERVED = 0;
-        // observed side of a pair meets the threshold condition.
+        // Observed side of a pair meets the threshold condition.
 
         PREDICTED = 1;
         // predicted side of a pair meets the threshold condition.
 
         OBSERVED_AND_PREDICTED = 2;
-        // observed side and all values of the predicted side of a pair meet the threshold condition.
+        // Observed side and all values of the predicted side of a pair meet the threshold condition.
         
         ANY_PREDICTED = 3;
         // Any value on the predicted side of a pair meet the threshold condition.
 
         OBSERVED_AND_ANY_PREDICTED = 4;
-        // observed side and any value on the predicted side of a pair meet the threshold condition.
+        // Observed side and any value on the predicted side of a pair meet the threshold condition.
 
         PREDICTED_MEAN = 5;
         // The mean value of the predicted side of a pair meets the threshold condition.

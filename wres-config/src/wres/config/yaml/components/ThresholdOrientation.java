@@ -48,23 +48,6 @@ public enum ThresholdOrientation
                                                         .replace( " ", "_" )
                                                         .toUpperCase() );
     }
-//
-//    /**
-//     * Creates a ThresholdOrientation based on the stringName of the enum
-//     * @param input the stringName of the ThresholdOrientation
-//     * @return A ThresholdOrientation
-//     */
-//    public static ThresholdOrientation fromString(String input)
-//    {
-//        for ( ThresholdOrientation orientation : ThresholdOrientation.values() )
-//        {
-//            if (orientation.toString().equalsIgnoreCase( input ) )
-//            {
-//                return orientation;
-//            }
-//        }
-//        return null;
-//    }
 
     @Override
     public String toString()
