@@ -652,7 +652,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             if ( Objects.nonNull( dataType ) )
             {
-                Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.toString()
+                Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name()
                                                                                                      .replace( " ", "_" )
                                                                                                      .toUpperCase() );
                 innerBuilder.setDataType( aDataType );

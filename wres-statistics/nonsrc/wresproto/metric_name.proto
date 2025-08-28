@@ -74,9 +74,9 @@ enum MetricName
     FALSE_POSITIVES = 61;
     FALSE_NEGATIVES = 62;
     TRUE_NEGATIVES = 63;
-    OBSERVED = 64;  // Left-oriented (observed) score.
-    PREDICTED = 65;  // Right-oriented (predicted) score.
-    BASELINE = 66;  // Baseline-oriented score.
+    OBSERVED = 64;  // Score with observed orientation.
+    PREDICTED = 65;  // Score with predicted orientation.
+    BASELINE = 66;  // Score with baseline orientation.
     RANK_ORDER = 67;
     FORECAST_PROBABILITY = 68;
     OBSERVED_RELATIVE_FREQUENCY = 69;
