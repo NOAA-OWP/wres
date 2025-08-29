@@ -1,6 +1,5 @@
 package wres.systests;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
