@@ -27,8 +27,8 @@ public class Scenario750
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "09165000_18384141_NWM_v2.0_Medium_Range_Ensemble_MEAN_ERROR.csv" ),
-                    Path.of( "09165000_18384141_NWM_v2.0_Medium_Range_Ensemble_SAMPLE_SIZE.csv" ),
+            Set.of( Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;

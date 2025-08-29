@@ -46,10 +46,6 @@ public class FormatsSerializer extends JsonSerializer<Formats>
         {
             writer.writeString( "csv2" );
         }
-        if ( outputs.hasCsv() )
-        {
-            writer.writeString( "csv" );
-        }
         if ( outputs.hasPairs() )
         {
             writer.writeString( "pairs" );
