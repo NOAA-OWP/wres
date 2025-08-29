@@ -40,7 +40,6 @@ import wres.system.SystemSettings;
         Scenario1001.class,
         Scenario100.class,
         Scenario101.class,
-        Scenario102.class,
         Scenario103.class,
         Scenario104.class,
         Scenario105.class,

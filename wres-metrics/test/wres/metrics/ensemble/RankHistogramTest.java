@@ -36,17 +36,10 @@ public final class RankHistogramTest
 
     private RankHistogram rh;
 
-    /**
-     * Instance of a random number generator.
-     */
-
-    private Random rng;
-
     @Before
     public void setupBeforeEachTest()
     {
-        this.rng = new Random( 12345678 );
-        this.rh = RankHistogram.of( this.rng );
+        this.rh = RankHistogram.of( 12345678L );
     }
 
     /**
@@ -58,6 +51,7 @@ public final class RankHistogramTest
     public void testApplyWithoutTies()
     {
         List<Pair<Double, Ensemble>> values = new ArrayList<>();
+        Random rng = new Random( 12345678L );
         for ( int i = 0; i < 10000; i++ )
         {
             double left = rng.nextDouble();

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.space.Feature;
 

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 @REntity
 public class JobMetadata
 {
+    /** Logger. */
     protected static final Logger LOGGER = LoggerFactory.getLogger( JobMetadata.class );
     static final String CAN_ONLY_TRANSITION_FROM = "Can only transition from ";
     private static final String TO = " to ";
@@ -70,10 +71,10 @@ public class JobMetadata
     private SortedSet<String> outputs;
 
     @RCascade( RCascadeType.ALL )
-    private ConcurrentMap<Integer,String> stdout;
+    private ConcurrentMap<Integer, String> stdout;
 
     @RCascade( RCascadeType.ALL )
-    private ConcurrentMap<Integer,String> stderr;
+    private ConcurrentMap<Integer, String> stderr;
 
     /** Optional: only set when posting job input via tasker */
     private byte[] jobMessage;
@@ -101,6 +102,10 @@ public class JobMetadata
 
     private String databasePort;
 
+    /**
+     * Construct.
+     * @param id the id
+     */
     public JobMetadata( String id )
     {
         Objects.requireNonNull( id );
@@ -133,6 +138,10 @@ public class JobMetadata
         // Left for Redisson (subclass?) to fill in.
     }
 
+    /**
+     * @return the id
+     */
+
     public String getId()
     {
         return this.id;
@@ -156,17 +165,28 @@ public class JobMetadata
         return this.exitCode;
     }
 
+    /**
+     * Sets the exit code.
+     * @param exitCode the exit code
+     */
+
     public void setExitCode( Integer exitCode )
     {
         this.exitCode = exitCode;
     }
 
-
+    /**
+     * @return the job message
+     */
     public byte[] getJobMessage()
     {
         return this.jobMessage;
     }
 
+    /**
+     * Sets the job message.
+     * @param jobMessage the job message
+     */
     public void setJobMessage( byte[] jobMessage )
     {
         this.jobMessage = jobMessage;
@@ -180,7 +200,7 @@ public class JobMetadata
         return this.getLeftInputs()
                    .stream()
                    .map( URI::create )
-                   .collect( Collectors.toList() );
+                   .toList();
     }
 
     /**
@@ -191,7 +211,7 @@ public class JobMetadata
         return this.getRightInputs()
                    .stream()
                    .map( URI::create )
-                   .collect( Collectors.toList() );
+                   .toList();
     }
 
     /**
@@ -202,45 +222,76 @@ public class JobMetadata
         return this.getBaselineInputs()
                    .stream()
                    .map( URI::create )
-                   .collect( Collectors.toList() );
+                   .toList();
     }
 
+    /**
+     * @return the left inputs
+     */
     public List<String> getLeftInputs()
     {
         return this.leftInputs;
     }
 
+    /**
+     * Sets the left inputs.
+     * @param leftInputs the left inputs
+     */
     public void setLeftInputs( List<String> leftInputs )
     {
         this.leftInputs = leftInputs;
     }
+
+    /**
+     * @return the right inputs
+     */
 
     public List<String> getRightInputs()
     {
         return this.rightInputs;
     }
 
+    /**
+     * Sets the right inputs.
+     * @param rightInputs the right inputs
+     */
     public void setRightInputs( List<String> rightInputs )
     {
         this.rightInputs = rightInputs;
     }
+
+    /**
+     * @return the baseline inputs
+     */
 
     public List<String> getBaselineInputs()
     {
         return this.baselineInputs;
     }
 
+    /**
+     * Sets the baseline inputs
+     * @param baselineInputs the baseline inputs
+     */
+
     public void setBaselineInputs( List<String> baselineInputs )
     {
         this.baselineInputs = baselineInputs;
     }
 
+    /**
+     * Sets whether to keep the inputs.
+     * @param keepInput whether to keep the inputs
+     */
 
     public void setKeepInput( boolean keepInput )
     {
         this.keepInput = keepInput;
     }
 
+    /**
+     * @return whether to keep the input
+     */
     public boolean getKeepInput()
     {
         return this.keepInput;
@@ -255,7 +306,7 @@ public class JobMetadata
         return this.getOutputs()
                    .stream()
                    .map( URI::create )
-                   .collect( 
+                   .collect(
                            Collectors.toCollection( TreeSet::new ) );
     }
 
@@ -263,25 +314,42 @@ public class JobMetadata
      * Get an unmodifiable view of the standard output stream Map.
      * @return The Map of stdout.
      */
-    public ConcurrentMap<Integer,String> getStdout()
+    public ConcurrentMap<Integer, String> getStdout()
     {
         return this.stdout;
     }
+
+    /**
+     * Sets the standard output map.
+     * @param stdout the standard output
+     */
 
     public void setStdout( ConcurrentMap<Integer, String> stdout )
     {
         this.stdout = stdout;
     }
 
-    public ConcurrentMap<Integer,String> getStderr()
+    /**
+     * @return the standard error string map
+     */
+    public ConcurrentMap<Integer, String> getStderr()
     {
         return this.stderr;
     }
+
+    /**
+     * Sets the standard error map.
+     * @param stderr the standard error map
+     */
 
     public void setStderr( ConcurrentMap<Integer, String> stderr )
     {
         this.stderr = stderr;
     }
+
+    /**
+     * @return the job state
+     */
 
     public JobState getJobState()
     {
@@ -298,7 +366,7 @@ public class JobMetadata
     public void setJobState( JobState jobState )
     {
         Objects.requireNonNull( jobState );
-        
+
         if ( this.jobState == null )
         {
             if ( !jobState.equals( JobState.CREATED ) )
@@ -352,7 +420,7 @@ public class JobMetadata
             Set<JobState> inQueueToThese = Set.of( JobState.IN_PROGRESS,
                                                    JobState.COMPLETED_REPORTED_FAILURE,
                                                    JobState.COMPLETED_REPORTED_SUCCESS );
-            if ( !inQueueToThese.contains( JobState.IN_PROGRESS) )
+            if ( !inQueueToThese.contains( JobState.IN_PROGRESS ) )
             {
                 throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
                                                  + JobState.IN_QUEUE
@@ -363,7 +431,7 @@ public class JobMetadata
         {
             Set<JobState> inProgressToThese = Set.of( JobState.COMPLETED_REPORTED_FAILURE,
                                                       JobState.COMPLETED_REPORTED_SUCCESS );
-            if ( !inProgressToThese.contains( JobState.IN_PROGRESS) )
+            if ( !inProgressToThese.contains( JobState.IN_PROGRESS ) )
             {
                 throw new IllegalStateException( CAN_ONLY_TRANSITION_FROM
                                                  + JobState.IN_PROGRESS
@@ -373,41 +441,77 @@ public class JobMetadata
 
         this.jobState = jobState;
     }
- 
+
+    /**
+     * @return the database name
+     */
+
     public String getDatabaseName()
     {
         return databaseName;
     }
 
-    public void setDatabaseName(String value)
+    /**
+     * Sets the database name.
+     * @param value the database name
+     */
+
+    public void setDatabaseName( String value )
     {
         databaseName = value;
     }
+
+    /**
+     * @return the database host string
+     */
 
     public String getDatabaseHost()
     {
         return databaseHost;
     }
 
-    public void setDatabaseHost(String value)
+    /**
+     * Sets the database host.
+     * @param value the host
+     */
+
+    public void setDatabaseHost( String value )
     {
         databaseHost = value;
     }
+
+    /**
+     * @return the database port
+     */
 
     public String getDatabasePort()
     {
         return databasePort;
     }
 
-    public void setDatabasePort(String value)
+    /**
+     * Sets the database port.
+     * @param value the port
+     */
+
+    public void setDatabasePort( String value )
     {
         databasePort = value;
     }
+
+    /**
+     * @return the outputs
+     */
 
     public SortedSet<String> getOutputs()
     {
         return this.outputs;
     }
+
+    /**
+     * Sets the outputs.
+     * @param outputs the outputs
+     */
 
     public void setOutputs( SortedSet<String> outputs )
     {
@@ -453,33 +557,33 @@ public class JobMetadata
     {
         if ( Objects.isNull( uris ) )
         {
-            throw new IllegalStateException("Null set passed into removeOutputs for job " + getId());
+            throw new IllegalStateException( "Null set passed into removeOutputs for job " + getId() );
         }
         else if ( uris.isEmpty() )
         {
             LOGGER.warn( "For job {}, attempt to remove an empty set of URIs from outputs is ignored.",
-                         getId());
+                         getId() );
             return false;
-        } 
+        }
         else if ( this.getOutputs().isEmpty() )
         {
-            throw new IllegalStateException("Somehow, a request to remove a non-empty set of outputs "
-                    + "is being made when the current list of outputs is empty. That shouldn't happen.");
+            throw new IllegalStateException( "Somehow, a request to remove a non-empty set of outputs "
+                                             + "is being made when the current list of outputs is empty. That shouldn't happen." );
         }
         else
         {
             boolean result = this.getOutputs()
                                  .removeAll( uris.stream()
-                                         .map( URI::toASCIIString )
-                                         .collect( Collectors.toList() ) );
+                                                 .map( URI::toASCIIString )
+                                                 .toList() );
 
             if ( !result )
             {
                 LOGGER.warn( "For job {}, a remove-all of set {} failed.", getId(), uris );
             }
-            else 
+            else
             {
-                LOGGER.info( "Output removed for job {}", getId());
+                LOGGER.info( "Output removed for job {}", getId() );
             }
 
             return result;
@@ -489,7 +593,7 @@ public class JobMetadata
     void addLeftInput( URI input )
     {
         List<String> uris = this.getLeftInputs();
-        uris.add( input.toASCIIString());
+        uris.add( input.toASCIIString() );
     }
 
     void addRightInput( URI input )

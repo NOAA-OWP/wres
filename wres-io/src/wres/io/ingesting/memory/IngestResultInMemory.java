@@ -5,8 +5,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestResultNeedingRetry;
 import wres.reading.DataSource;

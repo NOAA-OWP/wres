@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.ThresholdType;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;

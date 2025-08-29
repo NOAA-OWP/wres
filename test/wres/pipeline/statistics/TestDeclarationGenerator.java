@@ -7,27 +7,27 @@ import java.util.HashSet;
 import java.util.Set;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationInterpolator;
-import wres.config.yaml.components.BaselineDataset;
-import wres.config.yaml.components.BaselineDatasetBuilder;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.MetricBuilder;
-import wres.config.yaml.components.MetricParameters;
-import wres.config.yaml.components.MetricParametersBuilder;
-import wres.config.yaml.components.Threshold;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.TimeInterval;
-import wres.config.yaml.components.TimeIntervalBuilder;
-import wres.config.yaml.components.TimePools;
-import wres.config.yaml.components.TimePoolsBuilder;
-import wres.config.yaml.components.VariableBuilder;
+import wres.config.DeclarationInterpolator;
+import wres.config.components.BaselineDataset;
+import wres.config.components.BaselineDatasetBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Metric;
+import wres.config.components.MetricBuilder;
+import wres.config.components.MetricParameters;
+import wres.config.components.MetricParametersBuilder;
+import wres.config.components.Threshold;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.TimeInterval;
+import wres.config.components.TimeIntervalBuilder;
+import wres.config.components.TimePools;
+import wres.config.components.TimePoolsBuilder;
+import wres.config.components.VariableBuilder;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
@@ -78,7 +78,7 @@ class TestDeclarationGenerator
                                                    .build();
         Threshold thresholdOuter = ThresholdBuilder.builder()
                                                    .threshold( threshold )
-                                                   .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                   .type( wres.config.components.ThresholdType.VALUE )
                                                    .build();
         thresholds.add( thresholdOuter );
 
@@ -223,7 +223,7 @@ class TestDeclarationGenerator
                                                    .build();
         Threshold thresholdOuter = ThresholdBuilder.builder()
                                                    .threshold( threshold )
-                                                   .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                   .type( wres.config.components.ThresholdType.VALUE )
                                                    .build();
         Set<Threshold> valueThresholds = Set.of( thresholdOuter );
 
@@ -271,7 +271,7 @@ class TestDeclarationGenerator
                                                    .build();
         Threshold thresholdOuter = ThresholdBuilder.builder()
                                                    .threshold( threshold )
-                                                   .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                   .type( wres.config.components.ThresholdType.VALUE )
                                                    .build();
         Set<Threshold> valueThresholds = Set.of( thresholdOuter );
 
@@ -379,23 +379,23 @@ class TestDeclarationGenerator
 
         Threshold oneOuter = ThresholdBuilder.builder()
                                              .threshold( one )
-                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                             .type( wres.config.components.ThresholdType.VALUE )
                                              .build();
         Threshold twoOuter = ThresholdBuilder.builder()
                                              .threshold( two )
-                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                             .type( wres.config.components.ThresholdType.VALUE )
                                              .build();
         Threshold threeOuter = ThresholdBuilder.builder()
                                                .threshold( three )
-                                               .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                               .type( wres.config.components.ThresholdType.VALUE )
                                                .build();
         Threshold fourOuter = ThresholdBuilder.builder()
                                               .threshold( four )
-                                              .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                              .type( wres.config.components.ThresholdType.VALUE )
                                               .build();
         Threshold fiveOuter = ThresholdBuilder.builder()
                                               .threshold( five )
-                                              .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                              .type( wres.config.components.ThresholdType.VALUE )
                                               .build();
 
         thresholds.add( oneOuter );
@@ -481,23 +481,23 @@ class TestDeclarationGenerator
 
         Threshold oneOuter = ThresholdBuilder.builder()
                                              .threshold( one )
-                                             .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                             .type( wres.config.components.ThresholdType.PROBABILITY )
                                              .build();
         Threshold twoOuter = ThresholdBuilder.builder()
                                              .threshold( two )
-                                             .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                             .type( wres.config.components.ThresholdType.PROBABILITY )
                                              .build();
         Threshold threeOuter = ThresholdBuilder.builder()
                                                .threshold( three )
-                                               .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                               .type( wres.config.components.ThresholdType.PROBABILITY )
                                                .build();
         Threshold fourOuter = ThresholdBuilder.builder()
                                               .threshold( four )
-                                              .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                              .type( wres.config.components.ThresholdType.PROBABILITY )
                                               .build();
         Threshold fiveOuter = ThresholdBuilder.builder()
                                               .threshold( five )
-                                              .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                              .type( wres.config.components.ThresholdType.PROBABILITY )
                                               .build();
 
         thresholds.add( oneOuter );
@@ -565,27 +565,27 @@ class TestDeclarationGenerator
 
         Threshold oneOuter = ThresholdBuilder.builder()
                                              .threshold( one )
-                                             .type( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
+                                             .type( wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER )
                                              .build();
         Threshold twoOuter = ThresholdBuilder.builder()
                                              .threshold( two )
-                                             .type( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
+                                             .type( wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER )
                                              .build();
         Threshold threeOuter = ThresholdBuilder.builder()
                                                .threshold( three )
-                                               .type( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
+                                               .type( wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER )
                                                .build();
         Threshold fourOuter = ThresholdBuilder.builder()
                                               .threshold( four )
-                                              .type( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
+                                              .type( wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER )
                                               .build();
         Threshold fiveOuter = ThresholdBuilder.builder()
                                               .threshold( five )
-                                              .type( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
+                                              .type( wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER )
                                               .build();
         Threshold sixOuter = ThresholdBuilder.builder()
                                              .threshold( six )
-                                             .type( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
+                                             .type( wres.config.components.ThresholdType.PROBABILITY_CLASSIFIER )
                                              .build();
 
         probabilityThresholds.add( oneOuter );
@@ -604,7 +604,7 @@ class TestDeclarationGenerator
                                                    .build();
         Threshold sevenOuter = ThresholdBuilder.builder()
                                                .threshold( seven )
-                                               .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                               .type( wres.config.components.ThresholdType.VALUE )
                                                .build();
         valueThresholds.add( sevenOuter );
 

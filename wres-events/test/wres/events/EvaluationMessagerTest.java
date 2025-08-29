@@ -36,7 +36,7 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.Outputs;
-import wres.statistics.generated.Outputs.NetcdfFormat;
+import wres.statistics.generated.Outputs.Netcdf2Format;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Pairs.Pair;
@@ -333,8 +333,8 @@ class EvaluationMessagerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                                     .setNetcdf(
-                                                                                                             NetcdfFormat.getDefaultInstance() ) )
+                                                                                                     .setNetcdf2(
+                                                                                                             Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationMessagerTest.connections,
                                              A_CLIENT ) )
@@ -504,8 +504,8 @@ class EvaluationMessagerTest
             evaluation =
                     EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                .setOutputs( Outputs.newBuilder()
-                                                                                                   .setNetcdf(
-                                                                                                           NetcdfFormat.getDefaultInstance() ) )
+                                                                                                   .setNetcdf2(
+                                                                                                           Netcdf2Format.getDefaultInstance() ) )
                                                                                .build(),
                                            EvaluationMessagerTest.connections,
                                            A_CLIENT );

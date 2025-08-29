@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;

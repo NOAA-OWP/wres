@@ -70,14 +70,14 @@ public final class MinimumTest
                                                              .setUnits( input.getMetadata()
                                                                              .getMeasurementUnit()
                                                                              .toString() )
-                                                             .setName( MetricName.LEFT )
+                                                             .setName( MetricName.OBSERVED )
                                                              .build();
 
         DoubleScoreMetricComponent rightMetric = this.template.toBuilder()
                                                               .setUnits( input.getMetadata()
                                                                               .getMeasurementUnit()
                                                                               .toString() )
-                                                              .setName( MetricName.RIGHT )
+                                                              .setName( MetricName.PREDICTED )
                                                               .build();
 
         DoubleScoreStatisticComponent leftStatistic = DoubleScoreStatisticComponent.newBuilder()
@@ -108,8 +108,8 @@ public final class MinimumTest
 
         DoubleScoreStatisticOuter actual = this.minimum.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.LEFT ).getStatistic().getValue(), 0.0 );
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.RIGHT ).getStatistic().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.OBSERVED ).getStatistic().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.PREDICTED ).getStatistic().getValue(), 0.0 );
     }
 
     @Test

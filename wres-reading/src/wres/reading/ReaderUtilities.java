@@ -54,15 +54,15 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.ThresholdSource;
-import wres.config.yaml.components.TimeInterval;
+import wres.config.DeclarationException;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.GeneratedBaselines;
+import wres.config.components.SourceInterface;
+import wres.config.components.ThresholdSource;
+import wres.config.components.TimeInterval;
 import wres.datamodel.space.Feature;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -1404,7 +1404,7 @@ public class ReaderUtilities
         Set<String> featureNames = DeclarationUtilities.getFeatureNamesFor( features, orientation );
 
         // Continue to read the thresholds
-        Set<wres.config.yaml.components.Threshold> thresholds = reader.read( thresholdSource,
+        Set<wres.config.components.Threshold> thresholds = reader.read( thresholdSource,
                                                                              featureNames,
                                                                              featureAuthority );
 

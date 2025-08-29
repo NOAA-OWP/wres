@@ -28,9 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.FeatureAuthority;
+import wres.config.DeclarationException;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.FeatureAuthority;
 import wres.http.WebClientUtils;
 import wres.reading.PreReadException;
 import wres.reading.ReadException;
@@ -117,7 +117,7 @@ class FeatureService
      */
 
     static Map<String, String> bulkLookup( EvaluationDeclaration evaluation,
-                                           wres.config.yaml.components.FeatureService featureService,
+                                           wres.config.components.FeatureService featureService,
                                            FeatureAuthority from,
                                            FeatureAuthority to,
                                            Set<String> featureNames )

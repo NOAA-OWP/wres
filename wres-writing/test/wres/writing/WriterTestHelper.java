@@ -10,12 +10,12 @@ import java.util.List;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Formats;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Formats;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
@@ -70,28 +70,6 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 
 public class WriterTestHelper
 {
-    /**
-     * Returns a fake project configuration for a specified feature.
-     *
-     * @return fake project configuration
-     */
-
-    public static EvaluationDeclaration getMockedDeclaration( DecimalFormat formatter )
-    {
-        Outputs outputs = Outputs.newBuilder()
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                                             .setDecimalFormat( "0.0" )
-                                                                                             .build() ) )
-                                 .build();
-        Formats formats = new Formats( outputs );
-        return EvaluationDeclarationBuilder.builder()
-                                           .formats( formats )
-                                           .decimalFormat( formatter )
-                                           .durationFormat( ChronoUnit.SECONDS )
-                                           .build();
-    }
-
     /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
      *
