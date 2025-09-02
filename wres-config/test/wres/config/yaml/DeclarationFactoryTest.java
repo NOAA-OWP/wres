@@ -1468,7 +1468,6 @@ class DeclarationFactoryTest
                   - netcdf2
                   - pairs
                   - csv2
-                  - format: csv
                   - format: png
                     width: 800
                     height: 600
@@ -1494,9 +1493,6 @@ class DeclarationFactoryTest
                                  .setCsv2( Outputs.Csv2Format.newBuilder()
                                                              .setOptions( numericFormat )
                                                              .build() )
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( numericFormat )
-                                                           .build() )
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
@@ -3942,7 +3938,6 @@ class DeclarationFactoryTest
                 decimal_format: "#0.000"
                 output_formats:
                   - csv2
-                  - csv
                   - pairs
                   - format: netcdf
                     template_path: foo.bar
@@ -3969,9 +3964,6 @@ class DeclarationFactoryTest
                                  .setCsv2( Outputs.Csv2Format.newBuilder()
                                                              .setOptions( numericFormat )
                                                              .build() )
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( numericFormat )
-                                                           .build() )
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )

@@ -40,11 +40,6 @@ public record Formats( Outputs outputs )
                                                                .setWidth( 800 ) )
                              .build();
 
-    /** Default CSV format. **/
-    public static final Outputs.CsvFormat CSV_FORMAT = Outputs.CsvFormat.newBuilder()
-                                                                        .setOptions( DEFAULT_NUMERIC_FORMAT )
-                                                                        .build();
-
     /** Default CSV2 format. **/
     public static final Outputs.Csv2Format CSV2_FORMAT = Outputs.Csv2Format.newBuilder()
                                                                            .setOptions( DEFAULT_NUMERIC_FORMAT )

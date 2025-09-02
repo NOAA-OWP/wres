@@ -2286,7 +2286,7 @@ public class ChartFactory
                   || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS )
                        && !hasDecisionThresholds ) )
              && metricName != MetricConstants.SAMPLE_SIZE
-             && metricComponentName != MetricConstants.LEFT )
+             && metricComponentName != MetricConstants.OBSERVED )
         {
             name = " of the ENSEMBLE " + ensembleAverageType.name();
         }
@@ -2528,7 +2528,7 @@ public class ChartFactory
             // Get the name that corresponds to the side of the component. Again, should probably use the triple.
             switch ( component )
             {
-                case RIGHT -> variableName += evaluation.getRightVariableName();
+                case PREDICTED -> variableName += evaluation.getRightVariableName();
                 case BASELINE -> variableName += evaluation.getBaselineVariableName();
                 default -> variableName += evaluation.getLeftVariableName();
             }

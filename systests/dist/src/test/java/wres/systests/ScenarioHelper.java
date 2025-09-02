@@ -306,11 +306,11 @@ public class ScenarioHelper
                     //Pairs has its own method because it has to sort the lines.
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
-                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedOutput( outputFilePath.toFile(), benchmarkFile );
                     }
                     else if ( outputFileName.endsWith( "evaluation.csv.gz" ) )
                     {
-                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedOutput( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
                     else
@@ -324,20 +324,16 @@ public class ScenarioHelper
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
                         pairResultCode = 16;
-                        //LOGGER.warn("The pairs file differ from benchmark (result code " + pairResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The pairs file differ from " + benchmarkFile.getAbsolutePath() + " (result code " + pairResultCode + ") for file with name " + outputFileName);
                     }
-                    //Otherwise just do the comparison without sorting.
-                    else if ( outputFileName.endsWith( ".csv" ) )
+                    else if ( outputFileName.endsWith( ".csv.gz" ) )
                     {
                         metricCSVResultCode = 32;
-                        //LOGGER.warn("The metric CSV file differs from benchmark (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The metric CSV file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
-                        //LOGGER.warn("The text file differs from benchmark (result code " + txtResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The text file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + txtResultCode + ") for file with name " + outputFileName);
                     }
                     else
@@ -469,7 +465,7 @@ public class ScenarioHelper
      * @param benchmarkDirPath
      * @throws IOException
      */
-    private static void assertOutputZippedEqualExpectedPairs( File zippedFile, File benchmarkFile ) throws IOException
+    private static void assertOutputZippedEqualExpectedOutput( File zippedFile, File benchmarkFile ) throws IOException
     {
         //Ensure that the output is a readable file.  The benchmark file has already been established as such.
         assertTrue( zippedFile.isFile() && zippedFile.canRead() );
@@ -493,7 +489,7 @@ public class ScenarioHelper
             LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
             assertEquals( "For zipped file, " + zippedFile.getName()
                           + ", after sorting alphabetically, row "
-                          + i 
+                          + i
                           + " differs from benchmark.",
                           actualRows.get( i ).trim(), //TODO Should this and next be trimmed?
                           expectedRows.get( i ).trim() );

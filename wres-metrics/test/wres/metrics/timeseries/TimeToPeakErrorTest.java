@@ -5,7 +5,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
-import java.util.Random;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -41,7 +40,7 @@ public final class TimeToPeakErrorTest
     @Before
     public void setupBeforeEachTest()
     {
-        this.ttp = TimeToPeakError.of( new Random( 123456789 ) );
+        this.ttp = TimeToPeakError.of(123456789L );
     }
 
     @Test

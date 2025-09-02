@@ -28,19 +28,8 @@ public class Scenario105
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "baseline_pairs.csv.gz" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_BRIER_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_BRIER_SKILL_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_ERROR.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_BRIER_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_BRIER_SKILL_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_MEAN_ERROR.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_RELATIVE_OPERATING_CHARACTERISTIC_SCORE.csv" ),
-                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_SAMPLE_SIZE.csv" ),
+                    Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
