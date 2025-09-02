@@ -174,11 +174,7 @@ public class MessageUtilities
             return compare;
         }
 
-<<<<<<< HEAD
-        compare = Boolean.compare( first.hasCsv(), second.hasCsv() );
-=======
         compare = Boolean.compare( first.hasNetcdf(), second.hasNetcdf() );
->>>>>>> 79dc1534a (CSV removal and csv2 langauge changes)
 
         if ( compare != 0 )
         {

@@ -1522,7 +1522,7 @@ class EnsembleStatisticsProcessorTest
 
         ThresholdOuter valueThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
 
-                                                           wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                           wres.config.components.ThresholdOperator.GREATER,
                                                            ThresholdOrientation.OBSERVED,
                                                            MeasurementUnit.of( "CFS" ) );
         OneOrTwoThresholds first = OneOrTwoThresholds.of( valueThreshold,

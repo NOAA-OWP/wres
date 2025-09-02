@@ -724,7 +724,7 @@ public class WriterTestHelper
                                                                               OneOrTwoDoubles.of(
                                                                                       0.9 ),
                                                                               ThresholdOperator.GREATER_EQUAL,
-                                                                              ThresholdOrientation.LEFT );
+                                                                              ThresholdOrientation.OBSERVED );
         OneOrTwoThresholds threshold = OneOrTwoThresholds.of( thresholdOuter );
 
         Evaluation evaluation = Evaluation.newBuilder()

@@ -57,9 +57,9 @@ class CsvThresholdReaderTest
                                                            .uri( uri )
                                                            .missingValue( -999.0 )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -178,9 +178,9 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -303,9 +303,9 @@ class CsvThresholdReaderTest
                                                            .uri( uri )
                                                            .missingValue( -999.0 )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -417,9 +417,9 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -538,9 +538,9 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -639,7 +639,7 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
                                                            .operator( ThresholdOperator.BETWEEN )
                                                            .build();
@@ -752,9 +752,9 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -820,9 +820,9 @@ class CsvThresholdReaderTest
                                                            .uri( uri )
                                                            .missingValue( -999.0 )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
                                                            .applyTo( ThresholdOrientation.OBSERVED )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();

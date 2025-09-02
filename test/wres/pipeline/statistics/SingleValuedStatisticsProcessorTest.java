@@ -229,7 +229,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.OBSERVED,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
@@ -361,7 +361,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.OBSERVED_AND_PREDICTED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -582,10 +582,10 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds firstThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.OBSERVED_AND_PREDICTED ) );
         OneOrTwoThresholds secondThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                                       wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                       wres.config.components.ThresholdOperator.GREATER,
                                                                                        ThresholdOrientation.OBSERVED_AND_PREDICTED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -694,7 +694,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.OBSERVED_AND_PREDICTED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -877,7 +877,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.OBSERVED_AND_PREDICTED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -1186,7 +1186,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          wres.config.components.ThresholdOperator.GREATER,
                                                           ThresholdOrientation.OBSERVED,
                                                           MeasurementUnit.of( "CMS" ) ) );
 

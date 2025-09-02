@@ -978,7 +978,7 @@ class MessageFactoryTest
                                                                                                      OneOrTwoDoubles.of(
                                                                                                              0.9 ),
                                                                                                      ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+                                                                                                     ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )

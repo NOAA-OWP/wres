@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -109,26 +109,26 @@ class CsvStatisticsWriterTest
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                     + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
+                                     + "PT1H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
                                      + "MAIN,,,0.0,Infinity,0.0,1,,,,,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
-            String lineTwoExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineTwoExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
                                      + "Infinity,0.0,2,,,,,,,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                       + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
+                                       + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
                                        + "Infinity,0.0,3,,,,,,,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
@@ -170,7 +170,7 @@ class CsvStatisticsWriterTest
             String lineOneExpected = "QINE,SQIN,,,1,BASELINE,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,,"
                                      + "0.0,Infinity,0.0,1,,,,,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
@@ -178,7 +178,7 @@ class CsvStatisticsWriterTest
             String lineTwoExpected = "QINE,SQIN,,,1,BASELINE,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
                                      + "Infinity,0.0,2,,,,,,,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
@@ -186,7 +186,7 @@ class CsvStatisticsWriterTest
             String lineThreeExpected = "QINE,SQIN,,,1,BASELINE,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                       + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
+                                       + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
                                        + "Infinity,0.0,3,,,,,,,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
@@ -225,28 +225,28 @@ class CsvStatisticsWriterTest
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,\"DOLC2-DOLC2\",\"DOLC2\",,,,\"DOLC2\",,,,,,,,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,\"DOLC2-DOLC2\",\"DOLC2\",,,,\"DOLC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
                                      + "MEAN,ENSEMBLE MEDIAN,SECONDS,0.000000000,0.000000000,0.000000000,1,,,,,,,"
                                      + "3600.000000000";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
-            String lineTwoExpected = "QINE,SQIN,,,1,RIGHT,\"DOLC2-DOLC2\",\"DOLC2\",,,,\"DOLC2\",,,,,,,,"
+            String lineTwoExpected = "QINE,SQIN,,,1,PREDICTED,\"DOLC2-DOLC2\",\"DOLC2\",,,,\"DOLC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
                                      + "MEDIAN,ENSEMBLE MEDIAN,SECONDS,0.000000000,0.000000000,0.000000000,2,,,,,,,"
                                      + "7200.000000000";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,\"DOLC2-DOLC2\",\"DOLC2\",,,,\"DOLC2\",,,,,,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,\"DOLC2-DOLC2\",\"DOLC2\",,,,\"DOLC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                       + "PT18H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR "
+                                       + "PT18H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,TIME TO PEAK ERROR "
                                        + "STATISTIC,MAXIMUM,ENSEMBLE MEDIAN,SECONDS,0.000000000,0.000000000,"
                                        + "0.000000000,3,,,,,,,10800.000000000";
 
@@ -286,44 +286,44 @@ class CsvStatisticsWriterTest
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
             // Make selected assertions        
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,PT24H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF ERRORS BY "
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,BOX PLOT OF ERRORS BY "
                                      + "OBSERVED VALUE,OBSERVED VALUE,,,-Infinity,Infinity,0.0,1,,,,,,,1.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
-            String lineEightExpected = "QINE,SQIN,,,1,RIGHT,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
+            String lineEightExpected = "QINE,SQIN,,,1,PREDICTED,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
-                                       + "PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF ERRORS "
+                                       + "PT24H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,BOX PLOT OF ERRORS "
                                        + "BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,2,,,,,,,3.0";
 
             assertEquals( lineEightExpected, actual.get( 8 ) );
 
-            String lineNineteenExpected = "QINE,SQIN,,,1,RIGHT,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
+            String lineNineteenExpected = "QINE,SQIN,,,1,PREDICTED,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
-                                          + "PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF "
+                                          + "PT24H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,BOX PLOT OF "
                                           + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,7,,,,,,,"
                                           + "9.0";
 
             assertEquals( lineNineteenExpected, actual.get( 19 ) );
 
-            String lineThirtyOneExpected = "QINE,SQIN,,,1,RIGHT,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
+            String lineThirtyOneExpected = "QINE,SQIN,,,1,PREDICTED,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
                                            + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                            + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
-                                           + "PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF "
+                                           + "PT24H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,BOX PLOT OF "
                                            + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,13,,,,,,"
                                            + ",27.0";
 
             assertEquals( lineThirtyOneExpected, actual.get( 31 ) );
 
-            String lineFiftyTwoExpected = "QINE,SQIN,,,1,RIGHT,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
+            String lineFiftyTwoExpected = "QINE,SQIN,,,1,PREDICTED,\"JUNP1-JUNP1\",\"JUNP1\",,,,\"JUNP1\",,,,,,,,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                                          + "PT24H,PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,"
+                                          + "PT24H,PT24H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,"
                                           + "BOX PLOT OF ERRORS,FORECAST ERROR,,,-Infinity,Infinity,0.0,24,,,,,,,77.0";
 
             assertEquals( lineFiftyTwoExpected, actual.get( 52 ) );
@@ -362,26 +362,26 @@ class CsvStatisticsWriterTest
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
             // Make selected assertions        
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,\"CREC1-CREC1\",\"CREC1\",,,,\"CREC1\",,,,,,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,\"CREC1-CREC1\",\"CREC1\",,,,\"CREC1\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
-                                       + "PT24H,,,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,RELIABILITY "
+                                       + "PT24H,,,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,RELIABILITY "
                                        + "DIAGRAM,FORECAST PROBABILITY,,,0.0,0.0,,3,,,,,,,0.50723";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
 
-            String lineEightExpected = "QINE,SQIN,,,1,RIGHT,\"CREC1-CREC1\",\"CREC1\",,,,\"CREC1\",,,,,,,,"
+            String lineEightExpected = "QINE,SQIN,,,1,PREDICTED,\"CREC1-CREC1\",\"CREC1\",,,,\"CREC1\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
-                                       + "PT24H,,,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,"
+                                       + "PT24H,,,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,"
                                        + "RELIABILITY DIAGRAM,OBSERVED RELATIVE FREQUENCY,,,0.0,0.0,,3,,,,,,,0.5";
 
             assertEquals( lineEightExpected, actual.get( 8 ) );
 
-            String lineThirteenExpected = "QINE,SQIN,,,1,RIGHT,\"CREC1-CREC1\",\"CREC1\",,,,\"CREC1\",,,,,,,,"
+            String lineThirteenExpected = "QINE,SQIN,,,1,PREDICTED,\"CREC1-CREC1\",\"CREC1\",,,,\"CREC1\",,,,,,,,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
-                                          + "PT24H,,,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,"
+                                          + "PT24H,,,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,"
                                           + "RELIABILITY DIAGRAM,SAMPLE SIZE,,,0.0,"
                                           + "0.0,,3,,,,,,,540.0";
 
@@ -422,18 +422,18 @@ class CsvStatisticsWriterTest
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
             // Make selected assertions        
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,\"FTSC1-FTSC1\",\"FTSC1\",,,,\"FTSC1\",,,,,,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,\"FTSC1-FTSC1\",\"FTSC1\",,,,\"FTSC1\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                       + "PT18H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR,"
+                                       + "PT18H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,TIME TO PEAK ERROR,"
                                        + "UNKNOWN,,SECONDS FROM 1970-01-01T00:00:00Z,,,,2,,,,,,,473472000.000000000";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
 
-            String lineFourExpected = "QINE,SQIN,,,1,RIGHT,\"FTSC1-FTSC1\",\"FTSC1\",,,,\"FTSC1\",,,,,,,,"
+            String lineFourExpected = "QINE,SQIN,,,1,PREDICTED,\"FTSC1-FTSC1\",\"FTSC1\",,,,\"FTSC1\",,,,,,,,"
                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
-                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR,ERROR,ENSEMBLE MEAN,"
+                                      + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,TIME TO PEAK ERROR,ERROR,ENSEMBLE MEAN,"
                                       + "SECONDS,-9223372036854775808.000000000,0.000000000,0.000000000,2,,,,,,,"
                                       + "7200.000000000";
 
@@ -492,10 +492,10 @@ class CsvStatisticsWriterTest
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                     + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
+                                     + "PT1H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
                                      + "MAIN,,,0.0,Infinity,0.0,1,,,,,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
@@ -534,26 +534,26 @@ class CsvStatisticsWriterTest
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                     + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
+                                     + "PT1H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
                                      + "MAIN,,,0.0,Infinity,0.0,1,QUANTILE,,,\"RESAMPLED\",,0.95,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
-            String lineTwoExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineTwoExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
                                      + "Infinity,0.0,2,QUANTILE,,,\"RESAMPLED\",,0.95,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                       + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
+                                       + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
                                        + "Infinity,0.0,3,QUANTILE,,,\"RESAMPLED\",,0.95,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
@@ -603,26 +603,26 @@ class CsvStatisticsWriterTest
 
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
-                                     + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
+                                     + "PT1H,,,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
                                      + "MAIN,,,0.0,Infinity,0.0,1,MAXIMUM,,,\"FEATURES\",,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
-            String lineTwoExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineTwoExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                     + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
+                                     + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
                                      + "Infinity,0.0,2,MAXIMUM,,,\"FEATURES\",,,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,\"DRRC2-DRRC2\",\"DRRC2\",,,,\"DRRC2\",,,,,,,,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
-                                       + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
+                                       + ",,,,,-Infinity,,,,,OBSERVED,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
                                        + "Infinity,0.0,3,MAXIMUM,,,\"FEATURES\",,,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
@@ -661,49 +661,49 @@ class CsvStatisticsWriterTest
             assertEquals( CsvStatisticsWriterTest.LINE_ZERO_EXPECTED, actual.get( 0 ) );
 
             // Make selected assertions
-            String lineOneExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+            String lineOneExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
                                      + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
-                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,T0,,"
+                                     + "MEAN,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,T0,,"
                                      + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,,"
                                      + "1,,,,,,,1.23E7";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
-            String lineThreeExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+            String lineThreeExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
                                        + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
-                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,OBSERVED,"
                                        + "GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,VALID TIME,,"
                                        + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,"
                                        + ",1,,,,,,,1.23036E7";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
 
-            String lineSixExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+            String lineSixExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
                                      + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
-                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,observed,,"
+                                     + "MEAN,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,observed,,"
                                      + ",-Infinity,Infinity,,2,,,,,,,12.0";
 
             assertEquals( lineSixExpected, actual.get( 6 ) );
 
-            String lineEightExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+            String lineEightExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
                                        + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
-                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                       + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,OBSERVED,"
                                        + "GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,predicted,,,-Infinity,Infinity,,2,,,,"
                                        + ",,,15.7";
 
             assertEquals( lineEightExpected, actual.get( 8 ) );
 
-            String lineTenExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+            String lineTenExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
                                      + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
-                                     + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,T0,,"
+                                     + "MEAN,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,T0,,"
                                      + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,,"
                                      + "4,,,,,,,1.23E7";
 
             assertEquals( lineTenExpected, actual.get( 10 ) );
 
-            String lineTwelveExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+            String lineTwelveExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
                                         + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
-                                        + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                        + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,OBSERVED,"
                                         + "GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,VALID TIME,,"
                                         + "SECONDS SINCE 1970-01-01T00:00:00Z,0001-01-01T00:00:00Z,9999-12-31T23:59:59Z,"
                                         + ",4,,,,,,,1.23072E7";
@@ -711,16 +711,16 @@ class CsvStatisticsWriterTest
             assertEquals( lineTwelveExpected, actual.get( 12 ) );
 
             String lineFifteenExpected =
-                    "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
+                    "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,2551-03-19T00:00:00Z,"
                     + "2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,"
-                    + "MEAN,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,predicted,,"
+                    + "MEAN,,,,11.94128,,,0.9,,OBSERVED,GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,predicted,,"
                     + ",-Infinity,Infinity,,3,,,,,,,117.6";
 
             assertEquals( lineFifteenExpected, actual.get( 15 ) );
 
-            String lineSeventeenExpected = "QINE,SQIN,,,1,RIGHT,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
+            String lineSeventeenExpected = "QINE,SQIN,,,1,PREDICTED,,\"DRRC2\",,,,\"DRRC2\",,,,\"DRRC2\",,,,"
                                            + "2551-03-19T00:00:00Z,2551-03-19T12:00:00Z,2551-03-20T01:00:00Z,"
-                                           + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,LEFT,"
+                                           + "2551-03-20T12:00:00Z,PT1H,PT7H,PT1H,MEAN,,,,11.94128,,,0.9,,OBSERVED,"
                                            + "GREATER EQUAL,,,,,,,,,TIME SERIES PLOT,predicted,,,-Infinity,Infinity,,4,,,,"
                                            + ",,,115.7";
 

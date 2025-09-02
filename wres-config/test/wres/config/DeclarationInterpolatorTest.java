@@ -171,7 +171,7 @@ class DeclarationInterpolatorTest
     /** All data threshold. */
     private static final wres.config.components.Threshold
             ALL_DATA_THRESHOLD =
-            wres.config.yaml.components.ThresholdBuilder.builder()
+            wres.config.components.ThresholdBuilder.builder()
                                                         .threshold( Threshold.newBuilder()
                                                                              .setObservedThresholdValue( Double.NEGATIVE_INFINITY )
                                                                              .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -180,10 +180,6 @@ class DeclarationInterpolatorTest
                                                         .type( ThresholdType.VALUE )
                                                         .generated( true )
                                                         .build();
-    /** Default list of observed sources in the old-style declaration. */
-    List<DataSourceConfig.Source> observedSources;
-    /** Default list of predicted sources in the old-style declaration. */
-    List<DataSourceConfig.Source> predictedSources;
 
     @BeforeEach
     void runBeforeEach()

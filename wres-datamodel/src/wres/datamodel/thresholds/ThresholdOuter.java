@@ -42,7 +42,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     public static final ThresholdOuter ALL_DATA =
             ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                               wres.config.yaml.components.ThresholdOperator.GREATER,
+                               wres.config.components.ThresholdOperator.GREATER,
                                ThresholdOrientation.OBSERVED_AND_PREDICTED );
 
     /**
