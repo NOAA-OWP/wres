@@ -102,7 +102,6 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         {
             case PNG -> builder.setPng( Formats.PNG_FORMAT );
             case SVG -> builder.setSvg( Formats.SVG_FORMAT );
-            case NETCDF -> builder.setNetcdf( Formats.NETCDF_FORMAT );
             case NETCDF2 -> builder.setNetcdf2( Formats.NETCDF2_FORMAT );
             case CSV -> builder.setCsv( Formats.CSV_FORMAT );
             case CSV2 -> builder.setCsv2( Formats.CSV2_FORMAT );
@@ -149,13 +148,6 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
                                                                 .build();
                 builder.setSvg( svgFormat );
             }
-            case NETCDF ->
-            {
-                Outputs.NetcdfFormat.Builder netcdfFormatBuilder = Formats.NETCDF_FORMAT.toBuilder();
-                this.addNetcdfOptions( netcdfFormatBuilder, node );
-                Outputs.NetcdfFormat netcdfFormat = netcdfFormatBuilder.build();
-                builder.setNetcdf( netcdfFormat );
-            }
             // Formats without parameters that may be declared in a parametrized way (e.g., format: netcdf2)
             case NETCDF2 -> builder.setNetcdf2( Formats.NETCDF2_FORMAT );
             case CSV -> builder.setCsv( Formats.CSV_FORMAT );
@@ -191,35 +183,6 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
             String friendlyText = DeclarationUtilities.toEnumName( orientationNode.asText() );
             Outputs.GraphicFormat.GraphicShape shape = Outputs.GraphicFormat.GraphicShape.valueOf( friendlyText );
             graphicFormatBuilder.setShape( shape );
-        }
-    }
-
-    /**
-     * Adds NetCDF format options, if required.
-     * @param netcdfFormatBuilder the NetCDF format builder
-     * @param node the node whose NetCDF format options should be read
-     */
-    private void addNetcdfOptions( Outputs.NetcdfFormat.Builder netcdfFormatBuilder, JsonNode node )
-    {
-        if ( node.has( "template_path" ) )
-        {
-            JsonNode templateNode = node.get( "template_path" );
-            String templatePath = templateNode.asText();
-            netcdfFormatBuilder.setTemplatePath( templatePath );
-        }
-
-        if ( node.has( "variable_name" ) )
-        {
-            JsonNode variableNameNode = node.get( "variable_name" );
-            String variableName = variableNameNode.asText();
-            netcdfFormatBuilder.setVariableName( variableName );
-        }
-
-        if ( node.has( "gridded" ) )
-        {
-            JsonNode isGriddedNode = node.get( "gridded" );
-            boolean isGridded = isGriddedNode.asBoolean();
-            netcdfFormatBuilder.setGridded( isGridded );
         }
     }
 }
