@@ -1142,7 +1142,7 @@ project(':wres-config') {
 
         // jaxb-xjc transitively includes bind-api and jaxb-core
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.8'
-        jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
+        jaxb 'com.github.sabomichal:immutable-xjc-plugin:2.0.6'
 
         // To accurately detect mime types of files.
         api 'org.apache.tika:tika-core:3.2.2'
