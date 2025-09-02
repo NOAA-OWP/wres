@@ -32,59 +32,59 @@ public class Scenario017
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_MEAN_ERROR.csv" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_MEAN_ERROR.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_10800_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_10800_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_7200_TO_10800_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_14400_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_14400_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_10800_TO_14400_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_18000_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_18000_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_14400_TO_18000_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_21600_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_21600_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_18000_TO_21600_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_25200_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_25200_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_21600_TO_25200_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_28800_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_28800_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_25200_TO_28800_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_32400_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_32400_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_28800_TO_32400_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_36000_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_36000_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_32400_TO_36000_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_3600_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_3600_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_0_TO_3600_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_39600_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_39600_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_36000_TO_39600_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_43200_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_43200_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_39600_TO_43200_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_46800_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_46800_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_43200_TO_46800_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_50400_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_50400_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_46800_TO_50400_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_54000_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_54000_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_50400_TO_54000_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_57600_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_57600_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_54000_TO_57600_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_61200_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_61200_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_57600_TO_61200_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_64800_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_64800_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_61200_TO_64800_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_68400_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_68400_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_64800_TO_68400_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_72000_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_72000_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_68400_TO_72000_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_7200_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_7200_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_3600_TO_7200_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_75600_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_75600_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_72000_TO_75600_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_79200_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_79200_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_75600_TO_79200_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_82800_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_82800_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_79200_TO_82800_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" ),
-                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.png" ),
+                    Path.of( "DRRC2HSF_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_82800_TO_86400_SECONDS.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv.gz" ) );
-    
+
     private ScenarioInformation scenarioInfo;
-    
+
     /**
      * Watch for any failed assertions and log them.
      */
@@ -97,7 +97,7 @@ public class Scenario017
         {
             LOGGER.error( description.toString(), e );
         }
-    };      
+    };
 
     @Before
     public void beforeIndividualTest() throws IOException, SQLException
@@ -106,9 +106,9 @@ public class Scenario017
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );
         this.scenarioInfo = new ScenarioInformation( this.getClass()
-                                              .getSimpleName()
-                                              .toLowerCase(),
-                                              ScenarioHelper.getBaseDirectory() );
+                                                         .getSimpleName()
+                                                         .toLowerCase(),
+                                                     ScenarioHelper.getBaseDirectory() );
         ScenarioHelper.logUsedSystemProperties( scenarioInfo );
     }
 
@@ -128,12 +128,12 @@ public class Scenario017
         assertEquals( "The actual set of file names does not match the expected set of file names.",
                       EXPECTED_FILE_NAMES,
                       actualFileNamesThatExist );
-        
+
         LOGGER.info( "Finished checking file names. The actual file names match the expected file names." );
-        
+
         ScenarioHelper.assertOutputsMatchBenchmarks( scenarioInfo, pathsWritten );
         LOGGER.info( "########################################################## COMPLETED "
-                + this.getClass().getSimpleName().toLowerCase() + NEWLINE);
+                     + this.getClass().getSimpleName().toLowerCase() + NEWLINE );
     }
 }
 
