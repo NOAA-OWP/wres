@@ -72,7 +72,7 @@ message Threshold
         // Observed side of a pair meets the threshold condition.
 
         PREDICTED = 1;
-        // predicted side of a pair meets the threshold condition.
+        // Predicted side of a pair meets the threshold condition.
 
         OBSERVED_AND_PREDICTED = 2;
         // Observed side and all values of the predicted side of a pair meet the threshold condition.
