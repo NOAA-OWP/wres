@@ -681,8 +681,6 @@ class PoolSlicerTest
                                               .setGeometryGroup( GeometryGroup.newBuilder()
                                                                               .addGeometryTuples( geoTupleOne )
                                                                               .addGeometryTuples( geoTupleTwo ) )
-                                              .addGeometryTuples( geoTupleOne )
-                                              .addGeometryTuples( geoTupleTwo )
                                               .build();
 
         // Note the order, which is the same order as the comparable key used to decompose the pool, in this case a 
@@ -777,8 +775,6 @@ class PoolSlicerTest
                                                                                                                             geoTupleOne )
                                                                                                                     .addGeometryTuples(
                                                                                                                             geoTupleTwo ) )
-                                                                                    .addGeometryTuples( geoTupleOne )
-                                                                                    .addGeometryTuples( geoTupleTwo )
                                                                                     .build();
 
         // Note the order, which is the same order as the comparable key used to decompose the pool, in this case a 

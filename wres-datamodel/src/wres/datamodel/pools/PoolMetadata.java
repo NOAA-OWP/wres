@@ -325,22 +325,6 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         if ( Objects.nonNull( featureGroup ) )
         {
-            pool.clearGeometryTuples();
-            Set<FeatureTuple> featureTuples = featureGroup.getFeatures();
-            Set<GeometryTuple> geometryTuples = featureTuples.stream()
-                                                             .map( FeatureTuple::getGeometryTuple )
-                                                             .collect( Collectors.toSet() );
-            pool.addAllGeometryTuples( geometryTuples );
-
-            if ( Objects.nonNull( featureGroup.getName() ) )
-            {
-                pool.setRegionName( featureGroup.getName() );
-            }
-            else
-            {
-                pool.clearRegionName();
-            }
-
             pool.setGeometryGroup( featureGroup.getGeometryGroup() );
         }
         else

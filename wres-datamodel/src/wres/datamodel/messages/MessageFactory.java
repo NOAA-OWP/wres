@@ -207,15 +207,12 @@ public class MessageFactory
                                                         .map( MessageFactory::parse )
                                                         .toList();
 
-            poolBuilder.addAllGeometryTuples( geoTuples );
-
             GeometryGroup.Builder geometryBuilder = GeometryGroup.newBuilder()
                                                                  .addAllGeometryTuples( geoTuples );
 
             // Region name?
             if ( Objects.nonNull( featureGroup.getName() ) )
             {
-                poolBuilder.setRegionName( featureGroup.getName() );
                 geometryBuilder.setRegionName( featureGroup.getName() );
             }
 

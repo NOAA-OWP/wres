@@ -2240,8 +2240,6 @@ public class PoolFactory
                                                            .toBuilder()
                                                            .clearPoolId()
                                                            .clearGeometryGroup()
-                                                           .clearGeometryTuples()
-                                                           .clearRegionName()
                                                            .build();
 
                 PoolMetadata updated = PoolMetadata.of( evaluation, clean );
@@ -2254,8 +2252,6 @@ public class PoolFactory
                                                                    .toBuilder()
                                                                    .clearPoolId()
                                                                    .clearGeometryGroup()
-                                                                   .clearGeometryTuples()
-                                                                   .clearRegionName()
                                                                    .build();
 
                     updatedBaseline = PoolMetadata.of( evaluation, cleanBase );

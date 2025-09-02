@@ -1106,8 +1106,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         wres.statistics.generated.Pool.Builder builder =
                 metadata.getPoolDescription()
                         .toBuilder()
-                        .clearGeometryTuples()
-                        .addGeometryTuples( feature.getGeometryTuple() )
                         .setGeometryGroup( geoGroupBuilder );
 
         if ( Objects.nonNull( timeScale ) )
