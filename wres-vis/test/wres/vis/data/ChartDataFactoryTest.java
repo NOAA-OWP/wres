@@ -278,6 +278,46 @@ class ChartDataFactoryTest
     }
 
     @Test
+    void testOfDoubleScoreByThresholdAndLeadWithUnboundedLeadProducesCorrectLegendLabel()
+    {
+        // GitHub #542
+        DoubleScoreMetric.DoubleScoreMetricComponent metric
+                = DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                              .setName( MetricName.MAIN )
+                                                              .build();
+        Duration maxLead = MessageUtilities.getDuration( TimeWindowOuter.DURATION_MAX );
+        TimeWindow timeWindow = TimeWindow.newBuilder()
+                                          .setEarliestLeadDuration( Duration.newBuilder().setSeconds( 0 ) )
+                                          .setLatestLeadDuration( maxLead )
+                                          .setEarliestReferenceTime( Timestamp.getDefaultInstance() )
+                                          .setLatestReferenceTime( Timestamp.getDefaultInstance() )
+                                          .setEarliestValidTime( Timestamp.getDefaultInstance() )
+                                          .setLatestValidTime( Timestamp.getDefaultInstance() )
+                                          .build();
+
+        DoubleScoreStatistic.DoubleScoreStatisticComponent
+                scoreTwoOne = DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                                .setMetric( metric )
+                                                                                .setValue( 2.3 )
+                                                                                .build();
+
+        ThresholdOuter first = ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
+                                                  ThresholdOperator.GREATER,
+                                                  ThresholdOrientation.LEFT );
+        PoolMetadata metaTwoOne =
+                PoolMetadata.of( PoolMetadata.of(), TimeWindowOuter.of( timeWindow ), OneOrTwoThresholds.of( first ) );
+
+        DoubleScoreComponentOuter outerScoreTwoOne = DoubleScoreComponentOuter.of( scoreTwoOne, metaTwoOne );
+
+        List<DoubleScoreComponentOuter> statistics = List.of( outerScoreTwoOne );
+
+        XYDataset testDataset =
+                ChartDataFactory.ofDoubleScoreByThresholdAndLead( statistics, ChronoUnit.SECONDS );
+
+        assertEquals( "Unbounded", testDataset.getSeriesKey( 0 ) );
+    }
+
+    @Test
     void testOfDiagramStatisticsByLeadAndThreshold()
     {
         DiagramMetric.DiagramMetricComponent observedQuantiles =
