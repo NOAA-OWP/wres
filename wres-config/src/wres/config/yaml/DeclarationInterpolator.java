@@ -905,6 +905,25 @@ public class DeclarationInterpolator
                                                                                      .stream() )
                                                                      .collect( Collectors.toSet() );
 
+        if ( dimensions.isEmpty() )
+        {
+            LOGGER.debug( "Interpolating a default dimension of {} for the summary statistics: {}.",
+                          SummaryStatistic.StatisticDimension.FEATURES,
+                          builder.summaryStatistics()
+                                 .stream()
+                                 .map( SummaryStatistic::getStatistic )
+                                 .toList() );
+
+            Set<SummaryStatistic> newStatistics = builder.summaryStatistics().stream()
+                                                         .map( s -> s.toBuilder()
+                                                                     .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                                     .build() )
+                                                         .collect( Collectors.toSet() );
+            builder.summaryStatistics( newStatistics );
+
+            return;
+        }
+
         // Preserve iteration order of dimensions as they are listed - use a sorted set
         Set<SummaryStatistic.StatisticDimension> poolShaped =
                 dimensions.stream()
@@ -917,7 +936,8 @@ public class DeclarationInterpolator
                                         || s == SummaryStatistic.StatisticDimension.FEATURE_GROUP )
                           .collect( Collectors.toCollection( TreeSet::new ) );
 
-        if ( !poolShaped.isEmpty() && !featureShaped.isEmpty() )
+        if ( !poolShaped.isEmpty()
+             && !featureShaped.isEmpty() )
         {
             Set<SummaryStatistic> summaryStatistics = new HashSet<>();
 
