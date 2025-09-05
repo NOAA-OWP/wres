@@ -1506,8 +1506,8 @@ project(':wres-tasker') {
         implementation 'org.eclipse.jetty:jetty-server:12.1.0.alpha1'
 
         // Servlet library is now tied to ee10.
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.0.alpha1'
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.0.alpha1'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.0'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.0'
 
         // Support HTTP/2
         implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.0.alpha1'
@@ -1516,7 +1516,7 @@ project(':wres-tasker') {
         runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.0.alpha1'
 
         // Servlet container library to run a web application with:
-        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.0.alpha1'
+        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.0'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -2026,7 +2026,7 @@ dependencies {
     implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
     //Jetty servlet stuff now tied to ee10, with the move to Jetty 12.
-    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.0.alpha1'
+    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.0'
 
     // Servlet container library to run a web application with:
     runtimeOnly 'org.eclipse.jetty:jetty-webapp:11.0.25'
