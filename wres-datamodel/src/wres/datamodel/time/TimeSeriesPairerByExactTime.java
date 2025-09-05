@@ -270,11 +270,13 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                                                                                         TimeSeries<R> right )
     {
         // One or both sides have no reference times
-        if ( left.getReferenceTimes().isEmpty() )
+        if ( left.getReferenceTimes()
+                 .isEmpty() )
         {
             return right.getReferenceTimes();
         }
-        else if ( right.getReferenceTimes().isEmpty() )
+        else if ( right.getReferenceTimes()
+                       .isEmpty() )
         {
             return left.getReferenceTimes();
         }

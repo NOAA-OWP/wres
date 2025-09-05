@@ -1,5 +1,6 @@
 package wres.datamodel.time;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,7 +24,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import wres.config.yaml.components.TimeInterval;
@@ -1378,8 +1378,8 @@ final class TimeSeriesSlicerTest
                 TimeSeriesSlicer.getReferenceTimeSeasonFilter( startSecond,
                                                                endSecond );
 
-        Assertions.assertAll( () -> assertTrue( filter.test( one ) ),
-                              () -> assertFalse( anotherFilter.test( one ) ) );
+        assertAll( () -> assertTrue( filter.test( one ) ),
+                   () -> assertFalse( anotherFilter.test( one ) ) );
     }
 
     @Test
@@ -1422,8 +1422,8 @@ final class TimeSeriesSlicerTest
         TimeSeries<Double> expectedTwo = new TimeSeries.Builder<Double>().setMetadata( metadata )
                                                                          .build();
 
-        Assertions.assertAll( () -> assertEquals( expectedOne, transformer.apply( one ) ),
-                              () -> assertEquals( expectedTwo, anotherFilter.apply( one ) ) );
+        assertAll( () -> assertEquals( expectedOne, transformer.apply( one ) ),
+                   () -> assertEquals( expectedTwo, anotherFilter.apply( one ) ) );
     }
 
     @Test
@@ -1647,6 +1647,20 @@ final class TimeSeriesSlicerTest
         List<TimeSeries<Double>> expected = List.of( four, five, one, two, three );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testCanInferValidTimeFromReferenceTimeAndLeadDuration()
+    {
+        Set<ReferenceTimeType> a = Set.of( ReferenceTimeType.T0 );
+        Set<ReferenceTimeType> b = Set.of( ReferenceTimeType.ISSUED_TIME );
+        Set<ReferenceTimeType> c = Set.of( ReferenceTimeType.ANALYSIS_START_TIME );
+        Set<ReferenceTimeType> d = Set.of( ReferenceTimeType.GENERATION_TIME );
+
+        assertAll( () -> assertTrue( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( a ) ),
+                   () -> assertTrue( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( b ) ),
+                   () -> assertTrue( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( c ) ),
+                   () -> assertFalse( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( d ) ) );
     }
 
     /**

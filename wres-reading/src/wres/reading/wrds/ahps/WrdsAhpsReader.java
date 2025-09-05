@@ -532,8 +532,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         this.declaration = declaration;
 
-        ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "WRDS AHPS Reading Thread %d" )
-                                                                         .build();
+        ThreadFactory webClientFactory = BasicThreadFactory.builder()
+                                                           .namingPattern( "WRDS AHPS Reading Thread %d" )
+                                                           .build();
 
         // Use a queue with as many places as client threads
         BlockingQueue<Runnable> webClientQueue =
