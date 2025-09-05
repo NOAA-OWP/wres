@@ -39,6 +39,7 @@ import wres.datamodel.time.Event;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.DataProvider;
 import wres.datamodel.time.TimeWindowSlicer;
@@ -1190,7 +1191,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // when the reference time is a ReferenceTimeType.GENERATION_TIME, the valid time cannot be derived from the
         // reference time plus the lead duration. This is a flaw in the db schema that needs to be addressed, i.e.,
         // store time-series by valid time, not lead duration.
-        if ( this.canDeduceValidTimeFromReferenceTimeAndLeadDuration( currentReferenceTimeType ) )
+        if ( this.canInferValidTimes( currentReferenceTimeType ) )
         {
             // Add the event
             Event<S> event = mapper.apply( provider );
@@ -1262,15 +1263,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * @param type the reference time type
-     * @return whether the valid time is equal to the reference time plus the lead duration
+     * @return whether the valid times can be inferred
      */
 
-    private boolean canDeduceValidTimeFromReferenceTimeAndLeadDuration( ReferenceTimeType type )
+    private boolean canInferValidTimes( ReferenceTimeType type )
     {
         return Objects.isNull( type )
-               || type == ReferenceTimeType.T0
-               || type == ReferenceTimeType.ISSUED_TIME
-               || type == ReferenceTimeType.ANALYSIS_START_TIME;
+               || TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( Set.of( type ) );
     }
 
     /**
