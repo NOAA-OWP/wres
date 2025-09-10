@@ -250,7 +250,7 @@ class EvaluationUtilities
             return Map.of();
         }
 
-        // Collect the supported feature dimensions to aggregate
+        // Collect the supported dimensions to aggregate
         // Note that clearing threshold values is linked to these aggregation dimensions.
         Set<SummaryStatistic.StatisticDimension> dimensions =
                 declaration.summaryStatistics()
@@ -260,6 +260,12 @@ class EvaluationUtilities
                            .filter( d -> d != SummaryStatistic.StatisticDimension.RESAMPLED
                                          && d != SummaryStatistic.StatisticDimension.TIMING_ERRORS )
                            .collect( Collectors.toSet() );
+
+        if( dimensions.isEmpty() )
+        {
+            throw new IllegalStateException( "Summary statistics were requested but no summary statistics dimensions "
+                                             + "could be found." );
+        }
 
         return EvaluationUtilities.getSumStatsCalculators( declaration,
                                                            dimensions,
@@ -1510,7 +1516,7 @@ class EvaluationUtilities
             List<FeatureGroupFilterAdapter> filters =
                     EvaluationUtilities.getOneBigFeatureGroupForSummaryStatistics( declaration );
             featureFilters.addAll( filters );
-            LOGGER.debug( "Created {} filters for all geographic features.", filters.size() );
+            LOGGER.info( "Created {} filters for all geographic features.", filters.size() );
         }
 
         // Summary statistics across all geographic features in a single feature group

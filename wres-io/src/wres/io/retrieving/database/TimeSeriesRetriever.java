@@ -26,6 +26,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ import wres.datamodel.time.Event;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.DataProvider;
 import wres.datamodel.time.TimeWindowSlicer;
@@ -1178,43 +1180,23 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Get the valid time
         Instant validTime = provider.getInstant( "valid_time" );
 
-        Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
+        Pair<ReferenceTimeType, Map<ReferenceTimeType, Instant>>
+                referenceTimePair = this.getReferenceTimes( provider,
+                                                            lastBuilder );
 
-        // Add the explicit reference time
-        if ( provider.hasColumn( REFERENCE_TIME )
-             && !provider.isNull( REFERENCE_TIME ) )
+        Map<ReferenceTimeType, Instant> referenceTimes = referenceTimePair.getValue();
+        ReferenceTimeType currentReferenceTimeType = referenceTimePair.getKey();
+
+        // Only add events whose valid times can be properly deduced from the reference time and lead time. For example,
+        // when the reference time is a ReferenceTimeType.GENERATION_TIME, the valid time cannot be derived from the
+        // reference time plus the lead duration. This is a flaw in the db schema that needs to be addressed, i.e.,
+        // store time-series by valid time, not lead duration.
+        if ( this.canInferValidTimes( currentReferenceTimeType ) )
         {
-            ReferenceTimeType type = ReferenceTimeType.UNKNOWN;
-
-            if ( provider.hasColumn( REFERENCE_TIME_TYPE ) )
-            {
-                String typeString = provider.getString( REFERENCE_TIME_TYPE );
-                type = ReferenceTimeType.valueOf( typeString.toUpperCase() );
-            }
-
-            Instant referenceTime = provider.getInstant( REFERENCE_TIME );
-            referenceTimes = new EnumMap<>( ReferenceTimeType.class );
-            referenceTimes.put( type, referenceTime );
-            referenceTimes = Collections.unmodifiableMap( referenceTimes );
+            // Add the event
+            Event<S> event = mapper.apply( provider );
+            this.addEventToTimeSeries( event, lastBuilder );
         }
-
-        // Adding a new reference time to an existing series or adding events to a new series?
-        if ( this.hasNewReferenceTimes( lastBuilder, referenceTimes ) )
-        {
-            TimeSeriesMetadata oldMetadata = lastBuilder.getMetadata();
-            Map<ReferenceTimeType, Instant> aggregateReferenceTimes = new EnumMap<>( ReferenceTimeType.class );
-            aggregateReferenceTimes.putAll( oldMetadata.getReferenceTimes() );
-            aggregateReferenceTimes.putAll( referenceTimes );
-            TimeSeriesMetadata adjustedMetadata = new TimeSeriesMetadata.Builder( oldMetadata )
-                    .setReferenceTimes( aggregateReferenceTimes )
-                    .build();
-            lastBuilder.setMetadata( adjustedMetadata );
-            return Collections.unmodifiableList( returnMe );
-        }
-
-        // Add the event     
-        Event<S> event = mapper.apply( provider );
-        this.addEventToTimeSeries( event, lastBuilder );
 
         // Add the timescale info
         String functionString = provider.getString( "scale_function" );
@@ -1280,21 +1262,63 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * @param builder the time-series builder
-     * @param <S> the time-series data type
-     * @return whether the builder contains reference times that do not match the new reference times
+     * @param type the reference time type
+     * @return whether the valid times can be inferred
      */
 
-    private <S> boolean hasNewReferenceTimes( TimeSeries.Builder<S> builder,
-                                              Map<ReferenceTimeType, Instant> newReferenceTimes )
+    private boolean canInferValidTimes( ReferenceTimeType type )
     {
-        return Objects.nonNull( builder.getMetadata() )
-               && !builder.getMetadata()
-                          .getReferenceTimes()
-                          .isEmpty()
-               && !Objects.equals( builder.getMetadata()
-                                          .getReferenceTimes(),
-                                   newReferenceTimes );
+        return Objects.isNull( type )
+               || TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( Set.of( type ) );
+    }
+
+    /**
+     * Obtains the reference times from the provider, including the type of the current reference time.
+     *
+     * @param <S> the time-series data type
+     * @param provider the data provider
+     * @param lastBuilder the last time-series builder
+     * @return the aggregate reference times from the current read and the existing builder
+     */
+
+    private <S> Pair<ReferenceTimeType, Map<ReferenceTimeType, Instant>> getReferenceTimes( DataProvider provider,
+                                                                                            TimeSeries.Builder<S> lastBuilder )
+    {
+        Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
+
+        ReferenceTimeType currentReferenceTimeType = null;
+
+        // Add the explicit reference time
+        if ( provider.hasColumn( REFERENCE_TIME )
+             && !provider.isNull( REFERENCE_TIME ) )
+        {
+            ReferenceTimeType type = ReferenceTimeType.UNKNOWN;
+
+            if ( provider.hasColumn( REFERENCE_TIME_TYPE ) )
+            {
+                String typeString = provider.getString( REFERENCE_TIME_TYPE );
+                type = ReferenceTimeType.valueOf( typeString.toUpperCase() );
+                currentReferenceTimeType = type;
+            }
+
+            Instant referenceTime = provider.getInstant( REFERENCE_TIME );
+            referenceTimes = new EnumMap<>( ReferenceTimeType.class );
+            referenceTimes.put( type, referenceTime );
+
+            // If the existing builder already has reference times, add those
+            if ( Objects.nonNull( lastBuilder.getMetadata() )
+                 && !lastBuilder.getMetadata()
+                                .getReferenceTimes()
+                                .isEmpty() )
+            {
+                referenceTimes.putAll( lastBuilder.getMetadata()
+                                                  .getReferenceTimes() );
+            }
+
+            referenceTimes = Collections.unmodifiableMap( referenceTimes );
+        }
+
+        return Pair.of( currentReferenceTimeType, referenceTimes );
     }
 
     /**

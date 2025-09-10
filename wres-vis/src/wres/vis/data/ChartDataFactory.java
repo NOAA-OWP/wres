@@ -185,9 +185,8 @@ public class ChartDataFactory
             {
                 DatasetOrientation nextOrientation = nextEntry.getKey();
                 List<DoubleScoreComponentOuter> nextScenario = nextEntry.getValue();
-                Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
-                                                                            durationUnits );
-                String name = leadDuration.toString();
+                String name = ChartDataFactory.getDurationLabelForThresholdLeadLegend( key.getLatestLeadDuration(),
+                                                                                       durationUnits );
 
                 if ( sorted.size() > 1
                      && nextOrientation == DatasetOrientation.BASELINE )
@@ -1620,6 +1619,26 @@ public class ChartDataFactory
         }
 
         return lableTime;
+    }
+
+    /**
+     * Returns a label for the supplied duration.
+     * @param duration the duration
+     * @param durationUnits the duration units
+     * @return the label
+     */
+
+    private static String getDurationLabelForThresholdLeadLegend( Duration duration,
+                                                                  ChronoUnit durationUnits )
+    {
+        if ( duration.equals( TimeWindowOuter.DURATION_MAX ) )
+        {
+            return "Unbounded";
+        }
+
+        Number leadDuration = DataUtilities.durationToNumericUnits( duration,
+                                                                    durationUnits );
+        return leadDuration.toString();
     }
 
     /**

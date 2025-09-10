@@ -1321,6 +1321,60 @@ class DeclarationInterpolatorTest
     }
 
     @Test
+    void testInterpolateDimensionForSummaryStatisticsWhenNoneDeclared()
+    {
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        summaryStatistics.add( mean );
+
+        MetricParameters parameters =
+                MetricParametersBuilder.builder()
+                                       .summaryStatistics( summaryStatistics )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.TIME_TO_PEAK_ERROR )
+                                    .parameters( parameters )
+                                    .build();
+
+        Set<Metric> metrics = Set.of( first );
+
+        // Add summary statistics in two separate contexts
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .metrics( metrics )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation, false );
+
+        Set<SummaryStatistic> actualOne = actual.summaryStatistics();
+        Set<SummaryStatistic> actualTwo = actual.metrics()
+                                                .stream()
+                                                .findFirst()
+                                                .orElseThrow()
+                                                .parameters()
+                                                .summaryStatistics();
+
+        SummaryStatistic expectedFirst = SummaryStatistic.newBuilder()
+                                                         .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                         .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                         .build();
+
+        SummaryStatistic expectedSecond = SummaryStatistic.newBuilder()
+                                                          .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                          .addDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
+                                                          .build();
+
+        assertAll( () -> assertEquals( Set.of( expectedFirst ), actualOne ),
+                   () -> assertEquals( Set.of( expectedSecond ), actualTwo ) );
+
+    }
+
+    @Test
     void testInterpolateCombinedDimensionsForSummaryStatistics()
     {
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();

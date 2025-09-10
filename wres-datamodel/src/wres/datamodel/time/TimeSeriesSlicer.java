@@ -320,7 +320,8 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
-     * prescribed {@link TimeWindowOuter}.
+     * prescribed {@link TimeWindowOuter}. Does not consider any {@link ReferenceTimeType#GENERATION_TIME} when
+     * filtering as this is purely a metadata attribute, rather than a functional reference time.
      *
      * @param <T> the type of time-series data
      * @param input the input to slice
@@ -334,7 +335,11 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( input );
 
-        return TimeSeriesSlicer.filter( input, timeWindow, input.getReferenceTimes().keySet() );
+        return TimeSeriesSlicer.filter( input, timeWindow, input.getReferenceTimes()
+                                                                .keySet()
+                                                                .stream()
+                                                                .filter( t -> t != ReferenceTimeType.GENERATION_TIME )
+                                                                .collect( Collectors.toSet() ) );
     }
 
     /**
@@ -1393,7 +1398,7 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Returns the time-series data type, defaulting to {@link wres.config.components.DataType#OBSERVATIONS}.
+     * Returns the time-series data type, defaulting to {@link wres.config.yaml.components.DataType#OBSERVATIONS}.
      *
      * @param timeSeries the time-series
      * @return the time-series data type

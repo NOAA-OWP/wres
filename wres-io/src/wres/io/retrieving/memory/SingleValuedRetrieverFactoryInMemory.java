@@ -259,7 +259,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         // Add the main variable name
         names.add( variable.name() );
 
-        // Add any time-series with aliased variable names
+        // Add time-series for all variable names, including explicit aliases
         for ( String alias : names )
         {
             Stream<TimeSeries<Double>> innerSeries;

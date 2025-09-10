@@ -329,8 +329,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
     private <T> TimeSeries<T> checkForEmptySeriesAndAddReferenceTimeIfRequired( TimeSeries<T> timeSeries, URI uri )
     {
-        if ( !timeSeries.getReferenceTimes()
-                        .isEmpty() )
+        if ( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( timeSeries.getReferenceTimes()
+                                                                                           .keySet() ) )
         {
             return timeSeries;
         }
@@ -1637,7 +1637,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
     private <T> Instant getReferenceDatetime( TimeSeries<T> timeSeries )
     {
-        if ( timeSeries.getReferenceTimes().isEmpty() )
+        if ( timeSeries.getReferenceTimes()
+                       .isEmpty() )
         {
             throw new IllegalStateException( "Data must have at least one reference datetime: "
                                              + timeSeries );
