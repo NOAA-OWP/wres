@@ -1398,7 +1398,24 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Returns the time-series data type, defaulting to {@link wres.config.yaml.components.DataType#OBSERVATIONS}.
+     * Determines whether the valid time can be inferred from one of the reference times present if the lead duration is
+     * known. This only applies to specific reference time types.
+     *
+     * @param types the reference time types
+     * @return whether the valid time is equal to the reference time plus the lead duration
+     */
+
+    public static boolean canInferValidTimeFromReferenceTimeAndLeadDuration( Set<ReferenceTimeType> types )
+    {
+        Objects.requireNonNull( types );
+
+        return types.stream().anyMatch( t -> t == ReferenceTimeType.T0
+                                             || t == ReferenceTimeType.ISSUED_TIME
+                                             || t == ReferenceTimeType.ANALYSIS_START_TIME );
+    }
+
+    /**
+     * Returns the time-series data type, defaulting to {@link wres.config.components.DataType#OBSERVATIONS}.
      *
      * @param timeSeries the time-series
      * @return the time-series data type
