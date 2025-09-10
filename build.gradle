@@ -58,7 +58,7 @@ plugins {
 
     // To generate de/serialization classes for message bodies
     // Bumping this to 0.9.5 caused wres-statistics to fail
-    id 'com.google.protobuf' version '0.9.1'
+    id 'com.google.protobuf' version '0.9.5'
 
     // To create trusted certificate files (.jks aka cacerts) from dir of .pem
     // (Not working: not friendly to our directory structure nor submodules)
