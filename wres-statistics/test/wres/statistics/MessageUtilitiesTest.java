@@ -11,7 +11,7 @@ import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Outputs.Csv2Format;
-import wres.statistics.generated.Outputs.CsvFormat;
+import wres.statistics.generated.Outputs.Netcdf2Format;
 import wres.statistics.generated.Outputs.NetcdfFormat;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.ProtobufFormat;
@@ -35,12 +35,11 @@ class MessageUtilitiesTest
         expected.remove( Format.PAIRS );
 
         Outputs outputs = Outputs.newBuilder()
-                                 .setCsv( CsvFormat.getDefaultInstance() )
                                  .setPng( PngFormat.getDefaultInstance() )
                                  .setSvg( SvgFormat.newBuilder() )
                                  .setCsv2( Csv2Format.getDefaultInstance() )
+                                 .setNetcdf2( Netcdf2Format.getDefaultInstance() )
                                  .setProtobuf( ProtobufFormat.getDefaultInstance() )
-                                 .setNetcdf( NetcdfFormat.newBuilder() )
                                  .build();
 
         Set<Format> actual = MessageUtilities.getDeclaredFormats( outputs );

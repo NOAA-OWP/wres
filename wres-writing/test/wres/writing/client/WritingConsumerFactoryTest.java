@@ -15,8 +15,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
@@ -198,7 +198,7 @@ class WritingConsumerFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                     ThresholdOperator.GREATER,
-                                                                                    ThresholdOrientation.LEFT ) );
+                                                                                    ThresholdOrientation.OBSERVED ) );
 
         Geometry geometry = MessageUtilities.getGeometry( "DRRC2", null, null, "POINT (23.45 56.21)" );
 

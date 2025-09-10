@@ -17,33 +17,29 @@ message Pool
 {
     /*A message that encapsulates a pool, which is the atomic collection of 
     pairs and statistics.*/
-    
-    repeated GeometryTuple geometry_tuples = 1 [deprecated = true];
-    // Deprecated for removal. Use the geometry_group instead.
-    // Zero or more geometry tuples that characterize this pool.
         
-    TimeWindow time_window = 2;
+    TimeWindow time_window = 1;
     // The temporal boundaries of the pool.
 
-    TimeScale time_scale = 3;
+    TimeScale time_scale = 2;
     // The time scale associated with the pairs and statistics in this pool.
     // In general, the time scale is fixed across all pools within an evaluation,
     // but it may not be known until pool creation time and, in principle, the 
     // time scale could vary between pools.
 
-    Threshold event_threshold = 4;
+    Threshold event_threshold = 3;
     // Threshold used to define a partition of pairs or a categorical event.
         
-    Threshold decision_threshold = 5;
+    Threshold decision_threshold = 4;
     /*The threshold associated with a decision, such as the forecast probability 
     of flooding at which to issue a flood warning. This is used to transform 
     probabilistic dichotomous data to single-valued dichitomous data to which 
     dichotomous statistics may be applied, such as the equitable threat score.*/
     
-    Pairs pairs = 6;
+    Pairs pairs = 5;
     // The paired values that form the pool.
 
-    bool is_baseline_pool = 7;
+    bool is_baseline_pool = 6;
     // Is true when the pool contains statistics for the baseline pairs *only*, 
     // false when it contains statistics for the right pairs, whether absolute 
     // statistics or statistics relative to a baseline (skill). When an 
@@ -51,15 +47,10 @@ message Pool
     // baseline pairs, this allows the resulting statistics to be discriminated 
     // between.
 
-    string region_name = 8 [deprecated = true];
-    // Deprecated for removal. Use the geometry_group instead.
-    // The name of the spatial aggregation or geographic region associated with 
-    // the geometries (e.g., Patagonia).
-
-    int64 pool_id = 9;
+    int64 pool_id = 7;
     // A unique identifier for the pool.
 
-    GeometryGroup geometry_group = 10;
+    GeometryGroup geometry_group = 8;
     // The group of geometries associated with the pool.
 
     enum EnsembleAverageType
@@ -76,7 +67,7 @@ message Pool
         // The pool was formed using ensemble median values.
     }
 
-    EnsembleAverageType ensemble_average_type = 11;
+    EnsembleAverageType ensemble_average_type = 9;
     // The type of ensemble average used when forming a pool of ensemble
     // averages.
 }

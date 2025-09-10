@@ -33,4 +33,4 @@ metrics:
   - median error
 decimal_format: '#0.0000'
 output_formats:
-  - csv
+  - csv2

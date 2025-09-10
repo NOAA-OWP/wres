@@ -21,7 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.ThresholdType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.types.OneOrTwoDoubles;
@@ -36,8 +36,8 @@ import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.metrics.Metric;
 import wres.metrics.MetricCalculationException;
@@ -508,7 +508,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
         this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                    ThresholdOperator.GREATER,
-                                                   ThresholdOrientation.LEFT_AND_RIGHT );
+                                                   ThresholdOrientation.OBSERVED_AND_PREDICTED );
     }
 
     /**

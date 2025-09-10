@@ -20,19 +20,19 @@ import org.mockito.Mockito;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.yaml.components.BaselineDataset;
-import wres.config.yaml.components.BaselineDatasetBuilder;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.FeatureGroups;
-import wres.config.yaml.components.FeatureServiceGroup;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Offset;
-import wres.config.yaml.components.UnitAlias;
+import wres.config.components.BaselineDataset;
+import wres.config.components.BaselineDatasetBuilder;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.FeatureGroups;
+import wres.config.components.FeatureServiceGroup;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Offset;
+import wres.config.components.UnitAlias;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -158,8 +158,8 @@ class FeatureFillerTest
     {
         URI uri = new URI( "https://some_fake_uri" );
         FeatureServiceGroup featureGroup = new FeatureServiceGroup( "state", "AL", true );
-        wres.config.yaml.components.FeatureService
-                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of( featureGroup ) );
+        wres.config.components.FeatureService
+                featureService = new wres.config.components.FeatureService( uri, Set.of( featureGroup ) );
 
         EvaluationDeclaration evaluation
                 = FeatureFillerTest.getBoilerplateEvaluationWith( null,
@@ -238,8 +238,8 @@ class FeatureFillerTest
             }
 
             URI serviceUri = jsonPath.toUri();
-            wres.config.yaml.components.FeatureService
-                    featureService = new wres.config.yaml.components.FeatureService( serviceUri, Set.of() );
+            wres.config.components.FeatureService
+                    featureService = new wres.config.components.FeatureService( serviceUri, Set.of() );
 
             // Create a sparse feature to correlate
             GeometryTuple feature = GeometryTuple.newBuilder()
@@ -275,8 +275,8 @@ class FeatureFillerTest
     void testPreserveOffsetsWithDenselyDeclaredFeatures() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
-        wres.config.yaml.components.FeatureService
-                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of() );
+        wres.config.components.FeatureService
+                featureService = new wres.config.components.FeatureService( uri, Set.of() );
 
         GeometryTuple geometry = GeometryTuple.newBuilder()
                                               .setLeft( Geometry.newBuilder()
@@ -305,8 +305,8 @@ class FeatureFillerTest
     {
         URI uri = new URI( "https://some_fake_uri" );
         FeatureServiceGroup featureGroup = new FeatureServiceGroup( "state", "AL", true );
-        wres.config.yaml.components.FeatureService
-                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of( featureGroup ) );
+        wres.config.components.FeatureService
+                featureService = new wres.config.components.FeatureService( uri, Set.of( featureGroup ) );
 
         EvaluationDeclaration evaluation
                 = FeatureFillerTest.getBoilerplateEvaluationWith( null,
@@ -348,8 +348,8 @@ class FeatureFillerTest
     void testFillOutSparseFeaturesUsingMockedFeatureServiceWithOffsetsPreserved() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
-        wres.config.yaml.components.FeatureService
-                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of() );
+        wres.config.components.FeatureService
+                featureService = new wres.config.components.FeatureService( uri, Set.of() );
 
         GeometryTuple left = GeometryTuple.newBuilder()
                                           .setLeft( Geometry.newBuilder()
@@ -476,8 +476,8 @@ class FeatureFillerTest
     void testFillFeaturesDoesNotThrowNPEWhenNoFeaturesExistAndFeatureGroupExists() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
-        wres.config.yaml.components.FeatureService
-                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of() );
+        wres.config.components.FeatureService
+                featureService = new wres.config.components.FeatureService( uri, Set.of() );
 
         EvaluationDeclaration evaluation
                 = FeatureFillerTest.getBoilerplateEvaluationWith( null,
@@ -518,7 +518,7 @@ class FeatureFillerTest
      */
 
     private static EvaluationDeclaration getBoilerplateEvaluationWith( Set<GeometryTuple> features,
-                                                                       wres.config.yaml.components.FeatureService featureService,
+                                                                       wres.config.components.FeatureService featureService,
                                                                        Dataset left,
                                                                        Dataset right,
                                                                        BaselineDataset baseline )

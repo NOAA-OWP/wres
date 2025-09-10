@@ -24,12 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdSource;
-import wres.config.yaml.components.ThresholdSourceBuilder;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdSource;
+import wres.config.components.ThresholdSourceBuilder;
+import wres.config.components.ThresholdType;
 import wres.reading.wrds.geography.Location;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold;
@@ -938,56 +938,56 @@ class WrdsThresholdReaderTest
                 = ThresholdSourceBuilder.builder()
                                         .uri( fakeUri )
                                         .featureNameFrom( DatasetOrientation.LEFT )
-                                        .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                        .type( wres.config.components.ThresholdType.VALUE )
                                         .parameter( "stage" )
                                         .provider( "NWS-NRLDB" )
-                                        .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                        .operator( wres.config.components.ThresholdOperator.GREATER )
                                         .build();
 
-        Set<wres.config.yaml.components.Threshold> actual =
+        Set<wres.config.components.Threshold> actual =
                 this.reader.read( service,
                                   Set.of( "PTSA1", "MNTG1", "BLOF1", "CEDG1", "SMAF1" ),
                                   FeatureAuthority.NWS_LID );
 
         Threshold firstOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 0.0 )
+                                      .setObservedThresholdValue( 0.0 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
         Threshold firstTwo = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 8.0 )
+                                      .setObservedThresholdValue( 8.0 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "action" )
                                       .build();
         Threshold firstThree = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 9.5 )
+                                        .setObservedThresholdValue( 9.5 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "flood" )
                                         .build();
         Threshold firstFour = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 9.5 )
+                                       .setObservedThresholdValue( 9.5 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "minor" )
                                        .build();
         Threshold firstFive = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 11.5 )
+                                       .setObservedThresholdValue( 11.5 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "moderate" )
                                        .build();
         Threshold firstSix = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 13.5 )
+                                      .setObservedThresholdValue( 13.5 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "major" )
                                       .build();
         Threshold firstSeven = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 15.36 )
+                                        .setObservedThresholdValue( 15.36 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "record" )
                                         .build();
@@ -1000,23 +1000,23 @@ class WrdsThresholdReaderTest
                                                     firstSix,
                                                     firstSeven );
 
-        Set<wres.config.yaml.components.Threshold> firstExpected =
+        Set<wres.config.components.Threshold> firstExpected =
                 WrdsThresholdReaderTest.createThresholds( firstExpectedInner,
                                                           "SMAF1" );
 
-        Set<wres.config.yaml.components.Threshold> firstActual = WrdsThresholdReaderTest.filter( actual, "SMAF1" );
+        Set<wres.config.components.Threshold> firstActual = WrdsThresholdReaderTest.filter( actual, "SMAF1" );
 
         assertEquals( firstExpected, firstActual );
 
         Threshold secondOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 0.0 )
+                                       .setObservedThresholdValue( 0.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "low" )
                                        .build();
         Threshold secondTwo = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 14.29 )
+                                       .setObservedThresholdValue( 14.29 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "record" )
                                        .build();
@@ -1024,70 +1024,70 @@ class WrdsThresholdReaderTest
         Set<Threshold> secondExpectedInner = Set.of( secondOne,
                                                      secondTwo );
 
-        Set<wres.config.yaml.components.Threshold> secondExpected =
+        Set<wres.config.components.Threshold> secondExpected =
                 WrdsThresholdReaderTest.createThresholds( secondExpectedInner,
                                                           "CEDG1" );
 
-        Set<wres.config.yaml.components.Threshold> secondActual = WrdsThresholdReaderTest.filter( actual, "CEDG1" );
+        Set<wres.config.components.Threshold> secondActual = WrdsThresholdReaderTest.filter( actual, "CEDG1" );
 
         assertEquals( secondExpected, secondActual );
 
         Threshold thirdOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 0.0 )
+                                      .setObservedThresholdValue( 0.0 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
 
         Set<Threshold> thirdExpectedInner = Set.of( thirdOne );
 
-        Set<wres.config.yaml.components.Threshold> thirdExpected =
+        Set<wres.config.components.Threshold> thirdExpected =
                 WrdsThresholdReaderTest.createThresholds( thirdExpectedInner,
                                                           "PTSA1" );
 
-        Set<wres.config.yaml.components.Threshold> thirdActual = WrdsThresholdReaderTest.filter( actual, "PTSA1" );
+        Set<wres.config.components.Threshold> thirdActual = WrdsThresholdReaderTest.filter( actual, "PTSA1" );
 
         assertEquals( thirdExpected, thirdActual );
 
         Threshold fourthOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 13.0 )
+                                       .setObservedThresholdValue( 13.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "action" )
                                        .build();
         Threshold fourthTwo = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 15.0 )
+                                       .setObservedThresholdValue( 15.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "bankfull" )
                                        .build();
         Threshold fourthThree = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
-                                         .setLeftThresholdValue( 17.0 )
+                                         .setObservedThresholdValue( 17.0 )
                                          .setThresholdValueUnits( FT )
                                          .setName( "flood" )
                                          .build();
         Threshold fourthFour = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 17.0 )
+                                        .setObservedThresholdValue( 17.0 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "minor" )
                                         .build();
         Threshold fourthFive = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 23.5 )
+                                        .setObservedThresholdValue( 23.5 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "moderate" )
                                         .build();
         Threshold fourthSix = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 26.0 )
+                                       .setObservedThresholdValue( 26.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "major" )
                                        .build();
         Threshold fourthSeven = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
-                                         .setLeftThresholdValue( 28.6 )
+                                         .setObservedThresholdValue( 28.6 )
                                          .setThresholdValueUnits( FT )
                                          .setName( "record" )
                                          .build();
@@ -1100,59 +1100,59 @@ class WrdsThresholdReaderTest
                                                      fourthSix,
                                                      fourthSeven );
 
-        Set<wres.config.yaml.components.Threshold> fourthExpected =
+        Set<wres.config.components.Threshold> fourthExpected =
                 WrdsThresholdReaderTest.createThresholds( fourthExpectedInner,
                                                           "BLOF1" );
 
-        Set<wres.config.yaml.components.Threshold> fourthActual = WrdsThresholdReaderTest.filter( actual, "BLOF1" );
+        Set<wres.config.components.Threshold> fourthActual = WrdsThresholdReaderTest.filter( actual, "BLOF1" );
 
         assertEquals( fourthExpected, fourthActual );
 
         Threshold fifthOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( -0.16 )
+                                      .setObservedThresholdValue( -0.16 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
         Threshold fifthTwo = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 11.0 )
+                                      .setObservedThresholdValue( 11.0 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "action" )
                                       .build();
         Threshold fifthThree = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 11.0 )
+                                        .setObservedThresholdValue( 11.0 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "bankfull" )
                                         .build();
         Threshold fifthFour = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 20.0 )
+                                       .setObservedThresholdValue( 20.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "flood" )
                                        .build();
         Threshold fifthFive = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 20.0 )
+                                       .setObservedThresholdValue( 20.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "minor" )
                                        .build();
         Threshold fifthSix = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 28.0 )
+                                      .setObservedThresholdValue( 28.0 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "moderate" )
                                       .build();
         Threshold fifthSeven = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 31.0 )
+                                        .setObservedThresholdValue( 31.0 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "major" )
                                         .build();
         Threshold fifthEighth = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
-                                         .setLeftThresholdValue( 34.11 )
+                                         .setObservedThresholdValue( 34.11 )
                                          .setThresholdValueUnits( FT )
                                          .setName( "record" )
                                          .build();
@@ -1165,11 +1165,11 @@ class WrdsThresholdReaderTest
                                                     fifthSeven,
                                                     fifthEighth );
 
-        Set<wres.config.yaml.components.Threshold> fifthExpected =
+        Set<wres.config.components.Threshold> fifthExpected =
                 WrdsThresholdReaderTest.createThresholds( fifthExpectedInner,
                                                           "MNTG1" );
 
-        Set<wres.config.yaml.components.Threshold> fifthActual = WrdsThresholdReaderTest.filter( actual, "MNTG1" );
+        Set<wres.config.components.Threshold> fifthActual = WrdsThresholdReaderTest.filter( actual, "MNTG1" );
 
         assertEquals( fifthExpected, fifthActual );
     }
@@ -1197,28 +1197,28 @@ class WrdsThresholdReaderTest
                 = ThresholdSourceBuilder.builder()
                                         .uri( fakeUri )
                                         .featureNameFrom( DatasetOrientation.LEFT )
-                                        .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                        .type( wres.config.components.ThresholdType.VALUE )
                                         .parameter( "stage" )
                                         .provider( "NWS-NRLDB" )
-                                        .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                        .operator( wres.config.components.ThresholdOperator.GREATER )
                                         .build();
 
         WrdsThresholdReader chunkedReader = WrdsThresholdReader.of( 1 );
 
-        Set<wres.config.yaml.components.Threshold> actual =
+        Set<wres.config.components.Threshold> actual =
                 chunkedReader.read( service,
                                     Set.of( "BLOF1", "CEDG1" ),
                                     FeatureAuthority.NWS_LID );
 
         Threshold firstOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 0.0 )
+                                      .setObservedThresholdValue( 0.0 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
         Threshold firstTwo = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setLeftThresholdValue( 14.29 )
+                                      .setObservedThresholdValue( 14.29 )
                                       .setThresholdValueUnits( FT )
                                       .setName( "record" )
                                       .build();
@@ -1226,53 +1226,53 @@ class WrdsThresholdReaderTest
         Set<Threshold> firstExpectedInner = Set.of( firstOne,
                                                     firstTwo );
 
-        Set<wres.config.yaml.components.Threshold> firstExpected =
+        Set<wres.config.components.Threshold> firstExpected =
                 WrdsThresholdReaderTest.createThresholds( firstExpectedInner,
                                                           "CEDG1" );
 
-        Set<wres.config.yaml.components.Threshold> firstActual = WrdsThresholdReaderTest.filter( actual, "CEDG1" );
+        Set<wres.config.components.Threshold> firstActual = WrdsThresholdReaderTest.filter( actual, "CEDG1" );
 
         assertEquals( firstExpected, firstActual );
 
         Threshold secondOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 13.0 )
+                                       .setObservedThresholdValue( 13.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "action" )
                                        .build();
         Threshold secondTwo = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 15.0 )
+                                       .setObservedThresholdValue( 15.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "bankfull" )
                                        .build();
         Threshold secondThree = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
-                                         .setLeftThresholdValue( 17.0 )
+                                         .setObservedThresholdValue( 17.0 )
                                          .setThresholdValueUnits( FT )
                                          .setName( "flood" )
                                          .build();
         Threshold secondFour = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 17.0 )
+                                        .setObservedThresholdValue( 17.0 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "minor" )
                                         .build();
         Threshold secondFive = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
-                                        .setLeftThresholdValue( 23.5 )
+                                        .setObservedThresholdValue( 23.5 )
                                         .setThresholdValueUnits( FT )
                                         .setName( "moderate" )
                                         .build();
         Threshold secondSix = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setLeftThresholdValue( 26.0 )
+                                       .setObservedThresholdValue( 26.0 )
                                        .setThresholdValueUnits( FT )
                                        .setName( "major" )
                                        .build();
         Threshold secondSeven = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
-                                         .setLeftThresholdValue( 28.6 )
+                                         .setObservedThresholdValue( 28.6 )
                                          .setThresholdValueUnits( FT )
                                          .setName( "record" )
                                          .build();
@@ -1285,11 +1285,11 @@ class WrdsThresholdReaderTest
                                                      secondSix,
                                                      secondSeven );
 
-        Set<wres.config.yaml.components.Threshold> secondExpected =
+        Set<wres.config.components.Threshold> secondExpected =
                 WrdsThresholdReaderTest.createThresholds( secondExpectedInner,
                                                           "BLOF1" );
 
-        Set<wres.config.yaml.components.Threshold> secondActual = WrdsThresholdReaderTest.filter( actual, "BLOF1" );
+        Set<wres.config.components.Threshold> secondActual = WrdsThresholdReaderTest.filter( actual, "BLOF1" );
 
         assertEquals( secondExpected, secondActual );
     }
@@ -1314,23 +1314,23 @@ class WrdsThresholdReaderTest
                     = ThresholdSourceBuilder.builder()
                                             .uri( jsonPath.toUri() )
                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .type( wres.config.components.ThresholdType.VALUE )
                                             .parameter( "stage" )
                                             .provider( "NWS-NRLDB" )
-                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .operator( wres.config.components.ThresholdOperator.GREATER )
                                             .build();
 
-            Set<wres.config.yaml.components.Threshold> readThresholds =
+            Set<wres.config.components.Threshold> readThresholds =
                     this.reader.read( service,
                                       DESIRED_FEATURES.stream()
                                                       .map( Location::nwsLid )
                                                       .collect( Collectors.toSet() ),
                                       FeatureAuthority.NWS_LID );
 
-            Set<wres.config.yaml.components.Threshold> ptsa1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
+            Set<wres.config.components.Threshold> ptsa1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
                                                                                                          "PTSA1" );
             assertFalse( ptsa1Thresholds.isEmpty() );
-            Set<wres.config.yaml.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
+            Set<wres.config.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
                                                                                                          "BLOF1" );
             assertFalse( blof1Thresholds.isEmpty() );
             assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
@@ -1363,7 +1363,7 @@ class WrdsThresholdReaderTest
                                                      "major",
                                                      "record" );
 
-            for ( wres.config.yaml.components.Threshold wrappedThreshold : blof1Thresholds )
+            for ( wres.config.components.Threshold wrappedThreshold : blof1Thresholds )
             {
                 Threshold threshold = wrappedThreshold.threshold();
                 String thresholdName = threshold.getName().toLowerCase();
@@ -1376,42 +1376,42 @@ class WrdsThresholdReaderTest
                     {
                         hasBankfull = true;
                         assertEquals( 15.0,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "action" ->
                     {
                         hasAction = true;
                         assertEquals( 13.0,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "flood", "minor" ->
                     {
                         hasMinor = true;
                         assertEquals( 17.0,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "moderate" ->
                     {
                         hasModerate = true;
                         assertEquals( 23.5,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "major" ->
                     {
                         hasMajor = true;
                         assertEquals( 26.0,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
                         assertEquals( 28.6,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                 }
@@ -1453,18 +1453,18 @@ class WrdsThresholdReaderTest
                     = ThresholdSourceBuilder.builder()
                                             .uri( jsonPath.toUri() )
                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .type( wres.config.components.ThresholdType.VALUE )
+                                            .operator( wres.config.components.ThresholdOperator.GREATER )
                                             .build();
 
-            Set<wres.config.yaml.components.Threshold> readThresholds =
+            Set<wres.config.components.Threshold> readThresholds =
                     this.reader.read( service,
                                       DESIRED_FEATURES.stream()
                                                       .map( Location::nwsLid )
                                                       .collect( Collectors.toSet() ),
                                       FeatureAuthority.NWS_LID );
 
-            Set<wres.config.yaml.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
+            Set<wres.config.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
                                                                                                          "BLOF1" );
             assertFalse( blof1Thresholds.isEmpty() );
             assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
@@ -1497,7 +1497,7 @@ class WrdsThresholdReaderTest
                     "year_5_0",
                     "year_10_0" );
 
-            for ( wres.config.yaml.components.Threshold wrappedThreshold : blof1Thresholds )
+            for ( wres.config.components.Threshold wrappedThreshold : blof1Thresholds )
             {
                 Threshold threshold = wrappedThreshold.threshold();
                 String thresholdName = threshold.getName()
@@ -1511,42 +1511,42 @@ class WrdsThresholdReaderTest
                     {
                         has1_5 = true;
                         assertEquals( 58864.26,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_2_0" ->
                     {
                         has2_0 = true;
                         assertEquals( 87362.48,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_3_0" ->
                     {
                         has3_0 = true;
                         assertEquals( 109539.05,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_4_0" ->
                     {
                         has4_0 = true;
                         assertEquals( 128454.64,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_5_0" ->
                     {
                         has5_0 = true;
                         assertEquals( 176406.6,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_10_0" ->
                     {
                         has10_0 = true;
                         assertEquals( 216831.58000000002,
-                                      threshold.getLeftThresholdValue(),
+                                      threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                 }
@@ -1587,8 +1587,8 @@ class WrdsThresholdReaderTest
                     = ThresholdSourceBuilder.builder()
                                             .uri( jsonPath.toUri() )
                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .type( wres.config.components.ThresholdType.VALUE )
+                                            .operator( wres.config.components.ThresholdOperator.GREATER )
                                             // No such rating provider
                                             .ratingProvider( "foofoo" )
                                             .build();
@@ -1629,8 +1629,8 @@ class WrdsThresholdReaderTest
                     = ThresholdSourceBuilder.builder()
                                             .uri( jsonPath.toUri() )
                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .type( wres.config.components.ThresholdType.VALUE )
+                                            .operator( wres.config.components.ThresholdOperator.GREATER )
                                             // No such provider
                                             .provider( "barbar" )
                                             .build();
@@ -1671,7 +1671,7 @@ class WrdsThresholdReaderTest
      * @return the featureful threshold
      */
 
-    private static Set<wres.config.yaml.components.Threshold> createThresholds( Set<Threshold> thresholds,
+    private static Set<wres.config.components.Threshold> createThresholds( Set<Threshold> thresholds,
                                                                                 String featureName )
     {
         return thresholds.stream()
@@ -1686,7 +1686,7 @@ class WrdsThresholdReaderTest
      * @return the featureful threshold
      */
 
-    private static wres.config.yaml.components.Threshold createThreshold( Threshold threshold,
+    private static wres.config.components.Threshold createThreshold( Threshold threshold,
                                                                           String featureName )
     {
         Geometry geometry = Geometry.newBuilder()
@@ -1708,7 +1708,7 @@ class WrdsThresholdReaderTest
      * @return the filtered thresholds
      */
 
-    private static Set<wres.config.yaml.components.Threshold> filter( Set<wres.config.yaml.components.Threshold> thresholds,
+    private static Set<wres.config.components.Threshold> filter( Set<wres.config.components.Threshold> thresholds,
                                                                       String featureName )
     {
         return thresholds.stream()

@@ -24,12 +24,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import wres.config.yaml.components.CrossPair;
-import wres.config.yaml.components.CrossPairMethod;
-import wres.config.yaml.components.CrossPairScope;
-import wres.config.yaml.components.GeneratedBaseline;
-import wres.config.yaml.components.GeneratedBaselineBuilder;
-import wres.config.yaml.components.TimeInterval;
+import wres.config.components.CrossPair;
+import wres.config.components.CrossPairMethod;
+import wres.config.components.CrossPairScope;
+import wres.config.components.GeneratedBaseline;
+import wres.config.components.GeneratedBaselineBuilder;
+import wres.config.components.TimeInterval;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;

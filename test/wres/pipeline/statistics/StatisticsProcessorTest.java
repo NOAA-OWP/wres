@@ -17,12 +17,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationInterpolator;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.DeclarationInterpolator;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Metric;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants.SampleDataGroup;
@@ -116,7 +116,7 @@ public final class StatisticsProcessorTest
 
         ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      ThresholdOperator.GREATER,
-                                                     ThresholdOrientation.LEFT_AND_RIGHT );
+                                                     ThresholdOrientation.OBSERVED_AND_PREDICTED );
 
         assertEquals( expected, processors.get( 0 )
                                           .getAllDataThreshold() );

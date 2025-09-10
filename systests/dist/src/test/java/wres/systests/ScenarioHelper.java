@@ -51,17 +51,17 @@ import wres.system.SystemSettings;
  * The class makes optional use of environment variables to identify the system
  * tests directory and WRES database information.
  *
- * It then passes through environment variables to  already-unset Java system
+ * It then passes through environment variables to already-unset Java system
  * properties before running the WRES.
  * @author Raymond Chui
  * @author Hank Herr
  * @author Jesse Bickel
+ * @author James Brown
  */
 public class ScenarioHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ScenarioHelper.class );
     private static final String USUAL_EVALUATION_FILE_NAME = "evaluation.yml";
-    private static final String DEPRECATED_EVALUATION_FILE_NAME = "project_config.xml";
     private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
     private static final Database DATABASE;
     static
@@ -107,7 +107,6 @@ public class ScenarioHelper
         LOGGER.info( "    wres.logLevel =  " + System.getProperty( "wres.logLevel" ) );
         LOGGER.info( "    wres.password =  " + System.getProperty( "wres.password" ) + " (its recommended to use the .pgpass file to identify the database password)");
         LOGGER.info( "    wres.dataDirectory =  " + System.getProperty( "wres.dataDirectory" ) );
-        LOGGER.info( "    wres.xml =  " + System.getProperty( "wres.xml" ) );
         LOGGER.info( "    user.dir (working directory) =  " + System.getProperty( "user.dir" ) );
         LOGGER.info( "    java.io.tmpdir =  " + System.getProperty( "java.io.tmpdir" ) );
     }
@@ -122,15 +121,6 @@ public class ScenarioHelper
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName() );
 
         String fileName = ScenarioHelper.USUAL_EVALUATION_FILE_NAME;
-        String deprecated = System.getProperty( "wres.xml" );
-        if( "true".equalsIgnoreCase( deprecated ) )
-        {
-            fileName = ScenarioHelper.DEPRECATED_EVALUATION_FILE_NAME;
-            LOGGER.warn( "Executing system test scenario {} against the old/deprecated evaluation language! The old "
-                         + "declaration is contained in file: {}",
-                         scenarioInfo.getName(),
-                         fileName );
-        }
 
         Path config = scenarioInfo.getScenarioDirectory()
                                   .resolve( fileName );
@@ -306,11 +296,11 @@ public class ScenarioHelper
                     //Pairs has its own method because it has to sort the lines.
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
-                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedOutput( outputFilePath.toFile(), benchmarkFile );
                     }
                     else if ( outputFileName.endsWith( "evaluation.csv.gz" ) )
                     {
-                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedOutput( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
                     else
@@ -324,20 +314,16 @@ public class ScenarioHelper
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
                         pairResultCode = 16;
-                        //LOGGER.warn("The pairs file differ from benchmark (result code " + pairResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The pairs file differ from " + benchmarkFile.getAbsolutePath() + " (result code " + pairResultCode + ") for file with name " + outputFileName);
                     }
-                    //Otherwise just do the comparison without sorting.
-                    else if ( outputFileName.endsWith( ".csv" ) )
+                    else if ( outputFileName.endsWith( ".csv.gz" ) )
                     {
                         metricCSVResultCode = 32;
-                        //LOGGER.warn("The metric CSV file differs from benchmark (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The metric CSV file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
-                        //LOGGER.warn("The text file differs from benchmark (result code " + txtResultCode + ") for file with name " + outputFileName);
                         LOGGER.warn("The text file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + txtResultCode + ") for file with name " + outputFileName);
                     }
                     else
@@ -469,7 +455,7 @@ public class ScenarioHelper
      * @param benchmarkDirPath
      * @throws IOException
      */
-    private static void assertOutputZippedEqualExpectedPairs( File zippedFile, File benchmarkFile ) throws IOException
+    private static void assertOutputZippedEqualExpectedOutput( File zippedFile, File benchmarkFile ) throws IOException
     {
         //Ensure that the output is a readable file.  The benchmark file has already been established as such.
         assertTrue( zippedFile.isFile() && zippedFile.canRead() );
@@ -493,7 +479,7 @@ public class ScenarioHelper
             LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
             assertEquals( "For zipped file, " + zippedFile.getName()
                           + ", after sorting alphabetically, row "
-                          + i 
+                          + i
                           + " differs from benchmark.",
                           actualRows.get( i ).trim(), //TODO Should this and next be trimmed?
                           expectedRows.get( i ).trim() );

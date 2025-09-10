@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
@@ -100,28 +100,43 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvStatisticsWriter.class );
 
+    /** User-friendly name of a left dataset orientation. */
+    private static final String LEFT_NAME = DatasetOrientation.LEFT.toString().toUpperCase();
+
+    /** User-friendly name of a right dataset orientation. */
+    private static final String RIGHT_NAME = DatasetOrientation.RIGHT.toString().toUpperCase();
+
+    /** User-friendly name of a baseline dataset orientation. */
+    private static final String BASELINE_NAME = DatasetOrientation.BASELINE.toString().toUpperCase();
+
+    /** User-friendly name of a covariate dataset orientation. */
+    private static final String COVARIATE_NAME = DatasetOrientation.COVARIATE.toString().toUpperCase();
+
     /** The file header. */
-    private static final String HEADER = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,COVARIATE "
-                                         + "FILTERS,POOL NUMBER,EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE "
-                                         + "NAME,LEFT FEATURE WKT,LEFT FEATURE SRID,LEFT FEATURE DESCRIPTION,RIGHT "
-                                         + "FEATURE NAME,RIGHT FEATURE WKT,RIGHT FEATURE SRID,RIGHT FEATURE "
-                                         + "DESCRIPTION,BASELINE FEATURE NAME,BASELINE FEATURE WKT,BASELINE FEATURE "
-                                         + "SRID,BASELINE FEATURE DESCRIPTION,EARLIEST ISSUED TIME EXCLUSIVE,LATEST "
-                                         + "ISSUED TIME INCLUSIVE,EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME "
-                                         + "INCLUSIVE,EARLIEST LEAD DURATION EXCLUSIVE,LATEST LEAD DURATION INCLUSIVE,"
-                                         + "TIME SCALE DURATION,TIME SCALE FUNCTION,TIME SCALE START MONTH-DAY "
-                                         + "INCLUSIVE,TIME SCALE END MONTH-DAY INCLUSIVE,EVENT THRESHOLD NAME,EVENT "
-                                         + "THRESHOLD LOWER VALUE,EVENT THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,"
-                                         + "EVENT THRESHOLD LOWER PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT "
-                                         + "THRESHOLD SIDE,EVENT THRESHOLD OPERATOR,DECISION THRESHOLD NAME,DECISION "
-                                         + "THRESHOLD LOWER VALUE,DECISION THRESHOLD UPPER VALUE,DECISION THRESHOLD "
-                                         + "UNITS,DECISION THRESHOLD LOWER PROBABILITY,DECISION THRESHOLD UPPER "
-                                         + "PROBABILITY,DECISION THRESHOLD SIDE,DECISION THRESHOLD OPERATOR,METRIC "
-                                         + "NAME,METRIC COMPONENT NAME,METRIC COMPONENT QUALIFIER,METRIC COMPONENT "
-                                         + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC COMPONENT "
-                                         + "OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY STATISTIC NAME,SUMMARY STATISTIC "
-                                         + "COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY STATISTIC DIMENSIONS,"
-                                         + "SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,STATISTIC";
+    private static final String HEADER = LEFT_NAME + " VARIABLE NAME," + RIGHT_NAME + " VARIABLE NAME," + BASELINE_NAME
+                                         + " VARIABLE NAME," + COVARIATE_NAME + " FILTERS,POOL NUMBER,EVALUATION "
+                                         + "SUBJECT,FEATURE GROUP NAME," + LEFT_NAME + " FEATURE NAME," + LEFT_NAME
+                                         + " FEATURE WKT," + LEFT_NAME + " FEATURE SRID," + LEFT_NAME + " FEATURE "
+                                         + "DESCRIPTION," + RIGHT_NAME + " FEATURE NAME," + RIGHT_NAME + " FEATURE WKT,"
+                                         + RIGHT_NAME + " FEATURE SRID," + RIGHT_NAME + " FEATURE DESCRIPTION,"
+                                         + BASELINE_NAME + " FEATURE NAME," + BASELINE_NAME + " FEATURE WKT,"
+                                         + BASELINE_NAME + " FEATURE SRID," + BASELINE_NAME + " FEATURE DESCRIPTION,"
+                                         + "EARLIEST ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,EARLIEST VALID "
+                                         + "TIME EXCLUSIVE,LATEST VALID TIME INCLUSIVE,EARLIEST LEAD DURATION EXCLUSIVE,"
+                                         + "LATEST LEAD DURATION INCLUSIVE,TIME SCALE DURATION,TIME SCALE FUNCTION,TIME"
+                                         + " SCALE START MONTH-DAY INCLUSIVE,TIME SCALE END MONTH-DAY INCLUSIVE,EVENT "
+                                         + "THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT THRESHOLD UPPER VALUE,"
+                                         + "EVENT THRESHOLD UNITS,EVENT THRESHOLD LOWER PROBABILITY,EVENT THRESHOLD "
+                                         + "UPPER PROBABILITY,EVENT THRESHOLD SIDE,EVENT THRESHOLD OPERATOR,DECISION "
+                                         + "THRESHOLD NAME,DECISION THRESHOLD LOWER VALUE,DECISION THRESHOLD UPPER "
+                                         + "VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD LOWER PROBABILITY,"
+                                         + "DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD SIDE,DECISION "
+                                         + "THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC COMPONENT "
+                                         + "QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT "
+                                         + "MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY STATISTIC "
+                                         + "NAME,SUMMARY STATISTIC COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY "
+                                         + "STATISTIC DIMENSIONS,SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,STATISTIC";
+
 
     /** The CSV delimiter. */
     private static final String DELIMITER = ",";
@@ -318,7 +333,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
         else
         {
-            joiner.add( "RIGHT" );
+            joiner.add( "PREDICTED" );
         }
 
         // Merge in geometry description

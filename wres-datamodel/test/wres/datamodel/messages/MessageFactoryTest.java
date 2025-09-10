@@ -31,26 +31,26 @@ import org.junit.jupiter.api.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.BaselineDataset;
-import wres.config.yaml.components.CovariateDataset;
-import wres.config.yaml.components.CovariateDatasetBuilder;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EnsembleFilter;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Formats;
-import wres.config.yaml.components.GeneratedBaseline;
-import wres.config.yaml.components.GeneratedBaselineBuilder;
-import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.Season;
-import wres.config.yaml.components.SeasonBuilder;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
-import wres.config.yaml.components.Values;
-import wres.config.yaml.components.Variable;
+import wres.config.components.BaselineDataset;
+import wres.config.components.CovariateDataset;
+import wres.config.components.CovariateDatasetBuilder;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EnsembleFilter;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Formats;
+import wres.config.components.GeneratedBaseline;
+import wres.config.components.GeneratedBaselineBuilder;
+import wres.config.components.GeneratedBaselines;
+import wres.config.components.Metric;
+import wres.config.components.Season;
+import wres.config.components.SeasonBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
+import wres.config.components.Values;
+import wres.config.components.Variable;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.OneOrTwoDoubles;
@@ -520,9 +520,6 @@ class MessageFactoryTest
                                  .setCsv2( Outputs.Csv2Format.newBuilder()
                                                              .setOptions( numericFormat )
                                                              .build() )
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( numericFormat )
-                                                           .build() )
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
@@ -715,7 +712,7 @@ class MessageFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                                                     ThresholdOperator.GREATER,
-                                                                                    ThresholdOrientation.LEFT ) );
+                                                                                    ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -792,7 +789,7 @@ class MessageFactoryTest
                                                                                                      OneOrTwoDoubles.of(
                                                                                                              0.9 ),
                                                                                                      ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+                                                                                                     ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -876,7 +873,7 @@ class MessageFactoryTest
                                                                                                      OneOrTwoDoubles.of(
                                                                                                              0.9 ),
                                                                                                      ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+                                                                                                     ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -981,7 +978,7 @@ class MessageFactoryTest
                                                                                                      OneOrTwoDoubles.of(
                                                                                                              0.9 ),
                                                                                                      ThresholdOperator.GREATER_EQUAL,
-                                                                                                     ThresholdOrientation.LEFT ) );
+                                                                                                     ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -1083,7 +1080,7 @@ class MessageFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )
@@ -1149,7 +1146,7 @@ class MessageFactoryTest
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( SQIN )

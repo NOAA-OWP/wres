@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.yaml.components.EventDetectionParameters;
-import wres.config.yaml.components.EventDetectionParametersBuilder;
+import wres.config.components.EventDetectionParameters;
+import wres.config.components.EventDetectionParametersBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;

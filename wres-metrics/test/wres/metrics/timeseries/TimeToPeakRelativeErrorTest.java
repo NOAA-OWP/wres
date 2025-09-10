@@ -23,7 +23,7 @@ import wres.statistics.generated.ReferenceTime;
 
 /**
  * Tests the {@link TimeToPeakRelativeError}.
- * 
+ *
  * @author James Brown
  */
 public final class TimeToPeakRelativeErrorTest
@@ -65,7 +65,8 @@ public final class TimeToPeakRelativeErrorTest
                                                                                   .setSeconds( secondInstant.getEpochSecond() )
                                                                                   .setNanos( secondInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                         .setSeconds( 7200 ) )
+                                                                                                         .setSeconds(
+                                                                                                                 7200 ) )
                                                                .build();
 
         DurationDiagramStatistic expected = DurationDiagramStatistic.newBuilder()

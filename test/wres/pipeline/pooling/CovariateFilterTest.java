@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.yaml.components.CovariateDataset;
-import wres.config.yaml.components.CovariateDatasetBuilder;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.VariableBuilder;
+import wres.config.components.CovariateDataset;
+import wres.config.components.CovariateDatasetBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.VariableBuilder;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -245,8 +245,8 @@ class CovariateFilterTest
     {
         TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 1 ),
                                                       TimeScale.TimeScaleFunction.TOTAL );
-        wres.config.yaml.components.TimeScale existingTimeScale =
-                new wres.config.yaml.components.TimeScale( timeScale.getTimeScale() );
+        wres.config.components.TimeScale existingTimeScale =
+                new wres.config.components.TimeScale( timeScale.getTimeScale() );
 
         Dataset covariateData = DatasetBuilder.builder()
                                               .type( DataType.OBSERVATIONS )

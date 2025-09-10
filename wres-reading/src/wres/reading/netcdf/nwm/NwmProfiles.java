@@ -2,7 +2,7 @@ package wres.reading.netcdf.nwm;
 
 import java.time.Duration;
 
-import wres.config.yaml.components.SourceInterface;
+import wres.config.components.SourceInterface;
 
 /**
  * <p>Static helper class to generate NWM profiles for NWM versions.

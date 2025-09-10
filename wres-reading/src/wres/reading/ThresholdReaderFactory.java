@@ -6,7 +6,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.ThresholdSource;
+import wres.config.components.ThresholdSource;
 import wres.reading.csv.CsvThresholdReader;
 import wres.reading.wrds.thresholds.WrdsThresholdReader;
 

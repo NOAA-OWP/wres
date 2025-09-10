@@ -11,20 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Metric;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.config.yaml.components.ThresholdOperator;
+import wres.config.components.ThresholdOperator;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
@@ -86,7 +86,7 @@ class PoolMetadataTest
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                   ThresholdOperator.EQUAL,
-                                                                                  ThresholdOrientation.LEFT ) );
+                                                                                  ThresholdOrientation.OBSERVED ) );
 
         assertNotNull( PoolMetadata.of( PoolMetadata.of(), thresholds ) );
 
@@ -263,7 +263,7 @@ class PoolMetadataTest
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,
@@ -472,7 +472,7 @@ class PoolMetadataTest
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Pool poolEight = MessageFactory.getPool( featureGroupTwo,
                                                  thirdWindow,

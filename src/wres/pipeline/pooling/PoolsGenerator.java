@@ -22,11 +22,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.components.CovariateDataset;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.Variable;
+import wres.config.DeclarationException;
+import wres.config.components.CovariateDataset;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.Variable;
 import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;

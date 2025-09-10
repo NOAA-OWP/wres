@@ -38,13 +38,13 @@ import liquibase.exception.LiquibaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.FeaturesBuilder;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
@@ -325,9 +325,9 @@ class DatabaseProjectTest
     private static ExecutorService getIngestExecutor()
     {
         // Create an ingest executor
-        ThreadFactory ingestFactory =
-                new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
-                                                .build();
+        ThreadFactory ingestFactory = BasicThreadFactory.builder()
+                                                        .namingPattern( "Ingesting Thread %d" )
+                                                        .build();
         // Queue should be large enough to allow join() call to be reached with zero or few rejected submissions to the
         // executor service.
         BlockingQueue<Runnable> ingestQueue = new ArrayBlockingQueue<>( 7 );

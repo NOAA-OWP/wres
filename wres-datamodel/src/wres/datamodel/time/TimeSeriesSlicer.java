@@ -29,8 +29,8 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.TimeInterval;
+import wres.config.components.DataType;
+import wres.config.components.TimeInterval;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -1415,7 +1415,7 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Returns the time-series data type, defaulting to {@link wres.config.yaml.components.DataType#OBSERVATIONS}.
+     * Returns the time-series data type, defaulting to {@link wres.config.components.DataType#OBSERVATIONS}.
      *
      * @param timeSeries the time-series
      * @return the time-series data type

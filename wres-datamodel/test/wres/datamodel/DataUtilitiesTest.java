@@ -8,14 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -23,12 +25,13 @@ import wres.datamodel.thresholds.ThresholdOuter.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.statistics.MessageUtilities;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>Tests the {@link DataUtilities}.
- * 
+ *
  * <p>TODO: refactor the tests of containers (as opposed to factory methods) into their own test classes.
- * 
+ *
  * @author James Brown
  * @author jesse
  */
@@ -88,13 +91,13 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         Pair<TimeWindowOuter, ThresholdOuter> second =
                 Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
@@ -103,7 +106,7 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( third.compareTo( first ) > 0 );
         assertEquals( 0, first.compareTo( third ) + third.compareTo( first ) );
         //Latest date
@@ -112,7 +115,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( third.compareTo( fourth ) > 0 );
         assertEquals( 0, third.compareTo( fourth ) + fourth.compareTo( third ) );
         //Valid time
@@ -123,7 +126,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( fourth.compareTo( fifth ) < 0 );
         assertEquals( 0, fourth.compareTo( fifth ) + fifth.compareTo( fourth ) );
         //Threshold
@@ -134,7 +137,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertTrue( fifth.compareTo( sixth ) > 0 );
         assertEquals( 0, fifth.compareTo( sixth ) + sixth.compareTo( fifth ) );
 
@@ -151,19 +154,19 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         Pair<TimeWindowOuter, ThresholdOuter> first =
                 Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         Pair<TimeWindowOuter, ThresholdOuter> second =
                 Pair.of( TimeWindowOuter.of( MessageUtilities.getTimeWindow( Instant.MIN,
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         //Reflexive
         assertEquals( first, first );
 
@@ -186,7 +189,7 @@ final class DataUtilitiesTest
                                                                              Instant.MAX ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( third, first );
 
         //Latest date
@@ -195,7 +198,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( third, fourth );
 
         //Valid time
@@ -206,7 +209,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( fourth, fifth );
 
         //Threshold
@@ -217,7 +220,7 @@ final class DataUtilitiesTest
                                                                              Instant.parse( SECOND_TIME ) ) ),
                          ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
                                             ThresholdOperator.GREATER,
-                                            ThresholdOrientation.LEFT ) );
+                                            ThresholdOrientation.OBSERVED ) );
         assertNotEquals( fifth, sixth );
     }
 
@@ -228,7 +231,7 @@ final class DataUtilitiesTest
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
                                                                            OneOrTwoDoubles.of( 0.5 ),
                                                                            ThresholdOperator.GREATER_EQUAL,
-                                                                           ThresholdOrientation.LEFT ) );
+                                                                           ThresholdOrientation.OBSERVED ) );
 
         assertEquals( "GTE_27.0_Pr_EQ_0.5", DataUtilities.toStringSafe( testString ) );
 
@@ -236,10 +239,10 @@ final class DataUtilitiesTest
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
                                                                            OneOrTwoDoubles.of( 0.2 ),
                                                                            ThresholdOperator.GREATER,
-                                                                           ThresholdOrientation.LEFT ),
+                                                                           ThresholdOrientation.OBSERVED ),
                                        ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
                                                                               ThresholdOperator.GREATER,
-                                                                              ThresholdOrientation.LEFT ) );
+                                                                              ThresholdOrientation.OBSERVED ) );
 
         assertEquals( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1", DataUtilities.toStringSafe( secondTestString ) );
     }
@@ -251,7 +254,7 @@ final class DataUtilitiesTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .build();
 
@@ -268,7 +271,7 @@ final class DataUtilitiesTest
     {
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 23.0 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setUnits( MeasurementUnit.of( "ft3/s" ) )
                                                 .build();
 
@@ -282,7 +285,7 @@ final class DataUtilitiesTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "CMS" ) )
                                                 .build();
@@ -304,7 +307,7 @@ final class DataUtilitiesTest
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setOrientation( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.OBSERVED )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "[ft_i]3/s" ) )
                                                 .build();
@@ -326,5 +329,69 @@ final class DataUtilitiesTest
         String expectedUpperBound = "MAXDATE";
 
         assertEquals( expectedUpperBound, actualUpperBound );
+    }
+
+    @Test
+    void testToStringSafeTimeWindow()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2019-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2020-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2021-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2022-01-01T00:00:00Z" ),
+                                                           Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafe( timeWindow, ChronoUnit.HOURS );
+        String expected = "20190101T000000Z_TO_20200101T000000Z_20210101T000000Z_TO_20220101T000000Z_1_TO_2_HOURS";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeTimeWindowWithUnboundedLeadDurations()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2019-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2020-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2021-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2022-01-01T00:00:00Z" ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafe( timeWindow, ChronoUnit.HOURS );
+        String expected =
+                "20190101T000000Z_TO_20200101T000000Z_20210101T000000Z_TO_20220101T000000Z_MINDURATION_TO_MAXDURATION";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeDateTimesOnly()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "2019-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2020-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2021-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2022-01-01T00:00:00Z" ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafeDateTimesOnly( timeWindow );
+        String expected = "20190101T000000Z_TO_20200101T000000Z_20210101T000000Z_TO_20220101T000000Z";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeLeadDurationsOnly()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 2 ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, ChronoUnit.HOURS );
+        String expected = "1_TO_2_HOURS";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringSafeLeadDurationsOnlyWithEqualDurations()
+    {
+        TimeWindow inner = MessageUtilities.getTimeWindow( Duration.ofHours( 1 ),
+                                                           Duration.ofHours( 1 ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        String actual = DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, ChronoUnit.HOURS );
+        String expected = "1_HOURS";
+        assertEquals( expected, actual );
     }
 }

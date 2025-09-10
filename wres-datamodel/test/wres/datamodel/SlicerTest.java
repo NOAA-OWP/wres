@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.Values;
-import wres.config.yaml.components.ValuesBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.Values;
+import wres.config.components.ValuesBuilder;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -41,7 +41,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.types.Probability;
@@ -117,7 +117,7 @@ class SlicerTest
         Pair<Double, Ensemble> f = Pair.of( 5.0, Ensemble.of( 1, 1, 6, 6, 50 ) );
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                       ThresholdOperator.GREATER,
-                                                      ThresholdOrientation.LEFT );
+                                                      ThresholdOrientation.OBSERVED );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
@@ -442,15 +442,15 @@ class SlicerTest
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds thresholdThree =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -545,15 +545,15 @@ class SlicerTest
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds thresholdThree =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -708,15 +708,15 @@ class SlicerTest
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
         OneOrTwoThresholds thresholdThree =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()

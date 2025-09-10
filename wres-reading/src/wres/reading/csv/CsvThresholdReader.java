@@ -24,12 +24,12 @@ import com.opencsv.exceptions.CsvValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdSource;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdSource;
+import wres.config.components.ThresholdType;
 import wres.reading.ThresholdReader;
 import wres.reading.ThresholdReadingException;
 import wres.statistics.generated.Geometry;
@@ -54,7 +54,7 @@ public class CsvThresholdReader implements ThresholdReader
     }
 
     @Override
-    public Set<wres.config.yaml.components.Threshold> read( ThresholdSource thresholdSource,
+    public Set<wres.config.components.Threshold> read( ThresholdSource thresholdSource,
                                                             Set<String> featureNames,
                                                             FeatureAuthority featureAuthority )
     {
@@ -80,7 +80,7 @@ public class CsvThresholdReader implements ThresholdReader
         }
 
         // Data type: default to left
-        Threshold.ThresholdDataType dataType = Threshold.ThresholdDataType.LEFT;
+        Threshold.ThresholdDataType dataType = Threshold.ThresholdDataType.OBSERVED;
         if ( Objects.nonNull( thresholdSource.applyTo() ) )
         {
             dataType = thresholdSource.applyTo()
@@ -96,7 +96,7 @@ public class CsvThresholdReader implements ThresholdReader
         DatasetOrientation orientation = thresholdSource.featureNameFrom();
         ThresholdType type = thresholdSource.type();
 
-        Set<wres.config.yaml.components.Threshold> thresholds = new HashSet<>();
+        Set<wres.config.components.Threshold> thresholds = new HashSet<>();
         for ( Map.Entry<String, Set<Threshold>> nextThresholds : rawThresholds.entrySet() )
         {
             String featureName = nextThresholds.getKey();
@@ -108,7 +108,7 @@ public class CsvThresholdReader implements ThresholdReader
                                            .build();
 
                 // Create the wrapped thresholds
-                Set<wres.config.yaml.components.Threshold> wrapped = new HashSet<>();
+                Set<wres.config.components.Threshold> wrapped = new HashSet<>();
                 nextRawThresholds.forEach( n -> wrapped.add( ThresholdBuilder.builder()
                                                                                 .threshold( n )
                                                                                 .feature( feature )
@@ -117,7 +117,7 @@ public class CsvThresholdReader implements ThresholdReader
                                                                                 .build() ) );
 
                 // Merge thresholds that have a BETWEEN operator, as needed
-                Set<wres.config.yaml.components.Threshold> adjustedThresholds =
+                Set<wres.config.components.Threshold> adjustedThresholds =
                         DeclarationUtilities.mergeBetweenThresholds( wrapped );
 
                 thresholds.addAll( adjustedThresholds );
@@ -603,7 +603,7 @@ public class CsvThresholdReader implements ThresholdReader
                                                      + "probability of 1.0." );
             }
 
-            canonical.setLeftThresholdProbability( threshold );
+            canonical.setObservedThresholdProbability( threshold );
         }
         else
         {
@@ -613,7 +613,7 @@ public class CsvThresholdReader implements ThresholdReader
                 canonical.setThresholdValueUnits( unit );
             }
 
-            canonical.setLeftThresholdValue( threshold );
+            canonical.setObservedThresholdValue( threshold );
         }
 
         if ( Objects.nonNull( name ) )

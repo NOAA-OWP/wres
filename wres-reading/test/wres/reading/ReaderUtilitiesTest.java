@@ -42,29 +42,29 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.FeatureGroups;
-import wres.config.yaml.components.FeatureGroupsBuilder;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.MetricBuilder;
-import wres.config.yaml.components.MetricParametersBuilder;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.SourceBuilder;
-import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdSource;
-import wres.config.yaml.components.ThresholdSourceBuilder;
-import wres.config.yaml.components.ThresholdType;
-import wres.config.yaml.components.TimeInterval;
-import wres.config.yaml.components.TimeIntervalBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.FeatureGroups;
+import wres.config.components.FeatureGroupsBuilder;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Metric;
+import wres.config.components.MetricBuilder;
+import wres.config.components.MetricParametersBuilder;
+import wres.config.components.Source;
+import wres.config.components.SourceBuilder;
+import wres.config.components.SourceInterface;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdSource;
+import wres.config.components.ThresholdSourceBuilder;
+import wres.config.components.ThresholdType;
+import wres.config.components.TimeInterval;
+import wres.config.components.TimeIntervalBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -711,10 +711,10 @@ class ReaderUtilitiesTest
                     = ThresholdSourceBuilder.builder()
                                             .uri( jsonPath.toUri() )
                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .type( wres.config.components.ThresholdType.VALUE )
                                             .parameter( "stage" )
                                             .provider( "NWS-NRLDB" )
-                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .operator( wres.config.components.ThresholdOperator.GREATER )
                                             .build();
 
             Dataset left = DatasetBuilder.builder()
@@ -759,97 +759,97 @@ class ReaderUtilitiesTest
             EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration );
 
             // Build the expected declaration
-            Set<wres.config.yaml.components.Threshold> expectedThresholds = new HashSet<>();
+            Set<wres.config.components.Threshold> expectedThresholds = new HashSet<>();
             Geometry firstGeometry = Geometry.newBuilder()
                                              .setName( "SMAF1" )
                                              .build();
 
             Threshold firstOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( 0.0 )
+                                          .setObservedThresholdValue( 0.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
             Threshold firstTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( 8.0 )
+                                          .setObservedThresholdValue( 8.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
             Threshold firstThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( 9.5 )
+                                            .setObservedThresholdValue( 9.5 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "flood" )
                                             .build();
             Threshold firstFour = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 9.5 )
+                                           .setObservedThresholdValue( 9.5 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "minor" )
                                            .build();
             Threshold firstFive = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 11.5 )
+                                           .setObservedThresholdValue( 11.5 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "moderate" )
                                            .build();
             Threshold firstSix = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( 13.5 )
+                                          .setObservedThresholdValue( 13.5 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "major" )
                                           .build();
             Threshold firstSeven = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( 15.36 )
+                                            .setObservedThresholdValue( 15.36 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "record" )
                                             .build();
 
-            wres.config.yaml.components.Threshold firstOneW
+            wres.config.components.Threshold firstOneW
                     = ThresholdBuilder.builder()
                                       .threshold( firstOne )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( firstGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold firstTwoW
+            wres.config.components.Threshold firstTwoW
                     = ThresholdBuilder.builder()
                                       .threshold( firstTwo )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( firstGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold firstThreeW
+            wres.config.components.Threshold firstThreeW
                     = ThresholdBuilder.builder()
                                       .threshold( firstThree )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( firstGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold firstFourW
+            wres.config.components.Threshold firstFourW
                     = ThresholdBuilder.builder()
                                       .threshold( firstFour )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( firstGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold firstFiveW
+            wres.config.components.Threshold firstFiveW
                     = ThresholdBuilder.builder()
                                       .threshold( firstFive )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( firstGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold firstSixW
+            wres.config.components.Threshold firstSixW
                     = ThresholdBuilder.builder()
                                       .threshold( firstSix )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( firstGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold firstSevenW
+            wres.config.components.Threshold firstSevenW
                     = ThresholdBuilder.builder()
                                       .threshold( firstSeven )
                                       .featureNameFrom( DatasetOrientation.LEFT )
@@ -871,25 +871,25 @@ class ReaderUtilitiesTest
 
             Threshold secondOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 0.0 )
+                                           .setObservedThresholdValue( 0.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "low" )
                                            .build();
             Threshold secondTwo = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 14.29 )
+                                           .setObservedThresholdValue( 14.29 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "record" )
                                            .build();
 
-            wres.config.yaml.components.Threshold secondOneW
+            wres.config.components.Threshold secondOneW
                     = ThresholdBuilder.builder()
                                       .threshold( secondOne )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( secondGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold secondTwoW
+            wres.config.components.Threshold secondTwoW
                     = ThresholdBuilder.builder()
                                       .threshold( secondTwo )
                                       .featureNameFrom( DatasetOrientation.LEFT )
@@ -906,12 +906,12 @@ class ReaderUtilitiesTest
 
             Threshold thirdOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( 0.0 )
+                                          .setObservedThresholdValue( 0.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
 
-            wres.config.yaml.components.Threshold thirdOneW
+            wres.config.components.Threshold thirdOneW
                     = ThresholdBuilder.builder()
                                       .threshold( thirdOne )
                                       .featureNameFrom( DatasetOrientation.LEFT )
@@ -927,90 +927,90 @@ class ReaderUtilitiesTest
 
             Threshold fourthOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 13.0 )
+                                           .setObservedThresholdValue( 13.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "action" )
                                            .build();
             Threshold fourthTwo = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 15.0 )
+                                           .setObservedThresholdValue( 15.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "bankfull" )
                                            .build();
             Threshold fourthThree = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setLeftThresholdValue( 17.0 )
+                                             .setObservedThresholdValue( 17.0 )
                                              .setThresholdValueUnits( FT )
                                              .setName( "flood" )
                                              .build();
             Threshold fourthFour = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( 17.0 )
+                                            .setObservedThresholdValue( 17.0 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "minor" )
                                             .build();
             Threshold fourthFive = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( 23.5 )
+                                            .setObservedThresholdValue( 23.5 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "moderate" )
                                             .build();
             Threshold fourthSix = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 26.0 )
+                                           .setObservedThresholdValue( 26.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "major" )
                                            .build();
             Threshold fourthSeven = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setLeftThresholdValue( 28.6 )
+                                             .setObservedThresholdValue( 28.6 )
                                              .setThresholdValueUnits( FT )
                                              .setName( "record" )
                                              .build();
 
-            wres.config.yaml.components.Threshold fourthOneW
+            wres.config.components.Threshold fourthOneW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthOne )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fourthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fourthTwoW
+            wres.config.components.Threshold fourthTwoW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthTwo )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fourthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fourthThreeW
+            wres.config.components.Threshold fourthThreeW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthThree )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fourthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fourthFourW
+            wres.config.components.Threshold fourthFourW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthFour )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fourthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fourthFiveW
+            wres.config.components.Threshold fourthFiveW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthFive )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fourthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fourthSixW
+            wres.config.components.Threshold fourthSixW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthSix )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fourthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fourthSevenW
+            wres.config.components.Threshold fourthSevenW
                     = ThresholdBuilder.builder()
                                       .threshold( fourthSeven )
                                       .featureNameFrom( DatasetOrientation.LEFT )
@@ -1032,96 +1032,96 @@ class ReaderUtilitiesTest
 
             Threshold fifthOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( -0.16 )
+                                          .setObservedThresholdValue( -0.16 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
             Threshold fifthTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( 11.0 )
+                                          .setObservedThresholdValue( 11.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
             Threshold fifthThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( 11.0 )
+                                            .setObservedThresholdValue( 11.0 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "bankfull" )
                                             .build();
             Threshold fifthFour = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 20.0 )
+                                           .setObservedThresholdValue( 20.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "flood" )
                                            .build();
             Threshold fifthFive = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( 20.0 )
+                                           .setObservedThresholdValue( 20.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "minor" )
                                            .build();
             Threshold fifthSix = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( 28.0 )
+                                          .setObservedThresholdValue( 28.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "moderate" )
                                           .build();
             Threshold fifthSeven = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( 31.0 )
+                                            .setObservedThresholdValue( 31.0 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "major" )
                                             .build();
             Threshold fifthEighth = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setLeftThresholdValue( 34.11 )
+                                             .setObservedThresholdValue( 34.11 )
                                              .setThresholdValueUnits( FT )
                                              .setName( "record" )
                                              .build();
 
-            wres.config.yaml.components.Threshold fifthOneW
+            wres.config.components.Threshold fifthOneW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthOne )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fifthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fifthTwoW
+            wres.config.components.Threshold fifthTwoW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthTwo )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fifthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fifthThreeW
+            wres.config.components.Threshold fifthThreeW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthThree )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fifthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fifthFourW
+            wres.config.components.Threshold fifthFourW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthFour )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fifthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fifthFiveW
+            wres.config.components.Threshold fifthFiveW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthFive )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fifthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fifthSixW
+            wres.config.components.Threshold fifthSixW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthSix )
                                       .featureNameFrom( DatasetOrientation.LEFT )
                                       .type( ThresholdType.VALUE )
                                       .feature( fifthGeometry )
                                       .build();
-            wres.config.yaml.components.Threshold fifthSevenW
+            wres.config.components.Threshold fifthSevenW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthSeven )
                                       .featureNameFrom( DatasetOrientation.LEFT )
@@ -1129,7 +1129,7 @@ class ReaderUtilitiesTest
                                       .feature( fifthGeometry )
                                       .build();
 
-            wres.config.yaml.components.Threshold fifthEighthW
+            wres.config.components.Threshold fifthEighthW
                     = ThresholdBuilder.builder()
                                       .threshold( fifthEighth )
                                       .featureNameFrom( DatasetOrientation.LEFT )
@@ -1193,10 +1193,10 @@ class ReaderUtilitiesTest
                     = ThresholdSourceBuilder.builder()
                                             .uri( jsonPath.toUri() )
                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .type( wres.config.components.ThresholdType.VALUE )
                                             .parameter( "stage" )
                                             .provider( "NWS-NRLDB" )
-                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .operator( wres.config.components.ThresholdOperator.GREATER )
                                             .build();
 
             Dataset left = DatasetBuilder.builder()
@@ -1292,10 +1292,10 @@ class ReaderUtilitiesTest
                 = ThresholdSourceBuilder.builder()
                                         .uri( fakeUri )
                                         .featureNameFrom( DatasetOrientation.LEFT )
-                                        .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                        .type( wres.config.components.ThresholdType.VALUE )
                                         .parameter( "stage" )
                                         .provider( "NWS-NRLDB" )
-                                        .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                        .operator( wres.config.components.ThresholdOperator.GREATER )
                                         .build();
 
         Dataset left = DatasetBuilder.builder()

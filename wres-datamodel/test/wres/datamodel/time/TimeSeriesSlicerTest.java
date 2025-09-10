@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.TimeInterval;
+import wres.config.components.TimeInterval;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.Slicer;

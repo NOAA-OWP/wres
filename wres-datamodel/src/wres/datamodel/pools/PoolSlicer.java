@@ -655,8 +655,6 @@ public class PoolSlicer
                                                              .clearTimeWindow()
                                                              .clearEventThreshold()
                                                              .clearDecisionThreshold()
-                                                             .clearGeometryTuples()
-                                                             .clearRegionName()
                                                              .clearGeometryGroup();
 
         if ( !unionWindows.isEmpty() )
@@ -671,12 +669,10 @@ public class PoolSlicer
             if ( unionRegionNames.size() == 1 )
             {
                 regionName = unionRegionNames.iterator().next();
-                builder.setRegionName( regionName );
             }
 
             GeometryGroup geoGroup = MessageFactory.getGeometryGroup( regionName, unionFeatures );
             builder.setGeometryGroup( geoGroup );
-            builder.addAllGeometryTuples( geoGroup.getGeometryTuplesList() );
         }
 
         if ( unionThresholds.size() == 1 )
@@ -791,9 +787,7 @@ public class PoolSlicer
                                                                         .clearEventThreshold()
                                                                         .clearDecisionThreshold()
                                                                         .clearGeometryGroup()
-                                                                        .clearEnsembleAverageType()
-                                                                        .clearGeometryTuples()
-                                                                        .clearRegionName();
+                                                                        .clearEnsembleAverageType();
 
         wres.statistics.generated.Pool.Builder adjustedPoolSecond = second.getPoolDescription()
                                                                           .toBuilder()
@@ -802,9 +796,7 @@ public class PoolSlicer
                                                                           .clearEventThreshold()
                                                                           .clearDecisionThreshold()
                                                                           .clearGeometryGroup()
-                                                                          .clearEnsembleAverageType()
-                                                                          .clearGeometryTuples()
-                                                                          .clearRegionName();
+                                                                          .clearEnsembleAverageType();
 
         if ( ignoreTimeScale )
         {

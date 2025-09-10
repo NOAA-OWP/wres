@@ -10,12 +10,12 @@ import java.util.List;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Formats;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Formats;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
@@ -71,28 +71,6 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 public class WriterTestHelper
 {
     /**
-     * Returns a fake project configuration for a specified feature.
-     *
-     * @return fake project configuration
-     */
-
-    public static EvaluationDeclaration getMockedDeclaration( DecimalFormat formatter )
-    {
-        Outputs outputs = Outputs.newBuilder()
-                                 .setCsv( Outputs.CsvFormat.newBuilder()
-                                                           .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                                             .setDecimalFormat( "0.0" )
-                                                                                             .build() ) )
-                                 .build();
-        Formats formats = new Formats( outputs );
-        return EvaluationDeclarationBuilder.builder()
-                                           .formats( formats )
-                                           .decimalFormat( formatter )
-                                           .durationFormat( ChronoUnit.SECONDS )
-                                           .build();
-    }
-
-    /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
      *
      * @return a box plot per pool for two pools
@@ -113,7 +91,7 @@ public class WriterTestHelper
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -205,7 +183,7 @@ public class WriterTestHelper
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -285,7 +263,7 @@ public class WriterTestHelper
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
                                                                            OneOrTwoDoubles.of( 0.9 ),
                                                                            ThresholdOperator.GREATER_EQUAL,
-                                                                           ThresholdOrientation.LEFT ) );
+                                                                           ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -377,7 +355,7 @@ public class WriterTestHelper
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -474,7 +452,7 @@ public class WriterTestHelper
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -575,7 +553,7 @@ public class WriterTestHelper
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -695,7 +673,7 @@ public class WriterTestHelper
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
                                                           ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+                                                          ThresholdOrientation.OBSERVED ) );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
                                                timeOne,
@@ -746,7 +724,7 @@ public class WriterTestHelper
                                                                               OneOrTwoDoubles.of(
                                                                                       0.9 ),
                                                                               ThresholdOperator.GREATER_EQUAL,
-                                                                              ThresholdOrientation.LEFT );
+                                                                              ThresholdOrientation.OBSERVED );
         OneOrTwoThresholds threshold = OneOrTwoThresholds.of( thresholdOuter );
 
         Evaluation evaluation = Evaluation.newBuilder()
