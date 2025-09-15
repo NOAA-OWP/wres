@@ -1082,7 +1082,7 @@ project(':wres-config') {
         // For Java 9+ compatibility:
         api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
 
-        api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.13.1'
+        api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:1.11.1-PUBLISHED-BY-MISTAKE'
 
         // To know about @Locatable
         compileOnlyApi 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
@@ -1130,8 +1130,8 @@ project(':wres-config') {
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
         // xjc 'org.apache.cxf.xjcplugins:cxf-xjc-dv:3.2.0'
-        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.13.1'
-        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics:0.13.1'
+        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-ant:1.11.1-PUBLISHED-BY-MISTAKE'
+        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics:1.11.1-PUBLISHED-BY-MISTAKE'
         jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-annotate:1.1.0'
 
         // commons-beanutils is transitive dependency of jaxb2-basics, has CVEs
