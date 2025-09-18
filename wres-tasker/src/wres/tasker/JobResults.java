@@ -427,16 +427,35 @@ class JobResults
                 // Signal to other threads that we are now watching.
                 this.getCountDownLatch().countDown();
                 LOGGER.debug( "consumerTag: {}", consumerTag );
-
                 // There is a race condition between basicConsume above being
                 // called and the exitCode being sent. The following message
                 // may help discover some cases when the race is lost by this
                 // Thread.
                 LOGGER.info( "Looking for exit code on topic {}", bindingKey );
 
-                LOGGER.debug( "Waiting to take a result value..." );
-                resultValue = result.take();
-                LOGGER.debug( "Finished taking a result value." );
+                Integer jobStatus = WresJob.getSharedJobResults()
+                                           .getJobResultRaw( jobId );
+
+                if ( Objects.isNull( jobStatus ) ) {
+                    LOGGER.info( "Queue does not exist for job {} {}",
+                                 jobId, queueName );
+                    //Do we want a special exitcode for this?
+                }
+                else if ( !jobStatus.equals( JOB_NOT_DONE_YET ) )
+                {
+                    LOGGER.info( "Finished waiting for job {} {}",
+                                 jobId, queueName );
+                    resultValue = jobStatus;
+                }
+                else
+                {
+                    // We will now only attempt to get the result from the queue
+                    // if there is a queue that exists and the job isn't already finished
+                    LOGGER.debug( "Waiting to take a result value..." );
+                    // This call holds waiting or input
+                    resultValue = result.take();
+                    LOGGER.debug( "Finished taking a result value." );
+                }
             }
             catch ( InterruptedException ie )
             {
