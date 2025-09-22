@@ -1523,7 +1523,7 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.10'
 
         // To handle multipart post
-        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.10'
+        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
         implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
