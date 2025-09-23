@@ -22,16 +22,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.Formats;
-import wres.config.yaml.components.LeadTimeInterval;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.ThresholdType;
-import wres.config.yaml.components.TimePools;
-import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.Formats;
+import wres.config.components.LeadTimeInterval;
+import wres.config.components.Source;
+import wres.config.components.SourceInterface;
+import wres.config.components.ThresholdType;
+import wres.config.components.TimePools;
+import wres.config.components.TimePoolsBuilder;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -197,21 +197,21 @@ class NetcdfOutputWriterTest
 
             // Create the thresholds
             Threshold thresholdOne = Threshold.newBuilder()
-                                              .setLeftThresholdValue( 6440.34 )
+                                              .setObservedThresholdValue( 6440.34 )
                                               .setThresholdValueUnits( "CFS" )
                                               .setOperator( Threshold.ThresholdOperator.GREATER )
                                               .setName( "1_5_year_recurrence_flow" )
                                               .build();
 
             Threshold thresholdTwo = Threshold.newBuilder()
-                                              .setLeftThresholdValue( 295.94 )
+                                              .setObservedThresholdValue( 295.94 )
                                               .setThresholdValueUnits( "CFS" )
                                               .setOperator( Threshold.ThresholdOperator.GREATER )
                                               .setName( "1_5_year_recurrence_flow" )
                                               .build();
 
             Threshold thresholdThree = Threshold.newBuilder()
-                                                .setLeftThresholdValue( 0.5 )
+                                                .setObservedThresholdValue( 0.5 )
                                                 .setOperator( Threshold.ThresholdOperator.GREATER )
                                                 .build();
 

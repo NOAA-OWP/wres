@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;

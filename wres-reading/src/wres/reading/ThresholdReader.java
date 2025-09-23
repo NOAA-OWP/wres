@@ -2,9 +2,9 @@ package wres.reading;
 
 import java.util.Set;
 
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.Threshold;
-import wres.config.yaml.components.ThresholdSource;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.Threshold;
+import wres.config.components.ThresholdSource;
 
 /**
  * An API for reading thresholds from sources, such as files and web services.

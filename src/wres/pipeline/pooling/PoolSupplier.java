@@ -26,10 +26,10 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 
-import wres.config.yaml.components.CovariatePurpose;
-import wres.config.yaml.components.CrossPair;
-import wres.config.yaml.components.CrossPairScope;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.CovariatePurpose;
+import wres.config.components.CrossPair;
+import wres.config.components.CrossPairScope;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.messages.EvaluationStatusMessage;
@@ -1106,8 +1106,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         wres.statistics.generated.Pool.Builder builder =
                 metadata.getPoolDescription()
                         .toBuilder()
-                        .clearGeometryTuples()
-                        .addGeometryTuples( feature.getGeometryTuple() )
                         .setGeometryGroup( geoGroupBuilder );
 
         if ( Objects.nonNull( timeScale ) )

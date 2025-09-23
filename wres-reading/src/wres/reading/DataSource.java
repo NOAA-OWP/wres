@@ -32,10 +32,10 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.Variable;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.Source;
+import wres.config.components.Variable;
 
 /**
  * A data source.

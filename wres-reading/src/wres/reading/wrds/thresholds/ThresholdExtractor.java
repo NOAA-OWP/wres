@@ -1,7 +1,7 @@
 package wres.reading.wrds.thresholds;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.reading.wrds.geography.Location;
 import wres.statistics.generated.Threshold;
 
@@ -41,7 +41,7 @@ class ThresholdExtractor
 
     /** The side of the data to apply the threshold to. */
     @Builder.Default
-    private final ThresholdOrientation orientation = ThresholdOrientation.LEFT;
+    private final ThresholdOrientation orientation = ThresholdOrientation.OBSERVED;
 
     /** Warnings received while reading or filtering thresholds. */
     private final Set<String> warnings = new HashSet<>();

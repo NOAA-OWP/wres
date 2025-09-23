@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.Variable;
+import wres.config.components.Variable;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.reading.netcdf.grid.GridRequest;

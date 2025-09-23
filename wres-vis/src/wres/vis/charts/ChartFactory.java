@@ -66,7 +66,7 @@ import static wres.vis.charts.GraphicsUtils.PAIR_THEME_LABEL_GENERATOR;
 import static wres.vis.charts.GraphicsUtils.PAIR_THEME_SEPARATOR;
 import static wres.vis.charts.GraphicsUtils.PREDICTED_SCENARIO_LABEL;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.DataUtilities;
@@ -2286,7 +2286,7 @@ public class ChartFactory
                   || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS )
                        && !hasDecisionThresholds ) )
              && metricName != MetricConstants.SAMPLE_SIZE
-             && metricComponentName != MetricConstants.LEFT )
+             && metricComponentName != MetricConstants.OBSERVED )
         {
             name = " of the ENSEMBLE " + ensembleAverageType.name();
         }
@@ -2528,7 +2528,7 @@ public class ChartFactory
             // Get the name that corresponds to the side of the component. Again, should probably use the triple.
             switch ( component )
             {
-                case RIGHT -> variableName += evaluation.getRightVariableName();
+                case PREDICTED -> variableName += evaluation.getRightVariableName();
                 case BASELINE -> variableName += evaluation.getBaselineVariableName();
                 default -> variableName += evaluation.getLeftVariableName();
             }

@@ -2,12 +2,13 @@ package wres.metrics;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
@@ -84,6 +85,9 @@ public final class MetricFactory
 
     /** Test seed system property name. */
     private static final String TEST_SEED_PROPERTY = "wres.systemTestSeed";
+
+    /** Logger. **/
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetricFactory.class );
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
@@ -182,7 +186,7 @@ public final class MetricFactory
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized 
+     * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
@@ -192,7 +196,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce 
+     * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link DiagramStatisticOuter}.</p>
      *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -228,7 +232,7 @@ public final class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume a {@link Pool} with single-valued 
+     * <p>Returns a {@link MetricCollection} of metrics that consume a {@link Pool} with single-valued
      * pairs and produce {@link DurationDiagramStatisticOuter}.</p>
      *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -309,7 +313,7 @@ public final class MetricFactory
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized 
+     * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
     public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
@@ -327,14 +331,14 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce 
+     * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link BoxplotStatisticOuter}.
      *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized 
+     * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
     public static MetricCollection<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
@@ -385,7 +389,7 @@ public final class MetricFactory
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized 
+     * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
     public static MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
@@ -421,7 +425,7 @@ public final class MetricFactory
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized 
+     * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
     public static MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
@@ -439,7 +443,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce 
+     * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link DoubleScoreStatisticOuter}.
      *
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -556,7 +560,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link Pool} with single-valued pairs 
+     * Returns a {@link MetricCollection} of metrics that consume {@link Pool} with single-valued pairs
      * and produce {@link DurationDiagramStatisticOuter}.
      *
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -838,8 +842,8 @@ public final class MetricFactory
         {
             case RANK_HISTOGRAM ->
             {
-                Random random = MetricFactory.getRandomNumberGenerator();
-                return RankHistogram.of( random );
+                Long seed = MetricFactory.getSeedForRandomNumberGenerator();
+                return RankHistogram.of( seed );
             }
             case ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM ->
             {
@@ -872,7 +876,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes a {@link Pool} with single-valued pairs and produces 
+     * Returns a {@link Metric} that consumes a {@link Pool} with single-valued pairs and produces
      * {@link DurationDiagramStatisticOuter}.
      *
      * @param metric the metric identifier
@@ -884,12 +888,12 @@ public final class MetricFactory
     ofSingleValuedTimeSeries( MetricConstants metric )
     {
         // Use a random number generator with a fixed seed if required
-        Random random = MetricFactory.getRandomNumberGenerator();
+        Long seed = MetricFactory.getSeedForRandomNumberGenerator();
 
         return switch ( metric )
         {
-            case TIME_TO_PEAK_ERROR -> TimeToPeakError.of( random );
-            case TIME_TO_PEAK_RELATIVE_ERROR -> TimeToPeakRelativeError.of( random );
+            case TIME_TO_PEAK_ERROR -> TimeToPeakError.of( seed );
+            case TIME_TO_PEAK_RELATIVE_ERROR -> TimeToPeakRelativeError.of( seed );
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         };
     }
@@ -933,14 +937,14 @@ public final class MetricFactory
         Objects.requireNonNull( summaryStatistics, "Specify non-null summary statistics for the timing error metric." );
 
 
-        Random random = MetricFactory.getRandomNumberGenerator();
+        Long seed = MetricFactory.getSeedForRandomNumberGenerator();
 
         return switch ( timingMetric )
         {
             case TIME_TO_PEAK_ERROR ->
-                    TimingErrorDurationStatistics.of( TimeToPeakError.of( random ), summaryStatistics );
+                    TimingErrorDurationStatistics.of( TimeToPeakError.of( seed ), summaryStatistics );
             case TIME_TO_PEAK_RELATIVE_ERROR ->
-                    TimingErrorDurationStatistics.of( TimeToPeakRelativeError.of( random ), summaryStatistics );
+                    TimingErrorDurationStatistics.of( TimeToPeakRelativeError.of( seed ), summaryStatistics );
             default -> throw new IllegalArgumentException(
                     UNRECOGNIZED_METRIC_ERROR + " '" + timingMetric + "'." );
         };
@@ -981,7 +985,7 @@ public final class MetricFactory
     }
 
     /**
-     * Returns <code>true</code> if the input metric is an instance of {@link Collectable}, otherwise 
+     * Returns <code>true</code> if the input metric is an instance of {@link Collectable}, otherwise
      * <code>false</code>.
      *
      * @param metric the metric
@@ -1010,20 +1014,23 @@ public final class MetricFactory
     }
 
     /**
-     * @return a pseudo-random number generator that respects any {@link #TEST_SEED_PROPERTY}.
+     * @return a seed for a pseudo-random number generator that respects any {@link #TEST_SEED_PROPERTY}.
      */
 
-    private static Random getRandomNumberGenerator()
+    private static Long getSeedForRandomNumberGenerator()
     {
         // Use a fixed seed if required
         String seed = System.getProperty( MetricFactory.TEST_SEED_PROPERTY );
         if ( Objects.nonNull( seed ) )
         {
             long longSeed = Long.parseLong( seed );
-            return new Random( longSeed );
+
+            LOGGER.debug( "Creating a random number generator for metric calculation with a seed of {}.", seed );
+
+            return longSeed;
         }
 
-        return new Random();
+        return null;
     }
 
     /**

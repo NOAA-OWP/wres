@@ -31,10 +31,8 @@ public class Scenario512
                     Path.of( "evaluation.csv.gz" ),
                     Path.of( "evaluation.csvt" ),
                     Path.of( "pairs.csv.gz" ),
-                    Path.of( "volcano_mountain_MEAN_ERROR.csv"),
                     Path.of( "volcano_mountain_MEAN_ERROR.png"),
                     Path.of( "volcano_mountain_MEAN_ERROR.svg"),
-                    Path.of( "volcano_mountain_SAMPLE_SIZE.csv"),
                     Path.of( "volcano_mountain_SAMPLE_SIZE.png"),
                     Path.of( "volcano_mountain_SAMPLE_SIZE.svg") );
 

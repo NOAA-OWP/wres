@@ -103,17 +103,6 @@ message Outputs
         // The units of the lead durations.
     }
 
-    message CsvFormat
-    {
-        // Comma Separated Values (CSV).
-    
-        NumericFormat options = 1;
-        // General format options.
-    }
-
-    CsvFormat csv = 3;
-    // Comma Separated Values.
-
     message NetcdfFormat
     {
         // Network Common Data Form (NetCDF).
@@ -128,7 +117,7 @@ message Outputs
         // Whether the NetCDF is gridded or vector.        
     }
 
-    NetcdfFormat netcdf = 4;
+    NetcdfFormat netcdf = 3;
     // Network Common Data Form (NetCDF).
 
     message ProtobufFormat
@@ -136,7 +125,7 @@ message Outputs
         // Protocol Buffers format without any default options.
     }
 
-    ProtobufFormat protobuf = 6;
+    ProtobufFormat protobuf = 4;
     // Protocol Buffers format.
 
     message Csv2Format
@@ -147,7 +136,7 @@ message Outputs
         // General format options.
     }
 
-    Csv2Format csv2 = 7;
+    Csv2Format csv2 = 5;
     // Comma Separated Values.
 
     message Netcdf2Format
@@ -155,7 +144,7 @@ message Outputs
         // NetCDF Version 2 without any default options.
     }
 
-    Netcdf2Format netcdf2 = 8;
+    Netcdf2Format netcdf2 = 6;
     // NetCDF Version 2.
 
     message PairFormat
@@ -166,9 +155,9 @@ message Outputs
         // General format options.
     }
 
-    PairFormat pairs = 9;
+    PairFormat pairs = 7;
     // Pairs.
 
-    bool combine_graphics = 10;
+    bool combine_graphics = 8;
     // Whether graphics should contain all datasets/scenarios.
 }

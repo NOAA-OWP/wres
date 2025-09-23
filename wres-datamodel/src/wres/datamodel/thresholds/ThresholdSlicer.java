@@ -23,14 +23,14 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.Metric;
-import wres.config.yaml.components.MetricParameters;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.Metric;
+import wres.config.components.MetricParameters;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdType;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
@@ -39,7 +39,7 @@ import wres.config.MetricConstants.SampleDataGroup;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOrientation;
 import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
@@ -86,8 +86,8 @@ public class ThresholdSlicer
             {
                 Threshold.Builder builder = next.getThreshold()
                                                 .toBuilder();
-                builder.clearLeftThresholdProbability();
-                builder.clearRightThresholdProbability();
+                builder.clearObservedThresholdProbability();
+                builder.clearPredictedThresholdProbability();
 
                 ThresholdOuter noProbs =
                         new ThresholdOuter.Builder( builder.build() ).build();
@@ -631,7 +631,7 @@ public class ThresholdSlicer
 
                 if ( Objects.nonNull( nextParameters ) )
                 {
-                    Set<wres.config.yaml.components.Threshold> valueThresholds = nextParameters.thresholds();
+                    Set<wres.config.components.Threshold> valueThresholds = nextParameters.thresholds();
 
                     // Convert units, as needed
                     valueThresholds = ThresholdSlicer.convertUnits( valueThresholds, unitMapper );
@@ -674,7 +674,7 @@ public class ThresholdSlicer
      * @param thresholdsToIncrement the threshold map to update
      * @param geometries the geometries to assist with feature correlation
      */
-    private static void addThresholds( Set<wres.config.yaml.components.Threshold> thresholds,
+    private static void addThresholds( Set<wres.config.components.Threshold> thresholds,
                                        ThresholdType type,
                                        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement,
                                        Set<GeometryTuple> geometries )
@@ -707,7 +707,7 @@ public class ThresholdSlicer
                 };
 
         // Increment the thresholds
-        for ( wres.config.yaml.components.Threshold nextThreshold : thresholds )
+        for ( wres.config.components.Threshold nextThreshold : thresholds )
         {
             Geometry nextFeature = nextThreshold.feature();
 
@@ -735,7 +735,7 @@ public class ThresholdSlicer
      * @param thresholdsToIncrement the thresholds to increment
      */
 
-    private static void addThresholdForAllFeatures( wres.config.yaml.components.Threshold nextThreshold,
+    private static void addThresholdForAllFeatures( wres.config.components.Threshold nextThreshold,
                                                     Set<GeometryTuple> features,
                                                     ThresholdType type,
                                                     Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement )
@@ -770,7 +770,7 @@ public class ThresholdSlicer
      * @param thresholdsToIncrement the thresholds to increment
      */
 
-    private static void addThresholdForOneFeature( wres.config.yaml.components.Threshold nextThreshold,
+    private static void addThresholdForOneFeature( wres.config.components.Threshold nextThreshold,
                                                    Geometry nextFeature,
                                                    BiFunction<Geometry, DatasetOrientation, List<GeometryTuple>> mapper,
                                                    ThresholdType type,
@@ -899,7 +899,7 @@ public class ThresholdSlicer
      * @param unitMapper the unit mapper
      * @return the thresholds with adjusted units
      */
-    private static Set<wres.config.yaml.components.Threshold> convertUnits( Set<wres.config.yaml.components.Threshold> thresholds,
+    private static Set<wres.config.components.Threshold> convertUnits( Set<wres.config.components.Threshold> thresholds,
                                                                             UnitMapper unitMapper )
     {
         if ( Objects.isNull( unitMapper ) )
@@ -910,8 +910,8 @@ public class ThresholdSlicer
             return thresholds;
         }
 
-        Set<wres.config.yaml.components.Threshold> adjusted = new HashSet<>();
-        for ( wres.config.yaml.components.Threshold threshold : thresholds )
+        Set<wres.config.components.Threshold> adjusted = new HashSet<>();
+        for ( wres.config.components.Threshold threshold : thresholds )
         {
             Threshold inner = threshold.threshold();
 
@@ -924,16 +924,16 @@ public class ThresholdSlicer
                                      unitMapper.getDesiredMeasurementUnitName() ) )
             {
                 DoubleUnaryOperator mapper = unitMapper.getUnitMapper( inner.getThresholdValueUnits() );
-                double leftValue = mapper.applyAsDouble( inner.getLeftThresholdValue() );
+                double leftValue = mapper.applyAsDouble( inner.getObservedThresholdValue() );
 
                 Threshold.Builder innerAdjusted = inner.toBuilder()
-                                                       .setLeftThresholdValue( leftValue )
+                                                       .setObservedThresholdValue( leftValue )
                                                        .setThresholdValueUnits( unitMapper.getDesiredMeasurementUnitName() );
 
-                if ( inner.hasRightThresholdValue() )
+                if ( inner.hasPredictedThresholdValue() )
                 {
-                    double rightValue = mapper.applyAsDouble( inner.getRightThresholdValue() );
-                    innerAdjusted.setRightThresholdValue( rightValue );
+                    double rightValue = mapper.applyAsDouble( inner.getPredictedThresholdValue() );
+                    innerAdjusted.setPredictedThresholdValue( rightValue );
                 }
 
                 builder.threshold( innerAdjusted.build() );

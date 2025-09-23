@@ -25,9 +25,9 @@ import org.mockito.Mockito;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.Variable;
+import wres.config.components.Dataset;
+import wres.config.components.Source;
+import wres.config.components.Variable;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;

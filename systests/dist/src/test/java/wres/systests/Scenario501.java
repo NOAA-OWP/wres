@@ -28,9 +28,7 @@ public class Scenario501
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "FAKE1_FAKE1_MEAN_ERROR.csv" ),
-                    Path.of( "FAKE1_FAKE1_SAMPLE_SIZE.csv" ),
-                    Path.of( "evaluation.csvt" ),
+            Set.of( Path.of( "evaluation.csvt" ),
                     Path.of( "evaluation.csv.gz" ),
                     Path.of( "pairs.csv.gz" ) );
 

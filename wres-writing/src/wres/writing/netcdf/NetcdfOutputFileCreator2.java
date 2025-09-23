@@ -30,11 +30,11 @@ import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.FeatureAuthority;
+import wres.config.components.DatasetOrientation;
+import wres.config.DeclarationUtilities;
+import wres.config.components.Dataset;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.FeatureAuthority;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
@@ -355,7 +355,7 @@ class NetcdfOutputFileCreator2
                                                    DataType.CHAR,
                                                    lidDimensions );
         Attribute lidLongName = new Attribute( "long_name",
-                                               "The geographic feature names of left, right, and optionally baseline concatenated with underscore." );
+                                               "The geographic feature names of observed, predicted, and optionally baseline concatenated with underscore." );
         lidVariable.addAll( List.of( coordinates, gridMapping, lidLongName ) );
 
         List<Dimension> featureGroupDimensions = List.of( featureDimension,
@@ -371,11 +371,11 @@ class NetcdfOutputFileCreator2
         List<Dimension> featureNameDimensions = List.of( featureDimension,
                                                          featureNameDimension );
         Variable leftFeatureNameVariable = writer.addVariable( null,
-                                                               "left_feature_name",
+                                                               "observed_feature_name",
                                                                DataType.CHAR,
                                                                featureNameDimensions );
         Attribute leftFeatureNameLongName =
-                new Attribute( "long_name", "The name of the geographic feature from the left dataset." );
+                new Attribute( "long_name", "The name of the geographic feature from the observed dataset." );
         String leftAuthority = NetcdfOutputFileCreator2.getLeftFeatureDimensionName( declaration );
         Attribute leftFeatureNameAuthority = new Attribute( FEATURE_NAME_AUTHORITY, leftAuthority );
         leftFeatureNameVariable.addAll( List.of( coordinates,
@@ -384,11 +384,11 @@ class NetcdfOutputFileCreator2
                                                  leftFeatureNameAuthority ) );
 
         Variable rightFeatureNameVariable = writer.addVariable( null,
-                                                                "right_feature_name",
+                                                                "predicted_feature_name",
                                                                 DataType.CHAR,
                                                                 featureNameDimensions );
         Attribute rightFeatureNameLongName =
-                new Attribute( "long_name", "The name of the geographic feature from the right dataset." );
+                new Attribute( "long_name", "The name of the geographic feature from the predicted dataset." );
         String rightAuthority = NetcdfOutputFileCreator2.getRightFeatureDimensionName( declaration );
         Attribute rightFeatureNameAuthority = new Attribute( FEATURE_NAME_AUTHORITY, rightAuthority );
         rightFeatureNameVariable.addAll( List.of( coordinates,

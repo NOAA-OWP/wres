@@ -17,10 +17,10 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.DeclarationUtilities;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -172,7 +172,7 @@ public class NwmGridReader implements TimeSeriesReader
         TimeScaleOuter timeScale = null;
 
         Dataset dataset = dataSource.getContext();
-        wres.config.yaml.components.TimeScale declaredTimeScale = dataset.timeScale();
+        wres.config.components.TimeScale declaredTimeScale = dataset.timeScale();
 
         if ( Objects.nonNull( declaredTimeScale ) )
         {

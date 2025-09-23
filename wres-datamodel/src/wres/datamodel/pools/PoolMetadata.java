@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
 
-import wres.config.yaml.components.ThresholdType;
+import wres.config.components.ThresholdType;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -325,22 +325,6 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         if ( Objects.nonNull( featureGroup ) )
         {
-            pool.clearGeometryTuples();
-            Set<FeatureTuple> featureTuples = featureGroup.getFeatures();
-            Set<GeometryTuple> geometryTuples = featureTuples.stream()
-                                                             .map( FeatureTuple::getGeometryTuple )
-                                                             .collect( Collectors.toSet() );
-            pool.addAllGeometryTuples( geometryTuples );
-
-            if ( Objects.nonNull( featureGroup.getName() ) )
-            {
-                pool.setRegionName( featureGroup.getName() );
-            }
-            else
-            {
-                pool.clearRegionName();
-            }
-
             pool.setGeometryGroup( featureGroup.getGeometryGroup() );
         }
         else

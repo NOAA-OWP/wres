@@ -26,7 +26,6 @@ decimal_format: '#0.0'
 output_formats:
   - netcdf2
   - csv2
-  - csv
   - pairs
   - png
   - svg

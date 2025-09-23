@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.CrossPairMethod;
+import wres.config.components.CrossPairMethod;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -42,7 +42,7 @@ public class TimeSeriesCrossPairer<S, T>
     private final CrossPairMethod crossPair;
 
     /**
-     * Creates an instance of a cross pairer using {@link wres.config.yaml.components.CrossPairMethod#FUZZY} matching by
+     * Creates an instance of a cross pairer using {@link wres.config.components.CrossPairMethod#FUZZY} matching by
      * reference time.
      *
      * @param <S> the time-series event value type for the first series
@@ -56,7 +56,7 @@ public class TimeSeriesCrossPairer<S, T>
     }
 
     /**
-     * Creates an instance of a cross pairer using a prescribed {@link wres.config.yaml.components.CrossPairMethod}.
+     * Creates an instance of a cross pairer using a prescribed {@link wres.config.components.CrossPairMethod}.
      *
      * @param <S> the time-series event value type for the first series
      * @param <T> the time-series event value type for the second series

@@ -74,3 +74,4 @@ zulu17*
 
 #Jenkins job ignore
 email.properties
+email_properties.properties

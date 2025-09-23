@@ -1797,7 +1797,6 @@ definitions:
     title: The statistics serialization formats.
     type: string
     enum:
-      - csv
       - csv2
       - png
       - svg

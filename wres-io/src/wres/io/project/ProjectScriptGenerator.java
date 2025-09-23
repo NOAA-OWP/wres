@@ -6,7 +6,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.StringJoiner;
 
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.statistics.generated.GeometryTuple;
