@@ -1666,7 +1666,7 @@ project(':wres-eventsbroker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
         // Apache ActiveMQ Artemis server
-        implementation('org.apache.activemq:artemis-server:2.41.0') {
+        implementation('org.apache.activemq:artemis-server:2.42.0') {
             // TODO: remove when Artemis catches up
 
             // Because we use slf4j, not jcl:
@@ -1692,7 +1692,7 @@ project(':wres-eventsbroker') {
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.81'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.41.0') {
+        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.42.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
