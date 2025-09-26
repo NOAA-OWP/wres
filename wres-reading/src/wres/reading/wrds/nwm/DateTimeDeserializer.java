@@ -3,11 +3,14 @@ package wres.reading.wrds.nwm;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.reading.ReaderUtilities;
 
@@ -19,6 +22,8 @@ import wres.reading.ReaderUtilities;
  */
 public class DateTimeDeserializer extends JsonDeserializer<Instant>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( DateTimeDeserializer.class );
+
     @Override
     public Instant deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
@@ -36,6 +41,14 @@ public class DateTimeDeserializer extends JsonDeserializer<Instant>
         else
         {
             throw new IOException( "Could not find a datetime field in the document, which is not allowed." );
+        }
+
+        try
+        {
+            return Instant.parse( time );
+        }
+        catch ( DateTimeParseException ex ) {
+            LOGGER.debug( "Custom datetime format used" );
         }
 
         // Lenient formatting in the "basic" ISO8601 format, hours and seconds are optional
