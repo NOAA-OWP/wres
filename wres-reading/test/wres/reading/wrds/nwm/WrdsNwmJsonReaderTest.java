@@ -83,7 +83,7 @@ class WrdsNwmJsonReaderTest
                           },
                           "forecasts": [
                             {
-                              "reference_time": "20200112T00Z",
+                              "reference_time": "2020-01-12T00:00:00Z",
                               "features": [
                                 {
                                   "location": {

@@ -76,7 +76,7 @@ class WrdsNwmReaderTest
                                                 + "/";
 
     /** Parameters added to path. */
-    private static final String ANALYSIS_PARAMS = "?reference_time=20200112T00Z";
+    private static final String ANALYSIS_PARAMS = "?reference_time=2020-01-12T00:00:00Z";
 
     /** Analysis response from GET. */
     private static final String ANALYSIS_RESPONSE = "{\n"
@@ -99,7 +99,7 @@ class WrdsNwmReaderTest
                                                     + "  },\n"
                                                     + "  \"forecasts\": [\n"
                                                     + "    {\n"
-                                                    + "      \"reference_time\": \"20200112T00Z\",\n"
+                                                    + "      \"reference_time\": \"2020-01-12T00:00:00Z\",\n"
                                                     + "      \"features\": [\n"
                                                     + "        {\n"
                                                     + "          \"location\": {\n"
@@ -167,7 +167,7 @@ class WrdsNwmReaderTest
                                                     + "  },\n"
                                                     + "  \"forecasts\": [\n"
                                                     + "    {\n"
-                                                    + "      \"reference_time\": \"20200112T00Z\",\n"
+                                                    + "      \"reference_time\": \"2020-01-12T00:00:00Z\",\n"
                                                     + "      \"features\": [\n"
                                                     + "        {\n"
                                                     + "          \"location\": {\n"
