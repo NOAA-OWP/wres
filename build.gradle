@@ -271,7 +271,7 @@ project(':wres-system') {
         }
 
         // For Java 9+ compatibility:
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
         // JAXB runtime
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
@@ -683,13 +683,13 @@ project(':wres-reading') {
         api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
         api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
         api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         api 'javax.xml.bind:jaxb-api:2.3.1'
         api 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'com.opencsv:opencsv:5.12.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
+        testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
         testImplementation 'org.mock-server:mockserver-core:5.15.0'
         testImplementation 'org.mockito:mockito-core:5.20.0'
@@ -1451,7 +1451,7 @@ project(':wres-tasker') {
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-        implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+        implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
         implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.1'
         implementation 'org.eclipse.jetty:jetty-http:12.1.1'
