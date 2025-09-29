@@ -22,7 +22,6 @@ import wres.reading.ReaderUtilities;
  */
 public class DateTimeDeserializer extends JsonDeserializer<Instant>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( DateTimeDeserializer.class );
 
     @Override
     public Instant deserialize( JsonParser jp, DeserializationContext context )
@@ -43,17 +42,10 @@ public class DateTimeDeserializer extends JsonDeserializer<Instant>
             throw new IOException( "Could not find a datetime field in the document, which is not allowed." );
         }
 
-        try
-        {
-            return Instant.parse( time );
-        }
-        catch ( DateTimeParseException ex ) {
-            LOGGER.debug( "Custom datetime format used" );
-        }
-
         // Lenient formatting in the "basic" ISO8601 format, hours and seconds are optional
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "yyyyMMdd'T'HH[mm[ss]]'Z'" )
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "[yyyyMMdd'T'HH[:mm[:ss]]'Z'][yyyy-MM-dd'T'HH:mm:ss'Z']" )
                                                        .withZone( ReaderUtilities.UTC );
+
         return formatter.parse( time, Instant::from );
     }
 }

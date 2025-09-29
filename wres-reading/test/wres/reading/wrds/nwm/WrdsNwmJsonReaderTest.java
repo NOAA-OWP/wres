@@ -103,15 +103,15 @@ class WrdsNwmJsonReaderTest
                                       "identifier": "1",
                                       "data_points": [
                                         {
-                                          "time": "20200112T03Z",
+                                          "time": "20200112T03:00:00Z",
                                           "value": "270.9899939429015"
                                         },
                                         {
-                                          "time": "20200112T02Z",
+                                          "time": "20200112T02:00:00Z",
                                           "value": "334.139992531389"
                                         },
                                         {
-                                          "time": "20200112T01Z",
+                                          "time": "20200112T01:00:00Z",
                                           "value": "382.27999145537615"
                                         }
                                       ]
