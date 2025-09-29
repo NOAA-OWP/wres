@@ -15,11 +15,11 @@ public class NwmDataPointDeserializerTest
 {
 
     private static final String GOOD_TEST_CASE = "{\r\n"
-                                                 + "\"time\": \"20210523T02Z\",\r\n"
+                                                 + "\"time\": \"20210523T02:00:00Z\",\r\n"
                                                  + "\"value\": 0.04\r\n"
                                                  + "}";
     private static final String NULL_TEST_CASE = "{\r\n"
-            + "\"time\": \"20210523T02Z\",\r\n"
+            + "\"time\": \"20210523T02:00:00Z\",\r\n"
             + "\"value\": null\r\n"
             + "}";
     
