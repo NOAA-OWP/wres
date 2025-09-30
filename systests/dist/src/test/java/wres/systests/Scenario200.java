@@ -27,9 +27,9 @@ public class Scenario200
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "DOSC1_DOSC1_HEFS_MEAN_ERROR.csv" ),
+            Set.of( Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "DOSC1_DOSC1_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "DOSC1_DOSC1_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "DOSC1_DOSC1_HEFS_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv.gz" ) );
     

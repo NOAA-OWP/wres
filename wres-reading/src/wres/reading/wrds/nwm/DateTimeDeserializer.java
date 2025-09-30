@@ -3,11 +3,14 @@ package wres.reading.wrds.nwm;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.reading.ReaderUtilities;
 
@@ -19,6 +22,7 @@ import wres.reading.ReaderUtilities;
  */
 public class DateTimeDeserializer extends JsonDeserializer<Instant>
 {
+
     @Override
     public Instant deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
@@ -39,8 +43,9 @@ public class DateTimeDeserializer extends JsonDeserializer<Instant>
         }
 
         // Lenient formatting in the "basic" ISO8601 format, hours and seconds are optional
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "yyyyMMdd'T'HH[mm[ss]]'Z'" )
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "[yyyyMMdd'T'HH[:mm[:ss]]'Z'][yyyy-MM-dd'T'HH:mm:ss'Z']" )
                                                        .withZone( ReaderUtilities.UTC );
+
         return formatter.parse( time, Instant::from );
     }
 }

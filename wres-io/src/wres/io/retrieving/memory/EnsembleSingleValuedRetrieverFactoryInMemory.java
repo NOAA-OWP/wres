@@ -6,11 +6,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.Variable;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.Variable;
 import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.space.Feature;

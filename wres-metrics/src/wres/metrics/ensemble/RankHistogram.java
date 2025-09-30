@@ -88,10 +88,10 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                                                             .build();
 
     /**
-     * A random number generator, used to assign ties randomly.
+     * A seed for the random number generator, possibly null.
      */
 
-    private final Random rng;
+    private final Long seed;
 
     /**
      * Returns an instance.
@@ -101,19 +101,19 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
     public static RankHistogram of()
     {
-        return new RankHistogram();
+        return new RankHistogram( null );
     }
 
     /**
      * Returns an instance.
      *
-     * @param rng the random number generator for ties
+     * @param seed the seed for a random number generator used to resolve ties
      * @return an instance
      */
 
-    public static RankHistogram of( Random rng )
+    public static RankHistogram of( Long seed )
     {
-        return new RankHistogram( rng );
+        return new RankHistogram( seed );
     }
 
     @Override
@@ -125,7 +125,8 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
         }
 
         // Empty diagram
-        if ( pool.get().isEmpty() )
+        if ( pool.get()
+                 .isEmpty() )
         {
             DiagramStatisticComponent ro =
                     DiagramStatisticComponent.newBuilder()
@@ -161,7 +162,8 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
         if ( useMe.isPresent() )
         {
             // Set the ranked positions as 1:N+1
-            ranks = IntStream.range( 1, useMe.get().get( 0 )
+            ranks = IntStream.range( 1, useMe.get()
+                                             .get( 0 )
                                              .getRight()
                                              .size() + 2 )
                              .asDoubleStream()
@@ -169,7 +171,8 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
             double[] sumRanks = new double[ranks.length]; // Total falling in each ranked position
 
             // Compute the sum of ranks
-            BiConsumer<Pair<Double, Ensemble>, double[]> ranker = RankHistogram.rankWithTies( rng );
+            Random random = this.getRandomNumberGenerator();
+            BiConsumer<Pair<Double, Ensemble>, double[]> ranker = RankHistogram.rankWithTies( random );
             useMe.get()
                  .forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
 
@@ -218,33 +221,34 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
     }
 
     /**
-     * Hidden constructor.
+     * Returns a random number generator. When seeded, it is important that a new instance is created on each
+     * calculation of a rank histogram, as the ordering of ties and random numbers is only fixed within each
+     * calculation.
+     *
+     * @return a random number generator
      */
 
-    private RankHistogram()
+    private Random getRandomNumberGenerator()
     {
-        super();
-        this.rng = new Random();
+        if ( Objects.isNull( this.seed ) )
+        {
+            return new Random();
+        }
+
+        return new Random( this.seed );
     }
 
     /**
      * Hidden constructor.
      *
-     * @param rng the random number generator for ties
+     * @param seed the seed for the random number generator used to resolve ties
      */
 
-    private RankHistogram( Random rng )
+    private RankHistogram( Long seed )
     {
         super();
 
-        if ( Objects.nonNull( rng ) )
-        {
-            this.rng = rng;
-        }
-        else
-        {
-            this.rng = new Random();
-        }
+        this.seed = seed;
     }
 
     /**
@@ -258,7 +262,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
     private static BiConsumer<Pair<Double, Ensemble>, double[]> rankWithTies( Random rng )
     {
-        final TriConsumer<double[], Double, double[]> containedRanker = getContainedRanker( rng );
+        final TriConsumer<double[], Double, double[]> containedRanker = RankHistogram.getContainedRanker( rng );
         return ( pair, sumRanks ) -> {
 
             // Sort the RHS
@@ -297,7 +301,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
     private static TriConsumer<double[], Double, double[]> getContainedRanker( Random rng )
     {
-        final TriConsumer<double[], Integer, double[]> tiedRanker = getTiedRanker( rng );
+        final TriConsumer<double[], Integer, double[]> tiedRanker = RankHistogram.getTiedRanker( rng );
         return ( sorted, obs, sumRanks ) -> {
             for ( int k = 0; k < sorted.length; k++ )
             {
@@ -305,7 +309,8 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                 if ( obs <= sorted[k] )
                 {
                     // Unique
-                    if ( k < ( sorted.length - 1 ) && sorted[k] < sorted[k + 1] )
+                    if ( k < ( sorted.length - 1 )
+                         && sorted[k] < sorted[k + 1] )
                     {
                         sumRanks[k] += 1;
                     }
@@ -354,8 +359,8 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
             // Select a random rank between upper and lower
             else
             {
-                int adj = endRank - startRank;
-                sumRanks[rng.nextInt( adj + 1 ) + startRank] += 1;
+                int randomIndex = rng.nextInt( endRank - startRank + 1 ) + startRank;
+                sumRanks[randomIndex] += 1;
             }
         };
     }

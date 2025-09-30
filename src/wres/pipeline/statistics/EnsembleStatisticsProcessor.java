@@ -19,8 +19,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.components.ThresholdType;
+import wres.config.DeclarationException;
+import wres.config.components.ThresholdType;
 import wres.datamodel.statistics.PairsStatisticOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
@@ -442,13 +442,13 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         return switch ( input.getOrientation() )
         {
-            case LEFT -> Slicer.leftVector( input );
-            case RIGHT -> Slicer.allOfRight( input );
-            case LEFT_AND_RIGHT -> Slicer.leftAndAllOfRight( input );
-            case ANY_RIGHT -> Slicer.anyOfRight( input );
-            case LEFT_AND_ANY_RIGHT -> Slicer.leftAndAnyOfRight( input );
-            case RIGHT_MEAN -> Slicer.right( input, AVERAGE );
-            case LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( input, AVERAGE );
+            case OBSERVED -> Slicer.leftVector( input );
+            case PREDICTED -> Slicer.allOfRight( input );
+            case OBSERVED_AND_PREDICTED -> Slicer.leftAndAllOfRight( input );
+            case ANY_PREDICTED -> Slicer.anyOfRight( input );
+            case OBSERVED_AND_ANY_PREDICTED -> Slicer.leftAndAnyOfRight( input );
+            case PREDICTED_MEAN -> Slicer.right( input, AVERAGE );
+            case OBSERVED_AND_PREDICTED_MEAN -> Slicer.leftAndRight( input, AVERAGE );
         };
     }
 

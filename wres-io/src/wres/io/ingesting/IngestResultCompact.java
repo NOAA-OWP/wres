@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import static java.lang.Short.MAX_VALUE;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
 import wres.reading.DataSource;
 
 /**

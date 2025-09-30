@@ -15,11 +15,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.SourceBuilder;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.Source;
+import wres.config.components.SourceBuilder;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -83,7 +83,7 @@ class WrdsNwmJsonReaderTest
                           },
                           "forecasts": [
                             {
-                              "reference_time": "20200112T00Z",
+                              "reference_time": "2020-01-12T00:00:00Z",
                               "features": [
                                 {
                                   "location": {
@@ -103,15 +103,15 @@ class WrdsNwmJsonReaderTest
                                       "identifier": "1",
                                       "data_points": [
                                         {
-                                          "time": "20200112T03Z",
+                                          "time": "20200112T03:00:00Z",
                                           "value": "270.9899939429015"
                                         },
                                         {
-                                          "time": "20200112T02Z",
+                                          "time": "20200112T02:00:00Z",
                                           "value": "334.139992531389"
                                         },
                                         {
-                                          "time": "20200112T01Z",
+                                          "time": "20200112T01:00:00Z",
                                           "value": "382.27999145537615"
                                         }
                                       ]

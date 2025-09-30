@@ -24,19 +24,16 @@ message Consumer
         SVG = 1;
         // Scalable Vector Graphics (SVG).
 
-        CSV = 2;
-        // Comma Separated Values (CSV).
-
-        NETCDF = 3;
+        NETCDF = 2;
         // Network Common Data Form (NetCDF).
 
-        PROTOBUF = 4;
+        PROTOBUF = 3;
         // Protocol Buffers.
         
-        PAIRS = 5;
+        PAIRS = 4;
         // Pairs CSV format.
 
-        CSV2 = 6;
+        CSV2 = 5;
         // Comma Separated Values (CSV) Version 2.
     }
 

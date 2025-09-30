@@ -28,7 +28,7 @@ import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Outputs;
-import wres.statistics.generated.Outputs.NetcdfFormat;
+import wres.statistics.generated.Outputs.Netcdf2Format;
 
 /**
  * Tests the {@link EvaluationStatusTracker}.
@@ -103,13 +103,13 @@ class EvaluationStatusTrackerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                             .setNetcdf2( Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationStatusTrackerTest.connections,
                                              "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
-                                                                             Set.of( Format.PNG, Format.CSV ),
+                                                                             Set.of( Format.PNG, Format.CSV2 ),
                                                                              0,
                                                                              subscriberApprover,
                                                                              new ProducerFlowController( evaluation ) ) )
@@ -133,7 +133,7 @@ class EvaluationStatusTrackerTest
             Consumer consumerTwo = Consumer.newBuilder()
                                            .setConsumerId( "anotherConsumer" )
                                            .addFormats( Format.PNG )
-                                           .addFormats( Format.CSV )
+                                           .addFormats( Format.CSV2 )
                                            .build();
 
             EvaluationStatus statusOne = EvaluationStatus.newBuilder()
@@ -154,7 +154,7 @@ class EvaluationStatusTrackerTest
             Map<Format, String> actual = tracker.getNegotiatedSubscribers();
             Map<Format, String> expected = new EnumMap<>( Format.class );
 
-            expected.put( Format.CSV, "anotherConsumer" );
+            expected.put( Format.CSV2, "anotherConsumer" );
             expected.put( Format.PNG, "anotherConsumer" );
 
             assertEquals( expected, actual );
@@ -206,7 +206,7 @@ class EvaluationStatusTrackerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                             .setNetcdf2( Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationStatusTrackerTest.connections,
                                              "aClient" );
@@ -319,7 +319,7 @@ class EvaluationStatusTrackerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                             .setNetcdf2( Netcdf2Format.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationStatusTrackerTest.connections,
                                              "aClient" );

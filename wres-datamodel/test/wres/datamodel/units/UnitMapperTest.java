@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
 
 import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
@@ -13,8 +14,8 @@ import static org.apache.commons.math3.util.Precision.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.components.UnitAlias;
+import wres.config.DeclarationException;
+import wres.config.components.UnitAlias;
 
 /**
  * The UnitMapper doesn't need a database (db) to test conversions.
@@ -22,10 +23,19 @@ import wres.config.yaml.components.UnitAlias;
 
 class UnitMapperTest
 {
+    /** Locks to close. */
+    AutoCloseable closeable;
+
     @BeforeEach
-    public void setup()
+    void setup()
     {
-        MockitoAnnotations.openMocks( this );
+        this.closeable = MockitoAnnotations.openMocks( this );
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        this.closeable.close();
     }
 
     @Test

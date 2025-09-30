@@ -28,20 +28,20 @@ import org.mockserver.verify.VerificationTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.SourceBuilder;
-import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.TimeInterval;
-import wres.config.yaml.components.TimeIntervalBuilder;
-import wres.config.yaml.components.VariableBuilder;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.Source;
+import wres.config.components.SourceBuilder;
+import wres.config.components.SourceInterface;
+import wres.config.components.TimeInterval;
+import wres.config.components.TimeIntervalBuilder;
+import wres.config.components.VariableBuilder;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -76,7 +76,7 @@ class WrdsNwmReaderTest
                                                 + "/";
 
     /** Parameters added to path. */
-    private static final String ANALYSIS_PARAMS = "?reference_time=20200112T00Z";
+    private static final String ANALYSIS_PARAMS = "?reference_time=2020-01-12T00:00:00Z";
 
     /** Analysis response from GET. */
     private static final String ANALYSIS_RESPONSE = "{\n"
@@ -99,7 +99,7 @@ class WrdsNwmReaderTest
                                                     + "  },\n"
                                                     + "  \"forecasts\": [\n"
                                                     + "    {\n"
-                                                    + "      \"reference_time\": \"20200112T00Z\",\n"
+                                                    + "      \"reference_time\": \"2020-01-12T00:00:00Z\",\n"
                                                     + "      \"features\": [\n"
                                                     + "        {\n"
                                                     + "          \"location\": {\n"
@@ -121,15 +121,15 @@ class WrdsNwmReaderTest
                                                     + "              \"identifier\": \"1\",\n"
                                                     + "              \"data_points\": [\n"
                                                     + "                {\n"
-                                                    + "                  \"time\": \"20200112T03Z\",\n"
+                                                    + "                  \"time\": \"20200112T03:00:00Z\",\n"
                                                     + "                  \"value\": \"270.9899939429015\"\n"
                                                     + "                },\n"
                                                     + "                {\n"
-                                                    + "                  \"time\": \"20200112T02Z\",\n"
+                                                    + "                  \"time\": \"20200112T02:00:00Z\",\n"
                                                     + "                  \"value\": \"334.139992531389\"\n"
                                                     + "                },\n"
                                                     + "                {\n"
-                                                    + "                  \"time\": \"20200112T01Z\",\n"
+                                                    + "                  \"time\": \"20200112T01:00:00Z\",\n"
                                                     + "                  \"value\": \"382.27999145537615\"\n"
                                                     + "                }\n"
                                                     + "              ]\n"
@@ -167,7 +167,7 @@ class WrdsNwmReaderTest
                                                     + "  },\n"
                                                     + "  \"forecasts\": [\n"
                                                     + "    {\n"
-                                                    + "      \"reference_time\": \"20200112T00Z\",\n"
+                                                    + "      \"reference_time\": \"2020-01-12T00:00:00Z\",\n"
                                                     + "      \"features\": [\n"
                                                     + "        {\n"
                                                     + "          \"location\": {\n"
@@ -189,15 +189,15 @@ class WrdsNwmReaderTest
                                                     + "              \"identifier\": \"1\",\n"
                                                     + "              \"data_points\": [\n"
                                                     + "                {\n"
-                                                    + "                  \"time\": \"20200112T03Z\",\n"
+                                                    + "                  \"time\": \"20200112T03:00:00Z\",\n"
                                                     + "                  \"value\": \"270.9899939429015\"\n"
                                                     + "                },\n"
                                                     + "                {\n"
-                                                    + "                  \"time\": \"20200112T02Z\",\n"
+                                                    + "                  \"time\": \"20200112T02:00:00Z\",\n"
                                                     + "                  \"value\": \"334.139992531389\"\n"
                                                     + "                },\n"
                                                     + "                {\n"
-                                                    + "                  \"time\": \"20200112T01Z\",\n"
+                                                    + "                  \"time\": \"20200112T01:00:00Z\",\n"
                                                     + "                  \"value\": \"382.27999145537615\"\n"
                                                     + "                }\n"
                                                     + "              ]\n"

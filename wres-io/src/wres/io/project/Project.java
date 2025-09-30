@@ -6,11 +6,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.Offset;
-import wres.config.yaml.components.Variable;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.Offset;
+import wres.config.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;

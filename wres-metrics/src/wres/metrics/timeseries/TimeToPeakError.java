@@ -68,15 +68,15 @@ public class TimeToPeakError extends TimingError
     }
 
     /**
-     * Returns an instance with a prescribed random number generator for resolving ties.
+     * Returns an instance with a prescribed seed for the random number generator, which is used to resolve ties.
      *
-     * @param rng the random number generator for resolving ties
+     * @param seed the seed of the random number generator, which is used to resolve ties
      * @return an instance
      */
 
-    public static TimeToPeakError of( Random rng )
+    public static TimeToPeakError of( Long seed )
     {
-        return new TimeToPeakError( rng );
+        return new TimeToPeakError( seed );
     }
 
     @Override
@@ -90,13 +90,15 @@ public class TimeToPeakError extends TimingError
         // Iterate through the time-series by basis time, and find the peaks in left and right
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder()
                                                                            .setMetric( TimeToPeakError.METRIC );
+
+        Random random = this.getRandomNumberGenerator();
         for ( TimeSeries<Pair<Double, Double>> next : pool.get() )
         {
             // Some events?
             if ( !next.getEvents()
                       .isEmpty() )
             {
-                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRandomNumberGenerator() );
+                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, random );
 
                 // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
                 Duration error = Duration.between( peak.getLeft(), peak.getRight() );
@@ -154,12 +156,12 @@ public class TimeToPeakError extends TimingError
     /**
      * Hidden constructor.
      *
-     * @param rng the random number generator for resolving ties 
+     * @param seed the seed of the random number generator, which is used to resolve ties
      */
 
-    private TimeToPeakError( Random rng )
+    private TimeToPeakError( Long seed )
     {
-        super( rng );
+        super( seed );
     }
 
 }

@@ -31,10 +31,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.Variable;
+import wres.config.DeclarationException;
+import wres.config.DeclarationUtilities;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.Variable;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
@@ -491,8 +491,9 @@ public class NwisReader implements TimeSeriesReader
 
         this.declaration = declaration;
 
-        ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "USGS NWIS Reading Thread %d" )
-                                                                         .build();
+        ThreadFactory webClientFactory = BasicThreadFactory.builder()
+                                                           .namingPattern( "USGS NWIS Reading Thread %d" )
+                                                           .build();
 
         // Use a queue with as many places as client threads
         BlockingQueue<Runnable> webClientQueue =

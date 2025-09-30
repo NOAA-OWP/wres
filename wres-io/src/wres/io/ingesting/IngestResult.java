@@ -3,8 +3,8 @@ package wres.io.ingesting;
 import java.util.List;
 import java.util.Set;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
 import wres.reading.DataSource;
 
 /**

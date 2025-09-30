@@ -22,19 +22,19 @@ message Threshold
     string name = 3;
     // A user-friendly name for a threshold (e.g., MINOR FLOOD).
     
-    optional double left_threshold_value = 4;
-    // A real-valued left threshold. Wrapped to expose when unset.
+    optional double observed_threshold_value = 4;
+    // A real-valued observed threshold. Wrapped to expose when unset.
 
-    optional double right_threshold_value = 5;
-    // A real-valued right threshold when the ThresholdType is BETWEEN.
+    optional double predicted_threshold_value = 5;
+    // A real-valued predicted threshold when the ThresholdType is BETWEEN.
     // Wrapped to expose when unset.
 
-    optional double left_threshold_probability = 6;
-    // The probability associated with the left threshold in [0,1].
+    optional double observed_threshold_probability = 6;
+    // The probability associated with the observed threshold in [0,1].
     // Wrapped to expose when unset.
 
-    optional double right_threshold_probability = 7;
-    // The probability associated with the right threshold when BETWEEN in [0,1].
+    optional double predicted_threshold_probability = 7;
+    // The probability associated with the predicted threshold when BETWEEN in [0,1].
     // Wrapped to expose when unset.
         
     string threshold_value_units = 8;
@@ -61,33 +61,33 @@ message Threshold
         // Identifier for equality.
 
         BETWEEN = 5;
-        // Between condition with left exclusive and right inclusive
+        // Between condition with observed exclusive and predicted inclusive
     }
 
     enum ThresholdDataType 
     {
         // The side of the paired data to which the threshold applies.
         
-        LEFT = 0;
-        // Left side of a pair meets the threshold condition.
+        OBSERVED = 0;
+        // Observed side of a pair meets the threshold condition.
 
-        RIGHT = 1;
-        // Right side of a pair meets the threshold condition.
+        PREDICTED = 1;
+        // Predicted side of a pair meets the threshold condition.
 
-        LEFT_AND_RIGHT = 2;
-        // Left side and all values of the right side of a pair meet the threshold condition.
+        OBSERVED_AND_PREDICTED = 2;
+        // Observed side and all values of the predicted side of a pair meet the threshold condition.
         
-        ANY_RIGHT = 3;
-        // Any value on the right side of a pair meet the threshold condition. 
+        ANY_PREDICTED = 3;
+        // Any value on the predicted side of a pair meet the threshold condition.
 
-        LEFT_AND_ANY_RIGHT = 4;
-        // Left side and any value on the right side of a pair meet the threshold condition.
+        OBSERVED_AND_ANY_PREDICTED = 4;
+        // Observed side and any value on the predicted side of a pair meet the threshold condition.
 
-        RIGHT_MEAN = 5;
-        // The mean value of the right side of a pair meets the threshold condition.
+        PREDICTED_MEAN = 5;
+        // The mean value of the predicted side of a pair meets the threshold condition.
 
-        LEFT_AND_RIGHT_MEAN = 6;
-        // The left side and the mean value of the right side of a pair meets the threshold condition.
+        OBSERVED_AND_PREDICTED_MEAN = 6;
+        // The observed side and the mean value of the predicted side of a pair meets the threshold condition.
     }
 
 }

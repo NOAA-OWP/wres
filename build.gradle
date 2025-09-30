@@ -40,7 +40,7 @@ buildscript {
 /* Gradle plugins available in the official gradle plugins repository */
 plugins {
     // Static analysis tool sonarqube client
-    id 'org.sonarqube' version '6.2.0.5505'
+    id 'org.sonarqube' version '6.3.1.5724'
 
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // Above is unmaintained, less gradle-y, below fork has several improvements
@@ -50,7 +50,7 @@ plugins {
     id 'com.github.seanrl.jaxb' version '2.5.5'
 
     // For ability to use git ids for versioning jar files:
-    id 'org.ajoberstar.grgit' version '5.3.0'
+    id 'org.ajoberstar.grgit' version '5.3.3'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
@@ -71,7 +71,7 @@ plugins {
 
     // To discover library versions with known vulnerabilities
     // needed to change this to     id 'org.owasp.dependencycheck' version '12.1.1' for the test to run
-    id 'org.owasp.dependencycheck' version '12.1.3'
+    id 'org.owasp.dependencycheck' version '12.1.5'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -92,7 +92,7 @@ plugins {
     id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.26"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
-    id 'org.beryx.jlink' version '3.1.1'
+    id 'org.beryx.jlink' version '3.1.3'
 
     // Integrated code coverage report
     id 'jacoco-report-aggregation'
@@ -273,9 +273,12 @@ project(':wres-system') {
         // For Java 9+ compatibility:
         api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
 
+        // JAXB runtime
+        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
+
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
-        annotationProcessor 'org.projectlombok:lombok:1.18.38'
+        annotationProcessor 'org.projectlombok:lombok:1.18.42'
 
         // Database drivers need to be on the runtime classpath in order to
         // acquire connections initially. See #103431
@@ -310,13 +313,13 @@ project(':wres-system') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        testRuntimeOnly 'com.google.guava:guava:33.4.8-jre'
+        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
         testRuntimeOnly 'io.netty:netty-codec-http:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-codec-http2:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.3.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
+        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
+        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
         testImplementation 'org.apache.httpcomponents:httpclient:4.5.14'
         testImplementation 'org.apache.httpcomponents:httpcore:4.4.16'
     }
@@ -342,18 +345,18 @@ project(':wres-datamodel') {
         }
 
         api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // The following five libraries together provide units of measure.
         api 'javax.measure:unit-api:2.2'
-        runtimeOnly 'si.uom:si-units:2.2.2'
+        runtimeOnly 'si.uom:si-units:2.2.3'
         implementation 'tech.units:indriya:2.2.3'
         implementation 'systems.uom:systems-ucum:2.2'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'si.uom:si-quantity:2.1'
+        implementation 'si.uom:si-quantity:2.2.3'
         implementation 'systems.uom:systems-quantity:2.2'
 
         // For geometries
@@ -363,7 +366,7 @@ project(':wres-datamodel') {
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.18.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
@@ -376,8 +379,8 @@ project(':wres-datamodel') {
 
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
         testImplementation 'org.hamcrest:hamcrest-core:1.3'
-        testRuntimeOnly 'si.uom:si-quantity:2.1'
-        testImplementation 'si.uom:si-units:2.2.2'
+        testRuntimeOnly 'si.uom:si-quantity:2.2.3'
+        testImplementation 'si.uom:si-units:2.2.3'
     }
     // Facilitate unit tests with JUnit
     test {
@@ -407,7 +410,7 @@ project(':wres-io') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.4.8-jre'
+        implementation 'com.google.guava:guava:33.5.0-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
@@ -424,7 +427,7 @@ project(':wres-io') {
         implementation 'com.zaxxer:HikariCP:6.3.0'
 
         // To cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -460,12 +463,12 @@ project(':wres-io') {
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
-        testRuntimeOnly group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+        testRuntimeOnly group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
 
         api 'org.apache.commons:commons-lang3:3.18.0'
         api 'org.slf4j:slf4j-api:2.0.17'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        testImplementation 'org.mockito:mockito-core:5.2.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
     }
 
     test {
@@ -579,10 +582,10 @@ project(':wres-writing') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.4.8-jre'
+        implementation 'com.google.guava:guava:33.5.0-jre'
 
         // To accurately detect mime types of files.
-        runtimeOnly 'org.apache.tika:tika-core:3.2.2'
+        runtimeOnly 'org.apache.tika:tika-core:3.2.3'
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -592,16 +595,16 @@ project(':wres-writing') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
         testRuntimeOnly 'org.apache.commons:commons-lang3:3.18.0'
-        testImplementation 'org.apache.tika:tika-core:3.2.2'
-        testImplementation 'org.mockito:mockito-core:5.2.0'
+        testImplementation 'org.apache.tika:tika-core:3.2.3'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.17'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
         implementation 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
-        testImplementation 'org.mockito:mockito-core:5.2.0'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
@@ -616,7 +619,7 @@ project(':wres-writing') {
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
-        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
     }
 
     test {
@@ -635,7 +638,7 @@ project(':wres-reading') {
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
 
         api('edu.ucar:cdm-core:5.8.0') {
             // Because we use slf4j, not jcl:
@@ -648,7 +651,7 @@ project(':wres-reading') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.4.8-jre'
+        implementation 'com.google.guava:guava:33.5.0-jre'
 
         implementation 'org.apache.commons:commons-compress:1.28.0'
 
@@ -661,7 +664,7 @@ project(':wres-reading') {
         implementation 'org.apache.httpcomponents:httpclient:4.5.14'
 
         // To accurately detect mime types of files.
-        api 'org.apache.tika:tika-core:3.2.2'
+        api 'org.apache.tika:tika-core:3.2.3'
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -678,8 +681,8 @@ project(':wres-reading') {
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
         api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-core:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
         api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         api 'javax.xml.bind:jaxb-api:2.3.1'
         api 'org.apache.commons:commons-lang3:3.18.0'
@@ -689,7 +692,7 @@ project(':wres-reading') {
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
         testImplementation 'org.mock-server:mockserver-core:5.15.0'
-        testImplementation 'org.mockito:mockito-core:5.2.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -698,7 +701,7 @@ project(':wres-reading') {
 
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
-        annotationProcessor 'org.projectlombok:lombok:1.18.38'
+        annotationProcessor 'org.projectlombok:lombok:1.18.42'
 
         // Use mockserver as a mock server for mock API responses
         // Various transitive dependencies need to be overridden to avoid
@@ -718,11 +721,11 @@ project(':wres-reading') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        implementation 'commons-io:commons-io:2.19.0'
+        implementation 'commons-io:commons-io:2.20.0'
         testRuntimeOnly 'io.netty:netty-common:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.3.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
+        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
+        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
         
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
@@ -735,7 +738,7 @@ project(':wres-reading') {
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
-        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
     }
 
     test {
@@ -800,7 +803,7 @@ project(':wres-metrics') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:5.18.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
@@ -1058,7 +1061,7 @@ project(':wres-vis') {
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
-        testRuntimeOnly group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+        testRuntimeOnly group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
     }
 
     // Facilitate unit tests with JUnit
@@ -1068,7 +1071,6 @@ project(':wres-vis') {
 }
 
 project(':wres-config') {
-    apply plugin: 'com.github.seanrl.jaxb'
 
     dependencies {
         api project(':wres-statistics')
@@ -1079,25 +1081,13 @@ project(':wres-config') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        // For Java 9+ compatibility:
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
-
-        api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.13.1'
-
-        // To know about @Locatable
-        compileOnlyApi 'org.glassfish.jaxb:jaxb-core:2.3.0.1'
-
-        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
-
-        runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.12'
-
         // For YAML (de)serialization.
         implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
         api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-core:2.19.2'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2'
-        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.2'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
+        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.0'
         implementation('com.hubspot.jackson:jackson-datatype-protobuf:0.9.18') {
             // Exclude old modules to eliminate several CVEs
             // Remove older protobuf version and include later version below
@@ -1121,39 +1111,19 @@ project(':wres-config') {
         implementation group: 'com.opencsv', name: 'opencsv', version: '5.12.0'
 
         // YAML/JSON schema validation
-        api 'com.networknt:json-schema-validator:1.5.7'
+        api 'com.networknt:json-schema-validator:1.5.9'
 
         // To auto-generate builders for Java records through annotation processing
         annotationProcessor 'io.soabase.record-builder:record-builder-processor:47'
         compileOnly 'io.soabase.record-builder:record-builder-core:47'
 
-        // May help in future with #37380, may need to modify sources
-        // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
-        // xjc 'org.apache.cxf.xjcplugins:cxf-xjc-dv:3.2.0'
-        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.13.1'
-        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics:0.13.1'
-        jaxb 'org.jvnet.jaxb2_commons:jaxb2-basics-annotate:1.1.0'
-
-        // commons-beanutils is transitive dependency of jaxb2-basics, has CVEs
-        jaxb 'commons-beanutils:commons-beanutils:1.11.0'
-
-        // commons-io is transitive dependency of jaxb2-basics-annotate, has CVE
-        jaxb 'commons-io:commons-io:2.19.0'
-
-        // jaxb-xjc transitively includes bind-api and jaxb-core
-        jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.8'
-        jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
-
         // To accurately detect mime types of files.
-        api 'org.apache.tika:tika-core:3.2.2'
+        api 'org.apache.tika:tika-core:3.2.3'
 
-        // To annotate deprecated classes generated by JAXB
-        runtimeOnly group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-annotate', version: '1.1.0'
-
-        api 'org.yaml:snakeyaml:2.3'
+        api 'org.yaml:snakeyaml:2.5'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.18.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.13.4'
@@ -1162,77 +1132,13 @@ project(':wres-config') {
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
-        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
     }
-
-    jaxb {
-        xsdDir = "${project.projectDir}/nonsrc"
-        bindingsDir = xsdDir
-
-        xjc {
-            taskClassname = 'org.jvnet.jaxb2_commons.xjc.XJC2Task'
-            generatePackage = 'wres.config.xml.generated'
-            destinationDir = "${project.buildDir}/generated/"
-            // For location information to be in classes, -Xlocator is needed
-            // here. For location information to be in instances at runtime, the
-            // eclipselink moxy library is required at runtime (see runtime dep)
-
-            // JBr: added -Xequals and -XhashCode implementations. Also added
-            // -Xinject-code to allow for wres.config.xml.generated.ProjectConfig
-            // to implement java.lang.Comparable. See discussion in #44996
-
-            args = ['-Xinject-code', '-Xinheritance', '-Xannotate',
-                    '-immutable', '-Xlocator', '-Xequals', '-XhashCode',
-                    '-XtoString']
-            // May help in future with #37380:
-            //args = ['-Xinheritance', '-Xannotate', '-immutable', '-Xlocator', '-Xdv']
-            producesDir = "${xsdDir}"
-        }
-    }
-
-    // Struggled to find a way to get great incremental builds, ended up using
-    // an additional copy task. The idea is that xjc task will drop files into
-    // the build directory as an intermediate directory. The whole build dir
-    // gets cleaned up on "clean". Now, in copyGenerated we copy from "build"
-    // into "src" but cleaning up the src before doing so, to avoid extra files
-    // lying around whenever the xsd file changes. This task will happen every
-    // time, unfortunately, however, the xsd generation and java compilation
-    // still will have the desired incremental properties (and dependents such
-    // as jar).
-    // Incremental builds without this extra task could probably be fixed at
-    // https://github.com/rackerlabs/gradle-jaxb-plugin
-    //
-    // Also, when the plugin fixes
-    // https://github.com/rackerlabs/gradle-jaxb-plugin/issues/6 we should get
-    // the latest version (this seems to happen on each build)
-    task copyGenerated(type: Copy, dependsOn: xjc, group: 'Parse') {
-        description = 'Ensures generated code is created and available in src.'
-        destinationDir = file("${project.projectDir}/src/wres/config/xml/generated")
-        delete fileTree(dir: destinationDir).include('**/generated/*.java')
-        from fileTree("${project.buildDir}/generated/wres/config/xml/generated")
-        into destinationDir
-    }
-
-    // Wiring the generation of jaxb classes into standard compilation task:
-    compileJava.dependsOn copyGenerated
-
-    // Render explicit the dependency of sourcesJar on copyGenerated
-    sourcesJar.dependsOn copyGenerated
 
     // Set the output directory for sources generated via annotation processing
     compileJava {
         File generatedSourceDir = file("${project.projectDir}/build/generated")
         options.generatedSourceOutputDirectory = generatedSourceDir
-    }
-
-    // Incremental builds disabled for the XJC task as of 20220804. See #107133.
-    tasks.named("xsd-dependency-tree").configure {
-        outputs.upToDateWhen {false}
-    }
-
-    javadoc {
-        // XJC generates Java8-unfriendly javadoc. Do not bother generating.
-        excludes = ['**/generated/*.java']
     }
 
     test {
@@ -1319,7 +1225,7 @@ project(':wres-worker') {
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.25.0'
+        implementation 'com.rabbitmq:amqp-client:5.26.0'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
             // Not used at runtime, bloat
@@ -1329,7 +1235,7 @@ project(':wres-worker') {
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
         testImplementation 'org.mock-server:mockserver-core:5.15.0'
-        testImplementation 'org.mockito:mockito-core:5.2.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // Use mockserver as a mock server for mock API responses
         // Use mockserver as a mock server for mock API responses
@@ -1350,13 +1256,13 @@ project(':wres-worker') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        testRuntimeOnly 'com.google.guava:guava:33.4.8-jre'
+        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
         testRuntimeOnly 'io.netty:netty-codec-http:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-codec-http2:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.3.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.3.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.81'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.81'
+        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
+        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
         
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
@@ -1493,7 +1399,7 @@ project(':wres-tasker') {
         implementation project(':wres-statistics')
         implementation project(':wres-http')
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.25.0'
+        implementation 'com.rabbitmq:amqp-client:5.26.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
 
         // Easy byte[] to hex conversion
@@ -1503,17 +1409,17 @@ project(':wres-tasker') {
         implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:12.1.0.alpha1'
+        implementation 'org.eclipse.jetty:jetty-server:12.1.1'
 
         // Servlet library is now tied to ee10.
         implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.1'
         implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.1'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.0.alpha1'
+        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.1'
 
         // Support ALPN
-        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.0.alpha1'
+        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.1'
 
         // Servlet container library to run a web application with:
         runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.1'
@@ -1523,19 +1429,19 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.10'
 
         // To handle multipart post
-        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.10'
+        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:3.2.2'
+        implementation 'org.apache.tika:tika-core:3.2.3'
 
         // To persist job metadata while keeping it relatively fast
-        implementation('org.redisson:redisson:3.49.0') {
+        implementation('org.redisson:redisson:3.51.0') {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
@@ -1547,16 +1453,16 @@ project(':wres-tasker') {
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
 
-        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.0.alpha1'
-        implementation 'org.eclipse.jetty:jetty-http:12.1.0.alpha1'
-        implementation 'org.eclipse.jetty:jetty-util:12.1.0.alpha1'
+        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.1'
+        implementation 'org.eclipse.jetty:jetty-http:12.1.1'
+        implementation 'org.eclipse.jetty:jetty-util:12.1.1'
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.9'
 
         // JSON deserialization uses jackson directly. Specify recent version.
         implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.2'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
         implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.19.2'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.18.0'
@@ -1582,18 +1488,18 @@ project(':wres-tasker') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // To generate fake certificates and keys for testing
-        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.81'
-        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.81'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.82'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.82'
 
         // To test against an embedded AMQP broker
         testImplementation 'org.apache.qpid:qpid-broker-core:9.2.1'
         // Provides support for both 0-8 and 0-9-1
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:9.2.1'
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-memory-store:9.2.1'
-        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.34'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.37'
     }
 
     apply plugin: 'application'
@@ -1666,7 +1572,7 @@ project(':wres-eventsbroker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
         // Apache ActiveMQ Artemis server
-        implementation('org.apache.activemq:artemis-server:2.41.0') {
+        implementation('org.apache.activemq:artemis-server:2.42.0') {
             // TODO: remove when Artemis catches up
 
             // Because we use slf4j, not jcl:
@@ -1692,7 +1598,7 @@ project(':wres-eventsbroker') {
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.81'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.41.0') {
+        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.42.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
@@ -1712,7 +1618,7 @@ project(':wres-eventsbroker') {
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client to test interaction with the embedded broker
-        testRuntimeOnly('org.apache.qpid:qpid-jms-client:2.7.0') {
+        testRuntimeOnly('org.apache.qpid:qpid-jms-client:2.9.0') {
             // Because of CVE-2022-24823. TODO: remove when Qpid catches up
             exclude group: 'io.netty'
         }
@@ -1739,7 +1645,7 @@ project(':wres-events') {
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1748,7 +1654,7 @@ project(':wres-events') {
         api group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client
-        runtimeOnly('org.apache.qpid:qpid-jms-client:2.7.0') {
+        runtimeOnly('org.apache.qpid:qpid-jms-client:2.9.0') {
             // Because of CVE-2022-24823. TODO: remove when Qpid catches up
             exclude group: 'io.netty'
         }
@@ -1769,7 +1675,7 @@ project(':wres-events') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.18.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // To create an embedded broker for unit testing
         testImplementation project(':wres-eventsbroker')
@@ -1795,7 +1701,7 @@ project(':wres-http') {
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-        testImplementation 'org.mockito:mockito-core:5.2.0'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -2015,9 +1921,9 @@ dependencies {
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
     implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.0.alpha1'
-    implementation 'org.eclipse.jetty:jetty-http:12.1.0.alpha1'
-    implementation 'org.eclipse.jetty:jetty-util:12.1.0.alpha1'
+    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.1'
+    implementation 'org.eclipse.jetty:jetty-http:12.1.1'
+    implementation 'org.eclipse.jetty:jetty-util:12.1.1'
     implementation project(':wres-statistics')
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
@@ -2036,15 +1942,15 @@ dependencies {
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.10'
 
     // Jetty server
-    implementation 'org.eclipse.jetty:jetty-server:12.1.0.alpha1'
+    implementation 'org.eclipse.jetty:jetty-server:12.1.1'
 
-    implementation('com.github.ben-manes.caffeine:caffeine:3.2.1') {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation('org.redisson:redisson:3.49.0') {
+    implementation('org.redisson:redisson:3.51.0') {
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
         exclude group: 'io.netty'
     }
@@ -2072,10 +1978,10 @@ dependencies {
 
     // Support HTTP/2
     //implementation 'org.eclipse.jetty.http2:http2-server:11.0.24'
-    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.0.alpha1'
+    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.1'
 
     // Support ALPN
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.0.alpha1'
+    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.1'
 
     runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
         // Not used at runtime, bloat
@@ -2097,7 +2003,7 @@ dependencies {
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
 
-    testImplementation 'org.mockito:mockito-core:5.18.0'
+    testImplementation 'org.mockito:mockito-core:5.20.0'
 
 }
 

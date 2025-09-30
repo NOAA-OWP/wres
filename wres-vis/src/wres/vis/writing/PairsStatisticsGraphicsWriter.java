@@ -16,7 +16,7 @@ import java.util.function.Function;
 import org.jfree.chart.JFreeChart;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolMetadata;

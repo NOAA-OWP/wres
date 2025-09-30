@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import wres.config.yaml.components.Variable;
+import wres.config.components.Variable;
 import wres.datamodel.space.Feature;
 import wres.statistics.MessageUtilities;
 
@@ -44,9 +44,9 @@ class RetrieverTestHelper
     static ExecutorService getIngestExecutor()
     {
         // Create an ingest executor
-        ThreadFactory ingestFactory =
-                new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
-                                                .build();
+        ThreadFactory ingestFactory = BasicThreadFactory.builder()
+                                                        .namingPattern( "Ingesting Thread %d" )
+                                                        .build();
         // Queue should be large enough to allow join() call to be reached with zero or few rejected submissions to the
         // executor service.
         BlockingQueue<Runnable> ingestQueue = new ArrayBlockingQueue<>( 7 );
