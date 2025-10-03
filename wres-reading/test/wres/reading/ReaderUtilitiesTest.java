@@ -1924,4 +1924,40 @@ class ReaderUtilitiesTest
                    () -> assertEquals( 23.5, ReaderUtilities.getMissingValueDouble( five ) ) );
     }
 
+    @Test
+    void testIsUsgsSourceWithFileUriScheme()
+    {
+        // GitHub #639
+        DataSource dataSource =
+                DataSource.of( DataSource.DataDisposition.JSON_WATERML,
+                               SourceBuilder.builder()
+                                            .build(),
+                               DatasetBuilder.builder()
+                                             .build(),
+                               List.of(),
+                               URI.create( "file:///nwis/wresTestData/github_viz_20/01570500.observed.usgs.json" ),
+                               DatasetOrientation.LEFT,
+                               null );
+
+        assertFalse( ReaderUtilities.isUsgsSource( dataSource ) );
+    }
+
+    @Test
+    void testIsUsgsSourceWithHttpScheme()
+    {
+        // GitHub #639
+        DataSource dataSource =
+                DataSource.of( DataSource.DataDisposition.JSON_WATERML,
+                               SourceBuilder.builder()
+                                            .build(),
+                               DatasetBuilder.builder()
+                                             .build(),
+                               List.of(),
+                               URI.create( "https:///nwis/foo" ),
+                               DatasetOrientation.LEFT,
+                               null );
+
+        assertTrue( ReaderUtilities.isUsgsSource( dataSource ) );
+    }
+
 }
