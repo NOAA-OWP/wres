@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link MeanSquareError}.
- * 
+ *
  * @author James Brown
  */
 public final class MeanSquareErrorTest
@@ -64,9 +64,9 @@ public final class MeanSquareErrorTest
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanSquareError.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( MeanSquareError.BASIC_METRIC )
+                                                            .addStatistics( component )
+                                                            .build();
 
         assertEquals( expected, actual.getStatistic() );
     }
@@ -112,7 +112,7 @@ public final class MeanSquareErrorTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.mse.apply( null ) );
+                                             () -> this.mse.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.mse.getMetricNameString() + "'.", actual.getMessage() );
     }
@@ -121,9 +121,16 @@ public final class MeanSquareErrorTest
     public void testAggregateExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> mse.applyIntermediate( null, null ) );
+                                             () -> mse.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.mse.getMetricNameString() + "'.", actual.getMessage() );
+    }
+
+    @Test
+    public void testGetOptimum()
+    {
+        // GitHub #642
+        assertEquals( 0.0, MeanSquareError.MAIN.getOptimum(), 0.0 );
     }
 
 }

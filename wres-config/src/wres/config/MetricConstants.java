@@ -112,7 +112,7 @@ public enum MetricConstants
 
     /** Equitable Threat Score. */
     EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
-                            new Limits( -1.0 / 3, Double.POSITIVE_INFINITY, 1 ) ),
+                            new Limits( -1.0 / 3, 1, 1 ) ),
 
     /** Difference in Equitable Threat Score. */
     EQUITABLE_THREAT_SCORE_DIFFERENCE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
