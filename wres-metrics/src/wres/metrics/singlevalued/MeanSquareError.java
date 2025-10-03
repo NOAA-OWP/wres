@@ -36,7 +36,7 @@ public class MeanSquareError extends SumOfSquareError
             DoubleScoreMetricComponent.newBuilder()
                                       .setMinimum( MetricConstants.MEAN_SQUARE_ERROR.getMinimum() )
                                       .setMaximum( MetricConstants.MEAN_SQUARE_ERROR.getMaximum() )
-                                      .setOptimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.getOptimum() )
+                                      .setOptimum( MetricConstants.MEAN_SQUARE_ERROR.getOptimum() )
                                       .setName( MetricName.MAIN )
                                       .build();
 

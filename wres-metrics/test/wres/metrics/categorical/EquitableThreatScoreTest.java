@@ -124,4 +124,11 @@ public final class EquitableThreatScoreTest
         assertEquals( "Specify non-null input to the '" + this.ets.getMetricNameString() + "'.", actual.getMessage() );
     }
 
+    @Test
+    public void testGetMaximum()
+    {
+        // GitHub #642
+        assertEquals( 1.0, EquitableThreatScore.MAIN.getMaximum(), 0.0 );
+    }
+
 }
