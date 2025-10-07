@@ -82,7 +82,7 @@ import wres.config.components.SourceInterface;
  *
  * <p>Survey of directories in Nomads on 2023-12-08
  * Index of /pub/data/nccf/com/nwm/v3.0/nwm.20231208
- * (not all are availalbe on D-Store)
+ * (not all are available on D-Store)
  * 
  * <p>Name                                Last modified      Size
  * Parent Directory                                         -   

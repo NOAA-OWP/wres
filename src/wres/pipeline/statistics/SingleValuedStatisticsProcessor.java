@@ -156,7 +156,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.PAIRS ) )
         {
             MetricConstants[] pairsMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                    StatisticType.PAIRS );
+                                                              StatisticType.PAIRS );
             this.singleValuedPairs = MetricFactory.ofSingleValuedPairsMetrics( metricExecutor,
                                                                                pairsMetrics );
 
@@ -286,11 +286,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter threshold )
     {
         return switch ( threshold.getOrientation() )
-            {
-                case OBSERVED -> Slicer.left( threshold );
-                case OBSERVED_AND_PREDICTED, OBSERVED_AND_ANY_PREDICTED, OBSERVED_AND_PREDICTED_MEAN -> Slicer.leftAndRight( threshold );
-                case PREDICTED, ANY_PREDICTED, PREDICTED_MEAN -> Slicer.right( threshold );
-            };
+        {
+            case OBSERVED -> Slicer.left( threshold );
+            case OBSERVED_AND_PREDICTED, OBSERVED_AND_ANY_PREDICTED, OBSERVED_AND_PREDICTED_MEAN ->
+                    Slicer.leftAndRight( threshold );
+            case PREDICTED, ANY_PREDICTED, PREDICTED_MEAN -> Slicer.right( threshold );
+        };
     }
 
     /**
@@ -307,12 +308,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter threshold )
     {
         return switch ( threshold.getOrientation() )
-            {
-                case OBSERVED -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
-                case OBSERVED_AND_PREDICTED, OBSERVED_AND_ANY_PREDICTED, OBSERVED_AND_PREDICTED_MEAN ->
-                        TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
-                case PREDICTED, ANY_PREDICTED, PREDICTED_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
-            };
+        {
+            case OBSERVED -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
+            case OBSERVED_AND_PREDICTED, OBSERVED_AND_ANY_PREDICTED, OBSERVED_AND_PREDICTED_MEAN ->
+                    TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
+            case PREDICTED, ANY_PREDICTED, PREDICTED_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
+        };
     }
 
     /**
@@ -412,7 +413,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                                                              slicers,
                                                                              pool.getMetadata(),
                                                                              super.getBaselineMetadata( pool ),
-                                                                             metaTransformer ) );
+                                                                             metaTransformer,
+                                                                             outer.getLabel() ) );
 
             this.processSingleValuedPairs( sliced,
                                            futures,
@@ -649,7 +651,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                                                              slicers,
                                                                              pool.getMetadata(),
                                                                              super.getBaselineMetadata( pool ),
-                                                                             metaTransformer ) );
+                                                                             metaTransformer,
+                                                                             outer.getLabel() ) );
 
             // Build the future result
             if ( Objects.nonNull( this.timeSeries ) )

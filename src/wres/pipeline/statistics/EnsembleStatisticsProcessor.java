@@ -575,7 +575,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                              slicers,
                                                                              pool.getMetadata(),
                                                                              super.getBaselineMetadata( pool ),
-                                                                             metaTransformer ) );
+                                                                             metaTransformer,
+                                                                             outer.getLabel() ) );
 
             this.processEnsemblePairs( sliced,
                                        futures,
@@ -797,7 +798,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                              slicers,
                                                                              pool.getMetadata(),
                                                                              super.getBaselineMetadata( pool ),
-                                                                             metaTransformer ) );
+                                                                             metaTransformer,
+                                                                             outer.getLabel() ) );
 
             this.processEnsembleTimeSeriesPairsForPairedStatistics( sliced,
                                                                     futures );

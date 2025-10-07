@@ -674,7 +674,8 @@ class PoolSlicerTest
                                                                predicates,
                                                                merged.getMetadata(),
                                                                null,
-                                                               meta -> meta );
+                                                               meta -> meta,
+                                                               null );
 
         wres.statistics.generated.Pool expectedPool =
                 wres.statistics.generated.Pool.newBuilder()
@@ -705,7 +706,8 @@ class PoolSlicerTest
                                                                Map.of(),
                                                                PoolMetadata.of(),
                                                                null,
-                                                               meta -> meta );
+                                                               meta -> meta,
+                                                               null );
 
         Pool<Pair<Double, Double>> expected = Pool.of( List.of(), PoolMetadata.of() );
 
