@@ -149,7 +149,8 @@ class ThresholdDefinition implements Serializable
         String thresholdProvider = null;
         if ( Objects.nonNull( this.getMetadata() ) )
         {
-            thresholdProvider = this.getMetadata().getThresholdSource();
+            thresholdProvider = this.getMetadata()
+                                    .getThresholdSource();
         }
 
         return thresholdProvider;
@@ -177,7 +178,9 @@ class ThresholdDefinition implements Serializable
         if ( Objects.nonNull( this.getCalcFlowValues() ) )
         {
 
-            ratingProvider = this.getCalcFlowValues().getRatingCurve().getSource();
+            ratingProvider = this.getCalcFlowValues()
+                                 .getRatingCurve()
+                                 .getSource();
         }
 
         return ratingProvider;

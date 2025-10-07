@@ -33,7 +33,7 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * A utility class for slicing/dicing and transforming pool-shaped datasets
- * 
+ *
  * @author James Brown
  * @see Slicer
  * @see TimeSeriesSlicer
@@ -58,7 +58,7 @@ public class PoolSlicer
 
     /**
      * Transforms the input type to another type.
-     * 
+     *
      * @see #transform(Pool, Function, UnaryOperator)
      * @param <S> the input type
      * @param <T> the output type
@@ -75,7 +75,7 @@ public class PoolSlicer
 
     /**
      * Transforms the input type to another type.
-     * 
+     *
      * @see #transform(Pool, Function)
      * @param <S> the input type
      * @param <T> the output type
@@ -122,7 +122,7 @@ public class PoolSlicer
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs 
      * and, optionally, to the climatological data. Does not modify the metadata associated with the input.
-     * 
+     *
      * @param <T> the type of data
      * @param pool the data to slice, not null
      * @param condition the condition on which to slice, not null
@@ -142,7 +142,7 @@ public class PoolSlicer
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input. Additionally transforms the metadata to reflect the 
      * filtering of the pool.
-     * 
+     *
      * @param <T> the type of data
      * @param pool the data to slice, not null
      * @param condition the condition on which to slice, not null
@@ -204,7 +204,9 @@ public class PoolSlicer
      * the union of those filtered subsets. An example application may be to extract the pairs for a named feature 
      * within a pool of multiple features and create a pool for only that feature, applying a feature-specific filter 
      * to each feature-specific pool. Use the metadata transformer to generate metadata for each of the filtered pools.
-     * 
+     * Only filters sub-pools that can be correlated with a filter via a common metadata attribute. If a filter cannot
+     * be found for a sub-pool, none of the data within that sub-pool will be included.
+     *
      * @param <S> the pooled data type
      * @param <T> the metadata attribute
      * @param pools the pools to filter
@@ -212,6 +214,7 @@ public class PoolSlicer
      * @param composedMetadata the metadata for the composition
      * @param composedBaselineMetadata the metadata for the baseline composition
      * @param metaTransformer the metadata transformer, not null
+     * @param filterName a human-readable filter name to help with messaging when filters and pools cannot be correlated
      * @return the union of the subsets, each subset filtered by an attribute-specific predicate
      * @throws NullPointerException if any required input is null
      * @throws PoolException if the pool could not be filtered for any reason
@@ -221,7 +224,8 @@ public class PoolSlicer
                                                                Map<T, Predicate<S>> filters,
                                                                PoolMetadata composedMetadata,
                                                                PoolMetadata composedBaselineMetadata,
-                                                               UnaryOperator<PoolMetadata> metaTransformer )
+                                                               UnaryOperator<PoolMetadata> metaTransformer,
+                                                               String filterName )
     {
         Objects.requireNonNull( pools );
         Objects.requireNonNull( filters );
@@ -246,7 +250,7 @@ public class PoolSlicer
         Pool.Builder<S> poolBuilder = new Pool.Builder<>();
 
         // Iterate the pools and apply the filters
-        Set<T> keysWithoutFilter = new HashSet<>();
+        Set<T> poolsWithoutFilter = new HashSet<>();
 
         for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
         {
@@ -262,7 +266,7 @@ public class PoolSlicer
             }
             else
             {
-                keysWithoutFilter.add( nextKey );
+                poolsWithoutFilter.add( nextKey );
             }
         }
 
@@ -276,24 +280,41 @@ public class PoolSlicer
             poolBuilder.setMetadataForBaseline( mappedBaseline );
         }
 
-        // Handle cases with no data or some missing data
-        if ( keysWithoutFilter.size() == pools.size() )
+        // Handle cases with a mismatch between filters and pools with common metadata attributes to filter
+
+        // Same number of missing filters as pools to filter, so no pools can be filtered. However, there may be some
+        // filters available for which there are no pools.
+        if ( poolsWithoutFilter.size() == pools.size()
+             && LOGGER.isWarnEnabled() )
         {
-            throw new PoolException( "Failed to apply attribute-specific filers to a pool. This probably occurred "
-                                     + "because one of the smaller pools from which the pool was constructed had "
-                                     + "incorrect metadata. Failed to identify a filter for any of these metadata "
-                                     + "attribute instances: "
-                                     + keysWithoutFilter
-                                     + ". These filters were available: "
-                                     + filters.keySet()
-                                     + "." );
+            LOGGER.warn( "Failed to apply attribute-specific filters to a pool for the filter '{}'. This occurs when a "
+                         + "sub-pool and filter are both available, but not for a common metadata attribute, such as a "
+                         + "common geographic feature. Consequently, the following pool is unavailable for the filter "
+                         + "'{}': {}.",
+                         filterName,
+                         filterName,
+                         composedMetadata );
+
+            // Return the empty pool
+            PoolMetadata empty = metaTransformer.apply( composedMetadata );
+            Pool.Builder<S> emptyBuilder = new Pool.Builder<S>().setMetadata( empty );
+
+            if ( Objects.nonNull( composedBaselineMetadata ) )
+            {
+                PoolMetadata mappedBaseline = metaTransformer.apply( composedBaselineMetadata );
+                emptyBuilder.setMetadataForBaseline( mappedBaseline );
+            }
+
+            return emptyBuilder.build();
         }
-        else if ( !keysWithoutFilter.isEmpty() && LOGGER.isDebugEnabled() )
+        // Some missing data
+        else if ( !poolsWithoutFilter.isEmpty()
+                  && LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "When filtering a pool into smaller pools by metadata attribute, failed to correlate some "
                           + "attributes with filters: {}. Consequently, no filtered pool was identified for any of "
                           + "these attribute instances and they will not be included in the evaluation.",
-                          keysWithoutFilter );
+                          poolsWithoutFilter );
         }
 
         return poolBuilder.build();
@@ -303,7 +324,7 @@ public class PoolSlicer
      * Applies an attribute-specific transformer to the corresponding attribute-specific pools in the input 
      * and returns the union of those transformed subsets. Also transforms the metadata to reflect the transformation
      * of the pool.
-     * 
+     *
      * @param <S> the pooled data type
      * @param <T> the metadata attribute
      * @param <U> the transformed pool data type
@@ -401,7 +422,7 @@ public class PoolSlicer
 
     /**
      * Counts the number of time-series events in the main pool.
-     * 
+     *
      * @param <U> the type of time-series data
      * @param pool the pool
      * @return the number of events
@@ -421,7 +442,7 @@ public class PoolSlicer
 
     /**
      * Unpacks a pool of time-series into their raw event values, eliminating the time-series view.
-     * 
+     *
      * @param <U> the type of time-series data
      * @param pool the pool
      * @return the unpacked pool
@@ -462,7 +483,7 @@ public class PoolSlicer
     /**
      * Decomposes a pool into a collection of mini-pools based on the mini-pools available and a prescribed attribute
      * of the pool metadata.
-     * 
+     *
      * @param <S> the key against which pools should be mapped
      * @param <T> the type of pooled data
      * @param pool the pool
@@ -536,7 +557,7 @@ public class PoolSlicer
     /**
      * Returns a mapper for mapping {@link PoolMetadata} to a {@link FeatureTuple}. When applied, the function throws 
      * an exception if the pool does not contain precisely one {@link FeatureTuple}.
-     * 
+     *
      * @return a mapper
      */
 
@@ -571,7 +592,7 @@ public class PoolSlicer
      * {@link #equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolIdOrEnsembleAverageType(PoolMetadata, PoolMetadata)}. 
      * Furthermore, there cannot be more than one {@link EnsembleAverageType} after ignoring 
      * {@link EnsembleAverageType#NONE}.
-     * 
+     *
      * @param input the input metadata
      * @return the union of the input
      * @throws IllegalArgumentException if the input is empty
@@ -723,7 +744,7 @@ public class PoolSlicer
      * Sets the ensemble average type in the builder from the set of options. If there is more than one option after
      * filtering {@link EnsembleAverageType#NONE}, an exception is thrown because there is no union of inconsistent 
      * metadatas.
-     * 
+     *
      * @param builder the builder
      * @param ensembleAverageTypes the ensemble average types
      */
@@ -756,15 +777,15 @@ public class PoolSlicer
      * Returns <code>true</code> if the two metadatas are equal after ignoring the time windows, thresholds,  
      * features and pool identifiers. In addition, the time scale will be ignored (lenient) if one of the time scales is 
      * null/unknown.
-     * 
+     *
      * @param first the first metadata to test for conditional equality with the second
      * @param second the second metadata to test for conditional equality with the first
      * @return true if the metadatas are conditionally equal
      */
 
     private static boolean
-            equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolIdOrEnsembleAverageType( PoolMetadata first,
-                                                                                        PoolMetadata second )
+    equalsWithoutTimeWindowOrThresholdsOrFeaturesOrPoolIdOrEnsembleAverageType( PoolMetadata first,
+                                                                                PoolMetadata second )
     {
         if ( Objects.isNull( first ) != Objects.isNull( second ) )
         {
@@ -810,7 +831,7 @@ public class PoolSlicer
 
     /**
      * Unpacks a pool of time-series into their raw event values, eliminating the time-series view.
-     * 
+     *
      * @param <U> the type of time-series data
      * @param pool the pool
      * @return the unpacked pool
@@ -852,7 +873,7 @@ public class PoolSlicer
 
     /**
      * Transforms the input type to another type.
-     * 
+     *
      * @param <S> the input type
      * @param <T> the output type
      * @param pool the input
@@ -905,7 +926,7 @@ public class PoolSlicer
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input.
-     * 
+     *
      * @param <T> the type of data
      * @param pool the data to slice
      * @param condition the condition on which to slice
