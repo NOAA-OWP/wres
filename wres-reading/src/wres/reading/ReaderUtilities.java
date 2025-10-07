@@ -431,7 +431,7 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
-     * @return whether the source points to the USGS NWIS
+     * @return whether the source points to the USGS National Water Information System, NWIS
      * @throws NullPointerException if the source is null
      */
 
@@ -448,12 +448,15 @@ public class ReaderUtilities
         }
 
         // Fallback for unspecified interface.
-        return uri.getHost()
-                  .toLowerCase()
-                  .contains( "usgs.gov" )
-               || uri.getPath()
-                     .toLowerCase()
-                     .contains( "nwis" );
+        return ReaderUtilities.isWebSource( uri )
+               && ( ( Objects.nonNull( uri.getHost() )
+                      && uri.getHost()
+                            .toLowerCase()
+                            .contains( "usgs.gov" ) )
+                    || ( Objects.nonNull( uri.getPath() )
+                         && uri.getPath()
+                               .toLowerCase()
+                               .contains( "nwis" ) ) );
     }
 
     /**
@@ -491,13 +494,13 @@ public class ReaderUtilities
         }
 
         // Fallback for unspecified interface.
-        return uri.getPath()
-                  .toLowerCase()
-                  .endsWith( "ahps" )
-               ||
-               uri.getPath()
-                  .toLowerCase()
-                  .endsWith( "ahps/" );
+        return Objects.nonNull( uri.getPath() )
+               && ( uri.getPath()
+                       .toLowerCase()
+                       .endsWith( "ahps" )
+                    || uri.getPath()
+                          .toLowerCase()
+                          .endsWith( "ahps/" ) );
     }
 
     /**
@@ -518,9 +521,10 @@ public class ReaderUtilities
             return interfaceShortHand == SourceInterface.WRDS_HEFS;
         }
 
-        boolean isHefs = uri.getPath()
-                            .toLowerCase()
-                            .contains( "/hefs/" );
+        boolean isHefs = Objects.nonNull( uri.getPath() )
+                         && uri.getPath()
+                               .toLowerCase()
+                               .contains( "/hefs/" );
 
         LOGGER.debug( "When attempting to detect whether the supplied data source refers to the WRDS HEFS "
                       + "service, could not detect an explicit interface shorthand of {}, so looked for a URI that "
@@ -1405,8 +1409,8 @@ public class ReaderUtilities
 
         // Continue to read the thresholds
         Set<wres.config.components.Threshold> thresholds = reader.read( thresholdSource,
-                                                                             featureNames,
-                                                                             featureAuthority );
+                                                                        featureNames,
+                                                                        featureAuthority );
 
         // Check that some thresholds are available for features to evaluate
         Set<String> intersection = thresholds.stream()

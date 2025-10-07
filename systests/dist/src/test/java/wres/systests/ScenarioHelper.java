@@ -314,22 +314,22 @@ public class ScenarioHelper
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
                         pairResultCode = 16;
-                        LOGGER.warn("The pairs file differ from " + benchmarkFile.getAbsolutePath() + " (result code " + pairResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn( "The pairs file differ from " + benchmarkFile.getAbsolutePath() + " (result code " + pairResultCode + ") for file with name pairs.csv" );
                     }
-                    else if ( outputFileName.endsWith( ".csv.gz" ) )
+                    else if ( outputFileName.endsWith( "evaluation.csv.gz" ) )
                     {
                         metricCSVResultCode = 32;
-                        LOGGER.warn("The metric CSV file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + metricCSVResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn( "The statistics CSV file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + metricCSVResultCode + ") for file with name evaluation.csv" );
                     }
                     else if ( outputFileName.endsWith( ".txt" ) )
                     {
                         txtResultCode = 4;
-                        LOGGER.warn("The text file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + txtResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn( "The text file differs from " + benchmarkFile.getAbsolutePath() + " (result code " + txtResultCode + ") for file with name " + outputFileName );
                     }
                     else
                     {
                         miscResultCode = 2;
-                        LOGGER.warn("A miscellaneous result returned (result code" + miscResultCode + ") for file with name " + outputFileName);
+                        LOGGER.warn( "A miscellaneous result returned (result code" + miscResultCode + ") for file with name " + outputFileName );
                     }
                 }
                 //Remove the benchmark as one to check.
@@ -337,7 +337,7 @@ public class ScenarioHelper
             }
             else 
             {
-                LOGGER.debug("For output file, " + outputFilePath + ", benchmark file does not exist or could not otherwise be identified.  Skipping.");
+                LOGGER.debug( "For output file, " + outputFilePath + ", benchmark file does not exist or could not otherwise be identified.  Skipping." );
             }
         }
         if ( !benchmarkedFiles.isEmpty() )
