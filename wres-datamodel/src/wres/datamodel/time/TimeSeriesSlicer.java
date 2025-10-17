@@ -1043,7 +1043,8 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( labels );
 
-        if ( !labels.isEmpty() && labels.size() != timeSeries.size() )
+        if ( !labels.isEmpty()
+             && labels.size() != timeSeries.size() )
         {
             throw new IllegalArgumentException( "Expected zero labels or as many labels as time-series ("
                                                 + timeSeries.size()

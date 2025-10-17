@@ -61,7 +61,7 @@ class WrdsHefsReaderTest
     private ClientAndServer mockServer;
 
     /** Feature considered. */
-    private static final String FEATURE_NAME = "PGRC2";
+    private static final String FEATURE_NAME = "RDBN5";
 
     /** Path used by GET for forecasts. */
     private static final String FORECAST_PATH = "/hefs/v1/ensembles/";
@@ -69,102 +69,72 @@ class WrdsHefsReaderTest
     /** Forecast response from GET. */
     private static final String FORECAST_RESPONSE = """
             [
-              {
-                "events": [
-                  {
-                    "date": "2025-04-21",
-                    "flag": "0",
-                    "time": "00:00:00",
-                    "value": 55.797176
-                  },
-                  {
-                    "date": "2025-04-21",
-                    "flag": "0",
-                    "time": "06:00:00",
-                    "value": 55.090878
-                  }
-                ],
-                "tracking_id": "972df95b-c2b7-4e0d-84af-a60e63a50e9d",
-                "type": "instantaneous",
-                "location_id": "PGRC2",
-                "parameter_id": "QINE",
-                "ensemble_id": "MEFP",
-                "ensemble_member_index": 1982,
-                "time_step_unit": "second",
-                "time_step_multiplier": "21600",
-                "start_date_date": "2025-04-21",
-                "start_date_time": "00:00:00",
-                "end_date_date": "2025-05-21",
-                "end_date_time": "00:00:00",
-                "forecast_date_date": "2025-04-21",
-                "forecast_date_time": "00:00:00",
-                "miss_val": null,
-                "station_name": "PGRC2",
-                "lat": 37.1438888889,
-                "lon": -104.547222222,
-                "x": -104.547222222,
-                "y": 37.1438888889,
-                "units": "CFS",
-                "creation_date": "2025-04-21",
-                "creation_time": "01:15:24",
-                "module_instance_id": null,
-                "qualifier_id": null,
-                "approved_date": null,
-                "long_name": null,
-                "z": 1851.3552,
-                "source_organisation": null,
-                "source_system": null,
-                "file_description": null,
-                "region": null
-              },
-              {
-                "events": [
-                  {
-                    "date": "2025-04-21",
-                    "flag": "0",
-                    "time": "00:00:00",
-                    "value": 149.38104
-                  },
-                  {
-                    "date": "2025-04-21",
-                    "flag": "0",
-                    "time": "06:00:00",
-                    "value": 146.90901
-                  }
-                ],
-                "tracking_id": "370f07bf-412d-486c-bbd9-8db504065fd0",
-                "type": "instantaneous",
-                "location_id": "PGRC2",
-                "parameter_id": "QINE",
-                "ensemble_id": "MEFP",
-                "ensemble_member_index": 1983,
-                "time_step_unit": "second",
-                "time_step_multiplier": "21600",
-                "start_date_date": "2025-04-21",
-                "start_date_time": "00:00:00",
-                "end_date_date": "2025-05-21",
-                "end_date_time": "00:00:00",
-                "forecast_date_date": "2025-04-21",
-                "forecast_date_time": "00:00:00",
-                "miss_val": null,
-                "station_name": "PGRC2",
-                "lat": 37.1438888889,
-                "lon": -104.547222222,
-                "x": -104.547222222,
-                "y": 37.1438888889,
-                "units": "CFS",
-                "creation_date": "2025-04-21",
-                "creation_time": "01:15:24",
-                "module_instance_id": null,
-                "qualifier_id": null,
-                "approved_date": null,
-                "long_name": null,
-                "z": 1851.3552,
-                "source_organisation": null,
-                "source_system": null,
-                "file_description": null,
-                "region": null
-              }
+              [
+                {
+                  "creation_datetime": "2025-10-05T14:51:00Z",
+                  "end_datetime": "2025-11-04T12:00:00Z",
+                  "ensemble_id": "MEFP",
+                  "ensemble_member_index": 1992,
+                  "forecast_datetime": "2025-10-05T12:00:00Z",
+                  "lat": 32.02,
+                  "location_id": "RDBN5",
+                  "lon": -104.05,
+                  "parameter_id": "QINE",
+                  "start_datetime": "2025-10-05T12:00:00Z",
+                  "station_name": "RDBN5 - Red Bluff NM - Delaware River",
+                  "time_step_multiplier": "21600",
+                  "time_step_unit": "second",
+                  "type": "instantaneous",
+                  "units": "CFS",
+                  "x": -104.05,
+                  "y": 32.02,
+                  "z": 883.92,
+                  "events": [
+                    {
+                      "flag": "2",
+                      "value": 12.2653,
+                      "valid_datetime": "2025-10-05T12:00:00Z"
+                    },
+                    {
+                      "flag": "2",
+                      "value": 29.3172,
+                      "valid_datetime": "2025-10-05T18:00:00Z"
+                    }
+                  ]
+                },
+                {
+                  "creation_datetime": "2025-10-05T14:51:00Z",
+                  "end_datetime": "2025-11-04T12:00:00Z",
+                  "ensemble_id": "MEFP",
+                  "ensemble_member_index": 1993,
+                  "forecast_datetime": "2025-10-05T12:00:00Z",
+                  "lat": 32.02,
+                  "location_id": "RDBN5",
+                  "lon": -104.05,
+                  "parameter_id": "QINE",
+                  "start_datetime": "2025-10-05T12:00:00Z",
+                  "station_name": "RDBN5 - Red Bluff NM - Delaware River",
+                  "time_step_multiplier": "21600",
+                  "time_step_unit": "second",
+                  "type": "instantaneous",
+                  "units": "CFS",
+                  "x": -104.05,
+                  "y": 32.02,
+                  "z": 883.92,
+                  "events": [
+                    {
+                      "flag": "2",
+                      "value": 18.93,
+                      "valid_datetime": "2025-10-05T12:00:00Z"
+                    },
+                    {
+                      "flag": "2",
+                      "value": 7.91,
+                      "valid_datetime": "2025-10-05T18:00:00Z"
+                    }
+                  ]
+                }
+              ]
             ]
             """;
 
@@ -224,27 +194,27 @@ class WrdsHefsReaderTest
             List<TimeSeries<Ensemble>> actual = tupleStream.map( TimeSeriesTuple::getEnsembleTimeSeries )
                                                            .toList();
 
-            Geometry geometry = MessageUtilities.getGeometry( "PGRC2",
+            Geometry geometry = MessageUtilities.getGeometry( "RDBN5",
+                                                              "RDBN5 - Red Bluff NM - Delaware River",
                                                               null,
-                                                              null,
-                                                              "POINT ( -104.547222222 37.1438888889 1851.3552 )" );
+                                                              "POINT ( -104.05 32.02 883.92 )" );
             TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder()
                     .setVariableName( "QINE" )
                     .setUnit( "CFS" )
                     .setFeature( Feature.of( geometry ) )
                     .setTimeScale( TimeScaleOuter.of() )
                     .setReferenceTimes( Map.of( ReferenceTime.ReferenceTimeType.T0,
-                                                Instant.parse( "2025-04-21T00:00:00Z" ) ) )
+                                                Instant.parse( "2025-10-05T12:00:00Z" ) ) )
                     .build();
 
-            Instant instant = Instant.parse( "2025-04-21T00:00:00Z" );
-            Ensemble ensemble = Ensemble.of( new double[] { 55.797176, 149.38104 },
-                                             Ensemble.Labels.of( "1982", "1983" ) );
+            Instant instant = Instant.parse( "2025-10-05T12:00:00Z" );
+            Ensemble ensemble = Ensemble.of( new double[] { 12.2653, 18.93 },
+                                             Ensemble.Labels.of( "1992", "1993" ) );
             Event<Ensemble> event = Event.of( instant, ensemble );
 
-            Instant anotherInstant = Instant.parse( "2025-04-21T06:00:00Z" );
-            Ensemble anotherEnsemble = Ensemble.of( new double[] { 55.090878, 146.90901 },
-                                                    Ensemble.Labels.of( "1982", "1983" ) );
+            Instant anotherInstant = Instant.parse( "2025-10-05T18:00:00Z" );
+            Ensemble anotherEnsemble = Ensemble.of( new double[] { 29.3172, 7.91 },
+                                                    Ensemble.Labels.of( "1992", "1993" ) );
             Event<Ensemble> anotherEvent = Event.of( anotherInstant, anotherEnsemble );
 
             SortedSet<Event<Ensemble>> events = new TreeSet<>();
