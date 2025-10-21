@@ -5,24 +5,23 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import wres.datamodel.time.TimeSeries;
-import wres.reading.TimeSeriesHeader;
+import wres.datamodel.types.Ensemble;
 
 /**
- * <p>Contains an ensemble trace from a document supplied by the Water Resources Data Service. There are up to many
- * traces in each document.
+ * <p>Contains an ensemble forecast from a document supplied by the Water Resources Data Service. There are up to many
+ * forecasts in each document.
  *
  * @author James Brown
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
-@JsonDeserialize( using = HefsTraceDeserializer.class )
-public record HefsTrace( TimeSeriesHeader header, TimeSeries<Double> timeSeries )
+@JsonDeserialize( using = HefsForecastDeserializer.class )
+public record HefsForecast( TimeSeries<Ensemble> timeSeries )
 {
     @Override
     public String toString()
     {
         return new ToStringBuilder( this )
-                .append( "header", this.header() )
                 .append( "timeSeries", this.timeSeries() )
                 .toString();
     }

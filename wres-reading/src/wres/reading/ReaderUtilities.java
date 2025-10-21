@@ -1228,7 +1228,9 @@ public class ReaderUtilities
 
     private static Duration getTimeStep( String unit, String multiplier )
     {
-        if ( unit.equalsIgnoreCase( "nonequidistant" ) )
+        Objects.requireNonNull( unit );
+
+        if ( "nonequidistant".equalsIgnoreCase( unit ) )
         {
             LOGGER.debug( "Discovered a data-source with an irregular time-series, i.e., a "
                           + "nonequidistant time-step unit. " );
@@ -1237,6 +1239,7 @@ public class ReaderUtilities
         }
 
         String unitString = unit.toUpperCase() + "S";
+        Objects.requireNonNull( multiplier );
 
         try
         {
