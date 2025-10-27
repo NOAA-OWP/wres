@@ -251,7 +251,7 @@ public class WresJob
         // Test the ability to connect to the broker connections API.
         try
         {
-            int workerCount = BrokerManagerHelper.getBrokerWorkerConnectionCount();
+            BrokerManagerHelper.getBrokerWorkerConnectionCount();
         }
         catch ( IOException | RuntimeException e )
         {

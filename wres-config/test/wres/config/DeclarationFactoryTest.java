@@ -1679,19 +1679,19 @@ class DeclarationFactoryTest
                                     .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pThreeWrapped = ThresholdBuilder.builder()
-                                                                              .threshold( pThree )
-                                                                              .type( ThresholdType.PROBABILITY )
-                                                                              .build();
+                                                                         .threshold( pThree )
+                                                                         .type( ThresholdType.PROBABILITY )
+                                                                         .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -1713,20 +1713,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
         thresholds.add( vOneWrapped );
@@ -1744,20 +1744,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold cOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         wres.config.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> classifierThresholds = new LinkedHashSet<>();
         classifierThresholds.add( cOneWrapped );
@@ -1804,13 +1804,13 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "FOO" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "FOO" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> expected = Set.of( vOneWrapped );
 
@@ -1863,22 +1863,22 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "FOO" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "FOO" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "BAR" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "BAR" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> expected = Set.of( vOneWrapped, vTwoWrapped );
 
@@ -1929,22 +1929,22 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "FOO" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "FOO" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "BAR" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "BAR" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> expected = Set.of( vOneWrapped, vTwoWrapped );
 
@@ -1982,14 +1982,14 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
         thresholds.add( vOneWrapped );
@@ -2023,9 +2023,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2060,9 +2060,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2098,9 +2098,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2136,9 +2136,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2174,9 +2174,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2212,9 +2212,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2324,14 +2324,14 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -2523,14 +2523,14 @@ class DeclarationFactoryTest
                                  .build();
 
         wres.config.components.Threshold oneWrapped = ThresholdBuilder.builder()
-                                                                           .threshold( one )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( one )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
 
         wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder()
-                                                                           .threshold( two )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( two )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
@@ -3159,6 +3159,58 @@ class DeclarationFactoryTest
                                                                      .right( this.predictedDataset )
                                                                      .covariates( covariateDatasets )
                                                                      .eventDetection( eventDetection )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithMissingValueForDatasetAndIndividualSource() throws IOException
+    {
+        String yaml = """
+                 observed:
+                   - some_file.csv
+                 predicted:
+                   sources:
+                     - uri: another_file.csv
+                       missing_value: -998
+                     - uri: yet_another_file.csv
+                   missing_value: -999
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedExpected = DatasetBuilder.builder()
+                                                 .sources( observedSources )
+                                                 .build();
+
+        URI predictedUri = URI.create( "another_file.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .missingValue( List.of( -998.0 ) )
+                                              .build();
+
+        URI anotherPredictedUri = URI.create( "yet_another_file.csv" );
+        Source anotherPredictedSource = SourceBuilder.builder()
+                                                     .uri( anotherPredictedUri )
+                                                     .build();
+
+        List<Source> predictedSources = List.of( predictedSource, anotherPredictedSource );
+        Dataset predictedExpected = DatasetBuilder.builder()
+                                                  .sources( predictedSources )
+                                                  .missingValue( List.of( -999.0 ) )
+                                                  .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observedExpected )
+                                                                     .right( predictedExpected )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -4133,19 +4185,19 @@ class DeclarationFactoryTest
                                     .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pThreeWrapped = ThresholdBuilder.builder()
-                                                                              .threshold( pThree )
-                                                                              .type( ThresholdType.PROBABILITY )
-                                                                              .build();
+                                                                         .threshold( pThree )
+                                                                         .type( ThresholdType.PROBABILITY )
+                                                                         .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -4167,20 +4219,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
         thresholds.add( vOneWrapped );
@@ -4198,20 +4250,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold cOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         wres.config.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> classifierThresholds = new LinkedHashSet<>();
         classifierThresholds.add( cOneWrapped );
@@ -4254,14 +4306,14 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
