@@ -2,6 +2,7 @@ package wres.config.components;
 
 import java.time.Duration;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,6 +31,7 @@ import wres.config.serializers.ZoneOffsetSerializer;
  * @param timeZoneOffset the time zone offset
  * @param timeScale the timescale
  * @param unit the measurement unit
+ * @param missingValue the missing value identifiers
  */
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
@@ -48,7 +50,8 @@ public record Dataset( @JsonProperty( "label" ) String label,
                        @JsonSerialize( using = TimeScaleSerializer.class )
                        @JsonDeserialize( using = TimeScaleDeserializer.class )
                        @JsonProperty( "time_scale" ) TimeScale timeScale,
-                       @JsonProperty( "unit") String unit )
+                       @JsonProperty( "unit" ) String unit,
+                       @JsonProperty( "missing_value" ) List<Double> missingValue )
 {
     /**
      * Set the defaults.
@@ -62,17 +65,23 @@ public record Dataset( @JsonProperty( "label" ) String label,
      * @param timeZoneOffset the time zone offset
      * @param timeScale the timescale
      * @param unit the measurement unit
+     * @param missingValue the missing value identifiers
      */
     public Dataset
     {
         if ( Objects.isNull( sources ) )
         {
-            sources = List.of();
+            sources = Collections.emptyList();
         }
         else
         {
             // Immutable
             sources = List.copyOf( sources );
+        }
+
+        if( Objects.isNull( missingValue ) )
+        {
+            missingValue = Collections.emptyList();
         }
     }
 }

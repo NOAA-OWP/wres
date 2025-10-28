@@ -190,8 +190,8 @@ public class DeclarationFactory
                     .enable( SerializationFeature.WRITE_ENUMS_USING_TO_STRING )
                     .disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS )
                     .enable( SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED )
-                    .setSerializationInclusion( JsonInclude.Include.NON_NULL )
-                    .setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
+                    .setDefaultPropertyInclusion( JsonInclude.Include.NON_NULL )
+                    .setDefaultPropertyInclusion( JsonInclude.Include.NON_EMPTY );
 
     /**
      * Deserializes a YAML string or path containing a YAML string into a POJO and performs validation against the

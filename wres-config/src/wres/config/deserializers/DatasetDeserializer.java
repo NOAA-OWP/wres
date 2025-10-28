@@ -5,6 +5,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -107,6 +108,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
             Duration timeShift = this.getTimeShift( node.get( "time_shift" ), reader, context );
             ZoneOffset zoneOffset = this.getTimeZoneOffset( node.get( "time_zone_offset" ), reader, context );
+            List<Double> missingValue = this.getMissingValue( node.get( "missing_value" ), reader );
             TimeScale timeScale = this.getTimeScale( node.get( "time_scale" ), reader, context );
             String unit = this.getStringValue( reader, node.get( "unit" ) );
             return DatasetBuilder.builder()
@@ -120,6 +122,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
                                  .timeZoneOffset( zoneOffset )
                                  .timeScale( timeScale )
                                  .unit( unit )
+                                 .missingValue( missingValue )
                                  .build();
         }
         // Singleton
@@ -363,6 +366,24 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         }
 
         return ZONE_OFFSET_DESERIALIZER.deserialize( node.traverse( reader ), context );
+    }
+
+    /**
+     * @param node the node
+     * @param reader the reader
+     * @return the time shift or null
+     */
+
+    private List<Double> getMissingValue( JsonNode node, ObjectReader reader )
+            throws IOException
+    {
+        if ( Objects.isNull( node ) )
+        {
+            return List.of();
+        }
+
+        Double[] array = reader.readValue( node.traverse( reader ), Double[].class );
+        return Arrays.asList( array );
     }
 
     /**
