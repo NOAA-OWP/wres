@@ -96,13 +96,13 @@ public class SourceLoader
      * Reads and ingests time-series data and returns ingest results.
      * @param timeSeriesIngester the time-series ingester
      * @param systemSettings the system settings
-     * @param declaration the projectConfig for the evaluation
+     * @param declaration the declaration for the evaluation
      * @param griddedFeatures the gridded features cache to populate
      * @param readingExecutor the executor for performing reading tasks
      * @return ingest results
      * @throws NullPointerException if any required input is null
-     * @throws ReadException if the source could not be read
-     * @throws IngestException if the time-series could not be ingested
+     * @throws ReadException if the source data could not be read
+     * @throws IngestException if the time-series could not be ingested or no valid times-series data were discovered
      */
 
     public static List<IngestResult> load( TimeSeriesIngester timeSeriesIngester,
@@ -182,15 +182,11 @@ public class SourceLoader
                                        + "retries were exhausted." );
         }
 
-        List<IngestResult> composedResults = projectSources.stream()
-                                                           .toList();
+        // Check that some valid data was ingested for the observed/left and predicted/right sources, otherwise fail
+        // now. See GitHub #677
+        SourceLoader.validateDataAvailable( projectSources );
 
-        if ( composedResults.isEmpty() )
-        {
-            throw new IngestException( "No data were ingested." );
-        }
-
-        return composedResults;
+        return Collections.unmodifiableList( projectSources );
     }
 
     /**
@@ -869,6 +865,57 @@ public class SourceLoader
                         = Pair.of( orientedSource, new ArrayList<>() );
                 sources.put( source, sourcePair );
             }
+        }
+    }
+
+    /**
+     * Determines whether some (required) time-series data was ingested and throws an exception if not.
+     *
+     * @param projectSources the ingested data sources
+     * @throws IngestException if no data was ingested
+     */
+
+    private static void validateDataAvailable( List<IngestResult> projectSources )
+    {
+        if ( projectSources.isEmpty() )
+        {
+            throw new IngestException( "No time-series data were ingested. Please supply some valid data for "
+                                       + "evaluation and try again." );
+        }
+
+        boolean leftData = projectSources.stream()
+                                         .filter( result -> result.getDatasetOrientations()
+                                                                  .contains( DatasetOrientation.LEFT ) )
+                                         .anyMatch( IngestResult::hasNonMissingData );
+
+        boolean rightData = projectSources.stream()
+                                          .filter( result -> result.getDatasetOrientations()
+                                                                   .contains( DatasetOrientation.RIGHT ) )
+                                          .anyMatch( IngestResult::hasNonMissingData );
+
+        String phrase = "";
+
+        if ( !leftData && rightData )
+        {
+            phrase = "'observed'";
+        }
+        else if ( !rightData && leftData )
+        {
+            phrase = "'predicted'";
+        }
+        else if ( !leftData )
+        {
+            phrase = "'observed' and 'predicted'";
+        }
+
+        if ( !leftData || !rightData )
+        {
+            throw new IngestException( "Failed to identify any valid (non-missing) time-series data for the "
+                                       + phrase
+                                       + " data sources. Please declare some "
+                                       + phrase
+                                       + " data sources that contain valid "
+                                       + "time-series data and try again." );
         }
     }
 

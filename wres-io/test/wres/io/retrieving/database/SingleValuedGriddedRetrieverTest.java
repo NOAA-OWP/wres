@@ -97,14 +97,14 @@ class SingleValuedGriddedRetrieverTest
     private AutoCloseable mocks;
 
     @BeforeAll
-    public static void oneTimeSetup()
+    static void oneTimeSetup()
     {
         // Set the JVM timezone for use by H2. Needs to happen before anything else
         TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
     }
 
     @BeforeEach
-    public void setup() throws SQLException, LiquibaseException
+    void setup() throws SQLException, LiquibaseException
     {
         this.mocks = MockitoAnnotations.openMocks( this );
         // Create the database and connection pool
@@ -279,7 +279,8 @@ class SingleValuedGriddedRetrieverTest
                                                null );
             IngestResult ingestResult = new IngestResultNeedingRetry( source,
                                                                       DataType.SINGLE_VALUED_FORECASTS,
-                                                                      sourceId );
+                                                                      sourceId,
+                                                                      true );
 
             ingestResults.add( ingestResult );
 
@@ -318,7 +319,8 @@ class SingleValuedGriddedRetrieverTest
         IngestResult leftResult = new IngestResultNeedingRetry( leftSource,
                                                                 DataType.OBSERVATIONS,
                                                                 ingestResults.get( 0 )
-                                                                             .getSurrogateKey() );
+                                                                             .getSurrogateKey(),
+                                                                true );
         ingestResults.add( leftResult );
 
         // Add a project

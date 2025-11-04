@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,7 +34,7 @@ class SourceLoaderTest
         CompletableFuture<String> f = CompletableFuture.supplyAsync( failingTask::call );
         CompletableFuture<Object> result = SourceLoader.doAllOrException( List.of( f ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
-        assertTrue( cause instanceof SourceLoaderTest.DummyException );
+        assertInstanceOf( DummyException.class, cause );
     }
 
     @Test
@@ -93,7 +94,7 @@ class SourceLoaderTest
         CompletableFuture<Object> result = SourceLoader.doAllOrException( List.of( f1, f2 ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
         Instant end = Instant.now();
-        assertTrue( cause instanceof SourceLoaderTest.DummyException );
+        assertInstanceOf( DummyException.class, cause );
         Duration executionDuration = Duration.between( start, end );
         assertTrue( executionDuration.toMillis() >= shorterDuration.toMillis()
                     && executionDuration.toMillis() < longerDuration.toMillis(),
@@ -131,7 +132,7 @@ class SourceLoaderTest
             try
             {
                 LOGGER.debug( "I am sleeping for {}", duration );
-                Thread.sleep( duration.toMillis() );
+                Thread.sleep( duration.toMillis() );  // NOSONAR
                 LOGGER.debug( "I am done sleeping for {}", duration );
             }
             catch ( InterruptedException ie )

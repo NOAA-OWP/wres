@@ -25,12 +25,13 @@ public class IngestResultInMemory implements IngestResult
      *
      * @param dataSource the data source
      * @param dataType the optional data type
+     * @param hasNonMissingData whether the data source has valid data present
      */
-    public IngestResultInMemory( DataSource dataSource, DataType dataType )
+    public IngestResultInMemory( DataSource dataSource, DataType dataType, boolean hasNonMissingData )
     {
-        Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
+        Objects.requireNonNull( dataSource, "Ingester requires datasource information." );
 
-        this.innerResult = new IngestResultNeedingRetry( dataSource, dataType, 1 );
+        this.innerResult = new IngestResultNeedingRetry( dataSource, dataType, 1, hasNonMissingData );
     }
 
     @Override
@@ -61,6 +62,12 @@ public class IngestResultInMemory implements IngestResult
     public boolean requiresRetry()
     {
         return false;
+    }
+
+    @Override
+    public boolean hasNonMissingData()
+    {
+        return this.innerResult.hasNonMissingData();
     }
 
     @Override

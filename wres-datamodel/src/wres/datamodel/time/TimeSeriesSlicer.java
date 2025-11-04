@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import wres.config.components.DataType;
 import wres.config.components.TimeInterval;
+import wres.datamodel.MissingValues;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -1488,6 +1489,46 @@ public final class TimeSeriesSlicer
             }
             return TimeSeries.of( series.getMetadata(), filtered );
         };
+    }
+
+    /**
+     * Determines whether the time-series has one or more values that do not correspond to the
+     * {@link MissingValues#DOUBLE}.
+     *
+     * @param timeSeries the time-series
+     * @return whether there are non-missing values present
+     * @throws NullPointerException if the time-series is null
+     */
+
+    public static boolean hasNonMissingValues( TimeSeries<Double> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        return timeSeries.getEvents()
+                         .stream()
+                         .mapToDouble( Event::getValue )
+                         .anyMatch( MissingValues::isNotMissingValue );
+    }
+
+    /**
+     * Determines whether the time-series has one or more values that do not correspond to the
+     * {@link MissingValues#DOUBLE}. Equivalent to {@link TimeSeriesSlicer#hasNonMissingValues(TimeSeries)} for an
+     * ensemble time-series.
+     *
+     * @param timeSeries the time-series
+     * @return whether there are non-missing values present
+     * @throws NullPointerException if the time-series is null
+     */
+
+    public static boolean hasNonMissingEnsembleMemberValues( TimeSeries<Ensemble> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        return timeSeries.getEvents()
+                         .stream()
+                         .flatMapToDouble( e -> Arrays.stream( e.getValue()
+                                                                .getMembers() ) )
+                         .anyMatch( MissingValues::isNotMissingValue );
     }
 
     /**
