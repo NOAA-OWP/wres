@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -61,7 +62,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
             "While generating a climatology time-series using input series {}{}";
 
     /** The source data from which the climatology values should be generated, indexed by feature. */
-    private final Map<Feature, TimeSeries<Double>> climatologySource;
+    private final Map<Feature, ClimatologyStructure> climatologySource;
 
     /** Representative time-series metadata from the climatology source. */
     private final TimeSeriesMetadata climatologySourceMetadata;
@@ -173,34 +174,31 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                           + "time-series." );
 
             // Adjust the template metadata to use source units
-            TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
-            String sourceUnit = source.getMetadata()
-                                      .getUnit();
+            String sourceUnit = this.getClimatologySourceForTemplate( template )
+                                    .metadata()
+                                    .getUnit();
             TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
 
             return TimeSeries.of( adjusted );
         }
 
-        TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
-        Map<Instant, Event<Double>> eventsToSearch = source.getEvents()
-                                                           .stream()
-                                                           .collect( Collectors.toMap( Event::getTime,
-                                                                                       Function.identity() ) );
+        ClimatologyStructure structure = this.getClimatologySourceForTemplate( template );
+        SortedMap<Instant, Event<Double>> eventsToSearch = structure.structure();
+
         // Find the superset of times to search
-        SortedSet<Instant> times = new TreeSet<>( eventsToSearch.keySet() );
-        int start = times.first()
-                         .atZone( ZONE_ID )
-                         .getYear();
-        int stop = times.last()
-                        .atZone( ZONE_ID )
-                        .getYear() + 1;  // Render upper bound inclusive
+        int start = eventsToSearch.firstKey()
+                                  .atZone( ZONE_ID )
+                                  .getYear();
+        int stop = eventsToSearch.lastKey()
+                                 .atZone( ZONE_ID )
+                                 .getYear() + 1;  // Render upper bound inclusive
         Set<Integer> years = IntStream.range( start, stop )
                                       .boxed()
                                       .collect( Collectors.toSet() );
 
         // Adjust the template metadata to use source units
-        String sourceUnit = source.getMetadata()
-                                  .getUnit();
+        String sourceUnit = structure.metadata()
+                                     .getUnit();
         TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
         TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( adjusted );
 
@@ -263,18 +261,16 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
         LOGGER.trace( "Generating climatology for a time-series where upscaling is required." );
 
         // Identify the valid times for which upscaled values are required
-        TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
+        ClimatologyStructure source = this.getClimatologySourceForTemplate( template );
+        SortedMap<Instant, Event<Double>> structure = source.structure();
 
         // Identify the superset of years with climatology values
-        SortedSet<Event<Double>> events = source.getEvents();
-        int start = events.first()
-                          .getTime()
-                          .atZone( ZONE_ID )
-                          .getYear();
-        int stop = events.last()
-                         .getTime()
-                         .atZone( ZONE_ID )
-                         .getYear() + 1;  // Render upper bound inclusive
+        int start = structure.firstKey()
+                             .atZone( ZONE_ID )
+                             .getYear();
+        int stop = structure.lastKey()
+                            .atZone( ZONE_ID )
+                            .getYear() + 1;  // Render upper bound inclusive
         Set<Integer> years = IntStream.range( start, stop )
                                       .boxed()
                                       .collect( Collectors.toSet() );
@@ -323,12 +319,13 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
         }
 
         // Rescale
-        RescaledTimeSeriesPlusValidation<Double> rescaled = this.upscaler.upscale( source,
+        RescaledTimeSeriesPlusValidation<Double> rescaled = this.upscaler.upscale( source.timeSeries(),
                                                                                    desiredTimeScale,
                                                                                    targetTimes,
                                                                                    this.desiredUnit );
 
-        RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( source, rescaled.getValidationEvents() );
+        RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( source.timeSeries(),
+                                                                     rescaled.getValidationEvents() );
 
         TimeSeries<Double> rescaledSeries = rescaled.getTimeSeries();
 
@@ -440,7 +437,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
      * @throws BaselineGeneratorException if the template feature does not match a feature for which source data exists
      */
 
-    private TimeSeries<Double> getClimatologySourceForTemplate( TimeSeries<?> template )
+    private ClimatologyStructure getClimatologySourceForTemplate( TimeSeries<?> template )
     {
         // Feature correlation assumes that the template feature is right-ish and the source feature is baseline-ish
         // If this is no longer a safe assumption, then the orientation should be declared on construction
@@ -451,7 +448,8 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
         {
             Set<Feature> sourceFeatures = this.climatologySource.values()
                                                                 .stream()
-                                                                .map( next -> next.getMetadata().getFeature() )
+                                                                .map( next -> next.metadata()
+                                                                                  .getFeature() )
                                                                 .collect( Collectors.toSet() );
 
             throw new BaselineGeneratorException( "When building a climatology baseline, failed to discover a source "
@@ -463,6 +461,56 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
         }
 
         return this.climatologySource.get( templateFeature );
+    }
+
+    /**
+     * Consolidate the time-series and emit a warning if duplicates are encountered. Unlike
+     * {@link TimeSeriesSlicer#consolidate(Collection)}, this method admits duplicates.
+     *
+     * @param toConsolidate the time-series to consolidate
+     * @param featureName the feature name to help with messaging
+     * @return the consolidated time-series
+     */
+
+    private TimeSeries<Double> consolidate( List<TimeSeries<Double>> toConsolidate, String featureName )
+    {
+        SortedSet<Event<Double>> events =
+                new TreeSet<>( Comparator.comparing( Event::getTime ) );
+
+        Set<Instant> duplicates = new TreeSet<>();
+        Builder<Double> builder = new Builder<>();
+        for ( TimeSeries<Double> nextSeries : toConsolidate )
+        {
+            builder.setMetadata( nextSeries.getMetadata() );
+            SortedSet<Event<Double>> nextEvents = nextSeries.getEvents();
+            for ( Event<Double> nextEvent : nextEvents )
+            {
+                boolean added = events.add( nextEvent );
+                if ( !added )
+                {
+                    duplicates.add( nextEvent.getTime() );
+                }
+            }
+        }
+
+        TimeSeries<Double> consolidated = builder.setEvents( events )
+                                                 .build();
+
+        if ( !duplicates.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "While generating a climatology baseline for feature '{}', encountered duplicate events in "
+                         + "the source data at {} valid times. Using only the first event encountered at each "
+                         + "duplicated time. If this is unintended, please de-duplicate the climatology data before "
+                         + "creating a climatology baseline. The common time-series metadata for the time-series that "
+                         + "contained duplicate events was: {}. The first duplicate time was: {}.",
+                         featureName,
+                         duplicates.size(),
+                         consolidated.getMetadata(),
+                         duplicates.iterator()
+                                   .next() );
+        }
+
+        return consolidated;
     }
 
     /**
@@ -541,13 +589,23 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                                                                                                         Collectors.toList() ) ) );
 
         // Consolidate the time-series by feature
-        Map<Feature, TimeSeries<Double>> consolidated = new HashMap<>();
+        Map<Feature, ClimatologyStructure> consolidated = new HashMap<>();
         for ( Map.Entry<Feature, List<TimeSeries<Double>>> nextEntry : grouped.entrySet() )
         {
             Feature nextFeature = nextEntry.getKey();
             List<TimeSeries<Double>> series = nextEntry.getValue();
             TimeSeries<Double> nextConsolidated = this.consolidate( series, nextFeature.getName() );
-            consolidated.put( nextFeature, nextConsolidated );
+            SortedMap<Instant, Event<Double>> eventsToSearch =
+                    nextConsolidated.getEvents()
+                                    .stream()
+                                    .collect( Collectors.toMap( Event::getTime,
+                                                                Function.identity(),
+                                                                ( a, b ) -> a, // Cannot be dups in TimeSeries
+                                                                TreeMap::new ) );
+            ClimatologyStructure structure = new ClimatologyStructure( nextConsolidated.getMetadata(),
+                                                                       eventsToSearch,
+                                                                       nextConsolidated );
+            consolidated.put( nextFeature, structure );
         }
 
         this.climatologySource = Collections.unmodifiableMap( consolidated );
@@ -557,59 +615,22 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                                                                .stream()
                                                                .findAny()
                                                                .orElseThrow() // Already checked above that it exists
-                                                               .getMetadata();
+                                                               .metadata();
 
         LOGGER.debug( "Created a climatology generator." );
     }
 
     /**
-     * Consolidate the time-series and emit a warning if duplicates are encountered. Unlike
-     * {@link TimeSeriesSlicer#consolidate(Collection)}, this method admits duplicates.
-     *
-     * @param toConsolidate the time-series to consolidate
-     * @param featureName the feature name to help with messaging
-     * @return the consolidated time-series
+     * A structure to assist with building a climatological dataset.
+     * @param metadata the metadata
+     * @param structure the structure
+     * @param timeSeries the time-series whose structure is represented
      */
 
-    private TimeSeries<Double> consolidate( List<TimeSeries<Double>> toConsolidate, String featureName )
+    private record ClimatologyStructure( TimeSeriesMetadata metadata,
+                                         SortedMap<Instant, Event<Double>> structure,
+                                         TimeSeries<Double> timeSeries )
     {
-        SortedSet<Event<Double>> events =
-                new TreeSet<>( Comparator.comparing( Event::getTime ) );
-
-        Set<Instant> duplicates = new TreeSet<>();
-        Builder<Double> builder = new Builder<>();
-        for ( TimeSeries<Double> nextSeries : toConsolidate )
-        {
-            builder.setMetadata( nextSeries.getMetadata() );
-            SortedSet<Event<Double>> nextEvents = nextSeries.getEvents();
-            for ( Event<Double> nextEvent : nextEvents )
-            {
-                boolean added = events.add( nextEvent );
-                if ( !added )
-                {
-                    duplicates.add( nextEvent.getTime() );
-                }
-            }
-        }
-
-        TimeSeries<Double> consolidated = builder.setEvents( events )
-                                                 .build();
-
-        if ( !duplicates.isEmpty() && LOGGER.isWarnEnabled() )
-        {
-            LOGGER.warn( "While generating a climatology baseline for feature '{}', encountered duplicate events in "
-                         + "the source data at {} valid times. Using only the first event encountered at each "
-                         + "duplicated time. If this is unintended, please de-duplicate the climatology data before "
-                         + "creating a climatology baseline. The common time-series metadata for the time-series that "
-                         + "contained duplicate events was: {}. The first duplicate time was: {}.",
-                         featureName,
-                         duplicates.size(),
-                         consolidated.getMetadata(),
-                         duplicates.iterator()
-                                   .next() );
-        }
-
-        return consolidated;
     }
 
 }
