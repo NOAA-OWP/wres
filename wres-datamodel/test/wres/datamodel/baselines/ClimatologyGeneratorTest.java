@@ -62,7 +62,7 @@ class ClimatologyGeneratorTest
     private static final Feature FAKE = Feature.of( MessageUtilities.getGeometry( "FAKE" ) );
 
     @BeforeEach
-    public void runBeforeEachTest()
+    void runBeforeEachTest()
     {
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of( Duration.ofSeconds( 1 ),
