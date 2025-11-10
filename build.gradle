@@ -301,6 +301,7 @@ project(':wres-system') {
         // See GitHub #478. 
         testImplementation('org.mock-server:mockserver-netty:5.15.0') {
             exclude group: 'commons-io', module: 'commons-io'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -314,14 +315,13 @@ project(':wres-system') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.3.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-common:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-handler:4.2.7.Final'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
-        testImplementation 'org.apache.httpcomponents:httpclient:4.5.14'
-        testImplementation 'org.apache.httpcomponents:httpcore:4.4.16'
+        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
     }
 
     test {
@@ -339,7 +339,7 @@ project(':wres-datamodel') {
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -709,6 +709,7 @@ project(':wres-reading') {
         // See GitHub #478.
         testImplementation('org.mock-server:mockserver-netty:5.15.0') {
             exclude group: 'commons-io', module: 'commons-io'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -721,11 +722,14 @@ project(':wres-reading') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        implementation 'commons-io:commons-io:2.20.0'
-        testRuntimeOnly 'io.netty:netty-common:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.3.Final'
+        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
+        testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-common:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-handler:4.2.7.Final'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
+        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
         
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
@@ -763,7 +767,7 @@ project(':wres-eventdetection') {
         implementation 'org.apache.commons:commons-lang3:3.18.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -798,7 +802,7 @@ project(':wres-metrics') {
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -923,7 +927,7 @@ project(':wres-statistics') {
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1037,7 +1041,7 @@ project(':wres-vis') {
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.1'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1076,7 +1080,7 @@ project(':wres-config') {
         api project(':wres-statistics')
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1227,7 +1231,7 @@ project(':wres-worker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
         implementation 'com.rabbitmq:amqp-client:5.26.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1244,6 +1248,7 @@ project(':wres-worker') {
         // See GitHub #478.
         testImplementation('org.mock-server:mockserver-netty:5.15.0') {
             exclude group: 'commons-io', module: 'commons-io'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -1257,12 +1262,13 @@ project(':wres-worker') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.3.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.3.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-common:4.2.7.Final'
+        testRuntimeOnly 'io.netty:netty-handler:4.2.7.Final'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
+        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
         
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
@@ -1447,7 +1453,7 @@ project(':wres-tasker') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.3.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.7.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -1470,7 +1476,7 @@ project(':wres-tasker') {
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1499,7 +1505,7 @@ project(':wres-tasker') {
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.37'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.40'
     }
 
     apply plugin: 'application'
@@ -1609,7 +1615,7 @@ project(':wres-eventsbroker') {
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1662,7 +1668,7 @@ project(':wres-events') {
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.18.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1983,7 +1989,7 @@ dependencies {
     // Support ALPN
     runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.1'
 
-    runtimeOnly('ch.qos.logback:logback-classic:1.5.18') {
+    runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
