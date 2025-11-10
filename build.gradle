@@ -690,8 +690,6 @@ project(':wres-reading') {
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
-        testImplementation 'org.mock-server:mockserver-core:5.15.0'
         testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
@@ -722,6 +720,21 @@ project(':wres-reading') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
+
+        testImplementation ('org.mock-server:mockserver-client-java:5.15.0') {
+            exclude group: 'io.netty', module: 'netty-codec-http2'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+        }
+
+        testImplementation ('org.mock-server:mockserver-core:5.15.0') {
+            exclude group: 'io.netty', module: 'netty-codec-http2'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+        }
+
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
         testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
         testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
@@ -730,7 +743,7 @@ project(':wres-reading') {
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
         testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
-        
+
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
@@ -1237,11 +1250,8 @@ project(':wres-worker') {
         }
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
-        testImplementation 'org.mock-server:mockserver-core:5.15.0'
         testImplementation 'org.mockito:mockito-core:5.20.0'
 
-        // Use mockserver as a mock server for mock API responses
         // Use mockserver as a mock server for mock API responses
         // Various transitive dependencies need to be overridden to avoid
         // triggering alerts related to security vulnerabilities.
@@ -1261,6 +1271,21 @@ project(':wres-worker') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
+
+        testImplementation ('org.mock-server:mockserver-client-java:5.15.0') {
+            exclude group: 'io.netty', module: 'netty-codec-http2'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+        }
+
+        testImplementation ('org.mock-server:mockserver-core:5.15.0') {
+            exclude group: 'io.netty', module: 'netty-codec-http2'
+            exclude group: 'commons-beanutils', module: 'commons-beanutils'
+            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+        }
+
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
         testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
         testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
