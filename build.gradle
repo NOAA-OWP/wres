@@ -310,6 +310,7 @@ project(':wres-system') {
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
@@ -716,6 +717,7 @@ project(':wres-reading') {
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
@@ -725,6 +727,7 @@ project(':wres-reading') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
@@ -732,6 +735,7 @@ project(':wres-reading') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
@@ -1267,6 +1271,7 @@ project(':wres-worker') {
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
@@ -1276,6 +1281,7 @@ project(':wres-worker') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
@@ -1283,6 +1289,7 @@ project(':wres-worker') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
+            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
