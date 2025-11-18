@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.reading.waterml.Response;
+import wres.reading.nwis.iv.response.Response;
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 
