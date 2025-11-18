@@ -2,13 +2,18 @@ package wres.reading;
 
 import java.util.Objects;
 
+import lombok.Getter;
+
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.time.TimeSeries;
 
 /**
  * A small value class that stores a tuple of time series. There is up to one time-series for each type of time-series 
- * event value.
- * 
+ * event value. Currently, this implementation supports both single-valued events, composed of {@link Double} and,
+ * separately, ensemble events composed as {@link Ensemble}. Thus, data sources may contain a mixture of single-valued
+ * and ensemble time-series. Each tuple contains up to one time-series of each type and both are optional, i.e., a
+ * tuple can be empty.
+ *
  * @author James Brown
  */
 
@@ -21,6 +26,7 @@ public class TimeSeriesTuple
     private final TimeSeries<Ensemble> ensemble;
 
     /** The data source from which the time-series originate. */
+    @Getter
     private final DataSource dataSource;
 
     /**
@@ -83,15 +89,6 @@ public class TimeSeriesTuple
     public TimeSeries<Ensemble> getEnsembleTimeSeries()
     {
         return this.ensemble;
-    }
-
-    /**
-     * @return the data source
-     */
-
-    public DataSource getDataSource()
-    {
-        return this.dataSource;
     }
 
     /**

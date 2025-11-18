@@ -12,8 +12,8 @@ import wres.reading.fews.PublishedInterfaceXmlReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.netcdf.nwm.NwmGridReader;
 import wres.reading.netcdf.nwm.NwmVectorReader;
-import wres.reading.waterml.WatermlReader;
-import wres.reading.nwis.NwisReader;
+import wres.reading.nwis.iv.response.ResponseReader;
+import wres.reading.nwis.iv.NwisIvReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
 import wres.reading.wrds.hefs.WrdsHefsJsonReader;
 import wres.reading.wrds.hefs.WrdsHefsReader;
@@ -45,7 +45,7 @@ public class TimeSeriesReaderFactory
     private static final PublishedInterfaceXmlReader PIXML_READER = PublishedInterfaceXmlReader.of();
 
     /** WaterML reader. */
-    private static final WatermlReader WATERML_READER = WatermlReader.of();
+    private static final ResponseReader WATERML_READER = ResponseReader.of();
 
     /** WRDS AHPS JSON reader. */
     private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
@@ -113,7 +113,7 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
-                    return NwisReader.of( this.getDeclaration(), this.systemSettings );
+                    return NwisIvReader.of( this.getDeclaration(), this.systemSettings );
                 }
                 // A reader for USGS-formatted WaterML, but not from a NWIS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
