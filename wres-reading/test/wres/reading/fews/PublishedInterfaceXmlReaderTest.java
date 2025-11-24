@@ -275,8 +275,6 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
 
@@ -349,8 +347,6 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
 
@@ -424,8 +420,6 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
 
@@ -516,8 +510,6 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
 
@@ -590,8 +582,6 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
 
@@ -666,8 +656,6 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
 

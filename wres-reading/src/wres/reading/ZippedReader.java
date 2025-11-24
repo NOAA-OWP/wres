@@ -47,7 +47,7 @@ public class ZippedReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        
+
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
 
@@ -70,7 +70,7 @@ public class ZippedReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
-        
+
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.GZIP );
 
@@ -94,13 +94,10 @@ public class ZippedReader implements TimeSeriesReader
                           dataSource.getUri(),
                           disposition );
 
-            DataSource decompressedSource = DataSource.of( disposition,
-                                                           dataSource.getSource(),
-                                                           dataSource.getContext(),
-                                                           dataSource.getLinks(),
-                                                           mashupUri,
-                                                           dataSource.getDatasetOrientation(),
-                                                           dataSource.getCovariateFeatureOrientation() );
+            DataSource decompressedSource = dataSource.toBuilder()
+                                                      .uri( mashupUri )
+                                                      .disposition( disposition )
+                                                      .build();
 
             TimeSeriesReader reader = this.getReaderFactory()
                                           .getReader( decompressedSource );
@@ -129,8 +126,8 @@ public class ZippedReader implements TimeSeriesReader
     }
 
     /**
-    * @return the reader factory
-    */
+     * @return the reader factory
+     */
 
     private TimeSeriesReaderFactory getReaderFactory()
     {

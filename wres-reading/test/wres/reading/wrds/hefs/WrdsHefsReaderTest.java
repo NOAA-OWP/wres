@@ -41,7 +41,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.types.Ensemble;
 import wres.reading.DataSource;
-import wres.reading.DataSource.DataDisposition;
 import wres.reading.TimeSeriesTuple;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
@@ -173,13 +172,14 @@ class WrdsHefsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_HEFS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_HEFS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -250,13 +250,14 @@ class WrdsHefsReaderTest
                                                                       .build() )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_HEFS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_HEFS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )

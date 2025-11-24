@@ -346,12 +346,6 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( dataSource );
 
-        if ( !dataSource.hasSourcePath() )
-        {
-            throw new ReadException( "Found a file data source with an invalid path: "
-                                     + dataSource );
-        }
-
         Path path = Paths.get( dataSource.getUri() );
 
         if ( !Files.exists( path ) )

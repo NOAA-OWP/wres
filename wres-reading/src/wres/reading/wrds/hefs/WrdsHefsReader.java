@@ -275,14 +275,9 @@ public class WrdsHefsReader implements TimeSeriesReader
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft() );
 
-                    DataSource innerSource =
-                            DataSource.of( dataSource.getDisposition(),
-                                           dataSource.getSource(),
-                                           dataSource.getContext(),
-                                           dataSource.getLinks(),
-                                           nextUri,
-                                           dataSource.getDatasetOrientation(),
-                                           dataSource.getCovariateFeatureOrientation() );
+                    DataSource innerSource = dataSource.toBuilder()
+                                                       .uri( nextUri )
+                                                       .build();
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 

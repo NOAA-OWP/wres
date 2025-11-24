@@ -510,13 +510,15 @@ public class SourceLoader
             if ( Objects.nonNull( path ) )
             {
                 // Currently unknown disposition, to be unpacked/determined
-                DataSource source = DataSource.of( DataDisposition.UNKNOWN,
-                                                   nextSource.getKey(),
-                                                   dataset,
-                                                   links,
-                                                   path.toUri(),
-                                                   orientation,
-                                                   covariateFeatureOrientation );
+                DataSource source = DataSource.builder()
+                                              .disposition( DataDisposition.UNKNOWN )
+                                              .source( nextSource.getKey() )
+                                              .context( dataset )
+                                              .links( links )
+                                              .uri( path.toUri() )
+                                              .datasetOrientation( orientation )
+                                              .covariateFeatureOrientation( covariateFeatureOrientation )
+                                              .build();
 
                 Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
                 returnMe.addAll( filesources );
@@ -525,24 +527,28 @@ public class SourceLoader
             else
             {
                 // Create a source with unknown disposition as the basis for detection
-                DataSource sourceToEvaluate = DataSource.of( DataDisposition.UNKNOWN,
-                                                             nextSource.getKey(),
-                                                             dataset,
-                                                             links,
-                                                             nextSource.getKey()
-                                                                       .uri(),
-                                                             orientation,
-                                                             covariateFeatureOrientation );
+                DataSource sourceToEvaluate = DataSource.builder()
+                                                        .disposition( DataDisposition.UNKNOWN )
+                                                        .source( nextSource.getKey() )
+                                                        .context( dataset )
+                                                        .links( links )
+                                                        .uri( nextSource.getKey()
+                                                                        .uri() )
+                                                        .datasetOrientation( orientation )
+                                                        .covariateFeatureOrientation( covariateFeatureOrientation )
+                                                        .build();
 
                 DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
-                DataSource evaluatedSource = DataSource.of( disposition,
-                                                            nextSource.getKey(),
-                                                            dataset,
-                                                            links,
-                                                            nextSource.getKey()
-                                                                      .uri(),
-                                                            orientation,
-                                                            covariateFeatureOrientation );
+                DataSource evaluatedSource = DataSource.builder()
+                                                       .disposition( disposition )
+                                                       .source( nextSource.getKey() )
+                                                       .context( dataset )
+                                                       .links( links )
+                                                       .uri( nextSource.getKey()
+                                                                       .uri() )
+                                                       .datasetOrientation( orientation )
+                                                       .covariateFeatureOrientation( covariateFeatureOrientation )
+                                                       .build();
 
                 returnMe.add( evaluatedSource );
             }
@@ -632,13 +638,9 @@ public class SourceLoader
         if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
         {
             LOGGER.debug( "Discovered a source with disposition {}.", DataDisposition.NETCDF_VECTOR );
-            DataSource innerSource = DataSource.of( DataDisposition.NETCDF_VECTOR,
-                                                    dataSource.getSource(),
-                                                    dataSource.getContext(),
-                                                    dataSource.getLinks(),
-                                                    dataSource.getUri(),
-                                                    dataSource.getDatasetOrientation(),
-                                                    dataSource.getCovariateFeatureOrientation() );
+            DataSource innerSource = dataSource.toBuilder()
+                                               .disposition( DataDisposition.NETCDF_VECTOR )
+                                               .build();
             return Set.of( innerSource );
         }
 
@@ -651,13 +653,10 @@ public class SourceLoader
         else
         {
             DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
-            DataSource withDisposition = DataSource.of( disposition,
-                                                        dataSource.getSource(),
-                                                        dataSource.getContext(),
-                                                        dataSource.getLinks(),
-                                                        dataSource.getUri(),
-                                                        dataSource.getDatasetOrientation(),
-                                                        dataSource.getCovariateFeatureOrientation() );
+            DataSource withDisposition = dataSource.toBuilder()
+                                                   .disposition( disposition )
+                                                   .build();
+
             return Set.of( withDisposition );
         }
     }
@@ -711,13 +710,11 @@ public class SourceLoader
 
                     if ( disposition != DataDisposition.UNKNOWN )
                     {
-                        returnMe.add( DataSource.of( disposition,
-                                                     dataSource.getSource(),
-                                                     dataSource.getContext(),
-                                                     dataSource.getLinks(),
-                                                     path.toUri(),
-                                                     dataSource.getDatasetOrientation(),
-                                                     dataSource.getCovariateFeatureOrientation() ) );
+                        DataSource fileSource = dataSource.toBuilder()
+                                                          .disposition( disposition )
+                                                          .uri( path.toUri() )
+                                                          .build();
+                        returnMe.add( fileSource );
                     }
                     else
                     {

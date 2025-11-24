@@ -53,15 +53,17 @@ class WrdsAhpsJsonReaderTest
                                         .sources( List.of( fakeDeclarationSource ) )
                                         .build();
 
-        this.fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                         fakeDeclarationSource,
-                                         dataset,
-                                         Collections.emptyList(),
-                                         // Use a fake URI with an NWIS-like string as this is used to trigger the
-                                         // identification of an instantaneous time-scale
-                                         URI.create( "https://fake.wrds.gov/" ),
-                                         DatasetOrientation.RIGHT,
-                                         null );
+        this.fakeSource = DataSource.builder()
+                                    .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                    .source( fakeDeclarationSource )
+                                    .context( dataset )
+                                    .links( Collections.emptyList() )
+                                    // Use a fake URI with an NWIS-like string as this is used to trigger the
+                                    // identification of an instantaneous time-scale
+                                    .uri( URI.create( "https://fake.wrds.gov/" ) )
+                                    .datasetOrientation( DatasetOrientation.RIGHT )
+                                    .build();
+        
         this.jsonString =
                 """
                         {

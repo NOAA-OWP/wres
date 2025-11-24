@@ -58,7 +58,8 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * <p>Reads time-series data formatted in WaterML. Further information on the Water ML standard can be found here:
+ * <p>Reads time-series data responses formatted in WaterML from the National Water Information System Instantaneous
+ * Values web service. Further information on the Water ML standard can be found here:
  *
  * <p><a href="https://www.ogc.org/standards/waterml">WaterML</a> 
  *
@@ -85,10 +86,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @author Jesse Bickel
  */
 
-public class ResponseReader implements TimeSeriesReader
+public class NwisIvResponseReader implements TimeSeriesReader
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( ResponseReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( NwisIvResponseReader.class );
 
     /** Maps WaterML bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
@@ -99,9 +100,9 @@ public class ResponseReader implements TimeSeriesReader
      * @return an instance
      */
 
-    public static ResponseReader of()
+    public static NwisIvResponseReader of()
     {
-        return new ResponseReader();
+        return new NwisIvResponseReader();
     }
 
     @Override
@@ -189,7 +190,7 @@ public class ResponseReader implements TimeSeriesReader
         // Create a supplier that returns the time-series
         return () -> {
 
-            // Read all of the time-series eagerly on first use: this will still delay any read until a terminal stream
+            // Read all the time-series eagerly on first use: this will still delay any read until a terminal stream
             // operation pulls from the supplier (which is why we use a reference holder and do not request the 
             // time-series outside of this lambda), but it will then acquire all the time-series eagerly, i.e., now
             if ( Objects.isNull( timeSeriesTuples.get() ) )
@@ -606,7 +607,7 @@ public class ResponseReader implements TimeSeriesReader
      * Hidden constructor.
      */
 
-    private ResponseReader()
+    private NwisIvResponseReader()
     {
     }
 

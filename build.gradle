@@ -690,17 +690,27 @@ project(':wres-reading') {
         implementation 'com.opencsv:opencsv:5.12.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+
+        // For reading JTS geometries from GeoJSON
+        implementation("org.wololo:jts2geojson:0.18.1")
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
+        // For caches
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
+
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
         annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+        testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
+        testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // Use mockserver as a mock server for mock API responses
         // Various transitive dependencies need to be overridden to avoid

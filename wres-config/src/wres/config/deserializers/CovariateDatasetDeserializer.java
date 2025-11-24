@@ -16,7 +16,6 @@ import wres.config.components.CovariateDataset;
 import wres.config.components.CovariateDatasetBuilder;
 import wres.config.components.CovariatePurpose;
 import wres.config.components.Dataset;
-import wres.config.components.DatasetOrientation;
 import wres.statistics.generated.TimeScale;
 
 /**
@@ -39,9 +38,6 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
         Double maximum = null;
         TimeScale.TimeScaleFunction rescaleFunction = null;
         Set<CovariatePurpose> purposes = null;
-
-        // Not part of the declaration language, just used internally
-        DatasetOrientation featureNameOrientation = null;
 
         // The node just read
         JsonNode lastNode = deserializer.getLastNode();
@@ -92,7 +88,6 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
         return CovariateDatasetBuilder.builder().dataset( basicDataset )
                                       .minimum( minimum )
                                       .maximum( maximum )
-                                      .featureNameOrientation( featureNameOrientation )
                                       .rescaleFunction( rescaleFunction )
                                       .purposes( purposes )
                                       .build();

@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -90,19 +89,20 @@ class DatacardReaderTest
                                  .timeZoneOffset( ZoneOffset.UTC )
                                  .build();
 
-            DataSource dataSource = DataSource.of( DataDisposition.DATACARD,
-                                                   fakeDeclarationSource,
-                                                   DatasetBuilder.builder()
-                                                                 .type( DataType.OBSERVATIONS )
-                                                                 .sources( List.of( fakeDeclarationSource ) )
-                                                                 .variable( VariableBuilder.builder()
-                                                                                           .name( QINE )
-                                                                                           .build() )
-                                                                 .build(),
-                                                   Collections.emptyList(),
-                                                   cardPath.toUri(),
-                                                   DatasetOrientation.LEFT,
-                                                   null );
+            DataSource dataSource = DataSource.builder()
+                                              .disposition( DataDisposition.DATACARD )
+                                              .source( fakeDeclarationSource )
+                                              .context( DatasetBuilder.builder()
+                                                                      .type( DataType.OBSERVATIONS )
+                                                                      .sources( List.of( fakeDeclarationSource ) )
+                                                                      .variable( VariableBuilder.builder()
+                                                                                                .name( QINE )
+                                                                                                .build() )
+                                                                      .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( cardPath.toUri() )
+                                              .datasetOrientation( DatasetOrientation.LEFT )
+                                              .build();
 
             DatacardReader reader = DatacardReader.of();
 
@@ -112,7 +112,7 @@ class DatacardReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Collections.emptyMap(),
@@ -185,19 +185,20 @@ class DatacardReaderTest
                                  .timeZoneOffset( ZoneOffset.UTC )
                                  .build();
 
-            DataSource dataSource = DataSource.of( DataDisposition.DATACARD,
-                                                   fakeDeclarationSource,
-                                                   DatasetBuilder.builder()
-                                                                 .type( DataType.OBSERVATIONS )
-                                                                 .sources( List.of( fakeDeclarationSource ) )
-                                                                 .variable( VariableBuilder.builder()
-                                                                                           .name( QINE )
-                                                                                           .build() )
-                                                                 .build(),
-                                                   Collections.emptyList(),
-                                                   cardPath.toUri(),
-                                                   DatasetOrientation.LEFT,
-                                                   null );
+            DataSource dataSource = DataSource.builder()
+                                              .disposition( DataDisposition.DATACARD )
+                                              .source( fakeDeclarationSource )
+                                              .context( DatasetBuilder.builder()
+                                                                      .type( DataType.OBSERVATIONS )
+                                                                      .sources( List.of( fakeDeclarationSource ) )
+                                                                      .variable( VariableBuilder.builder()
+                                                                                                .name( QINE )
+                                                                                                .build() )
+                                                                      .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( cardPath.toUri() )
+                                              .datasetOrientation( DatasetOrientation.LEFT )
+                                              .build();
 
             DatacardReader reader = DatacardReader.of();
 
@@ -208,7 +209,7 @@ class DatacardReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Collections.emptyMap(),

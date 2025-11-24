@@ -40,7 +40,7 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.reading.nwis.iv.response.ResponseReader;
+import wres.reading.nwis.iv.response.NwisIvResponseReader;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
@@ -57,7 +57,7 @@ import wres.system.SystemSettings;
  *
  * <p>This implementation reads time-series data in WaterML format only. The NWIS IV Service does support other formats, 
  * but WaterML is the default. Time-series are chunked by feature and year ranges. The underlying format reader is a
- * {@link ResponseReader}.
+ * {@link NwisIvResponseReader}.
  *
  * @author James Brown
  * @author Jesse Bickel
@@ -70,7 +70,7 @@ public class NwisIvReader implements TimeSeriesReader
     private static final Logger LOGGER = LoggerFactory.getLogger( NwisIvReader.class );
 
     /** The underlying format reader. */
-    private static final ResponseReader WATERML_READER = ResponseReader.of();
+    private static final NwisIvResponseReader WATERML_READER = NwisIvResponseReader.of();
 
     /** Message string. */
     private static final String USGS_NWIS = "USGS NWIS";
@@ -138,7 +138,7 @@ public class NwisIvReader implements TimeSeriesReader
     }
 
     /**
-     * This implementation is equivalent to calling {@link ResponseReader#read(DataSource, InputStream)}.
+     * This implementation is equivalent to calling {@link NwisIvResponseReader#read(DataSource, InputStream)}.
      * @param dataSource the data source, required
      * @param stream the input stream, required
      * @return the stream of time-series
@@ -281,14 +281,9 @@ public class NwisIvReader implements TimeSeriesReader
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft() );
 
-                    DataSource innerSource =
-                            DataSource.of( dataSource.getDisposition(),
-                                           dataSource.getSource(),
-                                           dataSource.getContext(),
-                                           dataSource.getLinks(),
-                                           nextUri,
-                                           dataSource.getDatasetOrientation(),
-                                           dataSource.getCovariateFeatureOrientation() );
+                    DataSource innerSource = dataSource.toBuilder()
+                                                       .uri( nextUri )
+                                                       .build();
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 

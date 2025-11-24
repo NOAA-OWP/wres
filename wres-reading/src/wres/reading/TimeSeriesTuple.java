@@ -17,16 +17,16 @@ import wres.datamodel.time.TimeSeries;
  * @author James Brown
  */
 
+@Getter
 public class TimeSeriesTuple
 {
     /** A single-valued time-series. */
-    private final TimeSeries<Double> singleValued;
+    private final TimeSeries<Double> singleValuedTimeSeries;
 
     /** An ensemble time-series. */
-    private final TimeSeries<Ensemble> ensemble;
+    private final TimeSeries<Ensemble> ensembleTimeSeries;
 
     /** The data source from which the time-series originate. */
-    @Getter
     private final DataSource dataSource;
 
     /**
@@ -74,30 +74,12 @@ public class TimeSeriesTuple
     }
 
     /**
-     * @return the single-valued time-series or null
-     */
-
-    public TimeSeries<Double> getSingleValuedTimeSeries()
-    {
-        return this.singleValued;
-    }
-
-    /**
-     * @return the ensemble time-series or null
-     */
-
-    public TimeSeries<Ensemble> getEnsembleTimeSeries()
-    {
-        return this.ensemble;
-    }
-
-    /**
      * @return whether the single-valued time-series is set
      */
 
     public boolean hasSingleValuedTimeSeries()
     {
-        return Objects.nonNull( this.singleValued );
+        return Objects.nonNull( this.singleValuedTimeSeries );
     }
 
     /**
@@ -106,24 +88,24 @@ public class TimeSeriesTuple
 
     public boolean hasEnsembleTimeSeries()
     {
-        return Objects.nonNull( this.ensemble );
+        return Objects.nonNull( this.ensembleTimeSeries );
     }
 
     /**
      * Hidden constructor.
-     * @param singleValued the single-valued series
-     * @param ensemble the ensemble series
+     * @param singleValuedTimeSeries the single-valued series
+     * @param ensembleTimeSeries the ensemble series
      * @param dataSource the data source, required
      * @throws NullPointerException if the data source is null
      */
-    private TimeSeriesTuple( TimeSeries<Double> singleValued,
-                             TimeSeries<Ensemble> ensemble,
+    private TimeSeriesTuple( TimeSeries<Double> singleValuedTimeSeries,
+                             TimeSeries<Ensemble> ensembleTimeSeries,
                              DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
 
-        this.singleValued = singleValued;
-        this.ensemble = ensemble;
+        this.singleValuedTimeSeries = singleValuedTimeSeries;
+        this.ensembleTimeSeries = ensembleTimeSeries;
         this.dataSource = dataSource;
     }
 }

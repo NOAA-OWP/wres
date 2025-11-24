@@ -708,13 +708,14 @@ class NwisIvReaderTest
                                         .sources( List.of( fakeDeclarationSource ) )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WATERML,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WATERML )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -817,13 +818,14 @@ class NwisIvReaderTest
                                                                   .build() )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WATERML,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WATERML )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )
@@ -952,13 +954,14 @@ class NwisIvReaderTest
                                                                   .build() )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WATERML,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.BASELINE,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WATERML )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.BASELINE )
+                                          .build();
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )
@@ -1066,13 +1069,14 @@ class NwisIvReaderTest
                                                                   .build() )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WATERML,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WATERML )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .minimum( Instant.parse( "2023-01-01T00:00:00Z" ) )

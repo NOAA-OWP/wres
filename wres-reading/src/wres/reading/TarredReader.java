@@ -326,24 +326,12 @@ public class TarredReader implements TimeSeriesReader
 
         Source originalSource = dataSource.getSource();
 
-        if ( Objects.isNull( originalSource ) )
-        {
-            // Demote to debug or trace if null is known as being a normal,
-            // usual occurrence that has no potential impact on anything.
-            LOGGER.warn( "Archive entry '{}' is not being read because its data source is null.",
-                         archiveEntry );
-
-            return Stream.of();
-        }
-
         // Create the inner data source and stream
-        DataSource innerDataSource = DataSource.of( disposition,
-                                                    originalSource,
-                                                    dataSource.getContext(),
-                                                    dataSource.getLinks(),
-                                                    archivedFileName,
-                                                    dataSource.getDatasetOrientation(),
-                                                    dataSource.getCovariateFeatureOrientation() );
+        DataSource innerDataSource = dataSource.toBuilder()
+                                               .source( originalSource )
+                                               .uri( archivedFileName )
+                                               .disposition( disposition )
+                                               .build();
 
         LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
 

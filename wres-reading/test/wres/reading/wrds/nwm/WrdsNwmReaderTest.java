@@ -245,13 +245,14 @@ class WrdsNwmReaderTest
                                         .sources( List.of( fakeDeclarationSource ) )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -329,13 +330,14 @@ class WrdsNwmReaderTest
                                         .sources( List.of( fakeDeclarationSource ) )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -432,13 +434,14 @@ class WrdsNwmReaderTest
                                                                   .build() )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )
@@ -521,13 +524,14 @@ class WrdsNwmReaderTest
                                                                   .build() )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )
@@ -588,13 +592,14 @@ class WrdsNwmReaderTest
                                                                   .build() )
                                         .build();
 
-        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         TimeInterval validDates = TimeIntervalBuilder.builder()
                                                      .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )

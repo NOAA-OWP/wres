@@ -199,13 +199,14 @@ class WrdsHefsJsonReaderTest
                                                 .sources( List.of( fakeDeclarationSource ) )
                                                 .build();
 
-            DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_HEFS,
-                                                   fakeDeclarationSource,
-                                                   fakeDataset,
-                                                   Collections.emptyList(),
-                                                   fakeUri,
-                                                   DatasetOrientation.RIGHT,
-                                                   null );
+            DataSource fakeSource = DataSource.builder()
+                                              .disposition( DataSource.DataDisposition.JSON_WRDS_HEFS )
+                                              .source( fakeDeclarationSource )
+                                              .context( fakeDataset )
+                                              .links( Collections.emptyList() )
+                                              .uri( fakeUri )
+                                              .datasetOrientation( DatasetOrientation.RIGHT )
+                                              .build();
 
             List<TimeSeries<Ensemble>> actual = reader.read( fakeSource, stream )
                                                       .map( TimeSeriesTuple::getEnsembleTimeSeries )
@@ -262,13 +263,14 @@ class WrdsHefsJsonReaderTest
                                                 .sources( List.of( fakeDeclarationSource ) )
                                                 .build();
 
-            DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_HEFS,
-                                                   fakeDeclarationSource,
-                                                   fakeDataset,
-                                                   Collections.emptyList(),
-                                                   fakeUri,
-                                                   DatasetOrientation.RIGHT,
-                                                   null );
+            DataSource fakeSource = DataSource.builder()
+                                              .disposition( DataSource.DataDisposition.JSON_WRDS_HEFS )
+                                              .source( fakeDeclarationSource )
+                                              .context( fakeDataset )
+                                              .links( Collections.emptyList() )
+                                              .uri( fakeUri )
+                                              .datasetOrientation( DatasetOrientation.RIGHT )
+                                              .build();
 
             List<TimeSeries<Ensemble>> actual = reader.read( fakeSource, stream )
                                                       .map( TimeSeriesTuple::getEnsembleTimeSeries )

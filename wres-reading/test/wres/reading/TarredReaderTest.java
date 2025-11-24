@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -134,14 +133,14 @@ class TarredReaderTest
                                                                       .build() )
                                             .build();
 
-            DataSource fakeSource = DataSource.of( DataDisposition.TARBALL,
-                                                   fakeDeclarationSource,
-                                                   dataset,
-                                                   Collections.emptyList(),
-                                                   tarPath.toUri(),
-                                                   DatasetOrientation.RIGHT,
-                                                   null );
-
+            DataSource fakeSource = DataSource.builder()
+                                              .disposition( DataDisposition.TARBALL )
+                                              .source( fakeDeclarationSource )
+                                              .context( dataset )
+                                              .links( Collections.emptyList() )
+                                              .uri( tarPath.toUri() )
+                                              .datasetOrientation( DatasetOrientation.RIGHT )
+                                              .build();
             SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
             Mockito.when( systemSettings.getMaximumArchiveThreads() )
                    .thenReturn( 5 );
@@ -159,7 +158,7 @@ class TarredReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Collections.emptyMap(),

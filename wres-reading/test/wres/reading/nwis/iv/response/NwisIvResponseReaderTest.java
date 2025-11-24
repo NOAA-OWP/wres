@@ -32,13 +32,13 @@ import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 
 /**
- * Tests the {@link ResponseReader}.
+ * Tests the {@link NwisIvResponseReader}.
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
  */
 
-class ResponseReaderTest
+class NwisIvResponseReaderTest
 {
     private DataSource fakeSource;
     private String watermlString;
@@ -57,13 +57,14 @@ class ResponseReaderTest
                                         .sources( List.of( fakeDeclarationSource ) )
                                         .build();
 
-        this.fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WATERML,
-                                               fakeDeclarationSource,
-                                               dataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                         null );
+        this.fakeSource = DataSource.builder()
+                                    .disposition( DataSource.DataDisposition.JSON_WATERML )
+                                    .source( fakeDeclarationSource )
+                                    .context( dataset )
+                                    .links( Collections.emptyList() )
+                                    .uri( fakeUri )
+                                    .datasetOrientation( DatasetOrientation.LEFT )
+                                    .build();
 
         this.watermlString =
                 """
@@ -964,7 +965,7 @@ class ResponseReaderTest
                 writer.append( this.watermlString );
             }
 
-            ResponseReader reader = ResponseReader.of();
+            NwisIvResponseReader reader = NwisIvResponseReader.of();
 
             try ( InputStream inputStream = new BufferedInputStream( Files.newInputStream( watermlPath ) );
                   Stream<TimeSeriesTuple> tupleStream = reader.read( this.fakeSource, inputStream ) )

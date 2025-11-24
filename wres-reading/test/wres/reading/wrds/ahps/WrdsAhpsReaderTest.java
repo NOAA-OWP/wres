@@ -781,7 +781,8 @@ class WrdsAhpsReaderTest
     @BeforeEach
     void startServer()
     {
-        System.setProperty("wres.wrdsCertificateFileToTrust", "org/mockserver/socket/CertificateAuthorityCertificate.pem");
+        System.setProperty( "wres.wrdsCertificateFileToTrust",
+                            "org/mockserver/socket/CertificateAuthorityCertificate.pem" );
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
@@ -812,13 +813,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -904,13 +906,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -958,13 +961,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2022-09-17T00:00:00Z" ) )
@@ -1061,13 +1065,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2018-01-01T00:00:00Z" ) )
@@ -1153,13 +1158,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )

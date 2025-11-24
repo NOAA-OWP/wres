@@ -1,16 +1,21 @@
 package wres.reading;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
 import jakarta.xml.bind.DatatypeConverter;
 
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.SourceBuilder;
 import wres.reading.DataSource.DataDisposition;
 
 /**
@@ -347,5 +352,25 @@ class DataSourceTest
 
             assertEquals( DataDisposition.XML_PI_TIMESERIES, DataSource.detectFormat( stream, fakeUri ) );
         }
+    }
+
+    @Test
+    void testValidationOnConstructionProducesExpectedException()
+    {
+        DataSource.Builder builder = DataSource.builder()
+                                               .disposition( DataDisposition.TARBALL )
+                                               .source( SourceBuilder.builder()
+                                                                     .build() )
+                                               .context( DatasetBuilder.builder()
+                                                                       .build() )
+                                               .links( Collections.emptyList() )
+                                               .uri( URI.create( "http://foo" ) )
+                                               .datasetOrientation( DatasetOrientation.COVARIATE );
+
+        NullPointerException expected = assertThrows( NullPointerException.class,
+                                                      builder::build );
+
+        assertEquals( "A covariate data source requires a feature orientation.",
+                      expected.getMessage() );
     }
 }

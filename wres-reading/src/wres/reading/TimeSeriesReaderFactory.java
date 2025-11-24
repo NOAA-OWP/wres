@@ -12,7 +12,7 @@ import wres.reading.fews.PublishedInterfaceXmlReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.netcdf.nwm.NwmGridReader;
 import wres.reading.netcdf.nwm.NwmVectorReader;
-import wres.reading.nwis.iv.response.ResponseReader;
+import wres.reading.nwis.iv.response.NwisIvResponseReader;
 import wres.reading.nwis.iv.NwisIvReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
 import wres.reading.wrds.hefs.WrdsHefsJsonReader;
@@ -45,7 +45,7 @@ public class TimeSeriesReaderFactory
     private static final PublishedInterfaceXmlReader PIXML_READER = PublishedInterfaceXmlReader.of();
 
     /** WaterML reader. */
-    private static final ResponseReader WATERML_READER = ResponseReader.of();
+    private static final NwisIvResponseReader WATERML_READER = NwisIvResponseReader.of();
 
     /** WRDS AHPS JSON reader. */
     private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
