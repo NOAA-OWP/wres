@@ -86,7 +86,7 @@ public class CsvReader implements TimeSeriesReader
 
         try
         {
-            CsvDataProvider provider = CsvDataProvider.from( dataSource.getUri(), DELIMITER );
+            CsvDataProvider provider = CsvDataProvider.from( dataSource.uri(), DELIMITER );
 
             return this.read( dataSource, provider );
         }
@@ -199,12 +199,12 @@ public class CsvReader implements TimeSeriesReader
                 // Print information about any undeclared variables discovered in the source
                 if ( !unconfiguredVariableNames.isEmpty() && LOGGER.isWarnEnabled() )
                 {
-                    DatasetOrientation lrb = dataSource.getDatasetOrientation();
+                    DatasetOrientation lrb = dataSource.datasetOrientation();
 
                     LOGGER.warn( "The following variable names were encountered in a {} csv data source with "
                                  + "URI {} that were not declared in the project: {}",
                                  lrb,
-                                 dataSource.getUri(),
+                                 dataSource.uri(),
                                  unconfiguredVariableNames );
                 }
 
@@ -313,7 +313,7 @@ public class CsvReader implements TimeSeriesReader
         catch ( IllegalStateException | ClassCastException e )
         {
             throw new ReadException( "Encountered an error while reading the CSV data source at "
-                                     + dataSource.getUri(),
+                                     + dataSource.uri(),
                                      e );
         }
     }
@@ -398,10 +398,10 @@ public class CsvReader implements TimeSeriesReader
             TimeSeries<Double> timeSeries = ReaderUtilities.transform( timeSeriesMetadata,
                                                                        traceValues.get( DEFAULT_ENSEMBLE_NAME ),
                                                                        lineNumber,
-                                                                       dataSource.getUri() );
+                                                                       dataSource.uri() );
 
             // Validate
-            ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
+            ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.uri() );
 
             return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
         }
@@ -410,10 +410,10 @@ public class CsvReader implements TimeSeriesReader
             TimeSeries<Ensemble> timeSeries = ReaderUtilities.transformEnsemble( timeSeriesMetadata,
                                                                                  traceValues,
                                                                                  lineNumber,
-                                                                                 dataSource.getUri() );
+                                                                                 dataSource.uri() );
 
             // Validate
-            ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
+            ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.uri() );
 
             return TimeSeriesTuple.ofEnsemble( timeSeries, dataSource );
         }
@@ -548,17 +548,16 @@ public class CsvReader implements TimeSeriesReader
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
 
-        if ( Objects.nonNull( dataSource.getSource() )
-             && Objects.nonNull( dataSource.getSource()
-                                           .timeZoneOffset() )
-             && !Objects.equals( dataSource.getSource()
+        if ( Objects.nonNull( dataSource.source()
+                                        .timeZoneOffset() )
+             && !Objects.equals( dataSource.source()
                                            .timeZoneOffset(),
                                  ZoneOffset.UTC ) )
         {
             throw new ReadException( "The declared 'time_zone_offset' for the data source at '"
-                                     + dataSource.getUri()
+                                     + dataSource.uri()
                                      + "' was '"
-                                     + dataSource.getSource()
+                                     + dataSource.source()
                                                  .timeZoneOffset()
                                      + "', which is inconsistent with the CSV format requirement that all times are "
                                      + "supplied in UTC. Please resolve this conflict and try again." );
@@ -580,7 +579,7 @@ public class CsvReader implements TimeSeriesReader
                         +
                         " in '"
                         +
-                        dataSource.getUri()
+                        dataSource.uri()
                         +
                         "', which prevented reading. ";
 

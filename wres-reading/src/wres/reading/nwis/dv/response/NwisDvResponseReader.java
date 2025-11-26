@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv;
+package wres.reading.nwis.dv.response;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
+import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,16 +45,12 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.reading.nwis.dv.response.Feature;
-import wres.reading.nwis.dv.response.Link;
-import wres.reading.nwis.dv.response.Properties;
-import wres.reading.nwis.dv.response.Response;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale;
 
 /**
- * <p>Reads time-series data responses from the National Water Information System Daily Values web service.
+ * <p>Reads time-series data responses from the National Water Information System (NWIS) Daily Values (DV) web service.
  *
  * <p>Implementation notes:
  *
@@ -62,8 +59,15 @@ import wres.statistics.generated.TimeScale;
  * at read time should be supplied on construction. This includes any information that is obtained from a separate
  * endpoint of the web API, which could be provided as a deferred function call (i.e., {@link Supplier}), for example.
  * Currently, this reader is not embellished with any external information supplied on construction, but does require
- * the {@link DataSource} that is supplied at read time to contain a {@link ZoneOffset}, which may be obtained
- * externally or declared by a user.
+ * the {@link DataSource} that is supplied at read time to contain a {@link ZoneOffset} or {@link TimeZone}, which may
+ * be obtained externally or declared by a user. While there is no constraint, in principle, about the number of
+ * geographic features represented in the data stream read by a single instance of this reader, the NWIS DV service
+ * does not provide fully-qualified offset datetimes, rather dates that represent values ending at midnight in local
+ * time. This, any timing information must be obtained, indirectly, and supplied via the {@link DataSource}. As such,
+ * a single call to this reader is, in practice, constrained to reading information that spans a single time zone,
+ * otherwise the standard times supplied in the resulting time-series will be inaccurate. This should be contrasted
+ * with the timing information supplied by other NWIS services, such as the instantaneous or continues values service,
+ * which provide responses with complete offset datetimes.
  *
  * @author James Brown
  */
@@ -72,7 +76,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( NwisDvResponseReader.class );
 
-    /** Maps WaterML bytes to POJOs. */
+    /** Maps GeoJSON bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
@@ -98,13 +102,13 @@ public class NwisDvResponseReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = Files.newInputStream( path );
             return this.readFromStream( dataSource, stream );
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read a WaterML source.", e );
+            throw new ReadException( "Failed to read a GeoJSON data source.", e );
         }
     }
 
@@ -151,7 +155,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -216,7 +220,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
             if ( LOGGER.isTraceEnabled() )
             {
                 LOGGER.trace( "Time-series from {} as UTF-8: {}",
-                              dataSource.getUri(),
+                              dataSource.uri(),
                               new String( rawForecast,
                                           StandardCharsets.UTF_8 ) );
             }
@@ -243,19 +247,19 @@ public class NwisDvResponseReader implements TimeSeriesReader
             {
                 LOGGER.debug( "Read {} time series from {}.",
                               allTimeSeries.size(),
-                              dataSource.getUri() );
+                              dataSource.uri() );
             }
 
             return Collections.unmodifiableList( allTimeSeries );
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read the WaterML data stream.", e );
+            throw new ReadException( "Failed to read the GeoJSON data stream.", e );
         }
     }
 
     /**
-     * Transforms a WaterML time-series into an internal time-series.
+     * Transforms a GeoJSON time-series into an internal time-series.
      * @param dataSource the data source
      * @param timeSeries the time-series to transform
      * @param links the links
@@ -266,11 +270,12 @@ public class NwisDvResponseReader implements TimeSeriesReader
                                        Link[] links )
     {
         // Get the link to the next page of data
-        URI next = Arrays.stream( links ).filter( l -> l.getRel()
-                                                        .equals( "next" ) )
+        URI next = Arrays.stream( links )
+                         .filter( l -> l.getRel()
+                                        .equals( "next" ) )
                          .map( Link::getHref )
                          .findFirst()
-                         .orElse( null );
+                         .orElse( null );  // Clear the next page when all pages are exhausted
 
         // Get the adjusted data source with the next page of data
         DataSource adjustedDataSource = dataSource.toBuilder()
@@ -279,8 +284,11 @@ public class NwisDvResponseReader implements TimeSeriesReader
 
         // Get the metadata
         TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( timeSeries.get( 0 ) );
-        SortedSet<Event<Double>> events = this.getTimeSeriesEvents( timeSeries, dataSource.getSource()
-                                                                                          .timeZoneOffset() );
+        SortedSet<Event<Double>> events = this.getTimeSeriesEvents( timeSeries,
+                                                                    dataSource.source()
+                                                                              .timeZoneOffset(),
+                                                                    dataSource.source()
+                                                                              .timeZone() );
 
         TimeSeries<Double> series = TimeSeries.of( metadata, events );
 
@@ -290,11 +298,14 @@ public class NwisDvResponseReader implements TimeSeriesReader
     /**
      * Return the time-series events
      * @param timeSeries the raw time-series events
+     * @param zoneOffset the time zone offset only
+     * @param timeZone the complete time zone information
      * @return the composed time-series events
      */
 
     private SortedSet<Event<Double>> getTimeSeriesEvents( List<Feature> timeSeries,
-                                                          ZoneOffset zoneOffset )
+                                                          ZoneOffset zoneOffset,
+                                                          TimeZone timeZone )
     {
         SortedSet<Event<Double>> events = new TreeSet<>();
         for ( Feature nextValue : timeSeries )
@@ -305,7 +316,20 @@ public class NwisDvResponseReader implements TimeSeriesReader
 
             // Values are midnight in local time
             LocalDateTime time = LocalDateTime.of( date, LocalTime.MIDNIGHT );
-            Instant instant = time.toInstant( zoneOffset );
+            Instant instant;
+
+            // Full time zone information supplied
+            if ( Objects.nonNull( timeZone ) )
+            {
+                instant = time.atZone( timeZone.toZoneId() )
+                              .toInstant();
+            }
+            // Partial information supplied, a zone offset only
+            else
+            {
+                instant = time.toInstant( zoneOffset );
+            }
+
             Event<Double> nextEvent = DoubleEvent.of( instant, value );
             events.add( nextEvent );
         }
@@ -384,12 +408,14 @@ public class NwisDvResponseReader implements TimeSeriesReader
 
     private void validateTimeZoneOffsetPresent( DataSource dataSource )
     {
-        if ( Objects.isNull( dataSource.getSource()
-                                       .timeZoneOffset() ) )
+        if ( Objects.isNull( dataSource.source()
+                                       .timeZoneOffset() )
+             && Objects.isNull( dataSource.source()
+                                          .timeZone() ) )
         {
-            throw new ReadException( "The time zone offset must be declared when reading time-series data from the "
-                                     + "National Water Information System Daily Values web service. Please declare the "
-                                     + "time zone offset and try again." );
+            throw new ReadException( "The time zone or, minimally, the time zone offset must be supplied when reading "
+                                     + "time-series data from the National Water Information System Daily Values web "
+                                     + "service for a particular geographic feature." );
         }
     }
 

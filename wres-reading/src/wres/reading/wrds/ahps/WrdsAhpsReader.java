@@ -149,7 +149,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to WRDS for AHPS time-series without any chunking of the data." );
-        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                          NO_DATA_PREDICATE,
                                                                          ERROR_RESPONSE_PREDICATE,
                                                                          null,
@@ -157,7 +157,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         if ( Objects.isNull( stream ) )
         {
-            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.uri() );
 
             return Stream.of();
         }
@@ -310,11 +310,11 @@ public class WrdsAhpsReader implements TimeSeriesReader
                     mutableChunks.remove( nextChunk );
 
                     // Create the inner data source for the chunk
-                    URI nextUri = this.getUriForChunk( dataSource.getSource()
+                    URI nextUri = this.getUriForChunk( dataSource.source()
                                                                  .uri(),
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft(),
-                                                       dataSource.getSource()
+                                                       dataSource.source()
                                                                  .parameters(),
                                                        ReaderUtilities.isWrdsObservedSource( dataSource ) );
 
@@ -376,7 +376,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                                                    NO_DATA_PREDICATE,
                                                                                                    ERROR_RESPONSE_PREDICATE,
                                                                                                    null,
@@ -385,7 +385,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                            if ( Objects.isNull( inputStream ) )
                            {
                                LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.",
-                                            dataSource.getUri() );
+                                            dataSource.uri() );
 
                                return List.of();
                            }

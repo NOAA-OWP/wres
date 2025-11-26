@@ -47,6 +47,7 @@ public class Properties implements Serializable
     @JsonAlias( value = "monitoring_location_id" )
     private String locationId;
 
+    /** Time time-series identifier. */
     @JsonAlias( value = "time_series_id" )
     private String timeSeriesId;
 

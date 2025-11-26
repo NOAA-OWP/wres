@@ -346,7 +346,7 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( dataSource );
 
-        Path path = Paths.get( dataSource.getUri() );
+        Path path = Paths.get( dataSource.uri() );
 
         if ( !Files.exists( path ) )
         {
@@ -386,9 +386,9 @@ public class ReaderUtilities
         Objects.requireNonNull( readerDisposition );
 
         if ( Arrays.stream( readerDisposition )
-                   .noneMatch( next -> next == dataSource.getDisposition() ) )
+                   .noneMatch( next -> next == dataSource.disposition() ) )
         {
-            throw new ReadException( "The disposition of the data source was " + dataSource.getDisposition()
+            throw new ReadException( "The disposition of the data source was " + dataSource.disposition()
                                      + ", but the reader expected "
                                      + Arrays.toString( readerDisposition )
                                      + "." );
@@ -433,8 +433,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -463,7 +463,7 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        SourceInterface interfaceShortHand = source.getSource()
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
 
         return interfaceShortHand == SourceInterface.WRDS_OBS;
@@ -479,8 +479,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -507,8 +507,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -541,8 +541,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -562,7 +562,7 @@ public class ReaderUtilities
 
     public static boolean isNwmVectorSource( DataSource dataSource )
     {
-        SourceInterface interfaceType = dataSource.getSource()
+        SourceInterface interfaceType = dataSource.source()
                                                   .sourceInterface();
 
         if ( Objects.nonNull( interfaceType )
@@ -591,7 +591,7 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
+        URI uri = source.uri();
 
         return ReaderUtilities.isWebSource( uri );
     }
@@ -624,10 +624,10 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
+        Objects.requireNonNull( dataSource.context() );
 
         // Forecast data?
-        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
 
         if ( ( isForecast
                && Objects.isNull( declaration.referenceDates() ) ) )
@@ -644,7 +644,7 @@ public class ReaderUtilities
                                      + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
                                      + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
                                      + "time-series data. The data type was: "
-                                     + dataSource.getContext()
+                                     + dataSource.context()
                                                  .type()
                                      + "." );
         }
@@ -672,7 +672,7 @@ public class ReaderUtilities
                                                              DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
+        Objects.requireNonNull( dataSource.context() );
 
         SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
 
@@ -1012,14 +1012,14 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( geometries );
         Objects.requireNonNull( dataSource );
-        if ( dataSource.getDatasetOrientation() == DatasetOrientation.COVARIATE )
+        if ( dataSource.datasetOrientation() == DatasetOrientation.COVARIATE )
         {
             return DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                            dataSource.getCovariateFeatureOrientation() );
+                                                            dataSource.covariateFeatureOrientation() );
         }
 
         return DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                        dataSource.getDatasetOrientation() );
+                                                        dataSource.datasetOrientation() );
     }
 
     /**
@@ -1483,7 +1483,7 @@ public class ReaderUtilities
                               + "earlier than the 'minimum' value of the 'valid_dates', which is {}.",
                               minimumDate,
                               DatasetOrientation.BASELINE,
-                              dataSource.getDatasetOrientation(),
+                              dataSource.datasetOrientation(),
                               specifiedEarliest );
                 specifiedEarliest = minimumDate;
             }
@@ -1497,7 +1497,7 @@ public class ReaderUtilities
                               + "later than the 'maximum' value of the 'valid_dates', which is {}.",
                               maximumDate,
                               DatasetOrientation.BASELINE,
-                              dataSource.getDatasetOrientation(),
+                              dataSource.datasetOrientation(),
                               specifiedLatest );
                 specifiedLatest = maximumDate;
             }
@@ -1530,12 +1530,12 @@ public class ReaderUtilities
     private static boolean isBaselineOrHasSameDatasetAsBaseline( DataSource dataSource,
                                                                  EvaluationDeclaration declaration )
     {
-        return dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE
+        return dataSource.datasetOrientation() == DatasetOrientation.BASELINE
                || ( DeclarationUtilities.hasBaseline( declaration )
                     && declaration.baseline()
                                   .dataset()
                                   .sources() // #121751
-                                  .equals( dataSource.getContext()
+                                  .equals( dataSource.context()
                                                      .sources() ) );
     }
 

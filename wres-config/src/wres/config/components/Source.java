@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TimeZone;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -24,7 +25,8 @@ import wres.config.serializers.ZoneOffsetSerializer;
  * @param sourceInterface the interface name
  * @param parameters the interface parameters
  * @param pattern the pattern to consider
- * @param timeZoneOffset the time zone
+ * @param timeZoneOffset the time zone offset, which cannot account for any local rules, such as daylight savings
+ * @param timeZone a complete description of the time zone, to be provided rather than an offset, when available
  * @param missingValue the missing value identifiers
  * @param unit the measurement unit
  */
@@ -38,6 +40,7 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
                       @JsonSerialize( using = ZoneOffsetSerializer.class )
                       @JsonDeserialize( using = ZoneOffsetDeserializer.class )
                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset,
+                      TimeZone timeZone,  // Not currently declarable
                       @JsonProperty( "missing_value" ) List<Double> missingValue,
                       @JsonProperty( "unit" ) String unit )
 {
@@ -48,6 +51,7 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
      * @param parameters the interface parameters
      * @param pattern the pattern to consider
      * @param timeZoneOffset the time zone
+     * @param timeZone a complete description of the time zone, to be provided rather than an offset, when available
      * @param missingValue the missing value identifiers
      * @param unit the measurement unit
      */

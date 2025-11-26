@@ -1780,7 +1780,7 @@ class ReaderUtilitiesTest
                                                   .context( forecastDataset )
                                                   .uri( URI.create( "http://foo.bar" ) )
                                                   .datasetOrientation( DatasetOrientation.RIGHT )
-                                                  .links( List.of() )
+                                                  .links( Collections.emptyList() )
                                                   .build();
         Pair<Instant, Instant> expected = Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
                                                    Instant.parse( "2023-03-01T00:00:00Z" ) );
@@ -1943,7 +1943,7 @@ class ReaderUtilitiesTest
                                                 .build() )
                           .context( DatasetBuilder.builder()
                                                   .build() )
-                          .links( List.of() )
+                          .links( Collections.emptyList() )
                           .uri( URI.create( "file:///nwis/wresTestData/github_viz_20/01570500.observed.usgs.json" ) )
                           .datasetOrientation( DatasetOrientation.LEFT )
                           .build();

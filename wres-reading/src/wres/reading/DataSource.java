@@ -15,10 +15,9 @@ import java.util.Set;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.NonNull;
+import lombok.Singular;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,12 +40,27 @@ import wres.config.components.Variable;
 
 /**
  * A data source.
+ *
+ * @param disposition  The disposition of the data for this source. Used to determine the reader for simple sources or
+ *                     whether more decomposition or recomposition is needed
+ * @param context  The context in which this source is declared
+ * @param source  The source to load and link
+ * @param links  Additional links; may be empty, in which case, link only to its own {@link #context ()}
+ * @param uri  URI of the source
+ * @param nextPage  The URI of the next page of data if this is a paginated source from a web service
+ * @param datasetOrientation  Whether the source originates from the left, right or baseline side of the evaluation
+ * @param covariateFeatureOrientation  The covariate feature orientation, if defined
  */
 
-@Getter
 @Builder( toBuilder = true, builderClassName = "Builder" )
-@AllArgsConstructor
-public class DataSource
+public record DataSource( @NonNull DataDisposition disposition,
+                          @NonNull Dataset context,
+                          @NonNull Source source,
+                          @Singular // To allow for immutability
+                          @NonNull List<DatasetOrientation> links,
+                          @NonNull URI uri,
+                          URI nextPage, DatasetOrientation datasetOrientation,
+                          DatasetOrientation covariateFeatureOrientation )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DataSource.class );
@@ -68,7 +82,7 @@ public class DataSource
         TARBALL,
         /** The data has been detected as a pi-xml timeseries stream. */
         XML_PI_TIMESERIES,
-        /** The data has been detected as a fast-infoset encoded pi-xml 
+        /** The data has been detected as a fast-infoset encoded pi-xml
          * timeseries stream. */
         XML_FI_TIMESERIES,
         /** The data has been detected as a datacard stream. */
@@ -106,37 +120,6 @@ public class DataSource
     /** The count of bytes to use for detecting WRES-compatible type. */
     private static final int DETECTION_BYTES = 1024;
 
-    /** The disposition of the data for this source. Used to determine the reader for simple sources or whether more
-     * decomposition or recomposition is needed. */
-    @NonNull
-    private final DataDisposition disposition;
-
-    /** The context in which this source is declared. */
-    @NonNull
-    private final Dataset context;
-
-    /** The source to load and link. */
-    @NonNull
-    private final Source source;
-
-    // Rendered immutable on construction
-    /** Additional links; may be empty, in which case, link only to its own {@link #getContext()}. */
-    @NonNull
-    private final List<DatasetOrientation> links;
-
-    /** URI of the source.*/
-    @NonNull
-    private final URI uri;
-
-    /** The URI of the next page of data if this is a paginated source from a web service. */
-    private final URI nextPage;
-
-    /** Whether the source originates from the left, right or baseline side of the evaluation. */
-    private final DatasetOrientation datasetOrientation;
-
-    /** The covariate feature orientation, if defined. */
-    private final DatasetOrientation covariateFeatureOrientation;
-
     /**
      * Override builder and perform validation.
      */
@@ -171,7 +154,7 @@ public class DataSource
      */
     public Variable getVariable()
     {
-        return this.getContext()
+        return this.context()
                    .variable();
     }
 
@@ -180,7 +163,7 @@ public class DataSource
      */
     public boolean hasNextPage()
     {
-        return Objects.nonNull( this.getNextPage() );
+        return Objects.nonNull( this.nextPage() );
     }
 
     /**
@@ -189,7 +172,7 @@ public class DataSource
 
     public boolean isGridded()
     {
-        return this.getDisposition() == DataDisposition.NETCDF_GRIDDED;
+        return this.disposition() == DataDisposition.NETCDF_GRIDDED;
     }
 
     @Override

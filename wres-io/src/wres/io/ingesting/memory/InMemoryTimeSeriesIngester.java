@@ -66,7 +66,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 
                 DataSource innerSource = nextTuple.getDataSource();
                 DatasetOrientation innerOrientation =
-                        DatasetOrientation.valueOf( innerSource.getDatasetOrientation()
+                        DatasetOrientation.valueOf( innerSource.datasetOrientation()
                                                                .name() );
 
                 // Single-valued time-series?
@@ -79,7 +79,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                                                                        innerOrientation );
 
                     // Add in all other contexts too
-                    for ( DatasetOrientation lrb : innerSource.getLinks() )
+                    for ( DatasetOrientation lrb : innerSource.links() )
                     {
                         DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
                         this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
@@ -99,7 +99,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                                                                    innerOrientation );
 
                     // Add in all other contexts too
-                    for ( DatasetOrientation lrb : innerSource.getLinks() )
+                    for ( DatasetOrientation lrb : innerSource.links() )
                     {
                         DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
                         this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
@@ -148,7 +148,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         // Special case where time-series were read as single-valued, but declared as ensemble, and should
         // be treated as declared, i.e., a one-member ensemble. See #130267.
         if ( tuple.getDataSource()
-                  .getContext()
+                  .context()
                   .type() == DataType.ENSEMBLE_FORECASTS
              && tuple.hasSingleValuedTimeSeries() )
         {

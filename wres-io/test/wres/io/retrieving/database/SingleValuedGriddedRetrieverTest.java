@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -274,7 +275,7 @@ class SingleValuedGriddedRetrieverTest
                                           .source( Mockito.mock( Source.class ) )
                                           .context( DatasetBuilder.builder()
                                                                   .build() )
-                                          .links( List.of() )
+                                          .links( Collections.emptyList() )
                                           .datasetOrientation( SingleValuedGriddedRetrieverTest.ORIENTATION )
                                           .uri( uri )
                                           .build();
@@ -314,7 +315,7 @@ class SingleValuedGriddedRetrieverTest
                                           .source( Mockito.mock( Source.class ) )
                                           .context( DatasetBuilder.builder()
                                                                   .build() )
-                                          .links( List.of() )
+                                          .links( Collections.emptyList() )
                                           .datasetOrientation( DatasetOrientation.LEFT )
                                           .uri( URI.create( "http://foo" ) )
                                           .build();

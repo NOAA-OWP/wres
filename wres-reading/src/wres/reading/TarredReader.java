@@ -83,7 +83,7 @@ public class TarredReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
             return this.read( dataSource, stream );
         }
@@ -122,7 +122,7 @@ public class TarredReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -234,7 +234,7 @@ public class TarredReader implements TimeSeriesReader
             Stream<TimeSeriesTuple> stream = this.readTarEntry( dataSource,
                                                                 archivedSource,
                                                                 archiveStream,
-                                                                dataSource.getUri() );
+                                                                dataSource.uri() );
 
             // Create the next mutable list of tuples, submitting the task to the executor for delayed execution
             Future<List<TimeSeriesTuple>> nextTuple =
@@ -324,7 +324,7 @@ public class TarredReader implements TimeSeriesReader
             return Stream.of();
         }
 
-        Source originalSource = dataSource.getSource();
+        Source originalSource = dataSource.source();
 
         // Create the inner data source and stream
         DataSource innerDataSource = dataSource.toBuilder()

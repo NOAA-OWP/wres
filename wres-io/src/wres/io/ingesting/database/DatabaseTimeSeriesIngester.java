@@ -234,7 +234,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                 {
                     TimeSeries<Double> nextSeries =
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries(),
-                                                                                   innerSource.getUri() );
+                                                                                   innerSource.uri() );
                     String timeSeriesId = this.identifyTimeSeries( nextSeries );
 
                     Future<List<IngestResult>> innerResults =
@@ -254,7 +254,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                 {
                     TimeSeries<Ensemble> nextSeries =
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries(),
-                                                                                   innerSource.getUri() );
+                                                                                   innerSource.uri() );
                     String timeSeriesId = this.identifyTimeSeries( nextSeries );
                     Future<List<IngestResult>> innerResults =
                             this.getExecutor()
@@ -443,10 +443,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         List<IngestResult> results;
 
-        LOGGER.debug( "Ingesting a single-valued time-series from source {}.", dataSource.getUri() );
+        LOGGER.debug( "Ingesting a single-valued time-series from source {}.", dataSource.uri() );
 
         // Try to insert a row into wres.Source for the time-series
-        SourceDetails source = this.saveTimeSeriesSource( timeSeries, timeSeriesId, dataSource.getUri() );
+        SourceDetails source = this.saveTimeSeriesSource( timeSeries, timeSeriesId, dataSource.uri() );
 
         DataType dataType = TimeSeriesSlicer.getDataType( timeSeries );
 
@@ -616,10 +616,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         List<IngestResult> results;
 
-        LOGGER.debug( "Ingesting an ensemble time-series from source {}.", dataSource.getUri() );
+        LOGGER.debug( "Ingesting an ensemble time-series from source {}.", dataSource.uri() );
 
         // Try to insert a row into wres.Source for the time-series
-        SourceDetails source = this.saveTimeSeriesSource( timeSeries, timeSeriesId, dataSource.getUri() );
+        SourceDetails source = this.saveTimeSeriesSource( timeSeries, timeSeriesId, dataSource.uri() );
 
         DataType dataType = TimeSeriesSlicer.getDataType( timeSeries );
 
@@ -801,7 +801,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     {
         try
         {
-            String hash = Netcdf.getGriddedUniqueIdentifier( dataSource.getUri(),
+            String hash = Netcdf.getGriddedUniqueIdentifier( dataSource.uri(),
                                                              dataSource.getVariable()
                                                                        .name() );
             DataSources dataSources = this.getCaches()
@@ -1111,7 +1111,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                         nonMissingValuesPresent );
             }
 
-            long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.getUri() );
+            long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.uri() );
 
             // First, try to safely remove it, which requires an exclusive lock
             boolean removed = false;

@@ -992,9 +992,9 @@ public class InMemoryProject implements Project
     {
         Set<Boolean> usesGridded = ingestResults.stream()
                                                 .map( IngestResult::getDataSource )
-                                                .filter( next -> next.getDatasetOrientation()
+                                                .filter( next -> next.datasetOrientation()
                                                                  == orientation )
-                                                .map( next -> next.getDisposition()
+                                                .map( next -> next.disposition()
                                                               == DataDisposition.NETCDF_GRIDDED )
                                                 .collect( Collectors.toSet() );
 

@@ -46,7 +46,7 @@ import wres.system.SystemSettings;
 
 /**
  * Reads time-series data from the National Water Information System (NWIS) Instantaneous Values (IV) web service. This 
- * service provides access to observed time-series whose event values always have an instantaneous time scale. The
+ * service provides access to observed time-series whose event values always have an instantaneous timescale. The
  * service and its API is described here:
  *
  * <p><a href="https://waterservices.usgs.gov/rest/IV-Service.html">USGS NWIS IV Web Service</a> 
@@ -128,7 +128,7 @@ public class NwisIvReader implements TimeSeriesReader
 
         LOGGER.debug( "Preparing a request to NWIS for USGS time-series without any chunking of the data." );
 
-        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                          NO_DATA_PREDICATE,
                                                                          ERROR_RESPONSE_PREDICATE,
                                                                          null,
@@ -275,7 +275,7 @@ public class NwisIvReader implements TimeSeriesReader
                     mutableChunks.remove( nextChunk );
 
                     // Create the inner data source for the chunk
-                    URI nextUri = this.getUriForChunk( dataSource.getSource()
+                    URI nextUri = this.getUriForChunk( dataSource.source()
                                                                  .uri(),
                                                        dataSource,
                                                        nextChunk.getRight(),
@@ -341,7 +341,7 @@ public class NwisIvReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream s = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                       try ( InputStream s = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                                          NO_DATA_PREDICATE,
                                                                                          ERROR_RESPONSE_PREDICATE,
                                                                                          null,
@@ -438,7 +438,7 @@ public class NwisIvReader implements TimeSeriesReader
         // For some reason, 1 to 999 milliseconds are not enough.
         Instant startDateTime = range.getLeft()
                                      .plusSeconds( 1 );
-        Map<String, String> urlParameters = new HashMap<>( dataSource.getSource()
+        Map<String, String> urlParameters = new HashMap<>( dataSource.source()
                                                                      .parameters() );
 
         String parameterCodes = this.getParameterCodes( dataSource.getVariable() );

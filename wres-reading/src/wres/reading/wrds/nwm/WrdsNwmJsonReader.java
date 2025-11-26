@@ -95,7 +95,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
             return this.read( dataSource, stream );
         }
@@ -133,7 +133,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -195,7 +195,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
     private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
                                                  InputStream inputStream )
     {
-        URI uri = dataSource.getUri();
+        URI uri = dataSource.uri();
         NwmRootDocument rootDocument = this.getNwmRootDocument( inputStream, uri );
 
         // Validate
@@ -265,7 +265,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                                            String variableName,
                                                            String measurementUnit )
     {
-        URI uri = dataSource.getUri();
+        URI uri = dataSource.uri();
 
         // Time scale if available
         TimeScaleOuter timeScale = null;
@@ -316,7 +316,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                            String variableName,
                                            String measurementUnit )
     {
-        URI uri = dataSource.getUri();
+        URI uri = dataSource.uri();
 
         // Read into an intermediate structure
         SortedMap<String, SortedMap<Instant, Double>> traces = new TreeMap<>();
@@ -401,7 +401,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                 .size() );
 
             // Validate
-            ReaderUtilities.validateAgainstEmptyTimeSeries( series, dataSource.getUri() );
+            ReaderUtilities.validateAgainstEmptyTimeSeries( series, dataSource.uri() );
 
             return TimeSeriesTuple.ofSingleValued( series, dataSource );
         }
@@ -415,7 +415,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                 .size() );
 
             // Validate
-            ReaderUtilities.validateAgainstEmptyTimeSeries( series, dataSource.getUri() );
+            ReaderUtilities.validateAgainstEmptyTimeSeries( series, dataSource.uri() );
 
             return TimeSeriesTuple.ofEnsemble( series, dataSource );
         }

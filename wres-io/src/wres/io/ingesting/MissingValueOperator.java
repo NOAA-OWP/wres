@@ -1,6 +1,5 @@
 package wres.io.ingesting;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -86,12 +85,8 @@ class MissingValueOperator implements UnaryOperator<Stream<TimeSeriesTuple>>
         Objects.requireNonNull( dataSource );
 
         // Parse the missings once per source, not once per call of the transformer
-        List<Double> missingDoubles = new ArrayList<>();
-        Source source = dataSource.getSource();
-        if ( Objects.nonNull( source ) )
-        {
-            missingDoubles = source.missingValue();
-        }
+        Source source = dataSource.source();
+        List<Double> missingDoubles = source.missingValue();
 
         // No missings to check
         if ( missingDoubles.isEmpty() )

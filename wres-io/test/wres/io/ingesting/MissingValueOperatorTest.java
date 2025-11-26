@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -84,7 +85,7 @@ class MissingValueOperatorTest
                                                           .context( DatasetBuilder.builder()
                                                                                   .sources( List.of( source ) )
                                                                                   .build() )
-                                                          .links( List.of() )
+                                                          .links( Collections.emptyList() )
                                                           .uri( URI.create( "https://fake.uri" ) )
                                                           .build() );
 

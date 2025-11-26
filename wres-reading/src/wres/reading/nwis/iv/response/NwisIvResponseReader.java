@@ -115,7 +115,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = Files.newInputStream( path );
             return this.readFromStream( dataSource, stream );
         }
@@ -165,7 +165,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -232,7 +232,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
             if ( LOGGER.isTraceEnabled() )
             {
                 LOGGER.trace( "Time-series from {} as UTF-8: {}",
-                              dataSource.getUri(),
+                              dataSource.uri(),
                               new String( rawForecast,
                                           StandardCharsets.UTF_8 ) );
             }
@@ -257,7 +257,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
             {
                 LOGGER.debug( "Read {} time series from {}.",
                               allTimeSeries.size(),
-                              dataSource.getUri() );
+                              dataSource.uri() );
             }
 
             return Collections.unmodifiableList( allTimeSeries );
@@ -295,7 +295,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
         {
             LOGGER.debug( "No variable found for timeseries {} in source {}.",
                           timeSeries,
-                          dataSource.getUri() );
+                          dataSource.uri() );
 
             return Collections.emptyList();
         }
@@ -311,7 +311,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
         {
             LOGGER.warn( "No unit found for timeseries {} in source {}.",
                          timeSeries,
-                         dataSource.getUri() );
+                         dataSource.uri() );
 
             return Collections.emptyList();
         }
@@ -326,7 +326,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
         {
             LOGGER.debug( "No site code found for timeseries {} in source {}.",
                           timeSeries,
-                          dataSource.getUri() );
+                          dataSource.uri() );
             return Collections.emptyList();
         }
 
@@ -342,7 +342,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                 LOGGER.warn( "Expected exactly one site code, but found {} for timeseries {} in source {}.",
                              siteCodesFound.size(),
                              timeSeries,
-                             dataSource.getUri() );
+                             dataSource.uri() );
             }
 
             return Collections.emptyList();
@@ -354,7 +354,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                                                               timeSeries );
 
         // Attempt to guess the time-scale from the URI
-        TimeScaleOuter timeScale = ReaderUtilities.getTimeScaleFromUri( dataSource.getUri() );
+        TimeScaleOuter timeScale = ReaderUtilities.getTimeScaleFromUri( dataSource.uri() );
 
         // #104572, #113397: warn about duplicates, but admit them
         int dupCount = this.getCountOfTracesWithData( timeSeries.getValues() );
@@ -409,7 +409,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                          dupCount,
                          featureName,
                          variableName,
-                         dataSource.getUri(),
+                         dataSource.uri(),
                          methods,
                          qualifiers,
                          censorCodes,
@@ -465,7 +465,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                 TimeSeries<Double> timeSeriesInternal = TimeSeries.of( metadata, rawTimeSeries );
 
                 // Validate
-                ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeriesInternal, dataSource.getUri() );
+                ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeriesInternal, dataSource.uri() );
 
                 TimeSeriesTuple tuple = TimeSeriesTuple.ofSingleValued( timeSeriesInternal, dataSource );
                 timeSeriesTuples.add( tuple );
@@ -475,7 +475,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                 throw new ReadException( "While creating timeseries for site "
                                          + featureKey
                                          + " from "
-                                         + dataSource.getUri()
+                                         + dataSource.uri()
                                          + ": ",
                                          iae );
             }
@@ -578,7 +578,7 @@ public class NwisIvResponseReader implements TimeSeriesReader
                         LOGGER.warn( "Unable to extract SRID from SRS {} in timeseries for site code {} at url {}",
                                      rawSrs,
                                      featureName,
-                                     dataSource.getUri() );
+                                     dataSource.uri() );
                     }
                 }
             }

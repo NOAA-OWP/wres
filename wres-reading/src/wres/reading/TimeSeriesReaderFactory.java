@@ -92,7 +92,7 @@ public class TimeSeriesReaderFactory
     {
         Objects.requireNonNull( dataSource );
 
-        switch ( dataSource.getDisposition() )
+        switch ( dataSource.disposition() )
         {
             case CSV_WRES ->
             {

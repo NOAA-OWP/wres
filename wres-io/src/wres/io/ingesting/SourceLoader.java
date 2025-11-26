@@ -404,9 +404,9 @@ public class SourceLoader
     {
         return () -> {
             LOGGER.debug( "Checking gridded features for {} to determine whether loading is necessary.",
-                          source.getUri() );
+                          source.uri() );
 
-            try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri()
+            try ( NetcdfFile ncf = NetcdfFiles.open( source.uri()
                                                            .toString() ) )
             {
                 this.getGriddedFeatures()
@@ -414,7 +414,7 @@ public class SourceLoader
             }
             catch ( IOException e )
             {
-                throw new IngestException( "While ingesting features for Netcdf gridded file " + source.getUri()
+                throw new IngestException( "While ingesting features for Netcdf gridded file " + source.uri()
                                            + "." );
             }
 
@@ -427,7 +427,7 @@ public class SourceLoader
      * <p>Evaluates a project and creates a {@link DataSource} for each distinct source within the project that needs
      * to be loaded, together with any additional links required. A link is required for each additional context, i.e.
      * {@link DatasetOrientation}, in which the source appears. The links are returned by
-     * {@link DataSource#getLinks()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
+     * {@link DataSource#links()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
      *
      * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link Source} points to a
      * directory of files, the tree is walked and a {@link DataSource} is returned for each one within the tree that
@@ -598,7 +598,7 @@ public class SourceLoader
 
             String append = "";
 
-            if ( Objects.isNull( dataSource.getSource()
+            if ( Objects.isNull( dataSource.source()
                                            .sourceInterface() ) )
             {
                 append = " Please declare the interface for the source and try again.";
@@ -630,7 +630,7 @@ public class SourceLoader
         Objects.requireNonNull( dataSource );
 
         // Look at the path to see whether it maps to a directory
-        Path sourcePath = Paths.get( dataSource.getUri() );
+        Path sourcePath = Paths.get( dataSource.uri() );
 
         File file = sourcePath.toFile();
 
@@ -652,7 +652,7 @@ public class SourceLoader
         // Regular file, detect the format and return
         else
         {
-            DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
+            DataDisposition disposition = DataSource.detectFormat( dataSource.uri() );
             DataSource withDisposition = dataSource.toBuilder()
                                                    .disposition( disposition )
                                                    .build();
@@ -674,11 +674,11 @@ public class SourceLoader
     {
         Objects.requireNonNull( dataSource );
 
-        Path sourcePath = Paths.get( dataSource.getUri() );
+        Path sourcePath = Paths.get( dataSource.uri() );
 
         Set<DataSource> returnMe = new HashSet<>();
 
-        Source source = dataSource.getSource();
+        Source source = dataSource.source();
 
         // Define path matcher based on the source's pattern, if provided.
         PathMatcher matcher;
@@ -738,14 +738,14 @@ public class SourceLoader
                                        e );
         }
 
-        SourceLoader.logUnmatchedSources( unmatchedByPattern, pattern, dataSource.getDatasetOrientation() );
+        SourceLoader.logUnmatchedSources( unmatchedByPattern, pattern, dataSource.datasetOrientation() );
 
         //If the results are empty, then there were either no files in the specified source or pattern matched 
         //none of the files.  
         if ( returnMe.isEmpty() )
         {
             throw new IngestException( "Could not find any valid source files within the directory '"
-                                       + dataSource.getUri()
+                                       + dataSource.uri()
                                        + "'. The following pattern filter was used (null if no filter): \""
                                        + pattern
                                        + "\"." );

@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv;
+package wres.reading.nwis.dv.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -395,7 +395,7 @@ class NwisDvResponseReaderTest
             assertAll( () -> assertEquals( "https://foo/next.link",
                                            series.get( 0 )
                                                  .getDataSource()
-                                                 .getNextPage()
+                                                 .nextPage()
                                                  .toString() ),
                        () -> assertEquals( expected, actual ) );
         }

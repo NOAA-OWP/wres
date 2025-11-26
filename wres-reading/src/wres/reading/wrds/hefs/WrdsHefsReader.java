@@ -118,7 +118,7 @@ public class WrdsHefsReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to WRDS for HEFS time-series without any chunking of the data." );
-        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                          NO_DATA_PREDICATE,
                                                                          ERROR_RESPONSE_PREDICATE,
                                                                          null,
@@ -126,7 +126,7 @@ public class WrdsHefsReader implements TimeSeriesReader
 
         if ( Objects.isNull( stream ) )
         {
-            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.uri() );
 
             return Stream.of();
         }
@@ -333,7 +333,7 @@ public class WrdsHefsReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                                                    NO_DATA_PREDICATE,
                                                                                                    ERROR_RESPONSE_PREDICATE,
                                                                                                    null,
@@ -342,7 +342,7 @@ public class WrdsHefsReader implements TimeSeriesReader
                            if ( Objects.isNull( inputStream ) )
                            {
                                LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.",
-                                            dataSource.getUri() );
+                                            dataSource.uri() );
 
                                return List.of();
                            }
@@ -384,7 +384,7 @@ public class WrdsHefsReader implements TimeSeriesReader
                                 Pair<Instant, Instant> range,
                                 String nwsLocationId )
     {
-        URI baseUri = dataSource.getUri();
+        URI baseUri = dataSource.uri();
         String basePath = baseUri.getPath();
 
         // Tolerate either a slash at end or not.
@@ -393,7 +393,7 @@ public class WrdsHefsReader implements TimeSeriesReader
             basePath = basePath + SLASH;
         }
 
-        Map<String, String> additionalParameters = dataSource.getSource()
+        Map<String, String> additionalParameters = dataSource.source()
                                                              .parameters();
         Map<String, String> wrdsParameters = this.createWrdsHefsUrlParameters( nwsLocationId,
                                                                                dataSource.getVariable()

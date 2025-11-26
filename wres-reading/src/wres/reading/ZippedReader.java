@@ -51,7 +51,7 @@ public class ZippedReader implements TimeSeriesReader
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
 
-        Path path = Paths.get( dataSource.getUri() );
+        Path path = Paths.get( dataSource.uri() );
 
         try
         {
@@ -83,15 +83,15 @@ public class ZippedReader implements TimeSeriesReader
             this.innerSourceName = decompressedStream.getMetaData()
                                                      .getFileName();
 
-            LOGGER.debug( "Discovered a source inside {} called {}.", dataSource.getUri(), this.innerSourceName );
+            LOGGER.debug( "Discovered a source inside {} called {}.", dataSource.uri(), this.innerSourceName );
 
             // Determine the content type of the decompressed source and prepare an adapted source that qualifies it
-            URI mashupUri = URI.create( dataSource.getUri() + "/" + this.getInnerSourceName() );
+            URI mashupUri = URI.create( dataSource.uri() + "/" + this.getInnerSourceName() );
             DataDisposition disposition = DataSource.detectFormat( bufferedStream,
                                                                    mashupUri );
 
             LOGGER.debug( "Detected a decompressed source inside {} with content type {}.",
-                          dataSource.getUri(),
+                          dataSource.uri(),
                           disposition );
 
             DataSource decompressedSource = dataSource.toBuilder()
