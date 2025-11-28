@@ -114,6 +114,7 @@ public class NwisDvReader implements TimeSeriesReader
      * the NWIS DV service providing ambiguous information about time zones via abbreviated names. */
     private static final Map<String, String> TIMEZONE_MAP;
 
+    // Populate the timezone map
     static
     {
         TIMEZONE_MAP = new HashMap<>();
@@ -492,16 +493,6 @@ public class NwisDvReader implements TimeSeriesReader
 
     private DataSource addTimeZoneOffset( String featureId, DataSource dataSource )
     {
-        if ( Objects.nonNull( dataSource.source()
-                                        .timeZoneOffset() ) )
-        {
-            LOGGER.debug( "When reading data from the National Water Information System Daily Values service, "
-                          + "discovered an declared 'time_zone_offset' of {}. This offset will be applied when reading "
-                          + "data.", dataSource.source()
-                                               .timeZoneOffset() );
-            return dataSource;
-        }
-
         // Attempt to discover the time zone information using the monitoring-locations endpoint
         URI baseUri = dataSource.uri();
         URIBuilder uriBuilder = new URIBuilder( baseUri );
@@ -524,7 +515,28 @@ public class NwisDvReader implements TimeSeriesReader
                                                                                         null,
                                                                                         null ) )
         {
-            assert featureMetadata != null;
+            if ( Objects.isNull( featureMetadata )
+                 && Objects.nonNull( dataSource.source()
+                                               .timeZoneOffset() ) )
+            {
+                LOGGER.warn( "When reading data from the National Water Information System Daily Values service, "
+                             + "failed to identify the time zone information for geographic feature, '{}' from {}. "
+                             + "However, discovered a declared 'time_zone_offset' of {}. This offset will be applied "
+                             + "when reading data.",
+                             featureId,
+                             uriBuilder.build(),
+                             dataSource.source()
+                                       .timeZoneOffset() );
+                return dataSource;
+            }
+            else if ( Objects.isNull( featureMetadata ) )
+            {
+                throw new ReadException( "When reading data from the National Water Information System Daily Values "
+                                         + "service, failed to identify the time zone information for geographic "
+                                         + "feature, '{}' from {}. Furthermore, there was no declared "
+                                         + "'time_zone_offset'. Please declare the 'time_zone_offset' to clarify the "
+                                         + "timing information for this data source and try again." );
+            }
 
             MonitoringLocation feature = OBJECT_MAPPER.readValue( featureMetadata.readAllBytes(),
                                                                   MonitoringLocation.class );
@@ -532,16 +544,14 @@ public class NwisDvReader implements TimeSeriesReader
             String zoneId = feature.getProperties()
                                    .getTimeZoneAbbreviation();
 
+            // Time zone information available
             if ( Objects.nonNull( zoneId ) )
             {
-                // This is not the recommended way to acquire a formal time zone, but the NWIS response does not
-                // provide a proper designation of a time zone using the IANA Time Zone standard, such as
-                // "America/New_York", rather it uses a shorthand, such as "EST", which does not account for
-                // local rules, such as daylight savings
-
-                // If no daylight saving, use the raw offset, else the full time zone
-                if ( !"Y".equalsIgnoreCase( feature.getProperties()
-                                                   .getUsesDaylightSavings() ) )
+                // If no daylight savings, use the raw offset, else the full time zone
+                if ( Boolean.TRUE.equals( dataSource.source()
+                                                    .ignoreDaylightSavings() )  // User declared to ignore
+                     || !"Y".equalsIgnoreCase( feature.getProperties()
+                                                      .getUsesDaylightSavings() ) )
                 {
                     TimeZone timeZone = TimeZone.getTimeZone( zoneId );
                     int offsetSeconds = timeZone.getRawOffset() / 1000;
@@ -559,7 +569,10 @@ public class NwisDvReader implements TimeSeriesReader
                 }
                 else
                 {
-                    // Need to work with what we've got, so use a mapping to acquire the proper time zone
+                    // This is not the recommended way to acquire a formal time zone, but the NWIS response does not
+                    // provide a proper designation of a time zone using the IANA Time Zone standard, such as
+                    // "America/New_York", rather it uses a shorthand, such as "EST", which does not account for
+                    // local rules, such as daylight savings
                     String formalName = TIMEZONE_MAP.get( zoneId );
                     TimeZone timeZone = TimeZone.getTimeZone( formalName );
 

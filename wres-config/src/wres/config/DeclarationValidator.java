@@ -256,8 +256,9 @@ public class DeclarationValidator
      * @deprecated
      */
 
-    @Deprecated( forRemoval = true, since = "v7.0")
-    public static List<EvaluationStatusEvent> validateAgainstLegacyXmlDeclarationString( String test ) throws IOException
+    @Deprecated( forRemoval = true, since = "v7.0" )
+    public static List<EvaluationStatusEvent> validateAgainstLegacyXmlDeclarationString( String test )
+            throws IOException
     {
         // Is this old-style XML declaration? If so, return an error as this cannot be validated upfront.
         MediaType detectedMediaType = DeclarationUtilities.getMediaType( test );
@@ -1828,7 +1829,30 @@ public class DeclarationValidator
             LOGGER.debug( "When validating the time zone offset of the {} dataset, discovered that the dataset was "
                           + "missing.",
                           orientation );
-            return List.of();
+            return Collections.emptyList();
+        }
+
+        // Warn about any data sources whose interface is missing or not NWIS and daylight savings is declared to be
+        // ignored, as NWIS is currently the only data source interface that allows for the determination of whether
+        // daylight savings is enforced at a particular location
+        List<EvaluationStatusEvent> returnMe = new ArrayList<>();
+        if ( dataset.sources()
+                    .stream()
+                    .anyMatch( s -> s.sourceInterface() != SourceInterface.USGS_NWIS
+                                    && Boolean.TRUE.equals( s.ignoreDaylightSavings() ) ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( DISCOVERED_ONE_OR_MORE
+                                                             + orientation
+                                                             + "' data sources whose 'interface' was not NWIS and for "
+                                                             + "which the 'ignore_daylight_savings' was 'true'. This "
+                                                             + "declaration is currently only supported by NWIS and "
+                                                             + "will be ignored. Please consider removing this "
+                                                             + "declaration for clarity." )
+                                           .build();
+            returnMe.add( event );
         }
 
         ZoneOffset universalOffset = dataset.timeZoneOffset();
@@ -1837,7 +1861,7 @@ public class DeclarationValidator
             LOGGER.debug( "The {} dataset did not contain a universal time zone offset.",
                           orientation );
 
-            return Collections.emptyList();
+            return Collections.unmodifiableList( returnMe );
         }
 
         // There is a universal time zone offset, so all the sources must have a null offset or the same offset as the
@@ -1856,7 +1880,7 @@ public class DeclarationValidator
                           orientation,
                           universalOffset );
 
-            return Collections.emptyList();
+            return Collections.unmodifiableList( returnMe );
         }
 
         String article = "the";
@@ -1886,8 +1910,9 @@ public class DeclarationValidator
                                                          + "' dataset or its individual "
                                                          + "sources or ensuring they match." )
                                        .build();
+        returnMe.add( event );
 
-        return List.of( event );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**

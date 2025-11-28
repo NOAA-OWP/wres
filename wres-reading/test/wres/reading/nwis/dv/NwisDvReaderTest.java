@@ -1026,6 +1026,7 @@ class NwisDvReaderTest
                                                                          600.0 ) )
                                                     .addEvent( Event.of( Instant.parse( "2024-03-06T05:00:00Z" ),
                                                                          410.0 ) )
+                                                    // Daylight savings begins on 10 March, note the hour difference
                                                     .addEvent( Event.of( Instant.parse( "2024-03-13T04:00:00Z" ),
                                                                          284.0 ) )
                                                     .addEvent( Event.of( Instant.parse( "2024-03-14T04:00:00Z" ),
@@ -1033,6 +1034,125 @@ class NwisDvReaderTest
                                                     .addEvent( Event.of( Instant.parse( "2024-03-15T04:00:00Z" ),
                                                                          179.0 ) )
                                                     .addEvent( Event.of( Instant.parse( "2024-03-16T04:00:00Z" ),
+                                                                         70.7 ) )
+                                                    .build();
+
+            List<TimeSeries<Double>> expected = List.of( expectedSeries );
+
+            assertEquals( expected, actual );
+        }
+    }
+
+    @Test
+    void testReadReturnsOneTimeSeriesAndIgnoresDaylightSavings()
+    {
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE ) );
+
+        // Supply the feature metadata on demand
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( "/collections/monitoring_locations/items/USGS-02238500" )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( FEATURE_RESPONSE ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + PATH
+                                  + PARAMS );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .ignoreDaylightSavings( true )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "00060" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.GEOJSON )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder()
+                                                                               .setName( "02238500" ) )
+                                                             .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2025-01-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2025-11-01T00:00:00Z" ) )
+                                                   .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .features( features )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        NwisDvReader reader = NwisDvReader.of( declaration, systemSettings );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .toList();
+
+            Geometry expectedGeometry = Geometry.newBuilder()
+                                                .setName( "02238500" )
+                                                .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .build();
+            Feature expectedFeature = Feature.of( expectedGeometry );
+
+            TimeScale expectedTimeScale = TimeScale.newBuilder()
+                                                   .setPeriod( MessageUtilities.getDuration( Duration.ofDays( 1 ) ) )
+                                                   .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                   .build();
+            TimeScaleOuter expectedTimeScaleOuter = TimeScaleOuter.of( expectedTimeScale );
+
+            TimeSeriesMetadata expectedMetadata =
+                    new TimeSeriesMetadata.Builder().setReferenceTimes( Map.of() )
+                                                    .setUnit( "ft^3/s" )
+                                                    .setVariableName( "00060" )
+                                                    .setTimeScale( expectedTimeScaleOuter )
+                                                    .setFeature( expectedFeature )
+                                                    .build();
+            TimeSeries<Double> expectedSeries =
+                    new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-14T05:00:00Z" ),
+                                                                         10.2 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-15T05:00:00Z" ),
+                                                                         10.2 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-16T05:00:00Z" ),
+                                                                         10.2 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-18T05:00:00Z" ),
+                                                                         108.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-20T05:00:00Z" ),
+                                                                         600.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-03-06T05:00:00Z" ),
+                                                                         410.0 ) )
+                                                    // Daylight savings begins on 10 March, but this is ignored
+                                                    .addEvent( Event.of( Instant.parse( "2024-03-13T05:00:00Z" ),
+                                                                         284.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-03-14T05:00:00Z" ),
+                                                                         262.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-03-15T05:00:00Z" ),
+                                                                         179.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-03-16T05:00:00Z" ),
                                                                          70.7 ) )
                                                     .build();
 

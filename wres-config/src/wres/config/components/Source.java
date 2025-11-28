@@ -29,6 +29,7 @@ import wres.config.serializers.ZoneOffsetSerializer;
  * @param timeZone a complete description of the time zone, to be provided rather than an offset, when available
  * @param missingValue the missing value identifiers
  * @param unit the measurement unit
+ * @param ignoreDaylightSavings is true to ignore daylight savings, false to account for it where possible
  */
 @RecordBuilder
 @JsonSerialize( using = SourceSerializer.class )
@@ -42,7 +43,8 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset,
                       TimeZone timeZone,  // Not currently declarable
                       @JsonProperty( "missing_value" ) List<Double> missingValue,
-                      @JsonProperty( "unit" ) String unit )
+                      @JsonProperty( "unit" ) String unit,
+                      @JsonProperty( "ignore_daylight_savings" ) Boolean ignoreDaylightSavings )
 {
     /**
      * Creates an instance.
@@ -54,6 +56,7 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
      * @param timeZone a complete description of the time zone, to be provided rather than an offset, when available
      * @param missingValue the missing value identifiers
      * @param unit the measurement unit
+     * @param ignoreDaylightSavings is true to ignore daylight savings, false to account for it where possible
      */
     public Source
     {
