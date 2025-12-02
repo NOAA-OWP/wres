@@ -24,6 +24,7 @@ import javax.measure.quantity.Speed;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
 
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,9 +104,9 @@ public class Units
 
     /** A small cache of formal UCUM units against official UCUM unit name strings to avoid repeated parsing from unit 
      * strings. */
-    private static final Cache<String, Unit<?>> UNIT_CACHE = Caffeine.newBuilder()
-                                                                     .maximumSize( 10 )
-                                                                     .build();
+    private static final Cache<@NonNull String, Unit<?>> UNIT_CACHE = Caffeine.newBuilder()
+                                                                              .maximumSize( 10 )
+                                                                              .build();
 
     /**
      * <p>For backward compatibility, a map from weird unit names to official ones,
@@ -188,7 +189,7 @@ public class Units
      * (66 rows)
      */
 
-    private static final Map<String, String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
+    private static final Map<String, String> CONVENIENCE_ALIASES = new HashMap<>( 119 );
 
     static
     {
@@ -199,6 +200,7 @@ public class Units
         CONVENIENCE_ALIASES.put( "CFSD", OFFICIAL_CUBIC_FEET_PER_SECOND );
         CONVENIENCE_ALIASES.put( "cfsd", OFFICIAL_CUBIC_FEET_PER_SECOND );
         CONVENIENCE_ALIASES.put( "ft3/s", OFFICIAL_CUBIC_FEET_PER_SECOND );
+        CONVENIENCE_ALIASES.put( "ft^3/s", OFFICIAL_CUBIC_FEET_PER_SECOND );
         CONVENIENCE_ALIASES.put( "FT3/S", OFFICIAL_CUBIC_FEET_PER_SECOND );
         CONVENIENCE_ALIASES.put( "CMS", OFFICIAL_CUBIC_METERS_PER_SECOND );
         CONVENIENCE_ALIASES.put( "cms", OFFICIAL_CUBIC_METERS_PER_SECOND );

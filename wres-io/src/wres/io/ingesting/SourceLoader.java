@@ -526,7 +526,7 @@ public class SourceLoader
             // Not a file-like source
             else
             {
-                // Create a source with unknown disposition as the basis for detection
+                // Create a source with unknown disposition
                 DataSource sourceToEvaluate = DataSource.builder()
                                                         .disposition( DataDisposition.UNKNOWN )
                                                         .source( nextSource.getKey() )
@@ -538,7 +538,12 @@ public class SourceLoader
                                                         .covariateFeatureOrientation( covariateFeatureOrientation )
                                                         .build();
 
+                // Determine the disposition, which cannot use content type detection for a web source because the API
+                // sits at a higher level of abstraction than the response format type and the API must be determined,
+                // ideally by user declaration of the source interface, else by hints provided in the URI
                 DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
+
+                // Adjust the source to include the disposition
                 DataSource evaluatedSource = DataSource.builder()
                                                        .disposition( disposition )
                                                        .source( nextSource.getKey() )
@@ -566,13 +571,20 @@ public class SourceLoader
 
     private static DataDisposition getDispositionOfNonFileSource( DataSource dataSource )
     {
+        // Web sources must be positively identified. Format detection does not work for web sources because the API
+        // sits at a higher level of abstraction than the format and the API must be known to interact with it
         if ( ReaderUtilities.isWebSource( dataSource ) )
         {
             LOGGER.debug( "Identified a source as a web source: {}. Inspecting further...", dataSource );
-            if ( ReaderUtilities.isUsgsSource( dataSource ) )
+            if ( ReaderUtilities.isNwisIvSource( dataSource ) )
             {
-                LOGGER.debug( "Identified a source as a USGS source: {}.", dataSource );
+                LOGGER.debug( "Identified a source as a USGS IV source: {}.", dataSource );
                 return DataDisposition.JSON_WATERML;
+            }
+            if ( ReaderUtilities.isNwisDvSource( dataSource ) )
+            {
+                LOGGER.debug( "Identified a source as a USGS DV source: {}.", dataSource );
+                return DataDisposition.GEOJSON;
             }
             else if ( ReaderUtilities.isWrdsAhpsSource( dataSource )
                       || ReaderUtilities.isWrdsObservedSource( dataSource ) )

@@ -935,7 +935,7 @@ class NwisDvReaderTest
 
         // Supply the feature metadata on demand
         this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/collections/monitoring_locations/items/USGS-02238500" )
+                                         .withPath( "/collections/monitoring-locations/items/USGS-02238500" )
                                          .withMethod( GET ) )
                        .respond( HttpResponse.response( FEATURE_RESPONSE ) );
 
@@ -1053,7 +1053,7 @@ class NwisDvReaderTest
 
         // Supply the feature metadata on demand
         this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/collections/monitoring_locations/items/USGS-02238500" )
+                                         .withPath( "/collections/monitoring-locations/items/USGS-02238500" )
                                          .withMethod( GET ) )
                        .respond( HttpResponse.response( FEATURE_RESPONSE ) );
 

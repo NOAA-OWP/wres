@@ -12,6 +12,8 @@ import wres.reading.fews.PublishedInterfaceXmlReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.netcdf.nwm.NwmGridReader;
 import wres.reading.netcdf.nwm.NwmVectorReader;
+import wres.reading.nwis.dv.NwisDvReader;
+import wres.reading.nwis.dv.response.NwisDvResponseReader;
 import wres.reading.nwis.iv.response.NwisIvResponseReader;
 import wres.reading.nwis.iv.NwisIvReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
@@ -44,8 +46,11 @@ public class TimeSeriesReaderFactory
     /** PI-XML and FastInfoset PI-XML reader. */
     private static final PublishedInterfaceXmlReader PIXML_READER = PublishedInterfaceXmlReader.of();
 
-    /** WaterML reader. */
-    private static final NwisIvResponseReader WATERML_READER = NwisIvResponseReader.of();
+    /** NWIS IV response reader. */
+    private static final NwisIvResponseReader NWIS_IV_RESPONSE_READER = NwisIvResponseReader.of();
+
+    /** NWIS DV response reader. */
+    private static final NwisDvResponseReader NWIS_DV_RESPONSE_READER = NwisDvResponseReader.of();
 
     /** WRDS AHPS JSON reader. */
     private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
@@ -109,7 +114,7 @@ public class TimeSeriesReaderFactory
             case JSON_WATERML ->
             {
                 // A WaterML source from USGS NWIS?
-                if ( ReaderUtilities.isUsgsSource( dataSource ) )
+                if ( ReaderUtilities.isNwisIvSource( dataSource ) )
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
@@ -119,7 +124,22 @@ public class TimeSeriesReaderFactory
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
                               + "source other than NWIS.",
                               dataSource );
-                return WATERML_READER;
+                return NWIS_IV_RESPONSE_READER;
+            }
+            case GEOJSON ->
+            {
+                // A GeoJSON source from USGS NWIS?
+                if ( ReaderUtilities.isNwisDvSource( dataSource ) )
+                {
+                    LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
+                                  dataSource );
+                    return NwisDvReader.of( this.getDeclaration(), this.systemSettings );
+                }
+                // A reader for USGS-formatted GeoJSON, but not from a NWIS instance
+                LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted GeoJSON from a "
+                              + "source other than NWIS.",
+                              dataSource );
+                return NWIS_DV_RESPONSE_READER;
             }
             case JSON_WRDS_AHPS ->
             {

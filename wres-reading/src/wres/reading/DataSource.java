@@ -99,13 +99,13 @@ public record DataSource( @NonNull DataDisposition disposition,
         JSON_WRDS_HEFS,
         /** The data has been detected as a json response from the wrds threshold service. */
         JSON_WRDS_THRESHOLDS,
-        /** The data has been detected as a csv, wres stream. */
+        /** The data has been detected as JSON WaterML. */
         JSON_WATERML,
         /** The data has been detected as a csv, wres stream. */
         CSV_WRES,
         /** The data has been detected as a csv thresholds in the wres csv format. */
         CSV_WRES_THRESHOLDS,
-        /** The data has been detected as GEOJSON. */
+        /** The data has been detected as GeoJSON. */
         GEOJSON,
         /** The data type is unknown or to be determined. */
         UNKNOWN;
@@ -210,6 +210,7 @@ public record DataSource( @NonNull DataDisposition disposition,
                              this.covariateFeatureOrientation );
     }
 
+    @NonNull
     @Override
     public String toString()
     {
@@ -445,6 +446,10 @@ public record DataSource( @NonNull DataDisposition disposition,
         else if ( start.contains( "\"threshold" ) )
         {
             innerDisposition = DataDisposition.JSON_WRDS_THRESHOLDS;
+        }
+        else if ( start.contains( "\"type\": \"FeatureCollection\"," ) )
+        {
+            innerDisposition = DataDisposition.GEOJSON;
         }
         else
         {

@@ -1933,7 +1933,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void testIsUsgsSourceWithFileUriScheme()
+    void testIsNwisIvSourceWithFileUriScheme()
     {
         // GitHub #639
         DataSource dataSource =
@@ -1948,11 +1948,11 @@ class ReaderUtilitiesTest
                           .datasetOrientation( DatasetOrientation.LEFT )
                           .build();
 
-        assertFalse( ReaderUtilities.isUsgsSource( dataSource ) );
+        assertFalse( ReaderUtilities.isNwisIvSource( dataSource ) );
     }
 
     @Test
-    void testIsUsgsSourceWithHttpScheme()
+    void testIsNwisIvSourceWithHttpScheme()
     {
         // GitHub #639
         DataSource dataSource =
@@ -1963,11 +1963,11 @@ class ReaderUtilitiesTest
                           .context( DatasetBuilder.builder()
                                                   .build() )
                           .links( List.of() )
-                          .uri( URI.create( "https:///nwis/foo" ) )
+                          .uri( URI.create( "https:///nwis/iv/foo" ) )
                           .datasetOrientation( DatasetOrientation.LEFT )
                           .build();
 
-        assertTrue( ReaderUtilities.isUsgsSource( dataSource ) );
+        assertTrue( ReaderUtilities.isNwisIvSource( dataSource ) );
     }
 
 }

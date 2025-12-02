@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Custom deserializer for a {@link Properties}. Has a reduced footprint when many similar instances are constructed.
@@ -25,7 +26,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 public class PropertiesDeserializer extends JsonDeserializer<Properties>
 {
     /** Cache of geometries for re-use. */
-    private static final Cache<String, String> STRING_CACHE =
+    private static final Cache<@NonNull String, String> STRING_CACHE =
             Caffeine.newBuilder()
                     .maximumSize( 100 ) // 100, arbitrarily
                     .build();

@@ -425,32 +425,57 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
-     * @return whether the source points to the USGS National Water Information System, NWIS
+     * @return whether the source points to the National Water Information System Instantaneous Values (IV) web service
      * @throws NullPointerException if the source is null
      */
 
-    public static boolean isUsgsSource( DataSource source )
+    public static boolean isNwisIvSource( DataSource source )
     {
         Objects.requireNonNull( source );
 
         URI uri = source.uri();
         SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
-        if ( Objects.nonNull( interfaceShortHand ) )
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand != SourceInterface.USGS_NWIS )
         {
-            return interfaceShortHand == SourceInterface.USGS_NWIS;
+            return false;
         }
 
-        // Fallback for unspecified interface.
         return ReaderUtilities.isWebSource( uri )
-               && ( ( Objects.nonNull( uri.getHost() )
-                      && uri.getHost()
-                            .toLowerCase()
-                            .contains( "usgs.gov" ) )
-                    || ( Objects.nonNull( uri.getPath() )
-                         && uri.getPath()
-                               .toLowerCase()
-                               .contains( "nwis" ) ) );
+               && Objects.nonNull( uri.getPath() )
+               && uri.getPath()
+                     .toLowerCase()
+                     .contains( "nwis/iv" );
+    }
+
+    /**
+     * @param source the data source
+     * @return whether the source points to the National Water Information System Daily Values (DV) web service
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isNwisDvSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
+                                                   .sourceInterface();
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand != SourceInterface.USGS_NWIS )
+        {
+            return false;
+        }
+
+        return ReaderUtilities.isWebSource( uri )
+               && Objects.nonNull( uri.getPath() )
+               && uri.getPath()
+                     .toLowerCase()
+                     .contains( "ogcapi" ) // API
+               && uri.getPath()
+                     .toLowerCase()
+                     .contains( "daily" ); // Endpoint
     }
 
     /**
