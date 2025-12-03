@@ -301,13 +301,13 @@ public class DeclarationValidator
                       errors.size() );
 
         // Map the errors to evaluation status events
-        List<EvaluationStatusEvent> events = errors.stream()
-                                                   .map( next -> EvaluationStatusEvent.newBuilder()
-                                                                                      .setStatusLevel(
-                                                                                              EvaluationStatusEvent.StatusLevel.ERROR )
-                                                                                      .setEventMessage( next.getMessage() )
-                                                                                      .build() )
-                                                   .toList();
+        List<EvaluationStatusEvent> events =
+                errors.stream()
+                      .map( next -> EvaluationStatusEvent.newBuilder()
+                                                         .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                                         .setEventMessage( next.getMessage() )
+                                                         .build() )
+                      .toList();
 
         // Identify unique errors and sort them by message
         Comparator<EvaluationStatusEvent> comparator = Comparator.comparing( EvaluationStatusEvent::getEventMessage );

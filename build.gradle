@@ -387,6 +387,13 @@ project(':wres-datamodel') {
     test {
         useJUnitPlatform()
     }
+
+    // Exclude the units config from the datamodel jar as these are copied to the main dist/lib/conf for editing by
+    // users. Including them here would mean they are on the runtime classpath twice.
+    jar {
+        exclude('**/units.yml')
+        exclude('**/units_schema.yml')
+    }
 }
 
 project(':wres-io') {
@@ -2105,6 +2112,11 @@ distributions {
                 // module that adds to dist, add here for now until we can make
                 // it grab all of em.
                 ['dist', 'wres-io/dist', 'wres-statistics/dist', 'LICENSE']
+            }
+
+            // Place the default measurement units and associated schema onto the runtime class path
+            from( 'wres-datamodel/nonsrc' ) {
+                into 'lib/conf'
             }
 
             // vis will be split into its own application eventually.
