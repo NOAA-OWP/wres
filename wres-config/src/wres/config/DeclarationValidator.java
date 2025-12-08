@@ -1839,7 +1839,7 @@ public class DeclarationValidator
         if ( dataset.sources()
                     .stream()
                     .anyMatch( s -> s.sourceInterface() != SourceInterface.USGS_NWIS
-                                    && Boolean.TRUE.equals( s.ignoreDaylightSavings() ) ) )
+                                    && Boolean.FALSE.equals( s.daylightSavings() ) ) )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
@@ -1847,7 +1847,7 @@ public class DeclarationValidator
                                            .setEventMessage( DISCOVERED_ONE_OR_MORE
                                                              + orientation
                                                              + "' data sources whose 'interface' was not NWIS and for "
-                                                             + "which the 'ignore_daylight_savings' was 'true'. This "
+                                                             + "which the 'daylight_savings' was 'false'. This "
                                                              + "declaration is currently only supported by NWIS and "
                                                              + "will be ignored. Please consider removing this "
                                                              + "declaration for clarity." )

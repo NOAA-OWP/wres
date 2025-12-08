@@ -447,7 +447,7 @@ public record DataSource( @NonNull DataDisposition disposition,
         {
             innerDisposition = DataDisposition.JSON_WRDS_THRESHOLDS;
         }
-        else if ( start.contains( "\"type\": \"FeatureCollection\"," ) )
+        else if ( start.contains( "\"FeatureCollection\"" ) )
         {
             innerDisposition = DataDisposition.GEOJSON;
         }

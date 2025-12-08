@@ -1064,7 +1064,7 @@ class NwisDvReaderTest
 
         Source fakeDeclarationSource = SourceBuilder.builder()
                                                     .uri( fakeUri )
-                                                    .ignoreDaylightSavings( true )
+                                                    .daylightSavings( false )
                                                     .build();
 
         Dataset dataset = DatasetBuilder.builder()

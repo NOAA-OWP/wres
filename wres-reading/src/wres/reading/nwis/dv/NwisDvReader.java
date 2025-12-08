@@ -124,7 +124,9 @@ public class NwisDvReader implements TimeSeriesReader
      * the NWIS DV service providing ambiguous information about time zones via abbreviated names. */
     private static final Map<String, String> TIMEZONE_MAP;
 
-    // Populate the timezone map
+    // Populate the timezone map for time zones supported by USGS NWIS. If some are missing, expect a runtime exception,
+    // which will need to be mitigated by adding more. Most are supported out of the box, but some are not and these are
+    // added below.
     static
     {
         TIMEZONE_MAP = new HashMap<>();
@@ -132,6 +134,7 @@ public class NwisDvReader implements TimeSeriesReader
         TIMEZONE_MAP.put( "EST", "America/New_York" );
         TIMEZONE_MAP.put( "HST", "Pacific/Honolulu" );
         TIMEZONE_MAP.put( "MST", "America/Denver" );
+        TIMEZONE_MAP.put( "AKST", "America/Anchorage" );
     }
 
     /** Re-used string.*/
@@ -482,6 +485,8 @@ public class NwisDvReader implements TimeSeriesReader
                                            chunk.getRight(),
                                            chunk.getLeft() );
 
+        LOGGER.debug( "Created a URI to request a chunk of data: {}.", nextUri );
+
         DataSource innerSource = dataSource.toBuilder()
                                            .uri( nextUri )
                                            .build();
@@ -655,8 +660,8 @@ public class NwisDvReader implements TimeSeriesReader
             }
 
             // If no daylight savings, use the raw offset, else the full time zone
-            if ( Boolean.TRUE.equals( dataSource.source()
-                                                .ignoreDaylightSavings() )  // User declared to ignore
+            if ( Boolean.FALSE.equals( dataSource.source()
+                                                 .daylightSavings() )  // User declared to ignore
                  || !"Y".equalsIgnoreCase( feature.getProperties()
                                                   .getUsesDaylightSavings() ) )
             {
@@ -677,6 +682,20 @@ public class NwisDvReader implements TimeSeriesReader
                 // "America/New_York", rather it uses a shorthand, such as "EST", which does not account for
                 // local rules, such as daylight savings
                 String formalName = TIMEZONE_MAP.get( zoneId );
+
+                if ( Objects.isNull( formalName ) )
+                {
+                    throw new ReadException( "When attempting to read the time zone information for feature "
+                                             + featureId
+                                             + ", could not identify the formal IANA Time Zone Database time zone for "
+                                             + "shorthand '"
+                                             + zoneId
+                                             + "'. Please declare the 'time_zone_offset' instead or request "
+                                             + "that the time zone information is supported for shorthand '"
+                                             + zoneId
+                                             + "'." );
+                }
+
                 TimeZone timeZone = TimeZone.getTimeZone( formalName );
 
                 LOGGER.debug( "Using full time zone information for feature {} as follows: {}",

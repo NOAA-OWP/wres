@@ -531,7 +531,7 @@ class DeclarationValidatorTest
     {
         Source source = SourceBuilder.builder()
                                      // Warning
-                                     .ignoreDaylightSavings( true )
+                                     .daylightSavings( false )
                                      .sourceInterface( SourceInterface.WRDS_AHPS )
                                      .build();
 
@@ -547,7 +547,7 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertTrue( DeclarationValidatorTest.contains( events, "the 'ignore_daylight_savings' was 'true'. "
+        assertTrue( DeclarationValidatorTest.contains( events, "the 'daylight_savings' was 'false'. "
                                                                + "This declaration is currently only supported by NWIS",
                                                        StatusLevel.WARN ) );
     }

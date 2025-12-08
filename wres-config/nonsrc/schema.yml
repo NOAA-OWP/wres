@@ -481,15 +481,16 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
-      ignore_daylight_savings:
+      daylight_savings:
           description: "For data sources that contain local times at locations 
           where daylight savings is enforced, ignore the daylight saving 
           component of the time zone offset and apply the fixed/raw offset 
           instead. For example, when the time zone is America/New_York or the 
           time zone short-hand is EST, assume a constant offset of -PT5H from 
           UTC. This option is only respected when the use of daylight savings 
-          can be determined from the dats source."
+          can be determined from the data source."
           type: boolean
+          default: true
       interface:
         "$ref": "#/definitions/SourceInterfaceEnum"
       # Parameters form a dictionary with any pair of strings allowed
