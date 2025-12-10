@@ -472,8 +472,8 @@ public class NwisDvReader implements TimeSeriesReader
                 int limitInt = Integer.parseInt( limit );
                 int remainingInt = Integer.parseInt( remaining );
 
-                LOGGER.info( "The NWIS rate limit is {} and there are {} requests remaining within the current period "
-                             + "before rate limiting begins.", limitInt, remainingInt );
+                LOGGER.debug( "The NWIS rate limit is {} and there are {} requests remaining within the current period "
+                              + "before rate limiting begins.", limitInt, remainingInt );
 
                 if ( ( remainingInt / ( double ) limitInt ) < 0.1 )
                 {

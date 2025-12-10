@@ -1,5 +1,9 @@
 package wres.system;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeMap;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -93,6 +97,73 @@ public class SystemSettings
     @Builder.Default
     @XmlElement( name = "feature_batch_size" )
     int featureBatchSize = 50;
+
+    /**
+     * Creates and returns a copy of the system settings with any PII or BII redacted. This should be used to publish
+     * information about runtime settings (e.g., in logging).
+     *
+     * @return the redacted system settings
+     */
+
+    public SystemSettings redacted()
+    {
+        //Remove password information from the System Settings
+        DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
+                this.getDatabaseConfiguration()
+                    .toBuilder();
+        databaseBuilder.password( "[REDACTED]" );
+        return this.toBuilder()
+                   .databaseConfiguration( databaseBuilder.build() )
+                   .build();
+    }
+
+    /**
+     * Returns a redacted map of system properties that do not expose an PII or BII. All sensitive properties, including
+     * the property names are removed. Always use this method when publishing (e.g., logging) information about system
+     * properties.
+     *
+     * @return the redacted system properties
+     */
+
+    public Map<String, String> redactedSystemProperties()
+    {
+        // Order the property names for consistency.
+        Properties properties = System.getProperties();
+        Map<String, String> returnMe = new TreeMap<>();
+
+        properties.forEach( ( key, value ) -> {
+            String propertyName = key.toString();
+            String lowerCaseName = propertyName.toLowerCase();
+            // Avoid printing passphrases or passwords or passes of any kind,
+            // avoid printing full classpath, ignore separators, ignore printers
+            // and ignore some extraneous sun/oracle directories
+            if ( !lowerCaseName.contains( "pass" )
+                 && !lowerCaseName.contains( "class.path" )
+                 && !lowerCaseName.contains( "separator" )
+                 && !lowerCaseName.startsWith( "sun" )
+                 && !lowerCaseName.contains( "user.country" )
+                 && !lowerCaseName.startsWith( "java.vendor" )
+                 && !lowerCaseName.startsWith( "java.e" )
+                 && !lowerCaseName.startsWith( "java.vm.specification" )
+                 && !lowerCaseName.startsWith( "java.specification" )
+                 && !lowerCaseName.contains( "printer" )
+                 && !lowerCaseName.contains( "key" ) )
+            {
+                returnMe.put( propertyName, System.getProperty( propertyName ) );
+            }
+
+            // Allow some names to be passed through that are less sensitive and help to provide some context, but
+            // redact the details
+
+            // GitHub #258. Signal that the rate limiting key has been passed through, but do not report the key
+            if ( propertyName.equals( "wres.nwisApiKey" ) )
+            {
+                returnMe.put( "wres.nwisApiKey", "[REDACTED]" );
+            }
+        } );
+
+        return Collections.unmodifiableMap( returnMe );
+    }
 
     /**
      * Dummy class to allow javadoc task to find the builder created by lombok.
