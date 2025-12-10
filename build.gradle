@@ -108,7 +108,6 @@ testCodeCoverageReport {
     }
 }
 
-
 repositories {
     mavenCentral()
     maven {
@@ -290,10 +289,22 @@ project(':wres-system') {
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
 
+        implementation 'org.slf4j:slf4j-api:2.0.17'
+
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+            // Not used at runtime, bloat
+            exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+        }
+
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         testImplementation 'junit:junit:4.13.2'
+
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Use mockserver to test certificate utilities.
         // Various transitive dependencies need to be overridden to avoid
@@ -328,6 +339,7 @@ project(':wres-system') {
     test {
         // Set the socket timeout for tests involving mockserver to 120s
         systemProperties += ["mockserver.maxSocketTimeout": 120000]
+        useJUnitPlatform()
     }
 }
 
