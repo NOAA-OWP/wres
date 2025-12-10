@@ -1751,6 +1751,10 @@ project(':wres-http') {
 
         implementation 'org.apache.commons:commons-lang3:3.18.0'
 
+        // Builders, getters etc.
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
+        annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'

@@ -72,7 +72,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /** Message string. */
     private static final String WRDS_AHPS = "WRDS AHPS";
 
-    /** Custom HttpClient to use */
+    /** Custom HttpClient to use. */
     private static final WebClient CUSTOM_WEB_CLIENT;
 
     /** The HTTP response codes considered to represent no data. Is this too broad? Perhaps a 404 only, else a read
@@ -97,7 +97,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
             Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
             OkHttpClient client = WebClientUtils.defaultTimeoutHttpClient()
                                                 .newBuilder()
-                                                .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                .sslSocketFactory( sslContext.getKey()
+                                                                             .getSocketFactory(),
                                                                    sslContext.getRight() )
                                                 .build();
             CUSTOM_WEB_CLIENT = new WebClient( client );

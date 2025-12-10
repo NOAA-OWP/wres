@@ -4194,7 +4194,7 @@ public class DeclarationValidator
         String start = "No geospatial features were defined, but source interfaces that require features were declared "
                        + "for the '";
         String middle = "' dataset: ";
-        String end = "Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' or "
+        String end = ". Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' or "
                      + "'feature_service') and try again.";
 
         if ( Objects.nonNull( declaration.left() ) )

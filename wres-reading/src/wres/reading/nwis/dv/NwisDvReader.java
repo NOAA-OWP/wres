@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import okhttp3.Headers;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -53,6 +54,7 @@ import wres.config.components.Variable;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.http.WebClient;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
@@ -426,15 +428,18 @@ public class NwisDvReader implements TimeSeriesReader
     private List<TimeSeriesTuple> readOnePage( DataSource dataSource )
     {
         // Get the input stream and read from it
-        try ( InputStream s = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
-                                                                          NO_DATA_PREDICATE,
-                                                                          ERROR_RESPONSE_PREDICATE,
-                                                                          null,
-                                                                          null ) )
+        try ( WebClient.ClientResponse response = ReaderUtilities.getResponseFromWebSource( dataSource.uri(),
+                                                                                            NO_DATA_PREDICATE,
+                                                                                            ERROR_RESPONSE_PREDICATE,
+                                                                                            null,
+                                                                                            null ) )
         {
-            if ( Objects.nonNull( s ) )
+            if ( Objects.nonNull( response ) )
             {
-                return GEOJSON_READER.read( dataSource, s )
+                // Log rate limit info.
+                this.logRateLimits( response.getHeaders() );
+
+                return GEOJSON_READER.read( dataSource, response.getResponse() )
                                      .toList(); // Terminal
             }
 
@@ -444,6 +449,45 @@ public class NwisDvReader implements TimeSeriesReader
         {
             throw new ReadException( "Failed to read from a National Water Information System (NWIS) Daily Values "
                                      + "data source.", e );
+        }
+    }
+
+    /**
+     * Logs usage information and progress towards the rate limit.
+     *
+     * @param headers the response headers that contain the usage information
+     */
+
+    private void logRateLimits( Headers headers )
+    {
+        // Check the rate limiting headers
+        String limit = headers.get( "X-RateLimit-Limit" );
+        String remaining = headers.get( "X-RateLimit-Remaining" );
+
+        if ( Objects.nonNull( limit )
+             && Objects.nonNull( remaining ) )
+        {
+            try
+            {
+                int limitInt = Integer.parseInt( limit );
+                int remainingInt = Integer.parseInt( remaining );
+
+                LOGGER.info( "The NWIS rate limit is {} and there are {} requests remaining within the current period "
+                             + "before rate limiting begins.", limitInt, remainingInt );
+
+                if ( ( remainingInt / ( double ) limitInt ) < 0.1 )
+                {
+                    LOGGER.warn( "Requests to NWIS services are rate limited. The rate limit is {} and there are only "
+                                 + "{} requests remaining before rate limiting begins, which will result in an HTTP "
+                                 + "429 error and a failed evaluation. The rate limit resets periodically. For more "
+                                 + "information on acceptable use of NWIS services, please visit: "
+                                 + "https://api.waterdata.usgs.gov/docs/ogcapi/", limitInt, remainingInt );
+                }
+            }
+            catch ( NumberFormatException e )
+            {
+                LOGGER.debug( "Failed to parse the expected rate limiting headers from an NWIS response." );
+            }
         }
     }
 

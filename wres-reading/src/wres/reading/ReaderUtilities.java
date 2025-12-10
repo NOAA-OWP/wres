@@ -1048,15 +1048,15 @@ public class ReaderUtilities
     }
 
     /**
-     * Returns a byte stream from a web source or null if the web source returns no data and that is considered a
-     * nominal response (see #isMissingResponse).
+     * Returns a byte stream from a web source or null if the web source returns no data and that is considered nominal.
      *
+     * @see #getResponseFromWebSource(URI, IntPredicate, IntPredicate, Function, WebClient)
      * @param uri the uri
      * @param isMissingResponse a test to determine whether the http response code indicates missing data
      * @param isErrorResponse a test to determine whether the http response code indicates an error
      * @param errorUnpacker unpacks an error message from the web client response for onward communication, optional
      * @param webClient an optional web client instance, otherwise the default will be used
-     * @return the byte stream
+     * @return the byte stream, possibly null
      * @throws ReadException if the uri does not point to a web source or the stream could not be created for any reason
      */
 
@@ -1065,6 +1065,40 @@ public class ReaderUtilities
                                                           IntPredicate isErrorResponse,
                                                           Function<WebClient.ClientResponse, String> errorUnpacker,
                                                           WebClient webClient )
+    {
+        WebClient.ClientResponse response = ReaderUtilities.getResponseFromWebSource( uri,
+                                                                                      isMissingResponse,
+                                                                                      isErrorResponse,
+                                                                                      errorUnpacker,
+                                                                                      webClient );
+
+        if ( Objects.nonNull( response ) )
+        {
+            return response.getResponse();
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns a full client response from a web source or null if the web source returns no data and that is considered
+     * nominal.
+     *
+     * @see #getByteStreamFromWebSource(URI, IntPredicate, IntPredicate, Function, WebClient)
+     * @param uri the uri
+     * @param isMissingResponse a test to determine whether the http response code indicates missing data
+     * @param isErrorResponse a test to determine whether the http response code indicates an error
+     * @param errorUnpacker unpacks an error message from the web client response for onward communication, optional
+     * @param webClient an optional web client instance, otherwise the default will be used
+     * @return the byte stream, possibly null
+     * @throws ReadException if the uri does not point to a web source or the stream could not be created for any reason
+     */
+
+    public static WebClient.ClientResponse getResponseFromWebSource( URI uri,
+                                                                     IntPredicate isMissingResponse,
+                                                                     IntPredicate isErrorResponse,
+                                                                     Function<WebClient.ClientResponse, String> errorUnpacker,
+                                                                     WebClient webClient )
     {
         Objects.requireNonNull( uri );
         Objects.requireNonNull( isMissingResponse );
@@ -1092,6 +1126,7 @@ public class ReaderUtilities
             // Stream is closed on completion of streaming data, unless there is an error response
             WebClient.ClientResponse response =
                     webClient.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+
             int httpStatus = response.getStatusCode();
 
             if ( isMissingResponse.test( httpStatus ) )
@@ -1134,7 +1169,7 @@ public class ReaderUtilities
                                          + possibleError );
             }
 
-            return response.getResponse();
+            return response;
         }
         catch ( IOException e )
         {

@@ -14,11 +14,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 
+import lombok.Getter;
+import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -318,6 +321,80 @@ public class WebClient
     }
 
     /**
+     * Return timing data collected thusfar.
+     * @return The list of timings.
+     */
+    public String getTimingInformation()
+    {
+        if ( !this.trackTimings )
+        {
+            throw new IllegalStateException( "Cannot get timing information when timing was not requested." );
+        }
+
+        long[] timings = new long[this.timingInformation.size()];
+
+        long min = Long.MAX_VALUE;
+        TimingInformation quickest = null;
+        long max = Long.MIN_VALUE;
+        TimingInformation slowest = null;
+
+        for ( int i = 0; i < this.timingInformation.size(); i++ )
+        {
+            TimingInformation information = this.timingInformation.get( i );
+            long duration = information.getFullDurationNanos();
+            timings[i] = duration;
+
+            if ( duration < min )
+            {
+                min = duration;
+                quickest = information;
+            }
+
+            if ( duration > max )
+            {
+                max = duration;
+                slowest = information;
+            }
+        }
+
+        Arrays.sort( timings );
+
+        // Integer division on purpose.
+        int medianIndex = timings.length / 2;
+        long medianTiming = 0;
+
+        // #77007
+        if ( timings.length > 0 )
+        {
+            medianTiming = timings[medianIndex];
+        }
+
+        String slowestMessage = "slowest response was " + Duration.ofNanos( max );
+
+        if ( Objects.nonNull( slowest ) )
+        {
+            slowestMessage += " from " + slowest.getUri();
+        }
+
+        String quickestMessage = "quickest response was " + Duration.ofNanos( min );
+
+        if ( Objects.nonNull( quickest ) )
+        {
+            quickestMessage += " from " + quickest.getUri();
+        }
+
+        int countOfResponses = timings.length;
+
+        return "Out of request/response count " + countOfResponses
+               + ", median response was "
+               + Duration.ofNanos( medianTiming )
+               + ", "
+               + quickestMessage
+               + " and "
+               + slowestMessage;
+    }
+
+    /**
      * Validates the HTTP response.
      * @param httpResponse the response to validate
      * @param uri the uri requested
@@ -402,7 +479,7 @@ public class WebClient
         try
         {
             httpResponse = this.httpClient.newCall( request )
-                                     .execute();
+                                          .execute();
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -604,6 +681,9 @@ public class WebClient
                    .contains( "connection reset" );
     }
 
+    /**
+     * Records the duration elapsed between a web request and response.
+     */
 
     private static final class TimingInformation
     {
@@ -639,86 +719,19 @@ public class WebClient
     }
 
     /**
-     * Return timing data collected thusfar.
-     * @return The list of timings.
-     */
-    public String getTimingInformation()
-    {
-        if ( !this.trackTimings )
-        {
-            throw new IllegalStateException( "Cannot get timing information when timing was not requested." );
-        }
-
-        long[] timings = new long[this.timingInformation.size()];
-
-        long min = Long.MAX_VALUE;
-        TimingInformation quickest = null;
-        long max = Long.MIN_VALUE;
-        TimingInformation slowest = null;
-
-        for ( int i = 0; i < this.timingInformation.size(); i++ )
-        {
-            TimingInformation information = this.timingInformation.get( i );
-            long duration = information.getFullDurationNanos();
-            timings[i] = duration;
-
-            if ( duration < min )
-            {
-                min = duration;
-                quickest = information;
-            }
-
-            if ( duration > max )
-            {
-                max = duration;
-                slowest = information;
-            }
-        }
-
-        Arrays.sort( timings );
-
-        // Integer division on purpose.
-        int medianIndex = timings.length / 2;
-        long medianTiming = 0;
-
-        // #77007
-        if ( timings.length > 0 )
-        {
-            medianTiming = timings[medianIndex];
-        }
-
-        String slowestMessage = "slowest response was " + Duration.ofNanos( max );
-
-        if ( Objects.nonNull( slowest ) )
-        {
-            slowestMessage += " from " + slowest.getUri();
-        }
-
-        String quickestMessage = "quickest response was " + Duration.ofNanos( min );
-
-        if ( Objects.nonNull( quickest ) )
-        {
-            quickestMessage += " from " + quickest.getUri();
-        }
-
-        int countOfResponses = timings.length;
-
-        return "Out of request/response count " + countOfResponses
-               + ", median response was "
-               + Duration.ofNanos( medianTiming )
-               + ", "
-               + quickestMessage
-               + " and "
-               + slowestMessage;
-    }
-
-    /**
      * A client response.
      */
+    @Getter
     public static class ClientResponse implements AutoCloseable
     {
+        /** Response status. */
         private final int statusCode;
+
+        /** Response. */
         private final InputStream response;
+
+        /** Response headers. */
+        private final Headers headers;
 
         /**
          * Creates an instance.
@@ -729,6 +742,7 @@ public class WebClient
         {
             this.statusCode = httpResponse.code();
             this.response = WebClient.getDecodedInputStream( httpResponse );
+            this.headers = httpResponse.headers();
         }
 
         /**
@@ -739,23 +753,7 @@ public class WebClient
         {
             this.statusCode = statusCode;
             this.response = InputStream.nullInputStream();
-        }
-
-        /**
-         * @return the HTTP status code
-         */
-
-        public int getStatusCode()
-        {
-            return this.statusCode;
-        }
-
-        /**
-         * @return the response stream
-         */
-        public InputStream getResponse()
-        {
-            return this.response;
+            this.headers = Headers.of( Collections.emptyMap() );
         }
 
         @Override
