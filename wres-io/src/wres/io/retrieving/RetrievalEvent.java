@@ -1,4 +1,4 @@
-package wres.io.retrieving.database;
+package wres.io.retrieving;
 
 import java.util.Objects;
 import java.util.Set;
@@ -10,20 +10,22 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
+
 import wres.config.components.DatasetOrientation;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * A custom event for monitoring time-series data retrievals and exposing them to the Java Flight Recorder.
- * 
+ *
  * @author James Brown
  */
 
-@Name( "wres.io.pooling.RetrievalEvent" )
+@Name( "wres.io.retrieving.RetrievalEvent" )
 @Label( "Retrieval Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling", "Retrieval" } )
-class RetrievalEvent extends Event
+@SuppressWarnings( { "unused", "FieldCanBeLocal" } )
+public class RetrievalEvent extends Event
 {
     @Label( "Orientation" )
     @Description( "The side of the pairing from which the time series data originates." )
@@ -50,10 +52,10 @@ class RetrievalEvent extends Event
      * @throws NullPointerException if any required input is null
      */
 
-    static RetrievalEvent of( DatasetOrientation orientation,
-                              TimeWindowOuter timeWindow,
-                              Set<Feature> features,
-                              String variableName )
+    public static RetrievalEvent of( DatasetOrientation orientation,
+                                     TimeWindowOuter timeWindow,
+                                     Set<Feature> features,
+                                     String variableName )
     {
         return new RetrievalEvent( orientation, timeWindow, features, variableName );
     }

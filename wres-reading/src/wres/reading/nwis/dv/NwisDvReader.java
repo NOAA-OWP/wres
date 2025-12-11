@@ -375,7 +375,10 @@ public class NwisDvReader implements TimeSeriesReader
 
     private List<TimeSeriesTuple> readAllPages( DataSource dataSource )
     {
-        LOGGER.debug( "Reading all pages of data." );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Reading all pages of data from: {}.", dataSource.uri() );
+        }
 
         List<TimeSeriesTuple> firstPage = this.readOnePage( dataSource );
         List<TimeSeriesTuple> allPages = new ArrayList<>( firstPage );
@@ -399,9 +402,12 @@ public class NwisDvReader implements TimeSeriesReader
                     List<TimeSeriesTuple> nextPage = this.readAllPages( newSource );
                     allPages.addAll( nextPage );
 
-                    LOGGER.debug( "Detected a next page in data source: {}. The URI of the next page is: {}.",
-                                  dataSource,
-                                  nextPageUri );
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "Detected a next page in data source: {}. The URI of the next page is: {}.",
+                                      dataSource,
+                                      nextPageUri );
+                    }
                 }
                 catch ( URISyntaxException e )
                 {

@@ -206,7 +206,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             return this.ingestGriddedData( outerSource );
         }
 
-        // A queue of tasks
+        // A queue of ingest tasks
         BlockingQueue<Future<List<IngestResult>>> ingestQueue =
                 new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() );
 

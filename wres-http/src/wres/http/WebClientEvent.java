@@ -12,14 +12,15 @@ import jdk.jfr.Threshold;
 
 /**
  * A custom event for monitoring the reading of time-series data from web services, exposed to the Java Flight Recorder.
- * 
+ *
  * @author James Brown
  */
 
-@Name( "wres.io.utilities.WebClientEvent" )
+@Name( "wres.http.WebClientEvent" )
 @Label( "Web Resource Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Reading" } )
 @Threshold( "10000 ms" )
+@SuppressWarnings( { "unused", "FieldCanBeLocal" } )
 class WebClientEvent extends Event
 {
     @Label( "Resource URI" )
@@ -31,7 +32,7 @@ class WebClientEvent extends Event
     private int httpResponseCode;
 
     @Label( "Retry Count" )
-    @Description( "The number of retries attemped. Zero means the request completed (succeeded or failed, terminally) "
+    @Description( "The number of retries attempted. Zero means the request completed (succeeded or failed, terminally) "
                   + "on first attempt." )
     private int retryCount;
 

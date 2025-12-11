@@ -7,25 +7,27 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
+
 import wres.datamodel.pools.PoolMetadata;
 
 /**
  * A custom event for monitoring and exposing pool creation to the Java Flight Recorder. Pool creation includes several
  * steps, notably:
- * 
+ *
  * <ol>
  * <li>Time-series data retrieval;</li>
  * <li>Rescaling of time-series data, where applicable;</li>
  * <li>Transforming time-series data, where applicable; and</li>
  * <li>Pairing.</li>
  * </ol>
- * 
+ *
  * @author James Brown
  */
 
 @Name( "wres.pooling.pipeline.PoolCreationEvent" )
 @Label( "Pool Creation Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling" } )
+@SuppressWarnings( { "unused", "FieldCanBeLocal" } )
 class PoolCreationEvent extends Event
 {
     @Label( "Pool Description" )

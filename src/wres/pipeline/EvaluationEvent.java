@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.tuple.Pair;
 
 import jdk.jfr.Category;
-import jdk.jfr.DataAmount;
 import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
@@ -29,6 +28,7 @@ import wres.datamodel.time.TimeSeries;
 @Name( "wres.control.EvaluationEvent" )
 @Label( "Evaluation Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core" } )
+@SuppressWarnings( { "unused", "FieldCanBeLocal" } )
 public class EvaluationEvent extends Event
 {
     @Label( "Evaluation Identifier" )
@@ -69,7 +69,6 @@ public class EvaluationEvent extends Event
     private int resourceCount;
 
     @Label( "Resource Size (Estimated)" )
-    @DataAmount( DataAmount.BYTES )
     @Description( "The estimated size in storage of all resources created by this evaluation." )
     private long resourceBytes;
 

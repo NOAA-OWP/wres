@@ -143,8 +143,7 @@ public class WebClient
 
         if ( !uri.getScheme().startsWith( "http" ) )
         {
-            throw new IllegalArgumentException(
-                    MUST_PASS_AN_HTTP_URI_GOT + uri );
+            throw new IllegalArgumentException( MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
         LOGGER.debug( "getFromWeb {}", uri );
 
@@ -185,8 +184,7 @@ public class WebClient
 
         if ( !uri.getScheme().startsWith( "http" ) )
         {
-            throw new IllegalArgumentException(
-                    MUST_PASS_AN_HTTP_URI_GOT + uri );
+            throw new IllegalArgumentException( MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
         LOGGER.debug( "getFromWeb {}", uri );
 
@@ -236,12 +234,12 @@ public class WebClient
                     retry = this.retryPolicy.shouldRetry( start, now, retryCount );
                     if ( !retry )
                     {
-                        LOGGER.info(
-                                "Ending retry attempts. Attempt number: {} Max Attempts: {} Current Time: {} Max Time: {}",
-                                retryCount,
-                                this.retryPolicy.getMaxRetryCount(),
-                                now,
-                                start.plus( this.retryPolicy.getMaxRetryTime() ) );
+                        LOGGER.info( "Ending retry attempts. Attempt number: {} Max Attempts: {} Current Time: {} "
+                                     + "Max Time: {}",
+                                     retryCount,
+                                     this.retryPolicy.getMaxRetryCount(),
+                                     now,
+                                     start.plus( this.retryPolicy.getMaxRetryTime() ) );
                     }
                 }
                 else
@@ -295,10 +293,10 @@ public class WebClient
         Objects.requireNonNull( uri );
         int retryCount = 0;
 
-        if ( !uri.getScheme().startsWith( "http" ) )
+        if ( !uri.getScheme()
+                 .startsWith( "http" ) )
         {
-            throw new IllegalArgumentException(
-                    MUST_PASS_AN_HTTP_URI_GOT + uri );
+            throw new IllegalArgumentException( MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
 
         LOGGER.debug( "postToWeb {}", uri );
@@ -321,7 +319,7 @@ public class WebClient
     }
 
     /**
-     * Return timing data collected thusfar.
+     * Return timing data collected thus far.
      * @return The list of timings.
      */
     public String getTimingInformation()
