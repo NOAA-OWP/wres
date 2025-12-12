@@ -60,11 +60,10 @@ public class Worker
 
     static
     {
-        WEB_CLIENT = new WebClient(
-                WebClientUtils.defaultTimeoutHttpClient()
-                              .newBuilder()
-                              .callTimeout( Duration.ofMinutes( 1 ) )
-                              .build()
+        WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient()
+                                                  .newBuilder()
+                                                  .callTimeout( Duration.ofMinutes( 1 ) )
+                                                  .build()
         );
     }
 
@@ -189,7 +188,7 @@ public class Worker
             throw new IllegalStateException( "The system property " + Worker.PATH_TO_CLIENT_P12_PNAME
                                              + " is not specified. It must be provided and non-empty." );
         }
-        
+
         // Determine the actual broker name, whether from -D or default
         String brokerHost = BrokerHelper.getBrokerHost();
         String brokerVhost = BrokerHelper.getBrokerVhost();
@@ -204,7 +203,8 @@ public class Worker
         factory.setAutomaticRecoveryEnabled( true );
 
         SSLContext sslContext =
-                BrokerHelper.getSSLContextWithClientCertificate( p12Path, System.getProperty(Worker.PASSWORD_TO_CLIENT_P12) );
+                BrokerHelper.getSSLContextWithClientCertificate( p12Path,
+                                                                 System.getProperty( Worker.PASSWORD_TO_CLIENT_P12 ) );
         factory.useSslProtocol( sslContext );
 
         return factory;

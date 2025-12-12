@@ -12,7 +12,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +24,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
@@ -206,91 +208,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             return this.ingestGriddedData( outerSource );
         }
 
-        // A queue of ingest tasks
-        BlockingQueue<Future<List<IngestResult>>> ingestQueue =
-                new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() );
-
-        // Start to get results before the ingest queue overflows
-        CountDownLatch startGettingResults = new CountDownLatch( this.getSystemSettings()
-                                                                     .getMaximumIngestThreads() );
-
-        List<IngestResult> finalResults = new ArrayList<>();
-
-        // Read one time-series into memory at a time, closing the stream on completion
+        // Read from the stream, ingest, and close the stream on completion
         try ( timeSeriesTuple )
         {
-            Iterator<TimeSeriesTuple> tupleIterator = timeSeriesTuple.iterator();
-            int timeSeriesCount = 0;
-
-            while ( tupleIterator.hasNext() )
-            {
-                TimeSeriesTuple nextTuple = tupleIterator.next();
-                DataSource innerSource = nextTuple.getDataSource();
-
-                // Log the read
-                this.logRead( innerSource.uri() );
-
-                // Single-valued time-series?
-                if ( nextTuple.hasSingleValuedTimeSeries() )
-                {
-                    TimeSeries<Double> nextSeries =
-                            this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries(),
-                                                                                   innerSource.uri() );
-                    String timeSeriesId = this.identifyTimeSeries( nextSeries );
-
-                    Future<List<IngestResult>> innerResults =
-                            this.getExecutor()
-                                .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
-                                                                                             timeSeriesId,
-                                                                                             innerSource ) );
-
-                    // Add the future ingest results to the ingest queue
-                    ingestQueue.add( innerResults );
-                    startGettingResults.countDown();
-                    timeSeriesCount++;
-                }
-
-                // Ensemble time-series?
-                if ( nextTuple.hasEnsembleTimeSeries() )
-                {
-                    TimeSeries<Ensemble> nextSeries =
-                            this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries(),
-                                                                                   innerSource.uri() );
-                    String timeSeriesId = this.identifyTimeSeries( nextSeries );
-                    Future<List<IngestResult>> innerResults =
-                            this.getExecutor()
-                                .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
-                                                                                         timeSeriesId,
-                                                                                         innerSource ) );
-
-                    // Add the future ingest results to the ingest queue
-                    ingestQueue.add( innerResults );
-                    startGettingResults.countDown();
-                    timeSeriesCount++;
-                }
-
-                // Start to get ingest results?
-                if ( startGettingResults.getCount() <= 0 )
-                {
-                    Future<List<IngestResult>> futureResult = ingestQueue.poll();
-                    if ( Objects.nonNull( futureResult ) )
-                    {
-                        finalResults.addAll( futureResult.get() );
-                    }
-                }
-            }
-
-            // Get any remaining results
-            for ( Future<List<IngestResult>> next : ingestQueue )
-            {
-                List<IngestResult> nextResults = next.get();
-                finalResults.addAll( nextResults );
-            }
-
-            // Log the count of series attempted
-            this.logTimeSeriesCount( timeSeriesCount, outerSource );
-
-            return Collections.unmodifiableList( finalResults );
+            return this.ingestStream( timeSeriesTuple, outerSource );
         }
         catch ( ExecutionException e )
         {
@@ -305,6 +226,156 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
+     * Ingests the time-series data from the supplied stream.
+     *
+     * @param timeSeriesTuple the data stream
+     * @param outerSource the data source
+     * @return the ingest results
+     * @throws ExecutionException if the execution failed for any reason
+     * @throws InterruptedException the execution was interrupted
+     */
+
+    private List<IngestResult> ingestStream( Stream<TimeSeriesTuple> timeSeriesTuple,
+                                             DataSource outerSource )
+            throws ExecutionException, InterruptedException
+    {
+        // A queue of ingest tasks
+        BlockingQueue<Future<List<IngestResult>>> ingestQueue =
+                new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() );
+
+        // Start to get results before the ingest queue overflows
+        CountDownLatch startGettingResults = new CountDownLatch( this.getSystemSettings()
+                                                                     .getMaximumIngestThreads() );
+
+        List<IngestResult> finalResults = new ArrayList<>();
+        AtomicInteger timeSeriesCount = new AtomicInteger();
+
+        Consumer<TimeSeriesTuple> ingester = this.getIngester( ingestQueue,
+                                                               startGettingResults,
+                                                               finalResults,
+                                                               timeSeriesCount );
+
+        UnaryOperator<TimeSeriesTuple> readLogger = this.getReadLogger();
+
+        // Read and ingest each tuple
+        timeSeriesTuple.map( readLogger )  // Log the reading
+                       .forEach( ingester );
+
+        // Get any remaining results
+        for ( Future<List<IngestResult>> next : ingestQueue )
+        {
+            List<IngestResult> nextResults = next.get();
+            finalResults.addAll( nextResults );
+        }
+
+        // Log the count of series attempted
+        this.logTimeSeriesCount( timeSeriesCount.get(), outerSource );
+
+        return Collections.unmodifiableList( finalResults );
+    }
+
+    /**
+     * Returns a function that performs ingest of a time-series tuple.
+     * @param ingestQueue the ingest queue
+     * @param startGettingResults a latch to indicate when ingest results should start to be obtained
+     * @param finalResults the list of final ingest results to populate
+     * @param timeSeriesCount the number of time-series read
+     * @return the ingest function
+     */
+
+    private Consumer<TimeSeriesTuple> getIngester( BlockingQueue<Future<List<IngestResult>>> ingestQueue,
+                                                   CountDownLatch startGettingResults,
+                                                   List<IngestResult> finalResults,
+                                                   final AtomicInteger timeSeriesCount )
+    {
+        return tuple -> {
+            DataSource innerSource = tuple.getDataSource();
+
+            // Single-valued time-series?
+            if ( tuple.hasSingleValuedTimeSeries() )
+            {
+                TimeSeries<Double> nextSeries =
+                        this.checkForEmptySeriesAndAddReferenceTimeIfRequired( tuple.getSingleValuedTimeSeries(),
+                                                                               innerSource.uri() );
+                String timeSeriesId = this.identifyTimeSeries( nextSeries );
+
+                Future<List<IngestResult>> innerResults =
+                        this.getExecutor()
+                            .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
+                                                                                         timeSeriesId,
+                                                                                         innerSource ) );
+
+                // Add the future ingest results to the ingest queue
+                ingestQueue.add( innerResults );
+                startGettingResults.countDown();
+                timeSeriesCount.incrementAndGet();
+            }
+
+            // Ensemble time-series?
+            if ( tuple.hasEnsembleTimeSeries() )
+            {
+                TimeSeries<Ensemble> nextSeries =
+                        this.checkForEmptySeriesAndAddReferenceTimeIfRequired( tuple.getEnsembleTimeSeries(),
+                                                                               innerSource.uri() );
+                String timeSeriesId = this.identifyTimeSeries( nextSeries );
+                Future<List<IngestResult>> innerResults =
+                        this.getExecutor()
+                            .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
+                                                                                     timeSeriesId,
+                                                                                     innerSource ) );
+
+                // Add the future ingest results to the ingest queue
+                ingestQueue.add( innerResults );
+                startGettingResults.countDown();
+                timeSeriesCount.getAndIncrement();
+            }
+
+            // Start acquiring the ingest results
+            this.startGettingIngestResults( ingestQueue, startGettingResults, finalResults, innerSource.uri() );
+        };
+    }
+
+    /**
+     * Starts to acquire the ingest results.
+     * @param ingestQueue the queue of results
+     * @param startGettingResults a latch that is used to determine when the start getting results
+     * @param finalResults the final list of results to populate
+     * @param uri the data source URI
+     */
+
+    private void startGettingIngestResults( BlockingQueue<Future<List<IngestResult>>> ingestQueue,
+                                            CountDownLatch startGettingResults,
+                                            List<IngestResult> finalResults,
+                                            URI uri )
+    {
+        // Start to get ingest results?
+        if ( startGettingResults.getCount() <= 0 )
+        {
+            Future<List<IngestResult>> futureResult = ingestQueue.poll();
+            if ( Objects.nonNull( futureResult ) )
+            {
+                try
+                {
+                    finalResults.addAll( futureResult.get() );
+                }
+                catch ( ExecutionException e )
+                {
+                    throw new IngestException( "Failed to ingest time-series data from: "
+                                               + uri, e );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread()
+                          .interrupt();
+
+                    throw new IngestException( "Interrupted while ingesting time-series data from: "
+                                               + uri, e );
+                }
+            }
+        }
+    }
+
+    /**
      * Logs the number of time-series from a data source for which ingest was attempted.
      * @param timeSeriesCount the time-series count
      * @param outerSource the data source
@@ -313,7 +384,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     {
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Attempted to ingest {} timeseries from {} into the database.",
+            LOGGER.debug( "Attempted to ingest {} time-series from {} into the database.",
                           timeSeriesCount,
                           outerSource );
         }
@@ -321,15 +392,21 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
     /**
      * Logs a read.
-     * @param uri the URI that was read.
      */
 
-    private void logRead( URI uri )
+    private UnaryOperator<TimeSeriesTuple> getReadLogger()
     {
-        if ( LOGGER.isDebugEnabled() )
+        return tuple ->
         {
-            LOGGER.debug( "Read a time-series from {}.", uri );
-        }
+            DataSource source = tuple.getDataSource();
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Read a time-series from {}.", source.uri() );
+            }
+
+            return tuple;
+        };
     }
 
     /**
