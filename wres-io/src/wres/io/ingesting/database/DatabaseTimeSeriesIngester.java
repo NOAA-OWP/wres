@@ -220,14 +220,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         try ( timeSeriesTuple )
         {
             Iterator<TimeSeriesTuple> tupleIterator = timeSeriesTuple.iterator();
-
             int timeSeriesCount = 0;
 
             while ( tupleIterator.hasNext() )
             {
                 TimeSeriesTuple nextTuple = tupleIterator.next();
-
                 DataSource innerSource = nextTuple.getDataSource();
+
+                // Log the read
+                this.logRead( innerSource.uri() );
 
                 // Single-valued time-series?
                 if ( nextTuple.hasSingleValuedTimeSeries() )
@@ -315,6 +316,19 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             LOGGER.debug( "Attempted to ingest {} timeseries from {} into the database.",
                           timeSeriesCount,
                           outerSource );
+        }
+    }
+
+    /**
+     * Logs a read.
+     * @param uri the URI that was read.
+     */
+
+    private void logRead( URI uri )
+    {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Read a time-series from {}.", uri );
         }
     }
 
