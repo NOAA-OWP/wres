@@ -14,6 +14,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.types.Ensemble;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.SourceLoadEvent;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
@@ -51,6 +52,10 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 
         // Whether there is non-missing data present
         boolean hasNonMissingValues = false;
+
+        // Monitor the load
+        SourceLoadEvent sourceLoad = SourceLoadEvent.of( outerSource.uri() );
+        sourceLoad.begin();
 
         // Close the stream on completion
         try ( timeSeriesTuple )
@@ -114,6 +119,10 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 
             // Arbitrary surrogate key, since this is an in-memory ingest
             return List.of( new IngestResultInMemory( outerSource, dataType, hasNonMissingValues ) );
+        }
+        finally
+        {
+            sourceLoad.commit();
         }
     }
 

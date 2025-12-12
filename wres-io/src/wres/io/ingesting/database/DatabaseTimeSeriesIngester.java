@@ -55,6 +55,7 @@ import wres.io.database.details.SourceDetails;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.SourceLoadEvent;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.database.caching.TimeScales;
 import wres.reading.DataSource;
@@ -239,6 +240,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                              DataSource outerSource )
             throws ExecutionException, InterruptedException
     {
+        // Monitor the load
+        SourceLoadEvent sourceLoad = SourceLoadEvent.of( outerSource.uri() );
+        sourceLoad.begin();
+
         // A queue of ingest tasks
         BlockingQueue<Future<List<IngestResult>>> ingestQueue =
                 new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() );
@@ -270,6 +275,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         // Log the count of series attempted
         this.logTimeSeriesCount( timeSeriesCount.get(), outerSource );
+
+        // Complete the monitor
+        sourceLoad.commit();
 
         return Collections.unmodifiableList( finalResults );
     }
