@@ -31,6 +31,7 @@ import wres.config.serializers.DecimalFormatSerializer;
 import wres.config.serializers.DurationSerializer;
 import wres.config.serializers.EnsembleAverageTypeSerializer;
 import wres.config.serializers.PositiveIntegerSerializer;
+import wres.config.serializers.SummaryStatisticsSerializer;
 import wres.config.serializers.ThresholdSetsSerializer;
 import wres.config.serializers.ThresholdsSerializer;
 import wres.config.serializers.TrueSerializer;
@@ -137,6 +138,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
                                      @JsonProperty( "metrics" ) Set<Metric> metrics,
+                                     @JsonSerialize( using = SummaryStatisticsSerializer.class )
                                      @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
                                      @JsonProperty( "summary_statistics" ) Set<SummaryStatistic> summaryStatistics,
                                      @JsonSerialize( using = ChronoUnitSerializer.class )

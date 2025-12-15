@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -4480,6 +4481,189 @@ class DeclarationFactoryTest
                                                                        .right( this.predictedDataset )
                                                                        .classifierThresholds( thresholds )
                                                                        .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatistics() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - mean
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndDimensions() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  statistics:
+                    - mean
+                  dimensions:
+                    - features
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                        .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndHistogramWithDefaultBins() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - histogram
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndHistogramWithNonDefaultBins() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - name: histogram
+                    bins: 12
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                        .setHistogramBins( 12 )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndQuantilesWithDefaultProbabilities() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - quantiles
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                DeclarationFactory.DEFAULT_QUANTILES.stream()
+                                                    .map( s -> SummaryStatistic.newBuilder()
+                                                                               .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                                               .setProbability( s )
+                                                                               .build() )
+                                                    .collect( Collectors.toSet() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndQuantilesWithNonDefaultProbabilities() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - name: quantiles
+                    probabilities: [0.05, 0.95]
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                        .setProbability( 0.05 )
+                                        .build(),
+                        SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                        .setProbability( 0.95 )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
 
         String actual = DeclarationFactory.from( evaluation );
 
