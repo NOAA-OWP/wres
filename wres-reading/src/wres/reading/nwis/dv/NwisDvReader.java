@@ -481,7 +481,9 @@ public class NwisDvReader implements TimeSeriesReader
                 LOGGER.debug( "The NWIS rate limit is {} and there are {} requests remaining within the current period "
                               + "before rate limiting begins.", limitInt, remainingInt );
 
-                if ( ( remainingInt / ( double ) limitInt ) < 0.1 )
+                // Print a warning when 10% or fewer requests are remaining, repeated every 10 requests
+                if ( remainingInt % 10 == 0
+                     && ( remainingInt / ( double ) limitInt ) <= 0.1 )
                 {
                     LOGGER.warn( "Requests to NWIS services are rate limited. The rate limit is {} and there are only "
                                  + "{} requests remaining before rate limiting begins, which will result in an HTTP "
