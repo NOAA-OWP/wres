@@ -19,7 +19,7 @@ import wres.config.deserializers.EventDetectionDeserializer;
 @RecordBuilder
 @JsonDeserialize( using = EventDetectionDeserializer.class )
 public record EventDetection( @JsonProperty( "dataset" ) Set<EventDetectionDataset> datasets,
-                              @JsonProperty( "method " ) EventDetectionMethod method,
+                              @JsonProperty( "method" ) EventDetectionMethod method,
                               EventDetectionParameters parameters )
 {
     /**
