@@ -4665,4 +4665,303 @@ class DeclarationFactoryTest
 
         assertEquals( expected, actual );
     }
+
+    @Test
+    void testSerializeWithCovariates() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                covariates:
+                  - sources: precipitation.tgz
+                    variable: precipitation
+                    minimum: 0.25
+                  - sources: temperature.tgz
+                    variable: temperature
+                    maximum: 0.0
+                    rescale_function: mean
+                """;
+
+        URI covariateOneUri = URI.create( "precipitation.tgz" );
+        Source covariateOneSource = SourceBuilder.builder()
+                                                 .uri( covariateOneUri )
+                                                 .build();
+
+        List<Source> covariateOneSources = List.of( covariateOneSource );
+
+        Dataset covariateOneDataset = DatasetBuilder.builder()
+                                                    .sources( covariateOneSources )
+                                                    .variable( new Variable( "precipitation", null, Set.of() ) )
+                                                    .build();
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateOneDataset )
+                                                               .minimum( 0.25 )
+                                                               .build();
+
+        URI covariateTwoUri = URI.create( "temperature.tgz" );
+        Source covariateTwoSource = SourceBuilder.builder()
+                                                 .uri( covariateTwoUri )
+                                                 .build();
+
+        List<Source> covariateTwoSources = List.of( covariateTwoSource );
+
+        Dataset covariateTwoDataset = DatasetBuilder.builder()
+                                                    .sources( covariateTwoSources )
+                                                    .variable( new Variable( "temperature", null, Set.of() ) )
+                                                    .build();
+
+        CovariateDataset covariateTwo = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateTwoDataset )
+                                                               .maximum( 0.0 )
+                                                               .rescaleFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                               .build();
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .covariates( covariateDatasets )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithEventDetectionUsingExplicitDatasetAndMethodWithCombinationParameters() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                event_detection:
+                  dataset: observed
+                  method: regina-ogden
+                  parameters:
+                    window_size: 3600
+                    start_radius: 7200
+                    half_life: 10800
+                    minimum_event_duration: 14400
+                    combination:
+                      operation: intersection
+                      aggregation: minimum
+                    duration_unit: seconds
+                """;
+
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .windowSize( java.time.Duration.ofHours( 1 ) )
+                                               .startRadius( java.time.Duration.ofHours( 2 ) )
+                                               .halfLife( java.time.Duration.ofHours( 3 ) )
+                                               .minimumEventDuration( java.time.Duration.ofHours( 4 ) )
+                                               .combination( EventDetectionCombination.INTERSECTION )
+                                               .aggregation( TimeWindowAggregation.MINIMUM )
+                                               .build();
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .method( EventDetectionMethod.REGINA_OGDEN )
+                                                             .parameters( parameters )
+                                                             .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .eventDetection( eventDetection )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithExplicitTimePools() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                time_pools:
+                  - lead_times:
+                      minimum: 3600
+                      maximum: 21600
+                      unit: seconds
+                    reference_dates:
+                      minimum: 2551-03-17T00:00:00Z
+                      maximum: 2551-03-20T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-18T00:00:00Z
+                      maximum: 2551-03-21T00:00:00Z
+                  - lead_times:
+                      minimum: 25200
+                      maximum: 43200
+                      unit: seconds
+                    reference_dates:
+                      minimum: 2551-03-21T00:00:00Z
+                      maximum: 2551-03-23T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-22T00:00:00Z
+                      maximum: 2551-03-24T00:00:00Z
+                """;
+
+        Instant expectedInstantOne = Instant.parse( "2551-03-17T00:00:00Z" );
+        Instant expectedInstantTwo = Instant.parse( "2551-03-18T00:00:00Z" );
+        Instant expectedInstantThree = Instant.parse( "2551-03-20T00:00:00Z" );
+        Instant expectedInstantFour = Instant.parse( "2551-03-21T00:00:00Z" );
+        Instant expectedInstantFive = Instant.parse( "2551-03-22T00:00:00Z" );
+        Instant expectedInstantSix = Instant.parse( "2551-03-23T00:00:00Z" );
+        Instant expectedInstantSeven = Instant.parse( "2551-03-24T00:00:00Z" );
+
+        java.time.Duration expectedDurationOne = java.time.Duration.ofHours( 1 );
+        java.time.Duration expectedDurationTwo = java.time.Duration.ofHours( 6 );
+        java.time.Duration expectedDurationThree = java.time.Duration.ofHours( 7 );
+        java.time.Duration expectedDurationFour = java.time.Duration.ofHours( 12 );
+
+        TimeWindow expectedOne = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantTwo ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantThree ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationTwo ) )
+                                           .build();
+
+        TimeWindow expectedTwo = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantFive ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantSeven ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantSix ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationThree ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationFour ) )
+                                           .build();
+
+        Set<TimeWindow> timePools = new LinkedHashSet<>();
+        timePools.add( expectedOne );
+        timePools.add( expectedTwo );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .timePools( timePools )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSingletonThresholdSource() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                """;
+
+        ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
+
+        Set<ThresholdSource> sources = Set.of( thresholdSourceOne );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( sources )
+                                                                        .build();
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSingletonThresholdSourceAndProperties() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                  feature_name_from: predicted
+                  parameter: moon
+                  unit: qux
+                  provider: bar
+                  rating_provider: baz
+                  missing_value: -9999999.0
+                """;
+
+        ThresholdSource thresholdSource = ThresholdSourceBuilder.builder()
+                                                                .uri( URI.create( "https://foo" ) )
+                                                                .provider( "bar" )
+                                                                .ratingProvider( "baz" )
+                                                                .parameter( "moon" )
+                                                                .missingValue( -9999999.0 )
+                                                                .unit( "qux" )
+                                                                .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( Set.of( thresholdSource ) )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithMultipleThresholdSources() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  - uri: https://foo
+                  - uri: https://bar
+                  - uri: https://baz
+                """;
+
+        ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
+
+        ThresholdSource thresholdSourceTwo = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://bar" ) )
+                                                                   .build();
+
+        ThresholdSource thresholdSourceThree = ThresholdSourceBuilder.builder()
+                                                                     .uri( URI.create( "https://baz" ) )
+                                                                     .build();
+
+        // Preserve insertion order
+        Set<ThresholdSource> thresholdSources = new LinkedHashSet<>();
+        thresholdSources.add( thresholdSourceOne );
+        thresholdSources.add( thresholdSourceTwo );
+        thresholdSources.add( thresholdSourceThree );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( thresholdSources )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
 }
