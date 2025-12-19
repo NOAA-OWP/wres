@@ -157,6 +157,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateUris( adjustedBuilder );
         // Interpolate the time zone offsets for individual sources when supplied for the overall dataset
         DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedBuilder );
+        // Interpolate the missing values for individual sources when supplied for the overall dataset
+        DeclarationInterpolator.interpolateMissingValues( adjustedBuilder );
         // Interpolate the feature authorities
         DeclarationInterpolator.interpolateFeatureAuthorities( adjustedBuilder );
         // Interpolate geospatial features when required, but without using a feature service
@@ -1927,6 +1929,91 @@ public class DeclarationInterpolator
             {
                 Source adjusted = SourceBuilder.builder( source )
                                                .timeZoneOffset( offset )
+                                               .build();
+                sources.add( adjusted );
+            }
+            else
+            {
+                sources.add( source );
+            }
+        }
+
+        // Set the adjusted sources
+        builder.sources( sources );
+
+        return builder.build();
+    }
+
+    /**
+     * Looks for the missing value assigned to a dataset and copies this to all corresponding missing value entries
+     * for each data source.
+     * @param builder the declaration builder to adjust
+     */
+
+    private static void interpolateMissingValues( EvaluationDeclarationBuilder builder )
+    {
+        // Left dataset
+        if ( Objects.nonNull( builder.left() ) )
+        {
+            List<Double> leftMissing = builder.left()
+                                              .missingValue();
+            if ( Objects.nonNull( leftMissing ) )
+            {
+                Dataset left = DeclarationInterpolator.copyMissingValuesToAllSources( leftMissing, builder.left() );
+                builder.left( left );
+            }
+        }
+
+        // Right dataset
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            List<Double> rightMissing = builder.right()
+                                               .missingValue();
+            if ( Objects.nonNull( rightMissing ) )
+            {
+                Dataset right = DeclarationInterpolator.copyMissingValuesToAllSources( rightMissing, builder.right() );
+                builder.right( right );
+            }
+        }
+
+        // Baseline dataset
+        if ( DeclarationUtilities.hasBaseline( builder ) )
+        {
+            List<Double> baselineMissing = builder.baseline()
+                                                  .dataset()
+                                                  .missingValue();
+            if ( Objects.nonNull( baselineMissing ) )
+            {
+                Dataset baselineDataset =
+                        DeclarationInterpolator.copyMissingValuesToAllSources( baselineMissing, builder.baseline()
+                                                                                                       .dataset() );
+                BaselineDataset baseline = BaselineDatasetBuilder.builder( builder.baseline() )
+                                                                 .dataset( baselineDataset )
+                                                                 .build();
+                builder.baseline( baseline );
+            }
+        }
+    }
+
+    /**
+     * Copies the supplied missing values to all sources that are missing one.
+     * @param missingValues the missing values to copy
+     * @param dataset the dataset whose sources without a missing value should be updated
+     * @return the possible adjusted dataset
+     */
+
+    private static Dataset copyMissingValuesToAllSources( List<Double> missingValues, Dataset dataset )
+    {
+        DatasetBuilder builder = DatasetBuilder.builder( dataset );
+        List<Source> sources = new ArrayList<>();
+        for ( Source source : dataset.sources() )
+        {
+            if ( Objects.isNull( source.missingValue() )
+                 || source.missingValue()
+                          .isEmpty() )
+            {
+                Source adjusted = SourceBuilder.builder( source )
+                                               .missingValue( missingValues )
                                                .build();
                 sources.add( adjusted );
             }

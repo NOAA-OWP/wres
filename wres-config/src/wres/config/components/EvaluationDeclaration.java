@@ -31,8 +31,10 @@ import wres.config.serializers.DecimalFormatSerializer;
 import wres.config.serializers.DurationSerializer;
 import wres.config.serializers.EnsembleAverageTypeSerializer;
 import wres.config.serializers.PositiveIntegerSerializer;
+import wres.config.serializers.SummaryStatisticsSerializer;
 import wres.config.serializers.ThresholdSetsSerializer;
 import wres.config.serializers.ThresholdsSerializer;
+import wres.config.serializers.TimeWindowSerializer;
 import wres.config.serializers.TrueSerializer;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
@@ -95,6 +97,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "spatial_mask" ) SpatialMask spatialMask,
                                      @JsonProperty( "unit" ) String unit,
                                      @JsonProperty( "unit_aliases" ) Set<UnitAlias> unitAliases,
+                                     @JsonSerialize( using = TimeWindowSerializer.class )
                                      @JsonDeserialize( using = TimeWindowDeserializer.class )
                                      @JsonProperty( "time_pools" ) Set<TimeWindow> timePools,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
@@ -123,8 +126,8 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
                                      @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-                                     @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonSerialize( using = ThresholdSetsSerializer.class )
+                                     @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
                                      @JsonDeserialize( using = ThresholdSourcesDeserializer.class )
                                      @JsonProperty( "threshold_sources" ) Set<ThresholdSource> thresholdSources,
@@ -137,6 +140,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
                                      @JsonProperty( "metrics" ) Set<Metric> metrics,
+                                     @JsonSerialize( using = SummaryStatisticsSerializer.class )
                                      @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
                                      @JsonProperty( "summary_statistics" ) Set<SummaryStatistic> summaryStatistics,
                                      @JsonSerialize( using = ChronoUnitSerializer.class )

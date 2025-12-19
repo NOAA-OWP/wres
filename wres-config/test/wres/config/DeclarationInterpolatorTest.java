@@ -172,14 +172,14 @@ class DeclarationInterpolatorTest
     private static final wres.config.components.Threshold
             ALL_DATA_THRESHOLD =
             wres.config.components.ThresholdBuilder.builder()
-                                                        .threshold( Threshold.newBuilder()
-                                                                             .setObservedThresholdValue( Double.NEGATIVE_INFINITY )
-                                                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                                                             .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
-                                                                             .build() )
-                                                        .type( ThresholdType.VALUE )
-                                                        .generated( true )
-                                                        .build();
+                                                   .threshold( Threshold.newBuilder()
+                                                                        .setObservedThresholdValue( Double.NEGATIVE_INFINITY )
+                                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                                        .setDataType( Threshold.ThresholdDataType.OBSERVED_AND_PREDICTED )
+                                                                        .build() )
+                                                   .type( ThresholdType.VALUE )
+                                                   .generated( true )
+                                                   .build();
 
     @BeforeEach
     void runBeforeEach()
@@ -1898,6 +1898,120 @@ class DeclarationInterpolatorTest
 
         assertSame( DataType.SINGLE_VALUED_FORECASTS, interpolated.right()
                                                                   .type() );
+    }
+
+    @Test
+    void testInterpolateMissingValueForSourceWithoutDatasetMissingValue()
+    {
+        // GitHub #160
+        URI observedUri = URI.create( "file://foo/some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedDatasetInner = DatasetBuilder.builder()
+                                                     .sources( observedSources )
+                                                     .build();
+
+        URI predictedUri = URI.create( "file://foo/another_file.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .missingValue( List.of( -998.0 ) )
+                                              .build();
+
+        URI anotherPredictedUri = URI.create( "file://foo/yet_another_file.csv" );
+        Source anotherPredictedSource = SourceBuilder.builder()
+                                                     .uri( anotherPredictedUri )
+                                                     .build();
+
+        List<Source> predictedSources = List.of( predictedSource, anotherPredictedSource );
+        Dataset predictedDatasetInner = DatasetBuilder.builder()
+                                                      .sources( predictedSources )
+                                                      .missingValue( List.of( -999.0 ) )
+                                                      .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( observedDatasetInner )
+                                                                       .right( predictedDatasetInner )
+                                                                       .build();
+
+        EvaluationDeclaration actualDeclaration = DeclarationInterpolator.interpolate( evaluation,
+                                                                                       false );
+
+        Source expectedPredictedSource = SourceBuilder.builder()
+                                                      .uri( anotherPredictedUri )
+                                                      .missingValue( List.of( -999.0 ) )
+                                                      .build();
+
+        List<Source> expectedPredictedSources = List.of( predictedSource, expectedPredictedSource );
+        Dataset expected = DatasetBuilder.builder()
+                                         .sources( expectedPredictedSources )
+                                         .missingValue( List.of( -999.0 ) )
+                                         .build();
+
+        Dataset actual = actualDeclaration.right();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateMissingValueForSourcesWithDatasetMissingValue()
+    {
+        // GitHub #160
+        URI observedUri = URI.create( "file://foo/some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedDatasetInner = DatasetBuilder.builder()
+                                                     .sources( observedSources )
+                                                     .build();
+
+        URI predictedUri = URI.create( "file://foo/another_file.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
+
+        URI anotherPredictedUri = URI.create( "file://foo/yet_another_file.csv" );
+        Source anotherPredictedSource = SourceBuilder.builder()
+                                                     .uri( anotherPredictedUri )
+                                                     .build();
+
+        List<Source> predictedSources = List.of( predictedSource, anotherPredictedSource );
+        Dataset predictedDatasetInner = DatasetBuilder.builder()
+                                                      .sources( predictedSources )
+                                                      .missingValue( List.of( -999.0 ) )
+                                                      .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( observedDatasetInner )
+                                                                       .right( predictedDatasetInner )
+                                                                       .build();
+
+        EvaluationDeclaration actualDeclaration = DeclarationInterpolator.interpolate( evaluation,
+                                                                                       false );
+
+        Source expectedPredictedOne = SourceBuilder.builder()
+                                                   .uri( predictedUri )
+                                                   .missingValue( List.of( -999.0 ) )
+                                                   .build();
+
+        Source expectedPredictedTwo = SourceBuilder.builder()
+                                                   .uri( anotherPredictedUri )
+                                                   .missingValue( List.of( -999.0 ) )
+                                                   .build();
+
+        List<Source> expectedPredictedSources = List.of( expectedPredictedOne, expectedPredictedTwo );
+        Dataset expected = DatasetBuilder.builder()
+                                         .sources( expectedPredictedSources )
+                                         .missingValue( List.of( -999.0 ) )
+                                         .build();
+
+        Dataset actual = actualDeclaration.right();
+
+        assertEquals( expected, actual );
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation

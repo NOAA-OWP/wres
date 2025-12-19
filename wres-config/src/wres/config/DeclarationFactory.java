@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.cfg.EnumFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -190,8 +191,9 @@ public class DeclarationFactory
                     .enable( SerializationFeature.WRITE_ENUMS_USING_TO_STRING )
                     .disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS )
                     .enable( SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED )
-                    .setSerializationInclusion( JsonInclude.Include.NON_NULL )
-                    .setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
+                    .setDefaultPropertyInclusion( JsonInclude.Include.NON_NULL )
+                    .setDefaultPropertyInclusion( JsonInclude.Include.NON_EMPTY )
+                    .configure( EnumFeature.WRITE_ENUMS_TO_LOWERCASE, true );
 
     /**
      * Deserializes a YAML string or path containing a YAML string into a POJO and performs validation against the

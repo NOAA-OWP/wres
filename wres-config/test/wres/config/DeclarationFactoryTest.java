@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -1679,19 +1680,19 @@ class DeclarationFactoryTest
                                     .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pThreeWrapped = ThresholdBuilder.builder()
-                                                                              .threshold( pThree )
-                                                                              .type( ThresholdType.PROBABILITY )
-                                                                              .build();
+                                                                         .threshold( pThree )
+                                                                         .type( ThresholdType.PROBABILITY )
+                                                                         .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -1713,20 +1714,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
         thresholds.add( vOneWrapped );
@@ -1744,20 +1745,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold cOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         wres.config.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> classifierThresholds = new LinkedHashSet<>();
         classifierThresholds.add( cOneWrapped );
@@ -1804,13 +1805,13 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "FOO" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "FOO" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> expected = Set.of( vOneWrapped );
 
@@ -1863,22 +1864,22 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "FOO" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "FOO" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "BAR" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "BAR" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> expected = Set.of( vOneWrapped, vTwoWrapped );
 
@@ -1929,22 +1930,22 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "FOO" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "FOO" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "BAR" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "BAR" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> expected = Set.of( vOneWrapped, vTwoWrapped );
 
@@ -1982,14 +1983,14 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
         thresholds.add( vOneWrapped );
@@ -2023,9 +2024,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2060,9 +2061,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2098,9 +2099,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2136,9 +2137,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2174,9 +2175,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2212,9 +2213,9 @@ class DeclarationFactoryTest
                                                               .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = Set.of( vOneWrapped );
 
@@ -2324,14 +2325,14 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -2523,14 +2524,14 @@ class DeclarationFactoryTest
                                  .build();
 
         wres.config.components.Threshold oneWrapped = ThresholdBuilder.builder()
-                                                                           .threshold( one )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( one )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
 
         wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder()
-                                                                           .threshold( two )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( two )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
@@ -3159,6 +3160,58 @@ class DeclarationFactoryTest
                                                                      .right( this.predictedDataset )
                                                                      .covariates( covariateDatasets )
                                                                      .eventDetection( eventDetection )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithMissingValueForDatasetAndIndividualSource() throws IOException
+    {
+        String yaml = """
+                 observed:
+                   - some_file.csv
+                 predicted:
+                   sources:
+                     - uri: another_file.csv
+                       missing_value: -998
+                     - uri: yet_another_file.csv
+                   missing_value: -999
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedExpected = DatasetBuilder.builder()
+                                                 .sources( observedSources )
+                                                 .build();
+
+        URI predictedUri = URI.create( "another_file.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .missingValue( List.of( -998.0 ) )
+                                              .build();
+
+        URI anotherPredictedUri = URI.create( "yet_another_file.csv" );
+        Source anotherPredictedSource = SourceBuilder.builder()
+                                                     .uri( anotherPredictedUri )
+                                                     .build();
+
+        List<Source> predictedSources = List.of( predictedSource, anotherPredictedSource );
+        Dataset predictedExpected = DatasetBuilder.builder()
+                                                  .sources( predictedSources )
+                                                  .missingValue( List.of( -999.0 ) )
+                                                  .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observedExpected )
+                                                                     .right( predictedExpected )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -4133,19 +4186,19 @@ class DeclarationFactoryTest
                                     .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pThreeWrapped = ThresholdBuilder.builder()
-                                                                              .threshold( pThree )
-                                                                              .type( ThresholdType.PROBABILITY )
-                                                                              .build();
+                                                                         .threshold( pThree )
+                                                                         .type( ThresholdType.PROBABILITY )
+                                                                         .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -4167,20 +4220,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold vOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vOne )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .build();
+                                                                       .threshold( vOne )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .build();
 
         wres.config.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( vTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( vTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> thresholds = new LinkedHashSet<>();
         thresholds.add( vOneWrapped );
@@ -4198,20 +4251,20 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold cOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cOne )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DOLC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cOne )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DOLC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         wres.config.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( cTwo )
-                                                                            .feature( Geometry.newBuilder()
-                                                                                              .setName( "DRRC2" )
-                                                                                              .build() )
-                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
-                                                                            .build();
+                                                                       .threshold( cTwo )
+                                                                       .feature( Geometry.newBuilder()
+                                                                                         .setName( "DRRC2" )
+                                                                                         .build() )
+                                                                       .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                       .build();
 
         Set<wres.config.components.Threshold> classifierThresholds = new LinkedHashSet<>();
         classifierThresholds.add( cOneWrapped );
@@ -4254,14 +4307,14 @@ class DeclarationFactoryTest
                                   .build();
 
         wres.config.components.Threshold pOneWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pOne )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pOne )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         wres.config.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
-                                                                            .threshold( pTwo )
-                                                                            .type( ThresholdType.PROBABILITY )
-                                                                            .build();
+                                                                       .threshold( pTwo )
+                                                                       .type( ThresholdType.PROBABILITY )
+                                                                       .build();
 
         // Insertion order
         Set<wres.config.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
@@ -4426,6 +4479,488 @@ class DeclarationFactoryTest
                                                                        .build();
 
         String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatistics() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - mean
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndDimensions() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  statistics:
+                    - mean
+                  dimensions:
+                    - features
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                        .addDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndHistogramWithDefaultBins() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - histogram
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndHistogramWithNonDefaultBins() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - name: histogram
+                    bins: 12
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                        .setHistogramBins( 12 )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndQuantilesWithDefaultProbabilities() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - quantiles
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                DeclarationFactory.DEFAULT_QUANTILES.stream()
+                                                    .map( s -> SummaryStatistic.newBuilder()
+                                                                               .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                                               .setProbability( s )
+                                                                               .build() )
+                                                    .collect( Collectors.toSet() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSummaryStatisticsAndQuantilesWithNonDefaultProbabilities() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                summary_statistics:
+                  - name: quantiles
+                    probabilities: [0.05, 0.95]
+                """;
+
+        Set<SummaryStatistic> summaryStatistics =
+                Set.of( SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                        .setProbability( 0.05 )
+                                        .build(),
+                        SummaryStatistic.newBuilder()
+                                        .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                        .setProbability( 0.95 )
+                                        .build() );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithCovariates() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                covariates:
+                  - sources: precipitation.tgz
+                    variable: precipitation
+                    minimum: 0.25
+                  - sources: temperature.tgz
+                    variable: temperature
+                    maximum: 0.0
+                    rescale_function: mean
+                """;
+
+        URI covariateOneUri = URI.create( "precipitation.tgz" );
+        Source covariateOneSource = SourceBuilder.builder()
+                                                 .uri( covariateOneUri )
+                                                 .build();
+
+        List<Source> covariateOneSources = List.of( covariateOneSource );
+
+        Dataset covariateOneDataset = DatasetBuilder.builder()
+                                                    .sources( covariateOneSources )
+                                                    .variable( new Variable( "precipitation", null, Set.of() ) )
+                                                    .build();
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateOneDataset )
+                                                               .minimum( 0.25 )
+                                                               .build();
+
+        URI covariateTwoUri = URI.create( "temperature.tgz" );
+        Source covariateTwoSource = SourceBuilder.builder()
+                                                 .uri( covariateTwoUri )
+                                                 .build();
+
+        List<Source> covariateTwoSources = List.of( covariateTwoSource );
+
+        Dataset covariateTwoDataset = DatasetBuilder.builder()
+                                                    .sources( covariateTwoSources )
+                                                    .variable( new Variable( "temperature", null, Set.of() ) )
+                                                    .build();
+
+        CovariateDataset covariateTwo = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateTwoDataset )
+                                                               .maximum( 0.0 )
+                                                               .rescaleFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                               .build();
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .covariates( covariateDatasets )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithEventDetectionUsingExplicitDatasetAndMethodWithCombinationParameters() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                event_detection:
+                  dataset: observed
+                  method: regina-ogden
+                  parameters:
+                    window_size: 3600
+                    start_radius: 7200
+                    half_life: 10800
+                    minimum_event_duration: 14400
+                    combination:
+                      operation: intersection
+                      aggregation: minimum
+                    duration_unit: seconds
+                """;
+
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .windowSize( java.time.Duration.ofHours( 1 ) )
+                                               .startRadius( java.time.Duration.ofHours( 2 ) )
+                                               .halfLife( java.time.Duration.ofHours( 3 ) )
+                                               .minimumEventDuration( java.time.Duration.ofHours( 4 ) )
+                                               .combination( EventDetectionCombination.INTERSECTION )
+                                               .aggregation( TimeWindowAggregation.MINIMUM )
+                                               .build();
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .method( EventDetectionMethod.REGINA_OGDEN )
+                                                             .parameters( parameters )
+                                                             .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .eventDetection( eventDetection )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithExplicitTimePools() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                time_pools:
+                  - lead_times:
+                      minimum: 3600
+                      maximum: 21600
+                      unit: seconds
+                    reference_dates:
+                      minimum: 2551-03-17T00:00:00Z
+                      maximum: 2551-03-20T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-18T00:00:00Z
+                      maximum: 2551-03-21T00:00:00Z
+                  - lead_times:
+                      minimum: 25200
+                      maximum: 43200
+                      unit: seconds
+                    reference_dates:
+                      minimum: 2551-03-21T00:00:00Z
+                      maximum: 2551-03-23T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-22T00:00:00Z
+                      maximum: 2551-03-24T00:00:00Z
+                """;
+
+        Instant expectedInstantOne = Instant.parse( "2551-03-17T00:00:00Z" );
+        Instant expectedInstantTwo = Instant.parse( "2551-03-18T00:00:00Z" );
+        Instant expectedInstantThree = Instant.parse( "2551-03-20T00:00:00Z" );
+        Instant expectedInstantFour = Instant.parse( "2551-03-21T00:00:00Z" );
+        Instant expectedInstantFive = Instant.parse( "2551-03-22T00:00:00Z" );
+        Instant expectedInstantSix = Instant.parse( "2551-03-23T00:00:00Z" );
+        Instant expectedInstantSeven = Instant.parse( "2551-03-24T00:00:00Z" );
+
+        java.time.Duration expectedDurationOne = java.time.Duration.ofHours( 1 );
+        java.time.Duration expectedDurationTwo = java.time.Duration.ofHours( 6 );
+        java.time.Duration expectedDurationThree = java.time.Duration.ofHours( 7 );
+        java.time.Duration expectedDurationFour = java.time.Duration.ofHours( 12 );
+
+        TimeWindow expectedOne = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantTwo ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantThree ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationTwo ) )
+                                           .build();
+
+        TimeWindow expectedTwo = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantFive ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantSeven ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantSix ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationThree ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationFour ) )
+                                           .build();
+
+        Set<TimeWindow> timePools = new LinkedHashSet<>();
+        timePools.add( expectedOne );
+        timePools.add( expectedTwo );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .timePools( timePools )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSingletonThresholdSource() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                """;
+
+        ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
+
+        Set<ThresholdSource> sources = Set.of( thresholdSourceOne );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( sources )
+                                                                        .build();
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSingletonThresholdSourceAndProperties() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                  feature_name_from: predicted
+                  parameter: moon
+                  unit: qux
+                  provider: bar
+                  rating_provider: baz
+                  missing_value: -9999999.0
+                """;
+
+        ThresholdSource thresholdSource = ThresholdSourceBuilder.builder()
+                                                                .uri( URI.create( "https://foo" ) )
+                                                                .provider( "bar" )
+                                                                .ratingProvider( "baz" )
+                                                                .parameter( "moon" )
+                                                                .missingValue( -9999999.0 )
+                                                                .unit( "qux" )
+                                                                .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( Set.of( thresholdSource ) )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithMultipleThresholdSources() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  - uri: https://foo
+                  - uri: https://bar
+                  - uri: https://baz
+                """;
+
+        ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
+
+        ThresholdSource thresholdSourceTwo = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://bar" ) )
+                                                                   .build();
+
+        ThresholdSource thresholdSourceThree = ThresholdSourceBuilder.builder()
+                                                                     .uri( URI.create( "https://baz" ) )
+                                                                     .build();
+
+        // Preserve insertion order
+        Set<ThresholdSource> thresholdSources = new LinkedHashSet<>();
+        thresholdSources.add( thresholdSourceOne );
+        thresholdSources.add( thresholdSourceTwo );
+        thresholdSources.add( thresholdSourceThree );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( thresholdSources )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
 
         assertEquals( expected, actual );
     }

@@ -30,16 +30,19 @@ public class IngestResultNeedingRetry implements IngestResult
     private final short covariateCount;
     private final long surrogateKey;
     private final DataType dataType;
+    private final boolean hasNonMissingData;
 
     /**
      * Creates an instance.
      * @param dataSource the data source
      * @param dataType the optional data type
      * @param surrogateKey the surrogate key
+     * @param hasNonMissingData whether the data source has some valid values present
      */
     public IngestResultNeedingRetry( DataSource dataSource,
                                      DataType dataType,
-                                     long surrogateKey )
+                                     long surrogateKey,
+                                     boolean hasNonMissingData )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
@@ -98,6 +101,7 @@ public class IngestResultNeedingRetry implements IngestResult
         this.baselineCount = baselineCountInner;
         this.covariateCount = covariateCountInner;
         this.dataType = dataType;
+        this.hasNonMissingData = hasNonMissingData;
     }
 
     @Override
@@ -128,6 +132,12 @@ public class IngestResultNeedingRetry implements IngestResult
     public boolean requiresRetry()
     {
         return true;
+    }
+
+    @Override
+    public boolean hasNonMissingData()
+    {
+        return this.hasNonMissingData;
     }
 
     @Override
@@ -164,6 +174,7 @@ public class IngestResultNeedingRetry implements IngestResult
                                           .append( "rightCount", this.rightCount )
                                           .append( "baselineCount", this.baselineCount )
                                           .append( "covariateCount", this.covariateCount )
+                                          .append( "hasNonMissingData", this.hasNonMissingData() )
                                           .toString();
     }
 

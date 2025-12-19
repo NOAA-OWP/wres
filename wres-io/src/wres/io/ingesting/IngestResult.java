@@ -41,6 +41,12 @@ public interface IngestResult
     boolean requiresRetry();
 
     /**
+     * @return whether valid time-series data was ingested, i.e., some non-missing values.
+     */
+
+    boolean hasNonMissingData();
+
+    /**
      * How many times the timeseries is included in the left dataset.
      * @return Count of left dataset associations.
      */
@@ -71,6 +77,7 @@ public interface IngestResult
      * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the backing store, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
+     * @param hasNonMissingData true if non-missing data was found, false otherwise
      * @return a list with a single IngestResult in it
      */
 
@@ -78,13 +85,15 @@ public interface IngestResult
                                                   DataType dataType,
                                                   long surrogateKey,
                                                   boolean foundAlready,
-                                                  boolean requiresRetry )
+                                                  boolean requiresRetry,
+                                                  boolean hasNonMissingData )
     {
         IngestResult ingestResult = IngestResult.from( dataSource,
                                                        dataType,
                                                        surrogateKey,
                                                        foundAlready,
-                                                       requiresRetry );
+                                                       requiresRetry,
+                                                       hasNonMissingData );
         return List.of( ingestResult );
     }
 
@@ -95,13 +104,15 @@ public interface IngestResult
      * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the backing store, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
+     * @param hasNonMissingData true if non-missing data was found, false otherwise
      * @return the IngestResult
      */
     private static IngestResult from( DataSource dataSource,
                                       DataType dataType,
                                       long surrogateKey,
                                       boolean foundAlready,
-                                      boolean requiresRetry )
+                                      boolean requiresRetry,
+                                      boolean hasNonMissingData )
     {
         if ( requiresRetry && !foundAlready )
         {
@@ -112,14 +123,16 @@ public interface IngestResult
         {
             return new IngestResultNeedingRetry( dataSource,
                                                  dataType,
-                                                 surrogateKey );
+                                                 surrogateKey,
+                                                 hasNonMissingData );
         }
         else
         {
             return new IngestResultCompact( dataSource,
                                             dataType,
                                             surrogateKey,
-                                            foundAlready );
+                                            foundAlready,
+                                            hasNonMissingData );
         }
     }
 

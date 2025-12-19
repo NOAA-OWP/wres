@@ -197,7 +197,9 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
                                                     null,
                                                     griddedSource.getId(),
                                                     !griddedSource.performedInsert(),
-                                                    !complete );
+                                                    !complete,
+                                                    // Assume data is present as no time-series are ingested here
+                                                    true );
         }
         finally
         {

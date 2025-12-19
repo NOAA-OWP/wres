@@ -4,9 +4,12 @@ package wres.config.components;
 import java.time.Duration;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.config.serializers.EventDetectionParametersSerializer;
 
 /**
  * Event detection parameters.
@@ -19,6 +22,7 @@ import org.slf4j.LoggerFactory;
  * @param aggregation the event aggregation method to use when forming an intersection
  */
 @RecordBuilder
+@JsonSerialize( using = EventDetectionParametersSerializer.class )
 public record EventDetectionParameters( Duration halfLife,
                                         Duration windowSize,
                                         Duration minimumEventDuration,

@@ -63,7 +63,8 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
             parameters = Collections.unmodifiableMap( new LinkedHashMap<>( parameters ) );
         }
 
-        if ( Objects.nonNull( pattern ) && pattern.isBlank() )
+        if ( Objects.nonNull( pattern )
+             && pattern.isBlank() )
         {
             pattern = null;
         }

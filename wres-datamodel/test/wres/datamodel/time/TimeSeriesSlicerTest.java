@@ -27,6 +27,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import wres.config.components.TimeInterval;
+import wres.datamodel.MissingValues;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.Slicer;
@@ -1661,6 +1662,56 @@ final class TimeSeriesSlicerTest
                    () -> assertTrue( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( b ) ),
                    () -> assertTrue( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( c ) ),
                    () -> assertFalse( TimeSeriesSlicer.canInferValidTimeFromReferenceTimeAndLeadDuration( d ) ) );
+    }
+
+    @Test
+    void hasNonMissingValuesPresent()
+    {
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
+
+        SortedSet<Event<Double>> seriesOneValues = new TreeSet<>();
+        seriesOneValues.add( Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
+        seriesOneValues.add( Event.of( T1985_01_01T02_00_00Z, MissingValues.DOUBLE ) );
+        seriesOneValues.add( Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
+
+        TimeSeries<Double> seriesOne = TimeSeries.of( metadata, seriesOneValues );
+
+        SortedSet<Event<Double>> seriesTwoValues = new TreeSet<>();
+        seriesTwoValues.add( Event.of( T1985_01_01T01_00_00Z, MissingValues.DOUBLE ) );
+        seriesTwoValues.add( Event.of( T1985_01_01T02_00_00Z, MissingValues.DOUBLE ) );
+        seriesTwoValues.add( Event.of( T1985_01_01T03_00_00Z, MissingValues.DOUBLE ) );
+
+        TimeSeries<Double> seriesTwo = TimeSeries.of( metadata, seriesTwoValues );
+
+        assertAll( () -> assertTrue( TimeSeriesSlicer.hasNonMissingValues( seriesOne ) ),
+                   () -> assertFalse( TimeSeriesSlicer.hasNonMissingValues( seriesTwo ) ) );
+    }
+
+    @Test
+    void hasNonMissingEnsembleMemberValuesPresent()
+    {
+        TimeSeriesMetadata metadata = getBoilerplateMetadata();
+
+        SortedSet<Event<Ensemble>> seriesOneValues = new TreeSet<>();
+        seriesOneValues.add( Event.of( T1985_01_01T01_00_00Z, Ensemble.of( 1.0, MissingValues.DOUBLE ) ) );
+        seriesOneValues.add( Event.of( T1985_01_01T02_00_00Z,
+                                       Ensemble.of( MissingValues.DOUBLE, MissingValues.DOUBLE ) ) );
+        seriesOneValues.add( Event.of( T1985_01_01T03_00_00Z, Ensemble.of( MissingValues.DOUBLE, 3.0 ) ) );
+
+        TimeSeries<Ensemble> seriesOne = TimeSeries.of( metadata, seriesOneValues );
+
+        SortedSet<Event<Ensemble>> seriesTwoValues = new TreeSet<>();
+        seriesTwoValues.add( Event.of( T1985_01_01T01_00_00Z,
+                                       Ensemble.of( MissingValues.DOUBLE, MissingValues.DOUBLE ) ) );
+        seriesTwoValues.add( Event.of( T1985_01_01T02_00_00Z,
+                                       Ensemble.of( MissingValues.DOUBLE, MissingValues.DOUBLE ) ) );
+        seriesTwoValues.add( Event.of( T1985_01_01T03_00_00Z,
+                                       Ensemble.of( MissingValues.DOUBLE ) ) );
+
+        TimeSeries<Ensemble> seriesTwo = TimeSeries.of( metadata, seriesTwoValues );
+
+        assertAll( () -> assertTrue( TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( seriesOne ) ),
+                   () -> assertFalse( TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( seriesTwo ) ) );
     }
 
     /**

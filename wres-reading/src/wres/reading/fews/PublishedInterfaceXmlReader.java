@@ -728,7 +728,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         // new time-series if there is no ensemble member label, just a default name
         boolean metadataEqual = metadata.equals( currentTimeSeriesMetadata.get() );
 
-        if ( ( !metadataEqual || traceValues.containsKey( DEFAULT_ENSEMBLE_NAME ) ) && !traceValues.isEmpty() )
+        if ( ( !metadataEqual
+               || traceValues.containsKey( DEFAULT_ENSEMBLE_NAME ) )
+             && !traceValues.isEmpty() )
         {
             if ( !metadataEqual && LOGGER.isDebugEnabled() )
             {
