@@ -277,7 +277,7 @@ project(':wres-system') {
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
         annotationProcessor 'org.projectlombok:lombok:1.18.42'
 
         // Database drivers need to be on the runtime classpath in order to
@@ -699,7 +699,7 @@ project(':wres-reading') {
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.38'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
         annotationProcessor 'org.projectlombok:lombok:1.18.42'
 
         // Use mockserver as a mock server for mock API responses
