@@ -340,7 +340,7 @@ project(':wres-datamodel') {
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -784,7 +784,7 @@ project(':wres-eventdetection') {
         implementation 'org.apache.commons:commons-lang3:3.18.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -819,7 +819,7 @@ project(':wres-metrics') {
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -944,7 +944,7 @@ project(':wres-statistics') {
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1058,7 +1058,7 @@ project(':wres-vis') {
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.1'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1097,7 +1097,7 @@ project(':wres-config') {
         api project(':wres-statistics')
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1248,7 +1248,7 @@ project(':wres-worker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
         implementation 'com.rabbitmq:amqp-client:5.26.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1508,7 +1508,7 @@ project(':wres-tasker') {
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1647,7 +1647,7 @@ project(':wres-eventsbroker') {
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1700,7 +1700,7 @@ project(':wres-events') {
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.18.0'
 
-        runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -2021,7 +2021,7 @@ dependencies {
     // Support ALPN
     runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.1'
 
-    runtimeOnly('ch.qos.logback:logback-classic:1.5.20') {
+    runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
