@@ -272,7 +272,7 @@ project(':wres-system') {
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
         // JAXB runtime
-        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
+        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:4.0.6'
 
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
