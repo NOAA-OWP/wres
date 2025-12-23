@@ -19,12 +19,12 @@ buildscript {
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute module( 'com.overzealous:remark:1.1.0' ) using module( 'com.wavefront:remark:2023-07.07' ) because "not available on maven central anymore"
+            substitute module('com.overzealous:remark:1.1.0') using module('com.wavefront:remark:2023-07.07') because "not available on maven central anymore"
         }
 
         // Forcing a newer version than what comes in with default com.github.seanrl.jaxb
         // plugin below. This addresses a dependabot reported issue. See GitHub #478.
-        resolutionStrategy.force( 'org.codehaus.groovy:groovy-all:3.0.25' )
+        resolutionStrategy.force('org.codehaus.groovy:groovy-all:3.0.25')
     }
     repositories {
         mavenCentral()
@@ -54,7 +54,6 @@ plugins {
 
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
-
 
     // To generate de/serialization classes for message bodies
     // Bumping this to 0.9.5 caused wres-statistics to fail
@@ -107,7 +106,6 @@ testCodeCoverageReport {
         csv.required = true
     }
 }
-
 
 repositories {
     mavenCentral()
@@ -271,7 +269,7 @@ project(':wres-system') {
         }
 
         // For Java 9+ compatibility:
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
         // JAXB runtime
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
@@ -684,13 +682,11 @@ project(':wres-reading') {
         api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
         api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
         api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        api 'javax.xml.bind:jaxb-api:2.3.1'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         api 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'com.opencsv:opencsv:5.12.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
@@ -723,7 +719,7 @@ project(':wres-reading') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
 
-        testImplementation ('org.mock-server:mockserver-client-java:5.15.0') {
+        testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -731,7 +727,7 @@ project(':wres-reading') {
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
-        testImplementation ('org.mock-server:mockserver-core:5.15.0') {
+        testImplementation('org.mock-server:mockserver-core:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -1277,7 +1273,7 @@ project(':wres-worker') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
 
-        testImplementation ('org.mock-server:mockserver-client-java:5.15.0') {
+        testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -1285,7 +1281,7 @@ project(':wres-worker') {
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
-        testImplementation ('org.mock-server:mockserver-core:5.15.0') {
+        testImplementation('org.mock-server:mockserver-core:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -1301,7 +1297,7 @@ project(':wres-worker') {
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
         testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
         testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
-        
+
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
@@ -1325,7 +1321,7 @@ project(':wres-worker') {
 
     mainClassName = 'wres.worker.Worker'
 
-    applicationDefaultJvmArgs = ['-Xms64m','-Xmx64m',
+    applicationDefaultJvmArgs = ['-Xms64m', '-Xmx64m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
@@ -1489,7 +1485,8 @@ project(':wres-tasker') {
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-        implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
         implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.1'
         implementation 'org.eclipse.jetty:jetty-http:12.1.1'

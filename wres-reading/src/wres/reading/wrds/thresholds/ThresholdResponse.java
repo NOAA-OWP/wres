@@ -2,11 +2,11 @@ package wres.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * A threshold response.
