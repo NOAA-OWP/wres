@@ -1135,8 +1135,8 @@ project(':wres-config') {
         api 'com.networknt:json-schema-validator:1.5.9'
 
         // To auto-generate builders for Java records through annotation processing
-        annotationProcessor 'io.soabase.record-builder:record-builder-processor:47'
-        compileOnly 'io.soabase.record-builder:record-builder-core:47'
+        annotationProcessor 'io.soabase.record-builder:record-builder-processor:48'
+        compileOnly 'io.soabase.record-builder:record-builder-core:48'
 
         // To accurately detect mime types of files.
         api 'org.apache.tika:tika-core:3.2.3'
@@ -2029,8 +2029,8 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
     // To auto-generate builders for Java records through annotation processing
-    annotationProcessor 'io.soabase.record-builder:record-builder-processor:47'
-    compileOnly 'io.soabase.record-builder:record-builder-core:47'
+    annotationProcessor 'io.soabase.record-builder:record-builder-processor:48'
+    compileOnly 'io.soabase.record-builder:record-builder-core:48'
 
     // JUnit 5 API and runtime
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
