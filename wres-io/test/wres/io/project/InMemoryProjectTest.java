@@ -20,36 +20,36 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.config.yaml.components.AnalysisTimes;
-import wres.config.yaml.components.AnalysisTimesBuilder;
-import wres.config.yaml.components.BaselineDataset;
-import wres.config.yaml.components.BaselineDatasetBuilder;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
-import wres.config.yaml.components.GeneratedBaseline;
-import wres.config.yaml.components.GeneratedBaselineBuilder;
-import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.LeadTimeInterval;
-import wres.config.yaml.components.LeadTimeIntervalBuilder;
-import wres.config.yaml.components.Season;
-import wres.config.yaml.components.SeasonBuilder;
-import wres.config.yaml.components.Source;
-import wres.config.yaml.components.SourceBuilder;
-import wres.config.yaml.components.Threshold;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.TimeInterval;
-import wres.config.yaml.components.TimeIntervalBuilder;
-import wres.config.yaml.components.TimePools;
-import wres.config.yaml.components.TimePoolsBuilder;
-import wres.config.yaml.components.TimeScaleBuilder;
-import wres.config.yaml.components.TimeScaleLenience;
-import wres.config.yaml.components.Variable;
-import wres.config.yaml.components.VariableBuilder;
+import wres.config.components.AnalysisTimes;
+import wres.config.components.AnalysisTimesBuilder;
+import wres.config.components.BaselineDataset;
+import wres.config.components.BaselineDatasetBuilder;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.EvaluationDeclarationBuilder;
+import wres.config.components.Features;
+import wres.config.components.FeaturesBuilder;
+import wres.config.components.GeneratedBaseline;
+import wres.config.components.GeneratedBaselineBuilder;
+import wres.config.components.GeneratedBaselines;
+import wres.config.components.LeadTimeInterval;
+import wres.config.components.LeadTimeIntervalBuilder;
+import wres.config.components.Season;
+import wres.config.components.SeasonBuilder;
+import wres.config.components.Source;
+import wres.config.components.SourceBuilder;
+import wres.config.components.Threshold;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.TimeInterval;
+import wres.config.components.TimeIntervalBuilder;
+import wres.config.components.TimePools;
+import wres.config.components.TimePoolsBuilder;
+import wres.config.components.TimeScaleBuilder;
+import wres.config.components.TimeScaleLenience;
+import wres.config.components.Variable;
+import wres.config.components.VariableBuilder;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -212,7 +212,7 @@ class InMemoryProjectTest
                                      .build();
         wres.statistics.generated.Threshold probThreshold =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue( 0.4 )
+                                                   .setObservedThresholdValue( 0.4 )
                                                    .build();
         Set<Threshold> thresholds =
                 Set.of( ThresholdBuilder.builder()

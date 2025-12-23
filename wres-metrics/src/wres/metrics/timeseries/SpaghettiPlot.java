@@ -12,7 +12,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;

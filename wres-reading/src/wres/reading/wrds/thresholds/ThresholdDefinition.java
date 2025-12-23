@@ -3,8 +3,8 @@ package wres.reading.wrds.thresholds;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
 import wres.reading.wrds.geography.Location;
 import wres.statistics.generated.Threshold;
 
@@ -149,7 +149,8 @@ class ThresholdDefinition implements Serializable
         String thresholdProvider = null;
         if ( Objects.nonNull( this.getMetadata() ) )
         {
-            thresholdProvider = this.getMetadata().getThresholdSource();
+            thresholdProvider = this.getMetadata()
+                                    .getThresholdSource();
         }
 
         return thresholdProvider;
@@ -177,7 +178,9 @@ class ThresholdDefinition implements Serializable
         if ( Objects.nonNull( this.getCalcFlowValues() ) )
         {
 
-            ratingProvider = this.getCalcFlowValues().getRatingCurve().getSource();
+            ratingProvider = this.getCalcFlowValues()
+                                 .getRatingCurve()
+                                 .getSource();
         }
 
         return ratingProvider;
@@ -363,7 +366,7 @@ class ThresholdDefinition implements Serializable
         }
 
         return Threshold.newBuilder()
-                        .setLeftThresholdValue( threshold )
+                        .setObservedThresholdValue( threshold )
                         .setOperator( Threshold.ThresholdOperator.valueOf( thresholdOperator.name() ) )
                         .setDataType( Threshold.ThresholdDataType.valueOf( dataType.name() ) )
                         .setName( name )

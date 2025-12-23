@@ -27,27 +27,18 @@ public class Scenario300
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "LGNN5_LGNN5_HEFS_BRIER_SCORE.csv" ),
+            Set.of( Path.of( "evaluation.csv.gz" ),
+                    Path.of( "evaluation.csvt" ),
                     Path.of( "LGNN5_LGNN5_HEFS_BRIER_SCORE.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_108000_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_108000_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_129600_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_129600_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_151200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_151200_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_172800_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_172800_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_21600_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_21600_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_43200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_43200_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_64800_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_64800_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.png" ),
-                    Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.png" ),
                     Path.of( "pairs.csv.gz" ) );
 

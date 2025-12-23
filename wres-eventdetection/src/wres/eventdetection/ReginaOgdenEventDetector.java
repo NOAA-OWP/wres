@@ -23,8 +23,8 @@ import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.EventDetectionParameters;
-import wres.config.yaml.components.EventDetectionParametersBuilder;
+import wres.config.components.EventDetectionParameters;
+import wres.config.components.EventDetectionParametersBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;

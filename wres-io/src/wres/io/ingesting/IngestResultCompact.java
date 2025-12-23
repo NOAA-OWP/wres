@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import static java.lang.Short.MAX_VALUE;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
 import wres.reading.DataSource;
 
 /**
@@ -30,6 +30,7 @@ class IngestResultCompact implements IngestResult
     private final short baselineCount;
     private final short covariateCount;
     private final boolean foundAlready;
+    private final boolean hasNonMissingData;
     private final DataType dataType;
     private final Set<DatasetOrientation> orientations;
 
@@ -38,11 +39,13 @@ class IngestResultCompact implements IngestResult
      * @param dataType the optional data type
      * @param surrogateKey the surrogate key
      * @param foundAlready whether the time-series has been found already
+     * @param hasNonMissingData true if non-missing data was found, false otherwise
      */
     IngestResultCompact( DataSource dataSource,
                          DataType dataType,
                          long surrogateKey,
-                         boolean foundAlready )
+                         boolean foundAlready,
+                         boolean hasNonMissingData )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
@@ -103,6 +106,7 @@ class IngestResultCompact implements IngestResult
         this.baselineCount = baselineCountInner;
         this.covariateCount = covariateCountInner;
         this.dataType = dataType;
+        this.hasNonMissingData = hasNonMissingData;
     }
 
     /**
@@ -163,6 +167,12 @@ class IngestResultCompact implements IngestResult
     }
 
     @Override
+    public boolean hasNonMissingData()
+    {
+        return this.hasNonMissingData;
+    }
+
+    @Override
     public String toString()
     {
         return new ToStringBuilder( this ).append( "surrogateKey", this.surrogateKey )
@@ -171,6 +181,7 @@ class IngestResultCompact implements IngestResult
                                           .append( "baselineCount", this.baselineCount )
                                           .append( "covariateCount", this.covariateCount )
                                           .append( "foundAlready", this.foundAlready )
+                                          .append( "hasNonMissingData", this.hasNonMissingData )
                                           .toString();
     }
 

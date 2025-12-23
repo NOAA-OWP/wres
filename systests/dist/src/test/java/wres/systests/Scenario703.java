@@ -26,7 +26,7 @@ public class Scenario703
     private static final String NEWLINE = System.lineSeparator();
 
     // There are 8 metrics and we expect at least 300 features.
-    private static final int EXPECTED_AT_LEAST_THIS_MANY_CSV_FILES = 8 * 300;
+    private static final int EXPECTED_AT_LEAST_THIS_MANY_CSV_FILES = 2;
 
     /**
      * A set of netCDF file names to always expect
@@ -118,13 +118,10 @@ public class Scenario703
         // test will do broad-strokes assertions rather than precise ones. The
         // correctness of each WRES component involved is handled elsewhere.
         int countOfCsvFiles = csvFilesThatExist.size();
-        assertTrue( "The count of CSV files was expected to be above "
+        assertTrue( "The count of CSV files was expected to be "
                     + EXPECTED_AT_LEAST_THIS_MANY_CSV_FILES + " but was "
                     + countOfCsvFiles,
-                    countOfCsvFiles > EXPECTED_AT_LEAST_THIS_MANY_CSV_FILES );
-        assertTrue( "The count of non-pairs CSV files was expected to be divisible by 8 but was not: "
-                    + ( countOfCsvFiles - 1 ),
-                    ( countOfCsvFiles - 1 ) % 8 == 0 );
+                    countOfCsvFiles == EXPECTED_AT_LEAST_THIS_MANY_CSV_FILES );
         LOGGER.info( "########################################################## COMPLETED "
                      + this.getClass().getSimpleName().toLowerCase()
                      + NEWLINE );

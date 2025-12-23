@@ -33,7 +33,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DataType;
+import wres.config.components.DataType;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -464,7 +464,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                     dataType,
                                                     0,
                                                     true,
-                                                    true );
+                                                    true,
+                                                    TimeSeriesSlicer.hasNonMissingValues( timeSeries ) );
         }
 
         DatabaseLockManager innerLockManager = this.getLockManager();
@@ -496,13 +497,17 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                            dataType,
                                                            source.getId(),
                                                            true,
-                                                           true );
+                                                           true,
+                                                           TimeSeriesSlicer.hasNonMissingValues( timeSeries ) );
             }
         }
         // Source was not inserted by this thread, so this is an existing source. But was it completed or abandoned?
         else
         {
-            results = this.finalizeExistingSource( source, dataType, dataSource );
+            results = this.finalizeExistingSource( source,
+                                                   dataType,
+                                                   dataSource,
+                                                   TimeSeriesSlicer.hasNonMissingValues( timeSeries ) );
         }
 
         return results;
@@ -531,7 +536,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                    source.getId() );
 
         // Finalize, which marks the source complete
-        return this.finalizeNewSource( source, dataType, latches, dataSource );
+        return this.finalizeNewSource( source,
+                                       dataType,
+                                       latches,
+                                       dataSource,
+                                       TimeSeriesSlicer.hasNonMissingValues( timeSeries ) );
     }
 
     /**
@@ -628,7 +637,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                     dataType,
                                                     0,
                                                     true,
-                                                    true );
+                                                    true,
+                                                    TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( timeSeries ) );
         }
 
         DatabaseLockManager innerLockManager = this.getLockManager();
@@ -656,17 +666,22 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                               dataSource );
 
                 // Busy, retry again later
+                boolean nonMissingValues = TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( timeSeries );
                 results = IngestResult.singleItemListFrom( dataSource,
                                                            dataType,
                                                            source.getId(),
                                                            true,
-                                                           true );
+                                                           true,
+                                                           nonMissingValues );
             }
         }
         // Source was not inserted by this thread, so this is an existing source. But was it completed or abandoned?
         else
         {
-            results = this.finalizeExistingSource( source, dataType, dataSource );
+            results = this.finalizeExistingSource( source,
+                                                   dataType,
+                                                   dataSource,
+                                                   TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( timeSeries ) );
         }
 
         return results;
@@ -694,8 +709,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                timeSeries,
                                                source.getId() );
 
+        boolean nonMissing = TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( timeSeries );
+
         // Finalize, which marks the source complete
-        return this.finalizeNewSource( source, dataType, latches, dataSource );
+        return this.finalizeNewSource( source, dataType, latches, dataSource, nonMissing );
     }
 
     /**
@@ -804,7 +821,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                         null,
                                                         sourceDetails.getId(),
                                                         false,
-                                                        !completed );
+                                                        !completed,
+                                                        // Assume some data present until proven otherwise at read time
+                                                        true );
             }
 
             // Not present, so save it
@@ -960,13 +979,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * @param dataType the data type
      * @param latches the latches used to coordinate with other ingest tasks
      * @param dataSource the data source
+     * @param nonMissingValuesPresent whether the source has some valid data
      * @return the ingest results
      */
 
     private List<IngestResult> finalizeNewSource( SourceDetails source,
                                                   DataType dataType,
                                                   Set<Pair<CountDownLatch, CountDownLatch>> latches,
-                                                  DataSource dataSource )
+                                                  DataSource dataSource,
+                                                  boolean nonMissingValuesPresent )
     {
         /* Mark the given source completed because the caller was in charge of
          * ingest and needs to mark it so.
@@ -1040,7 +1061,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                 dataType,
                                                 source.getId(),
                                                 false,
-                                                false );
+                                                false,
+                                                nonMissingValuesPresent );
     }
 
     /**
@@ -1051,12 +1073,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * @param source the source details
      * @param dataType the data type
      * @param dataSource the data source
+     * @param nonMissingValuesPresent whether the source has some valid data present
      * @return the ingest results
      */
 
     private List<IngestResult> finalizeExistingSource( SourceDetails source,
                                                        DataType dataType,
-                                                       DataSource dataSource )
+                                                       DataSource dataSource,
+                                                       boolean nonMissingValuesPresent )
     {
         // Completed, no retries needed
         if ( this.isSourceComplete( source ) )
@@ -1068,7 +1092,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                     dataType,
                                                     source.getId(),
                                                     true,
-                                                    false );
+                                                    false,
+                                                    nonMissingValuesPresent );
         }
         // Started, but not completed (unless in the interim) and not in progress, so remove and retry later
         else
@@ -1082,7 +1107,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                         dataType,
                                                         source.getId(),
                                                         true,
-                                                        false );
+                                                        false,
+                                                        nonMissingValuesPresent );
             }
 
             long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.getUri() );
@@ -1133,7 +1159,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                     dataType,
                                                     source.getId(),
                                                     true,
-                                                    true );
+                                                    true,
+                                                    nonMissingValuesPresent );
         }
     }
 
@@ -1369,12 +1396,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             throw new IngestException( "At least one reference datetime is required until we refactor TSV to "
                                        + "permit zero." );
         }
-
-        //        if ( rowCount != 1 )
-        //        {
-        //            throw new IngestException( "Exactly one reference datetime is required until we allow callers to "
-        //                                       + "declare which one to use at evaluation time." );
-        //        }
 
         List<String[]> rows = new ArrayList<>( rowCount );
 

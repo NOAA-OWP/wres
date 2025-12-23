@@ -29,8 +29,9 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.TimeInterval;
+import wres.config.components.DataType;
+import wres.config.components.TimeInterval;
+import wres.datamodel.MissingValues;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -1043,7 +1044,8 @@ public final class TimeSeriesSlicer
 
         Objects.requireNonNull( labels );
 
-        if ( !labels.isEmpty() && labels.size() != timeSeries.size() )
+        if ( !labels.isEmpty()
+             && labels.size() != timeSeries.size() )
         {
             throw new IllegalArgumentException( "Expected zero labels or as many labels as time-series ("
                                                 + timeSeries.size()
@@ -1415,7 +1417,7 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Returns the time-series data type, defaulting to {@link wres.config.yaml.components.DataType#OBSERVATIONS}.
+     * Returns the time-series data type, defaulting to {@link wres.config.components.DataType#OBSERVATIONS}.
      *
      * @param timeSeries the time-series
      * @return the time-series data type
@@ -1487,6 +1489,46 @@ public final class TimeSeriesSlicer
             }
             return TimeSeries.of( series.getMetadata(), filtered );
         };
+    }
+
+    /**
+     * Determines whether the time-series has one or more values that do not correspond to the
+     * {@link MissingValues#DOUBLE}.
+     *
+     * @param timeSeries the time-series
+     * @return whether there are non-missing values present
+     * @throws NullPointerException if the time-series is null
+     */
+
+    public static boolean hasNonMissingValues( TimeSeries<Double> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        return timeSeries.getEvents()
+                         .stream()
+                         .mapToDouble( Event::getValue )
+                         .anyMatch( MissingValues::isNotMissingValue );
+    }
+
+    /**
+     * Determines whether the time-series has one or more values that do not correspond to the
+     * {@link MissingValues#DOUBLE}. Equivalent to {@link TimeSeriesSlicer#hasNonMissingValues(TimeSeries)} for an
+     * ensemble time-series.
+     *
+     * @param timeSeries the time-series
+     * @return whether there are non-missing values present
+     * @throws NullPointerException if the time-series is null
+     */
+
+    public static boolean hasNonMissingEnsembleMemberValues( TimeSeries<Ensemble> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        return timeSeries.getEvents()
+                         .stream()
+                         .flatMapToDouble( e -> Arrays.stream( e.getValue()
+                                                                .getMembers() ) )
+                         .anyMatch( MissingValues::isNotMissingValue );
     }
 
     /**

@@ -8,16 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -29,13 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesSlicer;
-import wres.datamodel.types.Ensemble;
 import wres.reading.DataSource;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
-import wres.reading.TimeSeriesHeader;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 
@@ -218,51 +209,21 @@ public class WrdsHefsJsonReader implements TimeSeriesReader
 
             if ( LOGGER.isDebugEnabled() )
             {
-                byte[] firstBytes = new byte[2048];
-                System.arraycopy( rawBytes, 0, firstBytes, 0, 2048 );
-                LOGGER.debug( "First 2048 bytes of time series from {} as UTF-8: {}",
+                int byteCount = Math.min( 2048, rawBytes.length );
+                byte[] firstBytes = new byte[byteCount];
+                System.arraycopy( rawBytes, 0, firstBytes, 0, byteCount );
+                LOGGER.debug( "First {} bytes of time series from {} as UTF-8: {}",
+                              byteCount,
                               uri,
                               new String( firstBytes,
                                           StandardCharsets.UTF_8 ) );
             }
 
-            HefsTrace[] traces = OBJECT_MAPPER.readValue( rawBytes, HefsTrace[].class );
+            HefsForecast[] forecasts = OBJECT_MAPPER.readValue( rawBytes, HefsForecast[].class );
 
-            Map<TimeSeriesHeader, SortedMap<String, TimeSeries<Double>>> ensembleTraces = new HashMap<>();
-
-            for ( HefsTrace nextTrace : traces )
-            {
-                TimeSeriesHeader metadata = nextTrace.header();
-
-                LOGGER.debug( "Read a time-series with the following metadata: {}.", metadata );
-
-                SortedMap<String, TimeSeries<Double>> nextTraceMap = ensembleTraces.get( metadata );
-
-                // Create a new map
-                if ( Objects.isNull( nextTraceMap ) )
-                {
-                    nextTraceMap = new TreeMap<>();
-                    ensembleTraces.put( metadata, nextTraceMap );
-                }
-
-                nextTraceMap.put( metadata.ensembleMemberIndex(), nextTrace.timeSeries() );
-            }
-            List<TimeSeriesTuple> tuples = new ArrayList<>();
-            for ( SortedMap<String, TimeSeries<Double>> nextSeries : ensembleTraces.values() )
-            {
-                SortedSet<String> members = new TreeSet<>();
-                List<TimeSeries<Double>> nextTraces = new ArrayList<>();
-                for ( Map.Entry<String, TimeSeries<Double>> next : nextSeries.entrySet() )
-                {
-                    members.add( next.getKey() );
-                    nextTraces.add( next.getValue() );
-                }
-                TimeSeries<Ensemble> nextEnsemble = TimeSeriesSlicer.compose( nextTraces, members );
-                TimeSeriesTuple nextTuple = TimeSeriesTuple.ofEnsemble( nextEnsemble, dataSource );
-                tuples.add( nextTuple );
-            }
-
-            return Collections.unmodifiableList( tuples );
+            return Arrays.stream( forecasts )
+                         .map( f -> TimeSeriesTuple.ofEnsemble( f.timeSeries(), dataSource ) )
+                         .toList();
         }
         catch ( IOException e )
         {

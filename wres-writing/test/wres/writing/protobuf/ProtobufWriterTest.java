@@ -72,7 +72,7 @@ public class ProtobufWriterTest
         Pool.Builder poolOneProto =
                 Pool.newBuilder()
                     .setEventThreshold( Threshold.newBuilder()
-                                                 .setLeftThresholdValue( 12345 )
+                                                 .setObservedThresholdValue( 12345 )
                                                  .setName( "Flooding" ) )
                     .setGeometryGroup( GeometryGroup.newBuilder()
                                                     .addGeometryTuples( GeometryTuple.newBuilder()
@@ -131,7 +131,7 @@ public class ProtobufWriterTest
         Pool.Builder poolTwoProto =
                 Pool.newBuilder()
                     .setEventThreshold( Threshold.newBuilder()
-                                                 .setLeftThresholdValue( 12345 )
+                                                 .setObservedThresholdValue( 12345 )
                                                  .setName( "Flooding" ) )
                     .setGeometryGroup( GeometryGroup.newBuilder()
                                                     .addGeometryTuples( GeometryTuple.newBuilder()

@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -212,15 +212,30 @@ public final class DataUtilities
         Objects.requireNonNull( timeWindow );
         Objects.requireNonNull( units );
 
+        return DataUtilities.toStringSafeDateTimesOnly( timeWindow )
+               + "_"
+               + DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, units );
+    }
+
+    /**
+     * Returns a safe and user-friendly string representation of the date-times in a {@link TimeWindowOuter} for use
+     * in a path to a web resource.
+     * @param timeWindow the timeWindow
+     * @return the safe string representation
+     * @throws NullPointerException if either input is null
+     */
+
+    public static String toStringSafeDateTimesOnly( TimeWindowOuter timeWindow )
+    {
+        Objects.requireNonNull( timeWindow );
+
         return DataUtilities.toStringSafe( timeWindow.getEarliestReferenceTime() )
                + "_TO_"
                + DataUtilities.toStringSafe( timeWindow.getLatestReferenceTime() )
                + "_"
                + DataUtilities.toStringSafe( timeWindow.getEarliestValidTime() )
                + "_TO_"
-               + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() )
-               + "_"
-               + DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, units );
+               + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() );
     }
 
     /**
@@ -236,10 +251,17 @@ public final class DataUtilities
     {
         Objects.requireNonNull( timeWindow );
         Objects.requireNonNull( units );
-
-        String baseString = DataUtilities.toStringSafe( timeWindow.getEarliestLeadDuration(), units )
-                            + "_TO_"
-                            + DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), units );
+        String baseString;
+        if ( Objects.equals( timeWindow.getEarliestLeadDuration(), timeWindow.getLatestLeadDuration() ) )
+        {
+            baseString = DataUtilities.toStringSafe( timeWindow.getEarliestLeadDuration(), units );
+        }
+        else
+        {
+            baseString = DataUtilities.toStringSafe( timeWindow.getEarliestLeadDuration(), units )
+                         + "_TO_"
+                         + DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), units );
+        }
 
         if ( !baseString.endsWith( MAXDURATION ) )
         {
@@ -366,8 +388,14 @@ public final class DataUtilities
     }
 
     /**
-     * Returns a path to write from the inputs. 
-     *
+     * <p>Returns a path to write from the inputs using a limited subset of metadata, notably:
+     * <ol>
+     *    <li>{@link DataUtilities#getGeographicName(Pool)};</li>
+     *    <li>{@link DataUtilities#getDatasetName(Evaluation, Pool)};</li>
+     *    <li>The {@link MetricConstants#name()} of the metric;</li>
+     *    <li>The {@link MetricConstants#name()} of the metric component, unless it is {@link MetricConstants#MAIN}; and</li>
+     *    <li>The supplied append string.</li>
+     * </ol>
      * @param outputDirectory the directory into which to write
      * @param meta the metadata
      * @param append an optional string to append to the end of the path, may be null
@@ -410,13 +438,15 @@ public final class DataUtilities
         joinElements.add( metricName.name() );
 
         // Add a non-default component name
-        if ( Objects.nonNull( metricComponentName ) && MetricConstants.MAIN != metricComponentName )
+        if ( Objects.nonNull( metricComponentName )
+             && MetricConstants.MAIN != metricComponentName )
         {
             joinElements.add( metricComponentName.name() );
         }
 
         // Add optional append
-        if ( Objects.nonNull( append ) && !append.isBlank() )
+        if ( Objects.nonNull( append )
+             && !append.isBlank() )
         {
             joinElements.add( append );
         }
@@ -430,6 +460,7 @@ public final class DataUtilities
     /**
      * Returns a path to write from the inputs.
      *
+     * @see #getPathFromPoolMetadata(Path, PoolMetadata, String, MetricConstants, MetricConstants)
      * @param outputDirectory the directory into which to write
      * @param meta the metadata
      * @param metricName the metric name

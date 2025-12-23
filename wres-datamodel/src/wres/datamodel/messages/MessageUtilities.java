@@ -20,7 +20,6 @@ import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ValueFilter;
-import wres.statistics.generated.Outputs.CsvFormat;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Pairs.Pair;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
@@ -182,13 +181,6 @@ public class MessageUtilities
             return compare;
         }
 
-        compare = Boolean.compare( first.hasCsv(), second.hasCsv() );
-
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-
         compare = Boolean.compare( first.hasPng(), second.hasPng() );
 
         if ( compare != 0 )
@@ -197,20 +189,6 @@ public class MessageUtilities
         }
 
         compare = Boolean.compare( first.hasSvg(), second.hasSvg() );
-
-        if ( compare != 0 )
-        {
-            return compare;
-        }
-
-        // Compare the format options for formats that have options
-        CsvFormat csv = first.getCsv();
-        CsvFormat csvOther = second.getCsv();
-
-        compare = csv.getOptions()
-                     .getDecimalFormat()
-                     .compareTo( csvOther.getOptions()
-                                         .getDecimalFormat() );
 
         if ( compare != 0 )
         {
@@ -520,60 +498,60 @@ public class MessageUtilities
             return compare;
         }
 
-        compare = Boolean.compare( first.hasLeftThresholdValue(), second.hasLeftThresholdValue() );
+        compare = Boolean.compare( first.hasObservedThresholdValue(), second.hasObservedThresholdValue() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Boolean.compare( first.hasRightThresholdValue(), second.hasRightThresholdValue() );
+        compare = Boolean.compare( first.hasPredictedThresholdValue(), second.hasPredictedThresholdValue() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Boolean.compare( first.hasLeftThresholdProbability(), second.hasLeftThresholdProbability() );
+        compare = Boolean.compare( first.hasObservedThresholdProbability(), second.hasObservedThresholdProbability() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Boolean.compare( first.hasRightThresholdProbability(), second.hasRightThresholdProbability() );
+        compare = Boolean.compare( first.hasPredictedThresholdProbability(), second.hasPredictedThresholdProbability() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getLeftThresholdValue(),
-                                  second.getLeftThresholdValue() );
+        compare = Double.compare( first.getObservedThresholdValue(),
+                                  second.getObservedThresholdValue() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getRightThresholdValue(),
-                                  second.getRightThresholdValue() );
+        compare = Double.compare( first.getPredictedThresholdValue(),
+                                  second.getPredictedThresholdValue() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getLeftThresholdProbability(),
-                                  second.getLeftThresholdProbability() );
+        compare = Double.compare( first.getObservedThresholdProbability(),
+                                  second.getObservedThresholdProbability() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getRightThresholdProbability(),
-                                  second.getRightThresholdProbability() );
+        compare = Double.compare( first.getPredictedThresholdProbability(),
+                                  second.getPredictedThresholdProbability() );
 
         if ( compare != 0 )
         {

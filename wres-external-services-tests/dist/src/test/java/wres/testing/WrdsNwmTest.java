@@ -72,10 +72,10 @@ public class WrdsNwmTest
     private static final WebClient WEB_CLIENT = new WebClient( true, OK_HTTP_CLIENT );
     private static final URI WRDS_NWM_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
-                        + "/api/nwm3.0/v3.0/ops/medium_range/streamflow/nwm_feature_id/18384141/?forecast_type=ensemble" );
+                        + "/api/nwm3.0/v3.0/streamflow/medium_range/streamflow/nwm_feature_id/18384141/?forecast_type=ensemble" );
     private static final URI WRDS_NWM_URI_TWO =
             URI.create( "https://" + WRDS_HOSTNAME
-                        + "/api/nwm3.0/v3.0/ops/medium_range/streamflow/nwm_feature_id/5907079/?forecast_type=ensemble" );
+                        + "/api/nwm3.0/v3.0/streamflow/medium_range/streamflow/nwm_feature_id/5907079/?forecast_type=ensemble" );
 
     @Test
     void canGetMinimalResponseFromWrdsNwmWithWebClient() throws IOException

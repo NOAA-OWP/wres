@@ -319,6 +319,14 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
+      # This property is also defined per source
+      missing_value:
+        anyOf:
+          - type: array
+            items:
+              type: number
+            uniqueItems: true
+          - type: number
       unit:
         type: string
         minLength: 1
@@ -1797,7 +1805,6 @@ definitions:
     title: The statistics serialization formats.
     type: string
     enum:
-      - csv
       - csv2
       - png
       - svg

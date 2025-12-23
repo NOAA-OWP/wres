@@ -18,9 +18,9 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.Dataset;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.Dataset;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -139,7 +139,7 @@ public class RetrieverUtilities
                                                       Dataset dataset )
     {
         // Declared existing scale, which can be used to augment a source
-        wres.config.yaml.components.TimeScale declaredExistingTimeScale = dataset.timeScale();
+        wres.config.components.TimeScale declaredExistingTimeScale = dataset.timeScale();
 
         if ( Objects.nonNull( declaredExistingTimeScale ) )
         {

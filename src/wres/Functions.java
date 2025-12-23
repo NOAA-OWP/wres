@@ -31,13 +31,9 @@ import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 
-import wres.config.MultiDeclarationFactory;
-import wres.config.xml.ProjectConfigPlus;
-import wres.config.xml.ProjectConfigs;
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.DeclarationMigrator;
-import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.DeclarationException;
+import wres.config.DeclarationFactory;
+import wres.config.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
@@ -400,7 +396,7 @@ public final class Functions
 
     public static ExecutionResult startServer( SharedResources sharedResources )
     {
-        ExecutionResult result = ExecutionResult.failure();
+        ExecutionResult result;
         Instant startedExecution = Instant.now();
         try
         {
@@ -480,8 +476,8 @@ public final class Functions
                 try
                 {
                     FileSystem fileSystem = FileSystems.getDefault();
-                    declarationString = MultiDeclarationFactory.getDeclarationString( projectPath, fileSystem );
-                    declaration = MultiDeclarationFactory.from( declarationString, fileSystem, true, true );
+                    declarationString = DeclarationFactory.getDeclarationString( projectPath, fileSystem );
+                    declaration = DeclarationFactory.from( declarationString, fileSystem, true, true );
                 }
                 catch ( IOException ioe )
                 {
@@ -509,9 +505,9 @@ public final class Functions
 
                     // Create a reading executor
                     // Inner readers may create additional thread factories (e.g., archives).
-                    ThreadFactory readingFactory = new BasicThreadFactory.Builder()
-                            .namingPattern( "Outer Reading Thread %d" )
-                            .build();
+                    ThreadFactory readingFactory = BasicThreadFactory.builder()
+                                                                     .namingPattern( "Outer Reading Thread %d" )
+                                                                     .build();
                     BlockingQueue<Runnable> readingQueue = new ArrayBlockingQueue<>( 100_000 );
 
                     // Create some thread pools to perform the work required by different parts of the evaluation pipeline
@@ -527,9 +523,9 @@ public final class Functions
                                                               readingHandler );
 
                     // Create an ingest executor
-                    ThreadFactory ingestFactory =
-                            new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
-                                                            .build();
+                    ThreadFactory ingestFactory = BasicThreadFactory.builder()
+                                                                    .namingPattern( "Ingesting Thread %d" )
+                                                                    .build();
                     // Queue should be large enough to allow join() call to be reached with zero or few rejected submissions to the
                     // executor service.
                     BlockingQueue<Runnable> ingestQueue =
@@ -626,13 +622,13 @@ public final class Functions
                 {
 
                     FileSystem fileSystem = FileSystems.getDefault();
-                    rawDeclaration = MultiDeclarationFactory.getDeclarationString( pathOrDeclaration, fileSystem );
+                    rawDeclaration = DeclarationFactory.getDeclarationString( pathOrDeclaration, fileSystem );
 
                     // Unmarshal and validate the declaration
-                    MultiDeclarationFactory.from( rawDeclaration,
-                                                  fileSystem,
-                                                  true,
-                                                  true );
+                    DeclarationFactory.from( rawDeclaration,
+                                             fileSystem,
+                                             true,
+                                             true );
 
                     LOGGER.info( "The supplied declaration is valid: '{}'.", pathOrDeclaration );
                     result = ExecutionResult.success();
@@ -655,105 +651,6 @@ public final class Functions
             {
                 String message = "Could not find a project declaration to validate. Usage: validate <path to project>";
                 LOGGER.error( message );
-                UserInputException e = new UserInputException( message );
-                result = ExecutionResult.failure( e, false );
-                return result;
-            }
-        }
-        finally
-        {
-            Functions.logExecution( sharedResources, result, startedExecution );
-            Functions.printExecutionTime( sharedResources, startedExecution );
-        }
-    }
-
-    /**
-     * Migrates an old-style XML declaration to a new-style YAML declaration.
-     * @param sharedResources the shared resources
-     * @return the execution result
-     */
-
-    public static ExecutionResult migrate( SharedResources sharedResources )
-    {
-        return Functions.migrate( sharedResources, false );
-    }
-
-    /**
-     * Migrates an old-style XML declaration to a new-style YAML declaration. If the declaration includes any external
-     * sources of CSV thresholds, they will be migrated inline to the declaration.
-     * @param sharedResources the shared resources
-     * @return the execution result
-     */
-
-    public static ExecutionResult migrateInline( SharedResources sharedResources )
-    {
-        return Functions.migrate( sharedResources, true );
-    }
-
-    /**
-     * Migrates an old-style XML declaration to a new-style YAML declaration.
-     * @param sharedResources the shared resources
-     * @param inlineThresholds is true to migrate any external CSV thresholds inline to the declaration
-     * @return the execution result
-     */
-
-    public static ExecutionResult migrate( SharedResources sharedResources, boolean inlineThresholds )
-    {
-        ExecutionResult result = ExecutionResult.failure();
-        Instant startedExecution = Instant.now();
-        try
-        {
-            List<String> args = sharedResources.arguments();
-
-            if ( !args.isEmpty() )
-            {
-                String evaluationConfigArgument = args.get( 0 )
-                                                      .trim();
-                try
-                {
-                    ProjectConfigPlus projectConfigPlus = ProjectConfigs.readDeclaration( evaluationConfigArgument );
-                    EvaluationDeclaration newDeclaration =
-                            DeclarationMigrator.from( projectConfigPlus.getProjectConfig(), inlineThresholds );
-                    LOGGER.debug( "Migrated the supplied declaration to: {}.", newDeclaration );
-                    String yaml = DeclarationFactory.from( newDeclaration );
-                    String announce = "Here is your migrated declaration:";
-                    String start =
-                            "---"; // Start of a YAML document. Not needed or returned, in general, but clean here
-
-                    // Log if possible
-                    if ( LOGGER.isInfoEnabled() )
-                    {
-                        LOGGER.info( "{}{}{}{}{}",
-                                     announce,
-                                     System.lineSeparator(),
-                                     start,
-                                     System.lineSeparator(),
-                                     yaml );
-                    }
-                    else
-                    {
-                        // This is intended behaviour, so disable SQ sqid S106
-                        System.out.println( announce // NOSONAR
-                                            + System.lineSeparator()
-                                            + start
-                                            + System.lineSeparator()
-                                            + yaml );
-                    }
-
-                    result = ExecutionResult.success();
-                    return result;
-                }
-                catch ( UserInputException | IOException e )
-                {
-                    LOGGER.error( "Failed to unmarshal project declaration from command line argument.", e );
-                    result = ExecutionResult.failure( e, false );
-                    return result;
-                }
-            }
-            else
-            {
-                String message = "The declaration path or string was missing. Usage: validate "
-                                 + "<path to declaration or string>";
                 UserInputException e = new UserInputException( message );
                 result = ExecutionResult.failure( e, false );
                 return result;

@@ -72,7 +72,7 @@ class WritingConsumerFactory implements ConsumerFactory
                                                                  durationUnits,
                                                                  formatter );
 
-            builder.addStatisticsConsumer( wres.config.yaml.components.Format.CSV2,
+            builder.addStatisticsConsumer( wres.config.components.Format.CSV2,
                                            writer );
 
             resources.add( writer );
@@ -83,7 +83,7 @@ class WritingConsumerFactory implements ConsumerFactory
         {
             Path protobufPath = path.resolve( "evaluation.pb3" );
             Function<Statistics, Set<Path>> protoWriter = ProtobufWriter.of( protobufPath, evaluation );
-            builder.addStatisticsConsumer( wres.config.yaml.components.Format.PROTOBUF, protoWriter );
+            builder.addStatisticsConsumer( wres.config.components.Format.PROTOBUF, protoWriter );
         }
 
 

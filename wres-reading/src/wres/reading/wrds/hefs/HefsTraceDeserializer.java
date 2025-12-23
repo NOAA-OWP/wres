@@ -22,8 +22,77 @@ import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesHeader;
 
 /**
- * Deserializes a single trace from an ensemble forecast contained in a response from the Water Resources Data Service
- * (WRDS) for the Hydrologic Ensemble Forecast Service.
+ * <p>Deserializes a single trace from an ensemble forecast contained in a response from the Water Resources Data Service
+ * (WRDS) for the Hydrologic Ensemble Forecast Service. An example document:
+ * <p>
+ * [
+ *   [
+ *     {
+ *       "creation_datetime": "2025-10-05T14:51:00Z",
+ *       "end_datetime": "2025-11-04T12:00:00Z",
+ *       "ensemble_id": "MEFP",
+ *       "ensemble_member_index": 1992,
+ *       "forecast_datetime": "2025-10-05T12:00:00Z",
+ *       "lat": 32.02,
+ *       "location_id": "RDBN5",
+ *       "lon": -104.05,
+ *       "parameter_id": "QINE",
+ *       "start_datetime": "2025-10-05T12:00:00Z",
+ *       "station_name": "RDBN5 - Red Bluff NM - Delaware River",
+ *       "time_step_multiplier": "21600",
+ *       "time_step_unit": "second",
+ *       "type": "instantaneous",
+ *       "units": "CFS",
+ *       "x": -104.05,
+ *       "y": 32.02,
+ *       "z": 883.92,
+ *       "events": [
+ *         {
+ *           "flag": "2",
+ *           "value": 0.7000038,
+ *           "valid_datetime": "2025-10-05T12:00:00Z"
+ *         },
+ *         {
+ *           "flag": "2",
+ *           "value": 0.7000038,
+ *           "valid_datetime": "2025-10-05T18:00:00Z"
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "creation_datetime": "2025-10-05T14:51:00Z",
+ *       "end_datetime": "2025-11-04T12:00:00Z",
+ *       "ensemble_id": "MEFP",
+ *       "ensemble_member_index": 1993,
+ *       "forecast_datetime": "2025-10-05T12:00:00Z",
+ *       "lat": 32.02,
+ *       "location_id": "RDBN5",
+ *       "lon": -104.05,
+ *       "parameter_id": "QINE",
+ *       "start_datetime": "2025-10-05T12:00:00Z",
+ *       "station_name": "RDBN5 - Red Bluff NM - Delaware River",
+ *       "time_step_multiplier": "21600",
+ *       "time_step_unit": "second",
+ *       "type": "instantaneous",
+ *       "units": "CFS",
+ *       "x": -104.05,
+ *       "y": 32.02,
+ *       "z": 883.92,
+ *       "events": [
+ *         {
+ *           "flag": "2",
+ *           "value": 0.7000038,
+ *           "valid_datetime": "2025-10-05T12:00:00Z"
+ *         },
+ *         {
+ *           "flag": "2",
+ *           "value": 0.7000038,
+ *           "valid_datetime": "2025-10-05T18:00:00Z"
+ *         }
+ *       ]
+ *     },
+ *   ]
+ * ]
  *
  * @author James Brown
  */
@@ -39,7 +108,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
     private static final String MODULE_INSTANCE_ID = "module_instance_id";
     private static final String QUALIFIER_ID = "qualifier_id";
     private static final String NULL = "null";
-    private static final String LONG_NAME = "long_name";
+    private static final String STATION_NAME = "station_name";
 
     @Override
     public HefsTrace deserialize( JsonParser jsonParser,
@@ -48,14 +117,13 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         ObjectMapper mapper = ( ObjectMapper ) jsonParser.getCodec();
         JsonNode node = mapper.readTree( jsonParser );
 
-        SortedSet<Event<Double>> events = this.readEvents( node );
         TimeSeriesHeader header = this.readHeader( node );
+        LOGGER.debug( "Read a time-series with the following metadata: {}.", header );
 
-        LOGGER.debug( "Read a time-series with the following header: {}.", header );
+        SortedSet<Event<Double>> events = this.readEvents( node );
 
         TimeSeriesMetadata metadata = ReaderUtilities.getTimeSeriesMetadataFromHeader( header, ZoneOffset.UTC );
         TimeSeries<Double> timeSeries = TimeSeries.of( metadata, events );
-
         return new HefsTrace( header, timeSeries );
     }
 
@@ -76,13 +144,15 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             for ( int i = 0; i < count; i++ )
             {
                 JsonNode nextEvent = eventsNode.get( i );
-                if ( nextEvent.has( "date" ) && nextEvent.has( "time" ) && nextEvent.has( "value" ) )
+                if ( nextEvent.has( "valid_datetime" )
+                     && nextEvent.has( "value" ) )
                 {
-                    String date = nextEvent.get( "date" ).asText();
-                    String time = nextEvent.get( "time" ).asText();
-                    double value = nextEvent.get( "value" ).doubleValue();
+                    String validDateTime = nextEvent.get( "valid_datetime" )
+                                                    .asText();
+                    double value = nextEvent.get( "value" )
+                                            .doubleValue();
 
-                    Instant instant = ReaderUtilities.parseInstant( date, time, ZoneOffset.UTC );
+                    Instant instant = Instant.parse( validDateTime );
                     Event<Double> event = Event.of( instant, value );
                     events.add( event );
                 }
@@ -101,18 +171,21 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
 
     private TimeSeriesHeader readHeader( JsonNode resultNode )
     {
-        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = this.readGeospatialMetadata( resultNode ).toBuilder();
+        TimeSeriesHeader.TimeSeriesHeaderBuilder builder = this.readGeospatialMetadata( resultNode )
+                                                               .toBuilder();
 
         if ( resultNode.has( PARAMETER_ID ) )
         {
             String parameterId = resultNode.get( PARAMETER_ID ).asText();
             builder.parameterId( parameterId );
+            LOGGER.debug( "Discovered a parameter_id of {}.", parameterId );
         }
 
         if ( resultNode.has( ENSEMBLE_ID ) )
         {
             String ensembleId = resultNode.get( ENSEMBLE_ID ).asText();
             builder.ensembleId( ensembleId );
+            LOGGER.debug( "Discovered an ensemble_id of {}.", ensembleId );
         }
 
         if ( resultNode.has( ENSEMBLE_MEMBER_INDEX ) )
@@ -120,20 +193,17 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String ensembleMemberIndex = resultNode.get( ENSEMBLE_MEMBER_INDEX )
                                                    .asText();
             builder.ensembleMemberIndex( ensembleMemberIndex );
+            LOGGER.debug( "Discovered an ensemble_member_index of {}.", ensembleMemberIndex );
         }
 
-        if ( resultNode.has( "forecast_date_date" ) )
+        if ( resultNode.has( "forecast_datetime" ) )
         {
-            String forecastDateDate = resultNode.get( "forecast_date_date" )
+            String forecastDateTime = resultNode.get( "forecast_datetime" )
                                                 .asText();
-            builder.forecastDateDate( forecastDateDate );
-        }
-
-        if ( resultNode.has( "forecast_date_time" ) )
-        {
-            String forecastDateTime = resultNode.get( "forecast_date_time" )
-                                                .asText();
-            builder.forecastDateTime( forecastDateTime );
+            LOGGER.debug( "Discovered a forecast_datetime of {}.", forecastDateTime );
+            String[] split = forecastDateTime.split( "T" );
+            builder.forecastDateDate( split[0] );
+            builder.forecastDateTime( split[1].replace( "Z", "" ) );
         }
 
         if ( resultNode.has( UNITS ) )
@@ -141,6 +211,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String units = resultNode.get( UNITS )
                                      .asText();
             builder.units( units );
+            LOGGER.debug( "Discovered units of {}.", units );
         }
 
         if ( resultNode.has( MODULE_INSTANCE_ID )
@@ -150,6 +221,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String moduleInstanceId = resultNode.get( MODULE_INSTANCE_ID )
                                                 .asText();
             builder.moduleInstanceId( moduleInstanceId );
+            LOGGER.debug( "Discovered a module_instance_id of {}.", moduleInstanceId );
         }
 
         if ( resultNode.has( QUALIFIER_ID )
@@ -159,6 +231,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String qualifierId = resultNode.get( QUALIFIER_ID )
                                            .asText();
             builder.qualifierId( qualifierId );
+            LOGGER.debug( "Discovered a qualifier_id of {}.", qualifierId );
         }
 
         if ( resultNode.has( "type" ) )
@@ -166,6 +239,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String type = resultNode.get( "type" )
                                     .asText();
             builder.type( type );
+            LOGGER.debug( "Discovered a type of {}.", type );
         }
 
         if ( resultNode.has( "time_step_multiplier" ) )
@@ -173,6 +247,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String timeStepMultiplier = resultNode.get( "time_step_multiplier" )
                                                   .asText();
             builder.timeStepMultiplier( timeStepMultiplier );
+            LOGGER.debug( "Discovered a time_step_multiplier of {}.", timeStepMultiplier );
         }
 
         if ( resultNode.has( "time_step_unit" ) )
@@ -180,6 +255,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             String timeStepUnit = resultNode.get( "time_step_unit" )
                                             .asText();
             builder.timeStepUnit( timeStepUnit );
+            LOGGER.debug( "Discovered a time_step_unit of {}.", timeStepUnit );
         }
 
         return builder.build();
@@ -205,9 +281,11 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
             builder.locationId( locationId );
         }
 
-        if ( resultNode.has( LONG_NAME ) && !NULL.equals( resultNode.get( LONG_NAME ).asText() ) )
+        if ( resultNode.has( STATION_NAME )
+             && !NULL.equals( resultNode.get( STATION_NAME )
+                                        .asText() ) )
         {
-            String locationDescription = resultNode.get( LONG_NAME ) // NOSONAR
+            String locationDescription = resultNode.get( STATION_NAME ) // NOSONAR
                                                    .asText();
             builder.locationDescription( locationDescription );
         }

@@ -13,12 +13,12 @@ import com.google.common.jimfs.Jimfs;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
-import wres.config.yaml.components.ThresholdSource;
-import wres.config.yaml.components.ThresholdSourceBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
+import wres.config.components.ThresholdSource;
+import wres.config.components.ThresholdSourceBuilder;
 import wres.reading.ThresholdReadingException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold;
@@ -57,51 +57,51 @@ class CsvThresholdReaderTest
                                                            .uri( uri )
                                                            .missingValue( -999.0 )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2", "DOLC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.4 )
+                                     .setObservedThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "A" )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.6 )
+                                     .setObservedThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "B" )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( 0.8 )
+                                       .setObservedThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .setName( "C" )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( 0.2 )
+                                      .setObservedThresholdProbability( 0.2 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setName( "A" )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( 0.3 )
+                                      .setObservedThresholdProbability( 0.3 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setName( "B" )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.7 )
+                                     .setObservedThresholdProbability( 0.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "C" )
                                      .build();
 
@@ -112,31 +112,31 @@ class CsvThresholdReaderTest
                                                   .setName( "DOLC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                    .type( wres.config.components.ThresholdType.PROBABILITY )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .threshold( three )
                                                                                  .build();
-            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                 .feature( expectedFeatureTwo )
                                                                                 .threshold( four )
                                                                                 .build();
-            wres.config.yaml.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                 .threshold( five )
                                                                                 .build();
-            wres.config.yaml.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                .threshold( six )
                                                                                .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped,
                                                                           fourWrapped,
@@ -178,56 +178,56 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2", "DOLC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 3.0 )
+                                     .setObservedThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "E" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 7.0 )
+                                     .setObservedThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "F" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 15.0 )
+                                       .setObservedThresholdValue( 15.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .setName( "G" )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( 23.0 )
+                                      .setObservedThresholdValue( 23.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setName( "E" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdValue( 12.0 )
+                                      .setObservedThresholdValue( 12.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setName( "F" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 99.7 )
+                                     .setObservedThresholdValue( 99.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "G" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
@@ -239,31 +239,31 @@ class CsvThresholdReaderTest
                                                   .setName( "DOLC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                    .type( wres.config.components.ThresholdType.VALUE )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .threshold( three )
                                                                                  .build();
-            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                 .feature( expectedFeatureTwo )
                                                                                 .threshold( four )
                                                                                 .build();
-            wres.config.yaml.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                 .threshold( five )
                                                                                 .build();
-            wres.config.yaml.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                .threshold( six )
                                                                                .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped,
                                                                           fourWrapped,
@@ -303,46 +303,46 @@ class CsvThresholdReaderTest
                                                            .uri( uri )
                                                            .missingValue( -999.0 )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2", "DOLC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.4 )
+                                     .setObservedThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.6 )
+                                     .setObservedThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( 0.8 )
+                                       .setObservedThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( 0.2 )
+                                      .setObservedThresholdProbability( 0.2 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( 0.3 )
+                                      .setObservedThresholdProbability( 0.3 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.7 )
+                                     .setObservedThresholdProbability( 0.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .build();
 
             Geometry expectedFeatureOne = Geometry.newBuilder()
@@ -352,31 +352,31 @@ class CsvThresholdReaderTest
                                                   .setName( "DOLC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                    .type( wres.config.components.ThresholdType.PROBABILITY )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .threshold( three )
                                                                                  .build();
-            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                 .feature( expectedFeatureTwo )
                                                                                 .threshold( four )
                                                                                 .build();
-            wres.config.yaml.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                 .threshold( five )
                                                                                 .build();
-            wres.config.yaml.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                .threshold( six )
                                                                                .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped,
                                                                           fourWrapped,
@@ -417,51 +417,51 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2", "DOLC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 3.0 )
+                                     .setObservedThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 7.0 )
+                                     .setObservedThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 15.0 )
+                                       .setObservedThresholdValue( 15.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( 23.0 )
+                                      .setObservedThresholdValue( 23.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdValue( 12.0 )
+                                      .setObservedThresholdValue( 12.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 99.7 )
+                                     .setObservedThresholdValue( 99.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
 
@@ -472,31 +472,31 @@ class CsvThresholdReaderTest
                                                   .setName( "DOLC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                    .type( wres.config.components.ThresholdType.VALUE )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .threshold( three )
                                                                                  .build();
-            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                 .feature( expectedFeatureTwo )
                                                                                 .threshold( four )
                                                                                 .build();
-            wres.config.yaml.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold fiveWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                 .threshold( five )
                                                                                 .build();
-            wres.config.yaml.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
+            wres.config.components.Threshold sixWrapped = ThresholdBuilder.builder( fourWrapped )
                                                                                .threshold( six )
                                                                                .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped,
                                                                           fourWrapped,
@@ -538,39 +538,39 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2", "DOLC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 3.0 )
+                                     .setObservedThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 7.0 )
+                                     .setObservedThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 23.0 )
+                                       .setObservedThresholdValue( 23.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( 99.7 )
+                                      .setObservedThresholdValue( 99.7 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
 
@@ -581,25 +581,25 @@ class CsvThresholdReaderTest
                                                   .setName( "DOLC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                    .type( wres.config.components.ThresholdType.VALUE )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .feature( expectedFeatureTwo )
                                                                                  .threshold( three )
                                                                                  .build();
-            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( threeWrapped )
+            wres.config.components.Threshold fourWrapped = ThresholdBuilder.builder( threeWrapped )
                                                                                 .threshold( four )
                                                                                 .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped,
                                                                           fourWrapped );
@@ -639,43 +639,43 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                                           .applyTo( ThresholdOrientation.LEFT )
+                                                           .type( wres.config.components.ThresholdType.VALUE )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
                                                            .operator( ThresholdOperator.BETWEEN )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2", "DOLC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 3.0 )
-                                     .setRightThresholdValue( 7.0 )
+                                     .setObservedThresholdValue( 3.0 )
+                                     .setPredictedThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.BETWEEN )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( 7.0 )
-                                     .setRightThresholdValue( 15.0 )
+                                     .setObservedThresholdValue( 7.0 )
+                                     .setPredictedThresholdValue( 15.0 )
                                      .setOperator( Threshold.ThresholdOperator.BETWEEN )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( 12.0 )
-                                       .setRightThresholdValue( 23.0 )
+                                       .setObservedThresholdValue( 12.0 )
+                                       .setPredictedThresholdValue( 23.0 )
                                        .setOperator( Threshold.ThresholdOperator.BETWEEN )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( 23.0 )
-                                      .setRightThresholdValue( 99.7 )
+                                      .setObservedThresholdValue( 23.0 )
+                                      .setPredictedThresholdValue( 99.7 )
                                       .setOperator( Threshold.ThresholdOperator.BETWEEN )
-                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
 
@@ -686,26 +686,26 @@ class CsvThresholdReaderTest
                                                   .setName( "DOLC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                    .type( wres.config.components.ThresholdType.VALUE )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .feature( expectedFeatureTwo )
                                                                                  .threshold( three )
                                                                                  .build();
-            wres.config.yaml.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold fourWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                 .feature( expectedFeatureTwo )
                                                                                 .threshold( four )
                                                                                 .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped,
                                                                           fourWrapped );
@@ -752,9 +752,9 @@ class CsvThresholdReaderTest
                                                            .missingValue( -999.0 )
                                                            .unit( UNIT_STRING )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
@@ -820,33 +820,33 @@ class CsvThresholdReaderTest
                                                            .uri( uri )
                                                            .missingValue( -999.0 )
                                                            .featureNameFrom( DatasetOrientation.LEFT )
-                                                           .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
-                                                           .applyTo( ThresholdOrientation.LEFT )
-                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .type( wres.config.components.ThresholdType.PROBABILITY )
+                                                           .applyTo( ThresholdOrientation.OBSERVED )
+                                                           .operator( wres.config.components.ThresholdOperator.GREATER )
                                                            .build();
 
             CsvThresholdReader reader = CsvThresholdReader.of();
-            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+            Set<wres.config.components.Threshold> actual = reader.read( source,
                                                                              Set.of( "DRRC2" ),
                                                                              null );
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.4 )
+                                     .setObservedThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "A" )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( 0.6 )
+                                     .setObservedThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
-                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                      .setName( "B" )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( 0.8 )
+                                       .setObservedThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
-                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setDataType( Threshold.ThresholdDataType.OBSERVED )
                                        .setName( "C" )
                                        .build();
 
@@ -854,21 +854,21 @@ class CsvThresholdReaderTest
                                                   .setName( "DRRC2" )
                                                   .build();
 
-            wres.config.yaml.components.Threshold oneWrapped =
+            wres.config.components.Threshold oneWrapped =
                     ThresholdBuilder.builder()
                                     .threshold( one )
                                     .featureNameFrom( DatasetOrientation.LEFT )
                                     .feature( expectedFeatureOne )
-                                    .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                    .type( wres.config.components.ThresholdType.PROBABILITY )
                                     .build();
-            wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold twoWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                .threshold( two )
                                                                                .build();
-            wres.config.yaml.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
+            wres.config.components.Threshold threeWrapped = ThresholdBuilder.builder( oneWrapped )
                                                                                  .threshold( three )
                                                                                  .build();
 
-            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped,
+            Set<wres.config.components.Threshold> expected = Set.of( oneWrapped,
                                                                           twoWrapped,
                                                                           threeWrapped );
 

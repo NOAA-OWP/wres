@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
+import wres.config.components.DataType;
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
@@ -49,6 +49,9 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( outerSource );
 
+        // Whether there is non-missing data present
+        boolean hasNonMissingValues = false;
+
         // Close the stream on completion
         try ( timeSeriesTuple )
         {
@@ -82,6 +85,9 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                         this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
                                                                            linkOrientation );
                     }
+
+                    hasNonMissingValues = this.hasNonMissingValues( hasNonMissingValues,
+                                                                    TimeSeriesSlicer.hasNonMissingValues( timeSeries ) );
                 }
 
                 // Ensemble time-series?
@@ -99,12 +105,35 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                         this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
                                                                        linkOrientation );
                     }
+
+                    boolean testHasNonMissingValues = TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( timeSeries );
+                    hasNonMissingValues = this.hasNonMissingValues( hasNonMissingValues,
+                                                                    testHasNonMissingValues );
                 }
             }
 
             // Arbitrary surrogate key, since this is an in-memory ingest
-            return List.of( new IngestResultInMemory( outerSource, dataType ) );
+            return List.of( new IngestResultInMemory( outerSource, dataType, hasNonMissingValues ) );
         }
+    }
+
+    /**
+     * Indicates whether non-missing values are present based on the existing state and new state. If the existing
+     * state indicates there are non-missing values, always returns {@code true}, otherwise returns the new state.
+     *
+     * @param existingState the existing state
+     * @param newState the new state
+     * @return whether there are non-missing values present
+     */
+
+    private boolean hasNonMissingValues( boolean existingState, boolean newState )
+    {
+        if ( !existingState )
+        {
+            return newState;
+        }
+
+        return true;
     }
 
     /**

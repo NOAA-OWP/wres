@@ -38,5 +38,5 @@ metrics:
   - mean error
 decimal_format: '#0.00'
 output_formats:
-  - csv
+  - csv2
   - pairs

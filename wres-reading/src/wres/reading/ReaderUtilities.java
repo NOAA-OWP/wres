@@ -54,15 +54,15 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.ThresholdSource;
-import wres.config.yaml.components.TimeInterval;
+import wres.config.DeclarationException;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.EvaluationDeclaration;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.GeneratedBaselines;
+import wres.config.components.SourceInterface;
+import wres.config.components.ThresholdSource;
+import wres.config.components.TimeInterval;
 import wres.datamodel.space.Feature;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -431,7 +431,7 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
-     * @return whether the source points to the USGS NWIS
+     * @return whether the source points to the USGS National Water Information System, NWIS
      * @throws NullPointerException if the source is null
      */
 
@@ -448,12 +448,15 @@ public class ReaderUtilities
         }
 
         // Fallback for unspecified interface.
-        return uri.getHost()
-                  .toLowerCase()
-                  .contains( "usgs.gov" )
-               || uri.getPath()
-                     .toLowerCase()
-                     .contains( "nwis" );
+        return ReaderUtilities.isWebSource( uri )
+               && ( ( Objects.nonNull( uri.getHost() )
+                      && uri.getHost()
+                            .toLowerCase()
+                            .contains( "usgs.gov" ) )
+                    || ( Objects.nonNull( uri.getPath() )
+                         && uri.getPath()
+                               .toLowerCase()
+                               .contains( "nwis" ) ) );
     }
 
     /**
@@ -491,13 +494,13 @@ public class ReaderUtilities
         }
 
         // Fallback for unspecified interface.
-        return uri.getPath()
-                  .toLowerCase()
-                  .endsWith( "ahps" )
-               ||
-               uri.getPath()
-                  .toLowerCase()
-                  .endsWith( "ahps/" );
+        return Objects.nonNull( uri.getPath() )
+               && ( uri.getPath()
+                       .toLowerCase()
+                       .endsWith( "ahps" )
+                    || uri.getPath()
+                          .toLowerCase()
+                          .endsWith( "ahps/" ) );
     }
 
     /**
@@ -518,9 +521,10 @@ public class ReaderUtilities
             return interfaceShortHand == SourceInterface.WRDS_HEFS;
         }
 
-        boolean isHefs = uri.getPath()
-                            .toLowerCase()
-                            .contains( "/hefs/" );
+        boolean isHefs = Objects.nonNull( uri.getPath() )
+                         && uri.getPath()
+                               .toLowerCase()
+                               .contains( "/hefs/" );
 
         LOGGER.debug( "When attempting to detect whether the supplied data source refers to the WRDS HEFS "
                       + "service, could not detect an explicit interface shorthand of {}, so looked for a URI that "
@@ -1224,7 +1228,9 @@ public class ReaderUtilities
 
     private static Duration getTimeStep( String unit, String multiplier )
     {
-        if ( unit.equalsIgnoreCase( "nonequidistant" ) )
+        Objects.requireNonNull( unit );
+
+        if ( "nonequidistant".equalsIgnoreCase( unit ) )
         {
             LOGGER.debug( "Discovered a data-source with an irregular time-series, i.e., a "
                           + "nonequidistant time-step unit. " );
@@ -1233,6 +1239,7 @@ public class ReaderUtilities
         }
 
         String unitString = unit.toUpperCase() + "S";
+        Objects.requireNonNull( multiplier );
 
         try
         {
@@ -1404,9 +1411,9 @@ public class ReaderUtilities
         Set<String> featureNames = DeclarationUtilities.getFeatureNamesFor( features, orientation );
 
         // Continue to read the thresholds
-        Set<wres.config.yaml.components.Threshold> thresholds = reader.read( thresholdSource,
-                                                                             featureNames,
-                                                                             featureAuthority );
+        Set<wres.config.components.Threshold> thresholds = reader.read( thresholdSource,
+                                                                        featureNames,
+                                                                        featureAuthority );
 
         // Check that some thresholds are available for features to evaluate
         Set<String> intersection = thresholds.stream()

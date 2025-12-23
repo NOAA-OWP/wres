@@ -32,13 +32,13 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdOperator;
-import wres.config.yaml.components.ThresholdOrientation;
-import wres.config.yaml.components.ThresholdSource;
+import wres.config.DeclarationUtilities;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.FeatureAuthority;
+import wres.config.components.ThresholdBuilder;
+import wres.config.components.ThresholdOperator;
+import wres.config.components.ThresholdOrientation;
+import wres.config.components.ThresholdSource;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.http.WebClientUtils;
 import wres.reading.ThresholdReader;
@@ -132,7 +132,7 @@ public class WrdsThresholdReader implements ThresholdReader
      * @return the thresholds mapped against features
      */
     @Override
-    public Set<wres.config.yaml.components.Threshold> read( ThresholdSource thresholdSource,
+    public Set<wres.config.components.Threshold> read( ThresholdSource thresholdSource,
                                                             Set<String> featureNames,
                                                             FeatureAuthority featureAuthority )
     {
@@ -254,7 +254,7 @@ public class WrdsThresholdReader implements ThresholdReader
         // Validate the thresholds acquired from WRDS in relation to the features for which thresholds were required
         WrdsThresholdReader.validate( serviceUri, mappedAndAdjustedFeatureNames, thresholdMapping, featureAuthority );
 
-        Set<wres.config.yaml.components.Threshold> featureful =
+        Set<wres.config.components.Threshold> featureful =
                 WrdsThresholdReader.getFeaturefulThresholds( thresholdMapping,
                                                              orientation,
                                                              mappedAndAdjustedFeatureNames,
@@ -576,13 +576,13 @@ public class WrdsThresholdReader implements ThresholdReader
      * @param featureAuthority the feature authority to help with feature naming
      * @return the featureful thresholds
      */
-    private static Set<wres.config.yaml.components.Threshold> getFeaturefulThresholds( Map<Location, Set<Threshold>> thresholds,
+    private static Set<wres.config.components.Threshold> getFeaturefulThresholds( Map<Location, Set<Threshold>> thresholds,
                                                                                        DatasetOrientation orientation,
                                                                                        Map<String, String> featureNames,
                                                                                        FeatureAuthority featureAuthority )
     {
         // Ordered, mapped thresholds
-        Set<wres.config.yaml.components.Threshold> mappedThresholds = new HashSet<>();
+        Set<wres.config.components.Threshold> mappedThresholds = new HashSet<>();
 
         Set<String> featuresNotRequired = new HashSet<>();
         for ( Map.Entry<Location, Set<Threshold>> nextEntry : thresholds.entrySet() )
@@ -600,11 +600,11 @@ public class WrdsThresholdReader implements ThresholdReader
                 Geometry feature = Geometry.newBuilder()
                                            .setName( originalFeatureName )
                                            .build();
-                Set<wres.config.yaml.components.Threshold> nextMappedThresholds =
+                Set<wres.config.components.Threshold> nextMappedThresholds =
                         nextThresholds.stream()
                                       .map( next -> ThresholdBuilder.builder()
                                                                     .threshold( next )
-                                                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                                    .type( wres.config.components.ThresholdType.VALUE )
                                                                     .feature( feature )
                                                                     .featureNameFrom( orientation )
                                                                     .build() )
