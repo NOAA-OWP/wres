@@ -679,9 +679,9 @@ project(':wres-reading') {
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         api 'org.apache.commons:commons-lang3:3.18.0'
         implementation 'com.opencsv:opencsv:5.12.0'
@@ -1099,12 +1099,12 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
-        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.0'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
+        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.1'
         implementation('com.hubspot.jackson:jackson-datatype-protobuf:0.9.18') {
             // Exclude old modules to eliminate several CVEs
             // Remove older protobuf version and include later version below
@@ -1494,10 +1494,10 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.9'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.1'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.18.0'
