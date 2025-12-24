@@ -47,7 +47,7 @@ plugins {
     //id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
     // Above has no releases since 2018, below fork supports gradle 7+
     // The groovy force in buildScript above relates to the below plugin. See GitHub #478.
-    id 'com.github.seanrl.jaxb' version '2.5.5'
+    id 'com.github.seanrl.jaxb' version '3.0.2'
 
     // For ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '5.3.3'
