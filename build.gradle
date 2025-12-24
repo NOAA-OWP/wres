@@ -280,7 +280,7 @@ project(':wres-system') {
 
         // Database drivers need to be on the runtime classpath in order to
         // acquire connections initially. See #103431
-        runtimeOnly 'com.h2database:h2:2.3.232'
+        runtimeOnly 'com.h2database:h2:2.4.240'
 
         // Java Flight Recorder statistics for JDBC
         runtimeOnly 'com.github.marschall:jfr-jdbc:0.5.0'
@@ -420,7 +420,7 @@ project(':wres-io') {
         }
 
         // Use H2 for truly embedded SQL db
-        runtimeOnly 'com.h2database:h2:2.3.232'
+        runtimeOnly 'com.h2database:h2:2.4.240'
 
         // connection pooling:
         implementation 'com.zaxxer:HikariCP:6.3.0'
