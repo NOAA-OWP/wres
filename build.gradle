@@ -76,7 +76,7 @@ plugins {
     id 'de.undercouch.download' version '5.6.0'
 
     // To discover library versions with updates available
-    id 'com.github.ben-manes.versions' version '0.52.0'
+    id 'com.github.ben-manes.versions' version '0.53.0'
 
     // Run python scripts
     // TODO: cannot install miniconda in current build environment
@@ -283,7 +283,7 @@ project(':wres-system') {
         runtimeOnly 'com.h2database:h2:2.3.232'
 
         // Java Flight Recorder statistics for JDBC
-        runtimeOnly 'com.github.marschall:jfr-jdbc:0.4.0'
+        runtimeOnly 'com.github.marschall:jfr-jdbc:0.5.0'
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
@@ -344,7 +344,7 @@ project(':wres-datamodel') {
         }
 
         api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -396,7 +396,7 @@ project(':wres-io') {
         api project(':wres-reading')
 
         // Java Flight Recorder statistics for JDBC
-        implementation 'com.github.marschall:jfr-jdbc:0.4.0'
+        implementation 'com.github.marschall:jfr-jdbc:0.5.0'
 
         implementation('edu.ucar:cdm-core:5.8.0') {
             // Because we use slf4j, not jcl:
@@ -426,7 +426,7 @@ project(':wres-io') {
         implementation 'com.zaxxer:HikariCP:6.3.0'
 
         // To cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1466,7 +1466,7 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1680,7 +1680,7 @@ project(':wres-events') {
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1979,7 +1979,7 @@ dependencies {
     // Jetty server
     implementation 'org.eclipse.jetty:jetty-server:12.1.1'
 
-    implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
