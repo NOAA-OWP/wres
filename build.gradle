@@ -597,12 +597,12 @@ project(':wres-writing') {
         testImplementation 'org.apache.tika:tika-core:3.2.3'
         testImplementation 'org.mockito:mockito-core:5.21.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.17'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
         implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
         testImplementation 'org.mockito:mockito-core:5.21.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
@@ -637,7 +637,7 @@ project(':wres-reading') {
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
 
         api('edu.ucar:cdm-core:5.9.1') {
             // Because we use slf4j, not jcl:
@@ -680,7 +680,7 @@ project(':wres-reading') {
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
         api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
-        api 'com.fasterxml.jackson.core:jackson-core:2.20.'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.1'
         api 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         api 'org.apache.commons:commons-lang3:3.20.0'
@@ -1242,7 +1242,7 @@ project(':wres-worker') {
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.26.0'
+        implementation 'com.rabbitmq:amqp-client:5.28.0'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
@@ -1433,7 +1433,7 @@ project(':wres-tasker') {
         implementation project(':wres-statistics')
         implementation project(':wres-http')
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.26.0'
+        implementation 'com.rabbitmq:amqp-client:5.28.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
 
         // Easy byte[] to hex conversion
