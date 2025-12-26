@@ -19,6 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import static wres.io.database.locking.DatabaseLockFailed.Operation.*;
+
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,9 +110,9 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
         this.lockOne = new ReentrantLock();
         this.lockTwo = new ReentrantLock();
 
-        ThreadFactory monitorServiceNaming = new BasicThreadFactory.Builder()
-                                                                             .namingPattern( "DatabaseLockManager %d" )
-                                                                             .build();
+        ThreadFactory monitorServiceNaming = BasicThreadFactory.builder()
+                                                               .namingPattern( "DatabaseLockManager %d" )
+                                                               .build();
 
         this.connectionMonitorService = Executors.newScheduledThreadPool( 1, monitorServiceNaming );
         Runnable recurringTask = new RefreshConnectionsTask( this );
@@ -127,7 +128,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
     /**
      * Shutdown the lock manager.
-     * 
+     *
      * @throws SecurityException in the absence of permission
      */
 
@@ -1171,9 +1172,6 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
             pgFunction = "pg_try_advisory_lock_shared";
         }
 
-        // TODO: change this to pg_advisory_lock to avoid IllegalStateException
-        // in this process when another process is using isSingleLockHeld. That
-        // or use N retries.
         final String tryLockScript = "SELECT " + pgFunction
                                      + "( "
                                      + prefix

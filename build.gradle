@@ -423,7 +423,7 @@ project(':wres-io') {
         runtimeOnly 'com.h2database:h2:2.4.240'
 
         // Connection pooling:
-        implementation 'com.zaxxer:HikariCP:6.3.0'
+        implementation 'com.zaxxer:HikariCP:7.0.2'
 
         // To cache
         implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
