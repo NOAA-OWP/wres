@@ -1629,6 +1629,8 @@ project(':wres-eventsbroker') {
             exclude group: 'io.netty', module: 'io.netty'
         }
 
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.9.Final'
+
         // Include later dependency version
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.83'
 
