@@ -19,12 +19,12 @@ buildscript {
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute module( 'com.overzealous:remark:1.1.0' ) using module( 'com.wavefront:remark:2023-07.07' ) because "not available on maven central anymore"
+            substitute module('com.overzealous:remark:1.1.0') using module('com.wavefront:remark:2023-07.07') because "not available on maven central anymore"
         }
 
         // Forcing a newer version than what comes in with default com.github.seanrl.jaxb
         // plugin below. This addresses a dependabot reported issue. See GitHub #478.
-        resolutionStrategy.force( 'org.codehaus.groovy:groovy-all:3.0.25' )
+        resolutionStrategy.force('org.codehaus.groovy:groovy-all:3.0.25')
     }
     repositories {
         mavenCentral()
@@ -40,21 +40,20 @@ buildscript {
 /* Gradle plugins available in the official gradle plugins repository */
 plugins {
     // Static analysis tool sonarqube client
-    id 'org.sonarqube' version '6.3.1.5724'
+    id 'org.sonarqube' version '7.2.2.6593'
 
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // Above is unmaintained, less gradle-y, below fork has several improvements
     //id 'org.openrepose.gradle.plugins.jaxb' version '2.5.0'
     // Above has no releases since 2018, below fork supports gradle 7+
     // The groovy force in buildScript above relates to the below plugin. See GitHub #478.
-    id 'com.github.seanrl.jaxb' version '2.5.5'
+    id 'com.github.seanrl.jaxb' version '3.0.2'
 
     // For ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '5.3.3'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
-
 
     // To generate de/serialization classes for message bodies
     // Bumping this to 0.9.5 caused wres-statistics to fail
@@ -70,14 +69,13 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    // needed to change this to     id 'org.owasp.dependencycheck' version '12.1.1' for the test to run
-    id 'org.owasp.dependencycheck' version '12.1.5'
+    id 'org.owasp.dependencycheck' version '12.1.9'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
 
     // To discover library versions with updates available
-    id 'com.github.ben-manes.versions' version '0.52.0'
+    id 'com.github.ben-manes.versions' version '0.53.0'
 
     // Run python scripts
     // TODO: cannot install miniconda in current build environment
@@ -87,12 +85,14 @@ plugins {
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
-    // Bumping from 2.2.26 caused failures
+    // Bumping from 2.2.26 causes several failures. Several are easy to resolve,
+    // changing yaml to YAML and skip = 'true' to skip = true, but one is not:
+    // https://github.com/swagger-api/swagger-core/issues/4813
     // To generate API documentation from JAX-RS annotations and javadocs
     id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.26"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
-    id 'org.beryx.jlink' version '3.1.3'
+    id 'org.beryx.jlink' version '3.2.0'
 
     // Integrated code coverage report
     id 'jacoco-report-aggregation'
@@ -107,7 +107,6 @@ testCodeCoverageReport {
         csv.required = true
     }
 }
-
 
 repositories {
     mavenCentral()
@@ -259,22 +258,22 @@ project(':wres-system') {
     dependencies {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
         // Bumping this past this version causes massive slowdowns, see this ticket for more information
         // https://github.com/NOAA-OWP/wres/issues/454
-        runtimeOnly('org.postgresql:postgresql:42.7.7') {
+        runtimeOnly('org.postgresql:postgresql:42.7.8') {
 
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // For Java 9+ compatibility:
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
         // JAXB runtime
-        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.8'
+        runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:4.0.6'
 
         // Builders
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
@@ -282,10 +281,10 @@ project(':wres-system') {
 
         // Database drivers need to be on the runtime classpath in order to
         // acquire connections initially. See #103431
-        runtimeOnly 'com.h2database:h2:2.3.232'
+        runtimeOnly 'com.h2database:h2:2.4.240'
 
         // Java Flight Recorder statistics for JDBC
-        runtimeOnly 'com.github.marschall:jfr-jdbc:0.4.0'
+        runtimeOnly 'com.github.marschall:jfr-jdbc:0.5.0'
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
@@ -316,12 +315,12 @@ project(':wres-system') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.7.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
+        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
+        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
         testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
     }
 
@@ -336,7 +335,7 @@ project(':wres-datamodel') {
         api project(':wres-config')
         api project(':wres-statistics')
 
-        api 'org.apache.commons:commons-lang3:3.18.0'
+        api 'org.apache.commons:commons-lang3:3.20.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -346,7 +345,7 @@ project(':wres-datamodel') {
         }
 
         api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -367,19 +366,19 @@ project(':wres-datamodel') {
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
-        testImplementation 'org.hamcrest:hamcrest-core:1.3'
+        testImplementation 'org.hamcrest:hamcrest-core:3.0'
         testRuntimeOnly 'si.uom:si-quantity:2.2.3'
         testImplementation 'si.uom:si-units:2.2.3'
     }
@@ -398,9 +397,9 @@ project(':wres-io') {
         api project(':wres-reading')
 
         // Java Flight Recorder statistics for JDBC
-        implementation 'com.github.marschall:jfr-jdbc:0.4.0'
+        implementation 'com.github.marschall:jfr-jdbc:0.5.0'
 
-        implementation('edu.ucar:cdm-core:5.8.0') {
+        implementation('edu.ucar:cdm-core:5.9.1') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -413,22 +412,21 @@ project(':wres-io') {
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:33.5.0-jre'
 
-        // to use native postgres copy, need this on compile, otherwise runtime
-        // Bumping this past this version causes massive slowdowns, see this ticket for more information
-        // https://github.com/NOAA-OWP/wres/issues/454
-        implementation('org.postgresql:postgresql:42.7.7') {
+        // To use native postgres copy, need this on compile, otherwise runtime
+        // In case of migration slowdowns, see: https://github.com/NOAA-OWP/wres/issues/454
+        implementation('org.postgresql:postgresql:42.7.8') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // Use H2 for truly embedded SQL db
-        runtimeOnly 'com.h2database:h2:2.3.232'
+        runtimeOnly 'com.h2database:h2:2.4.240'
 
-        // connection pooling:
-        implementation 'com.zaxxer:HikariCP:6.3.0'
+        // Connection pooling:
+        implementation 'com.zaxxer:HikariCP:7.0.2'
 
         // To cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -440,7 +438,7 @@ project(':wres-io') {
         // https://github.com/NOAA-OWP/wres/issues/454
         implementation 'org.liquibase:liquibase-core:4.31.1'
 
-        implementation 'commons-codec:commons-codec:1.19.0'
+        implementation 'commons-codec:commons-codec:1.20.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -454,22 +452,22 @@ project(':wres-io') {
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
         testRuntimeOnly group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
 
-        api 'org.apache.commons:commons-lang3:3.18.0'
+        api 'org.apache.commons:commons-lang3:3.20.0'
         api 'org.slf4j:slf4j-api:2.0.17'
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
     }
 
     test {
@@ -572,7 +570,7 @@ project(':wres-writing') {
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        implementation('edu.ucar:cdm-core:5.8.0') {
+        implementation('edu.ucar:cdm-core:5.9.1') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -592,31 +590,31 @@ project(':wres-writing') {
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
-        testRuntimeOnly 'org.apache.commons:commons-lang3:3.18.0'
+        testRuntimeOnly 'org.apache.commons:commons-lang3:3.20.0'
         testImplementation 'org.apache.tika:tika-core:3.2.3'
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.17'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        testRuntimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -639,9 +637,9 @@ project(':wres-reading') {
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
 
-        api('edu.ucar:cdm-core:5.8.0') {
+        api('edu.ucar:cdm-core:5.9.1') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -657,10 +655,10 @@ project(':wres-reading') {
         implementation 'org.apache.commons:commons-compress:1.28.0'
 
         // CDM-S3 dependency for reading NetCDF from S3/GCS
-        runtimeOnly 'edu.ucar:cdm-s3:5.8.0'
+        runtimeOnly 'edu.ucar:cdm-s3:5.9.1'
 
         // Better-than-Java's HTTP client
-        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+        implementation 'com.squareup.okhttp3:okhttp:5.3.2'
 
         implementation 'org.apache.httpcomponents:httpclient:4.5.14'
 
@@ -681,17 +679,15 @@ project(':wres-reading') {
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        api 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        api 'javax.xml.bind:jaxb-api:2.3.1'
-        api 'org.apache.commons:commons-lang3:3.18.0'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
+        api 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'com.opencsv:opencsv:5.12.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -723,7 +719,7 @@ project(':wres-reading') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
 
-        testImplementation ('org.mock-server:mockserver-client-java:5.15.0') {
+        testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -731,7 +727,7 @@ project(':wres-reading') {
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
-        testImplementation ('org.mock-server:mockserver-core:5.15.0') {
+        testImplementation('org.mock-server:mockserver-core:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -740,22 +736,22 @@ project(':wres-reading') {
         }
 
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.7.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
+        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
+        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
         testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
@@ -781,7 +777,7 @@ project(':wres-eventdetection') {
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
@@ -790,8 +786,8 @@ project(':wres-eventdetection') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
     // Facilitate unit tests with JUnit
@@ -807,10 +803,10 @@ project(':wres-metrics') {
         api project(':wres-statistics')
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
-        testRuntimeOnly 'org.apache.commons:commons-lang3:3.18.0'
+        testRuntimeOnly 'org.apache.commons:commons-lang3:3.20.0'
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation 'org.slf4j:slf4j-api:2.0.17'
@@ -824,16 +820,16 @@ project(':wres-metrics') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Backwards compatibility for JUnit 4 tests
         testCompileOnly 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
     }
 
     test {
@@ -950,8 +946,8 @@ project(':wres-statistics') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
@@ -1049,7 +1045,7 @@ project(':wres-vis') {
         implementation project(':wres-eventsbroker')
         implementation project(':wres-events')
 
-        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.18.0'
+        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.20.0'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -1067,13 +1063,13 @@ project(':wres-vis') {
         runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.1.0-alpha1'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Backwards compatibility for JUnit 4 tests
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
         implementation project(':wres-statistics')
@@ -1103,12 +1099,12 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        api 'com.fasterxml.jackson.core:jackson-core:2.20.0'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0'
-        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.0'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
+        api 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        api 'com.fasterxml.jackson.core:jackson-core:2.20.1'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
+        api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.1'
         implementation('com.hubspot.jackson:jackson-datatype-protobuf:0.9.18') {
             // Exclude old modules to eliminate several CVEs
             // Remove older protobuf version and include later version below
@@ -1126,7 +1122,7 @@ project(':wres-config') {
         // Protobuf utilities
         implementation 'com.google.protobuf:protobuf-java-util:3.25.6'
 
-        api 'org.apache.commons:commons-lang3:3.18.0'
+        api 'org.apache.commons:commons-lang3:3.20.0'
 
         // For reading CSV thresholds
         implementation group: 'com.opencsv', name: 'opencsv', version: '5.12.0'
@@ -1135,8 +1131,8 @@ project(':wres-config') {
         api 'com.networknt:json-schema-validator:1.5.9'
 
         // To auto-generate builders for Java records through annotation processing
-        annotationProcessor 'io.soabase.record-builder:record-builder-processor:48'
-        compileOnly 'io.soabase.record-builder:record-builder-core:48'
+        annotationProcessor 'io.soabase.record-builder:record-builder-processor:51'
+        compileOnly 'io.soabase.record-builder:record-builder-core:51'
 
         // To accurately detect mime types of files.
         api 'org.apache.tika:tika-core:3.2.3'
@@ -1144,11 +1140,11 @@ project(':wres-config') {
         api 'org.yaml:snakeyaml:2.5'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // In-memory implementation of a java.nio.file abstract file system api
@@ -1243,10 +1239,10 @@ project(':wres-worker') {
         implementation project(':wres-http')
         implementation project(':wres-messages')
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
-        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+        implementation 'com.squareup.okhttp3:okhttp:5.3.2'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.26.0'
+        implementation 'com.rabbitmq:amqp-client:5.28.0'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
@@ -1254,7 +1250,7 @@ project(':wres-worker') {
         }
 
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // Use mockserver as a mock server for mock API responses
         // Various transitive dependencies need to be overridden to avoid
@@ -1277,7 +1273,7 @@ project(':wres-worker') {
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
 
-        testImplementation ('org.mock-server:mockserver-client-java:5.15.0') {
+        testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -1285,7 +1281,7 @@ project(':wres-worker') {
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
-        testImplementation ('org.mock-server:mockserver-core:5.15.0') {
+        testImplementation('org.mock-server:mockserver-core:5.15.0') {
             exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
@@ -1294,17 +1290,17 @@ project(':wres-worker') {
         }
 
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.7.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.7.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.82'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.82'
+        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
+        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
+        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
         testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
-        
+
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
@@ -1325,7 +1321,7 @@ project(':wres-worker') {
 
     mainClassName = 'wres.worker.Worker'
 
-    applicationDefaultJvmArgs = ['-Xms64m','-Xmx64m',
+    applicationDefaultJvmArgs = ['-Xms64m', '-Xmx64m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
@@ -1437,40 +1433,40 @@ project(':wres-tasker') {
         implementation project(':wres-statistics')
         implementation project(':wres-http')
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.26.0'
+        implementation 'com.rabbitmq:amqp-client:5.28.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
 
         // Easy byte[] to hex conversion
-        implementation 'commons-codec:commons-codec:1.19.0'
+        implementation 'commons-codec:commons-codec:1.20.0'
 
         //Jakarta servlet
         implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:12.1.1'
+        implementation 'org.eclipse.jetty:jetty-server:12.1.5'
 
         // Servlet library is now tied to ee10.
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.1'
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.1'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.5'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.5'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.1'
+        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.5'
 
         // Support ALPN
-        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.1'
+        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.5'
 
         // Servlet container library to run a web application with:
-        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.1'
+        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.5'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.10'
+        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
 
         // To handle multipart post
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1485,25 +1481,26 @@ project(':wres-tasker') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.7.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.9.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
-        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-        implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+        implementation 'com.squareup.okhttp3:okhttp:5.3.2'
 
-        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.1'
-        implementation 'org.eclipse.jetty:jetty-http:12.1.1'
-        implementation 'org.eclipse.jetty:jetty-util:12.1.1'
-        implementation 'org.glassfish.jersey.core:jersey-common:3.1.9'
+        api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
+
+        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.5'
+        implementation 'org.eclipse.jetty:jetty-http:12.1.5'
+        implementation 'org.eclipse.jetty:jetty-util:12.1.5'
+        implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.19.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.2'
-        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.0'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        runtimeOnly 'com.fasterxml.jackson.core:jackson-core:2.20.1'
 
         // For ToStringBuilder
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
 
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
@@ -1513,31 +1510,31 @@ project(':wres-tasker') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.10'
+        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.11'
 
         // Needed to prevent "java.lang.IllegalStateException: InjectionManagerFactory not found."
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
-        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.10'
+        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.11'
 
         testImplementation 'junit:junit:4.13.2'
-        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // To generate fake certificates and keys for testing
-        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.82'
-        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.82'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
 
         // To test against an embedded AMQP broker
-        testImplementation 'org.apache.qpid:qpid-broker-core:9.2.1'
+        testImplementation 'org.apache.qpid:qpid-broker-core:10.0.1'
         // Provides support for both 0-8 and 0-9-1
-        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:9.2.1'
-        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-memory-store:9.2.1'
+        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.0.1'
+        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-memory-store:10.0.1'
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.40'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.41'
     }
 
     apply plugin: 'application'
@@ -1610,7 +1607,7 @@ project(':wres-eventsbroker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
         // Apache ActiveMQ Artemis server
-        implementation('org.apache.activemq:artemis-server:2.42.0') {
+        implementation('org.apache.activemq:artemis-server:2.44.0') {
             // TODO: remove when Artemis catches up
 
             // Because we use slf4j, not jcl:
@@ -1632,11 +1629,13 @@ project(':wres-eventsbroker') {
             exclude group: 'io.netty', module: 'io.netty'
         }
 
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.9.Final'
+
         // Include later dependency version
-        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.81'
+        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.83'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.42.0') {
+        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.44.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
@@ -1662,8 +1661,8 @@ project(':wres-eventsbroker') {
         }
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
@@ -1683,7 +1682,7 @@ project(':wres-events') {
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1698,7 +1697,7 @@ project(':wres-events') {
         }
 
         // For various utilities
-        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.18.0'
+        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.20.0'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
@@ -1708,12 +1707,12 @@ project(':wres-events') {
         implementation 'com.google.protobuf:protobuf-java:3.25.6'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // To create an embedded broker for unit testing
         testImplementation project(':wres-eventsbroker')
@@ -1730,16 +1729,16 @@ project(':wres-http') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
         // Better-than-Java's HTTP client
-        api 'com.squareup.okhttp3:okhttp:4.12.0'
+        api 'com.squareup.okhttp3:okhttp:5.3.2'
 
-        implementation 'org.apache.commons:commons-lang3:3.18.0'
+        implementation 'org.apache.commons:commons-lang3:3.20.0'
 
         // JUnit 5 API and runtime
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-        testImplementation 'org.mockito:mockito-core:5.20.0'
+        testImplementation 'org.mockito:mockito-core:5.21.0'
     }
 
     // Facilitate unit tests with JUnit
@@ -1958,10 +1957,10 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-java:3.25.6'
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
-    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.1'
-    implementation 'org.eclipse.jetty:jetty-http:12.1.1'
-    implementation 'org.eclipse.jetty:jetty-util:12.1.1'
+    implementation 'org.apache.commons:commons-lang3:3.20.0'
+    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.5'
+    implementation 'org.eclipse.jetty:jetty-http:12.1.5'
+    implementation 'org.eclipse.jetty:jetty-util:12.1.5'
     implementation project(':wres-statistics')
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
@@ -1970,19 +1969,19 @@ dependencies {
     implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
     //Jetty servlet stuff now tied to ee10, with the move to Jetty 12.
-    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.1'
+    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.5'
 
     // Servlet container library to run a web application with:
     runtimeOnly 'org.eclipse.jetty:jetty-webapp:11.0.25'
 
     // Needed at compile-time to reference ServletContainer.class and
     // DefaultServlet.class
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.10'
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
 
     // Jetty server
-    implementation 'org.eclipse.jetty:jetty-server:12.1.1'
+    implementation 'org.eclipse.jetty:jetty-server:12.1.5'
 
-    implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
@@ -1993,7 +1992,7 @@ dependencies {
         exclude group: 'io.netty'
     }
 
-    implementation('edu.ucar:cdm-core:5.8.0') {
+    implementation('edu.ucar:cdm-core:5.9.1') {
         // Because we use slf4j, not jcl:
         exclude group: 'commons-logging', module: 'commons-logging'
         // CVE-2021-33813
@@ -2007,19 +2006,19 @@ dependencies {
     // JCIP annotations
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:3.1.10'
-    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.10'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:3.1.11'
+    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.11'
     // currently locked at this version, check this ticket for more information
     // https://vlab.***REMOVED***/redmine/issues/124200
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.10'
-    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.10'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.11'
+    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.11'
 
     // Support HTTP/2
     //implementation 'org.eclipse.jetty.http2:http2-server:11.0.24'
-    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.1'
+    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.5'
 
     // Support ALPN
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.1'
+    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.5'
 
     runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
         // Not used at runtime, bloat
@@ -2029,19 +2028,19 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
     // To auto-generate builders for Java records through annotation processing
-    annotationProcessor 'io.soabase.record-builder:record-builder-processor:48'
-    compileOnly 'io.soabase.record-builder:record-builder-core:48'
+    annotationProcessor 'io.soabase.record-builder:record-builder-processor:51'
+    compileOnly 'io.soabase.record-builder:record-builder-core:51'
 
     // JUnit 5 API and runtime
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Backwards compatibility for JUnit 4 tests
     testCompileOnly 'junit:junit:4.13.2'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.13.4'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
-    testImplementation 'org.mockito:mockito-core:5.20.0'
+    testImplementation 'org.mockito:mockito-core:5.21.0'
 
 }
 

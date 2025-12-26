@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ import wres.messages.BrokerHelper;
  * Helper for managing broker messaging.
  */
 
-public abstract class BrokerManagerHelper
+public class BrokerManagerHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerManagerHelper.class );
 
@@ -86,9 +86,9 @@ public abstract class BrokerManagerHelper
             {
                 LOGGER.warn( "Broker manager port specified by "
                              + BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME
-                             + " exists, but its value is not an integer: '"
-                             + managerPortStr
-                             + "'. Using it as is, but connections wil fail later." );
+                             + " exists, but its value is not an integer: '{}"
+                             + "'. Using it as is, but connections wil fail later.",
+                             managerPortStr );
             }
         }
 
@@ -162,7 +162,7 @@ public abstract class BrokerManagerHelper
         int httpStatus = response.getStatusCode();
         if ( httpStatus >= 400 )
         {
-            LOGGER.warn( "Broker manager API returned an error code. Full response: " + result );
+            LOGGER.warn( "Broker manager API returned an error code. Full response: {}", result );
             throw new IOException( "Unable to obtain a response from the Broker Manager API." );
         }
 
@@ -201,6 +201,13 @@ public abstract class BrokerManagerHelper
         {
             this.user = user;
         }
+    }
+
+    /**
+     * Do not construct.
+     */
+    private BrokerManagerHelper()
+    {
     }
 
 }
