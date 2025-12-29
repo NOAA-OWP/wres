@@ -31,10 +31,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.serialization.JsonNodeReader;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import com.networknt.schema.serialization.NodeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -301,7 +301,7 @@ public class DeclarationFactory
         JsonNode declaration = DeclarationFactory.deserialize( yaml );
 
         // Get the schema
-        JsonSchema schema = DeclarationFactory.getSchema();
+        Schema schema = DeclarationFactory.getSchema();
 
         // Validate against the schema
         Set<EvaluationStatusEvent> errors = DeclarationValidator.validate( declaration, schema );
@@ -502,7 +502,7 @@ public class DeclarationFactory
      * @throws IOException if the schema could not be found or read for any reason
      */
 
-    static JsonSchema getSchema() throws IOException
+    static Schema getSchema() throws IOException
     {
         // Get the schema from the classpath
         URL schema = DeclarationFactory.class.getClassLoader().getResource( SCHEMA );
@@ -523,13 +523,13 @@ public class DeclarationFactory
             // Map the schema to a json node
             JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
 
-            JsonNodeReader nodeReader = JsonNodeReader.builder()
-                                                      .yamlMapper( DESERIALIZER )
-                                                      .build();
-            JsonSchemaFactory factory =
-                    JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .jsonNodeReader( nodeReader )
-                                     .build();
+            NodeReader nodeReader = NodeReader.builder()
+                                              .yamlMapper( DESERIALIZER )
+                                              .build();
+            SchemaRegistry factory =
+                    SchemaRegistry.builder( SchemaRegistry.withDefaultDialect( SpecificationVersion.DRAFT_2019_09 ) )
+                                  .nodeReader( nodeReader )
+                                  .build();
 
             return factory.getSchema( schemaNode );
         }
