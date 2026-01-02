@@ -1,10 +1,8 @@
 package wres.config.serializers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.components.TimeScaleLenience;
 
@@ -12,17 +10,16 @@ import wres.config.components.TimeScaleLenience;
  * Serializes a {@link TimeScaleLenience}.
  * @author James Brown
  */
-public class TimeScaleLenienceSerializer extends JsonSerializer<TimeScaleLenience>
+public class TimeScaleLenienceSerializer extends ValueSerializer<TimeScaleLenience>
 {
     @Override
-    public void serialize( TimeScaleLenience lenience, JsonGenerator writer, SerializerProvider serializers )
-            throws IOException
+    public void serialize( TimeScaleLenience lenience, JsonGenerator writer, SerializationContext serializers )
     {
         writer.writeString( lenience.toString() );
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, TimeScaleLenience lenience  )
+    public boolean isEmpty( SerializationContext serializers, TimeScaleLenience lenience )
     {
         return lenience == TimeScaleLenience.NONE;
     }

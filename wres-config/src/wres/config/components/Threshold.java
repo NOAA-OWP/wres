@@ -2,6 +2,8 @@ package wres.config.components;
 
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -55,6 +57,7 @@ public record Threshold( wres.statistics.generated.Threshold threshold,
     }
 
     @Override
+    @Nonnull
     public String toString()
     {
         // Remove unnecessary whitespace from the JSON protobuf string

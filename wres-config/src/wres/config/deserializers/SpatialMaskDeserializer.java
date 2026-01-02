@@ -1,13 +1,14 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
 import org.locationtech.jts.geom.Geometry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,18 +22,17 @@ import wres.config.components.SpatialMaskBuilder;
  *
  * @author James Brown
  */
-public class SpatialMaskDeserializer extends JsonDeserializer<SpatialMask>
+public class SpatialMaskDeserializer extends ValueDeserializer<SpatialMask>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SpatialMaskDeserializer.class );
 
     @Override
     public SpatialMask deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext mapper = jp.objectReadContext();
         JsonNode node = mapper.readTree( jp );
 
         String wktString;
@@ -43,7 +43,7 @@ public class SpatialMaskDeserializer extends JsonDeserializer<SpatialMask>
         if ( node.has( "wkt" ) )
         {
             wktString = node.get( "wkt" )
-                            .asText();
+                            .asString();
 
             LOGGER.debug( "Deserialized a spatial mask WKT string: {}.", wktString );
 
@@ -57,13 +57,13 @@ public class SpatialMaskDeserializer extends JsonDeserializer<SpatialMask>
             if ( node.has( "name" ) )
             {
                 name = node.get( "name" )
-                           .asText();
+                           .asString();
                 LOGGER.debug( "Deserialized a spatial mask name: {}.", name );
             }
         }
         else
         {
-            wktString = node.asText();
+            wktString = node.asString();
             LOGGER.debug( "Deserialized a spatial mask with a WKT string only: {}.", wktString );
         }
 
@@ -83,10 +83,10 @@ public class SpatialMaskDeserializer extends JsonDeserializer<SpatialMask>
         }
         catch ( IllegalArgumentException e )
         {
-            throw new IOException( "The 'wkt' string associated with the 'spatial_mask' "
-                                   + "could not be parsed into a geometry. Please fix "
-                                   + "the 'wkt' string and try again. The wkt string is: "
-                                   + wktString, e );
+            throw new UncheckedIOException( new IOException( "The 'wkt' string associated with the 'spatial_mask' "
+                                                             + "could not be parsed into a geometry. Please fix "
+                                                             + "the 'wkt' string and try again. The wkt string is: "
+                                                             + wktString, e ) );
         }
     }
 }

@@ -1,19 +1,21 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.node.StringNode;
 
+import wres.config.DeclarationFactory;
 import wres.config.components.FeatureService;
 import wres.config.components.FeatureServiceGroup;
 
@@ -22,32 +24,33 @@ import wres.config.components.FeatureServiceGroup;
  *
  * @author James Brown
  */
-public class FeatureServiceDeserializer extends JsonDeserializer<FeatureService>
+public class FeatureServiceDeserializer extends ValueDeserializer<FeatureService>
 {
     @Override
     public FeatureService deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
-        JsonNode node = mapper.readTree( jp );
+        ObjectReadContext reader = jp.objectReadContext();
+        JsonNode node = reader.readTree( jp );
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
+        ObjectReader objectReader = mapper.readerFor( FeatureServiceGroup.class );
 
         // Preserve insertion order
         Set<FeatureServiceGroup> groups = new LinkedHashSet<>();
         URI uri = null;
 
         // Implicit URI
-        if( node instanceof TextNode textNode )
+        if ( node instanceof StringNode textNode )
         {
-            String uriString = textNode.asText();
+            String uriString = textNode.asString();
             uri = UriDeserializer.deserializeUri( uriString );
         }
         // Explicit URI
         else if ( node.has( "uri" ) )
         {
             String uriString = node.get( "uri" )
-                                   .asText();
+                                   .asString();
             uri = UriDeserializer.deserializeUri( uriString );
         }
 
@@ -59,14 +62,14 @@ public class FeatureServiceDeserializer extends JsonDeserializer<FeatureService>
             for ( int i = 0; i < count; i++ )
             {
                 JsonNode nextNode = groupNode.get( i );
-                FeatureServiceGroup nextGroup = mapper.readValue( nextNode, FeatureServiceGroup.class );
+                FeatureServiceGroup nextGroup = objectReader.readValue( nextNode );
                 groups.add( nextGroup );
             }
         }
         // Singleton group
-        else if( node.has( "group" ) )
+        else if ( node.has( "group" ) )
         {
-            FeatureServiceGroup singleton = mapper.readValue( node, FeatureServiceGroup.class );
+            FeatureServiceGroup singleton = objectReader.readValue( node );
             groups.add( singleton );
         }
         // No groups

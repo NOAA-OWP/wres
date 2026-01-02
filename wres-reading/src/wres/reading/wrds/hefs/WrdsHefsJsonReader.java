@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,10 +16,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import wres.datamodel.time.TimeSeries;
 import wres.reading.DataSource;
@@ -57,8 +57,10 @@ public class WrdsHefsJsonReader implements TimeSeriesReader
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsHefsJsonReader.class );
 
     /** Maps JSON bytes to POJOs. */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES );
+    private static final ObjectMapper OBJECT_MAPPER =
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /**
      * @return an instance
@@ -197,11 +199,6 @@ public class WrdsHefsJsonReader implements TimeSeriesReader
         try
         {
             byte[] rawBytes = inputStream.readAllBytes();
-
-            if ( Objects.isNull( rawBytes ) )
-            {
-                return Collections.emptyList();
-            }
 
             // It is conceivable that we could tee/pipe the data to both the md5sum and the parser at the same time,
             // but this involves more complexity and may not be worth it. For now assume that we are not going to

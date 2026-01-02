@@ -12,13 +12,12 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
- * <p>Helper class that builds a {@link TimeScaleOuter} from a set of {@link ParameterCodes}.
- * In the simplest case, a {@link TimeScaleOuter} comprises a {@link TimeScaleOuter#getPeriod()} and a 
- * {@link TimeScaleOuter#getFunction()}. The main hint is the 
- * {@link ParameterCodes#getDuration()}, which describes the <code>period</code> 
- * over which the value applies. The <code>function</code> depends on the 
- * {@link ParameterCodes#getPhysicalElement()}. See #60158-11. 
- * <p> TODO: implement this class more fully, accounting for other types of {@link ParameterCodes#getPhysicalElement()}.
+ * <p>Helper class that builds a {@link TimeScaleOuter} from a set of {@link ParameterCodes}. In the simplest case, a
+ * {@link TimeScaleOuter} comprises a {@link TimeScaleOuter#getPeriod()} and a {@link TimeScaleOuter#getFunction()}.
+ * The main hint is the duration of the {@link ParameterCodes}, which describes the <code>period</code> over which the
+ * value applies. The <code>function</code> depends on the physical element code in the {@link ParameterCodes}.
+ * See #60158-11.
+ * <p> TODO: implement this class more fully, accounting for other types of physical element code.
  *
  * @author James Brown
  */
@@ -43,7 +42,7 @@ public class TimeScaleFromParameterCodes
         Objects.requireNonNull( parameterCodes,
                                 "Specify non-null parameter codes alongside the WRDS source '" + source + "'." );
 
-        TimeScaleOuter returnMe = null;
+        TimeScaleOuter returnMe;
 
         if ( "I".equalsIgnoreCase( parameterCodes.getDuration() ) )
         {
@@ -126,29 +125,29 @@ public class TimeScaleFromParameterCodes
                                 + "defined." );
 
         return switch ( durationCode )
-                {
-                    case "U" -> Duration.ofMinutes( 1 );
-                    case "E" -> Duration.ofMinutes( 5 );
-                    case "G" -> Duration.ofMinutes( 10 );
-                    case "C" -> Duration.ofMinutes( 15 );
-                    case "J" -> Duration.ofMinutes( 30 );
-                    case "H" -> Duration.ofHours( 1 );
-                    case "B" -> Duration.ofHours( 2 );
-                    case "T" -> Duration.ofHours( 3 );
-                    case "F" -> Duration.ofHours( 4 );
-                    case "Q" -> Duration.ofHours( 6 );
-                    case "A" -> Duration.ofHours( 8 );
-                    case "K" -> Duration.ofHours( 12 );
-                    case "L" -> Duration.ofHours( 18 );
-                    case "D" -> Duration.ofDays( 1 );
-                    default -> throw new UnsupportedOperationException(
-                            "While attempting to deserialize a WRDS json response "
-                            + "contained in "
-                            + source
-                            + ", found an unsupported duration code '"
-                            + durationCode
-                            + "'." );
-                };
+        {
+            case "U" -> Duration.ofMinutes( 1 );
+            case "E" -> Duration.ofMinutes( 5 );
+            case "G" -> Duration.ofMinutes( 10 );
+            case "C" -> Duration.ofMinutes( 15 );
+            case "J" -> Duration.ofMinutes( 30 );
+            case "H" -> Duration.ofHours( 1 );
+            case "B" -> Duration.ofHours( 2 );
+            case "T" -> Duration.ofHours( 3 );
+            case "F" -> Duration.ofHours( 4 );
+            case "Q" -> Duration.ofHours( 6 );
+            case "A" -> Duration.ofHours( 8 );
+            case "K" -> Duration.ofHours( 12 );
+            case "L" -> Duration.ofHours( 18 );
+            case "D" -> Duration.ofDays( 1 );
+            default -> throw new UnsupportedOperationException(
+                    "While attempting to deserialize a WRDS json response "
+                    + "contained in "
+                    + source
+                    + ", found an unsupported duration code '"
+                    + durationCode
+                    + "'." );
+        };
 
     }
 

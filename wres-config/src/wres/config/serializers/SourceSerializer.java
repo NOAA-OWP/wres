@@ -1,14 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.components.Source;
 import wres.config.components.SourceBuilder;
@@ -17,10 +13,10 @@ import wres.config.components.SourceBuilder;
  * Serializes a {@link Source}.
  * @author James Brown
  */
-public class SourceSerializer extends JsonSerializer<Source>
+public class SourceSerializer extends ValueSerializer<Source>
 {
     @Override
-    public void serialize( Source source, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( Source source, JsonGenerator writer, SerializationContext serializers )
     {
         // Skip the URI if that is the only attribute present
         Source compare = SourceBuilder.builder()
@@ -36,17 +32,55 @@ public class SourceSerializer extends JsonSerializer<Source>
         // Full description
         else
         {
-            // Some shenanigans to get a default serializer that is not this instance and hence not infinitely recursive
-            // There should be a simpler way to call a default serializer from a custom serializer. Yuck.
-            JavaType javaType = serializers.constructType( Source.class );
-            BeanDescription beanDesc = serializers.getConfig()
-                                                  .introspect( javaType );
-            JsonSerializer<Object> serializer
-                    = BeanSerializerFactory.instance.findBeanOrAddOnSerializer( serializers,
-                                                                                javaType,
-                                                                                beanDesc,
-                                                                                false );
-            serializer.serialize( source, writer, serializers );
+            this.writeSource( source, writer );
         }
+    }
+
+    /**
+     * Writes a full data source description.
+     * @param source the source
+     * @param writer the writer
+     */
+
+    private void writeSource( Source source, JsonGenerator writer )
+    {
+        writer.writeStartObject();
+
+        if ( Objects.nonNull( source.uri() ) )
+        {
+            writer.writePOJOProperty( "uri", source.uri() );
+        }
+
+        if ( Objects.nonNull( source.sourceInterface() ) )
+        {
+            writer.writePOJOProperty( "interface", source.sourceInterface() );
+        }
+
+        if ( Objects.nonNull( source.parameters() )
+             && !source.parameters().isEmpty() )
+        {
+            writer.writePOJOProperty( "parameters", source.parameters() );
+        }
+
+        if ( Objects.nonNull( source.pattern() ) )
+        {
+            writer.writeStringProperty( "pattern", source.pattern() );
+        }
+
+        if ( Objects.nonNull( source.timeZoneOffset() ) )
+        {
+            writer.writeStringProperty( "time_zone_offset", source.timeZoneOffset()
+                                                                  .toString()
+                                                                  .replace( ":", "" ) );
+        }
+
+        if ( Objects.nonNull( source.missingValue() )
+             && !source.missingValue()
+                       .isEmpty() )
+        {
+            writer.writePOJOProperty( "missing_value", source.missingValue() );
+        }
+
+        writer.writeEndObject();
     }
 }

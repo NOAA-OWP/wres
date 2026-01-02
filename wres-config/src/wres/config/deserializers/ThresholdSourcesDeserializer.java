@@ -1,22 +1,24 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.StringNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.DeclarationFactory;
 import wres.config.components.ThresholdSource;
 import wres.config.components.ThresholdSourceBuilder;
 
@@ -25,19 +27,19 @@ import wres.config.components.ThresholdSourceBuilder;
  *
  * @author James Brown
  */
-public class ThresholdSourcesDeserializer extends JsonDeserializer<Set<ThresholdSource>>
+public class ThresholdSourcesDeserializer extends ValueDeserializer<Set<ThresholdSource>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdSourcesDeserializer.class );
 
     @Override
     public Set<ThresholdSource> deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
-        JsonNode node = mapper.readTree( jp );
+        ObjectReadContext reader = jp.objectReadContext();
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
+        JsonNode node = reader.readTree( jp );
 
         // Preserve insertion order
         Set<ThresholdSource> thresholdSources = new LinkedHashSet<>();
@@ -49,7 +51,7 @@ public class ThresholdSourcesDeserializer extends JsonDeserializer<Set<Threshold
             for ( int i = 0; i < nodes; i++ )
             {
                 JsonNode nextNode = array.get( i );
-                if ( nextNode instanceof TextNode text )
+                if ( nextNode instanceof StringNode text )
                 {
                     ThresholdSource source = this.getPlainSource( text );
                     thresholdSources.add( source );
@@ -61,7 +63,7 @@ public class ThresholdSourcesDeserializer extends JsonDeserializer<Set<Threshold
                 }
             }
         }
-        else if ( node instanceof TextNode text )
+        else if ( node instanceof StringNode text )
         {
             ThresholdSource source = this.getPlainSource( text );
             thresholdSources.add( source );
@@ -82,9 +84,9 @@ public class ThresholdSourcesDeserializer extends JsonDeserializer<Set<Threshold
      * @return the threshold source
      */
 
-    private ThresholdSource getPlainSource( TextNode plainNode )
+    private ThresholdSource getPlainSource( StringNode plainNode )
     {
-        String uriString = plainNode.textValue();
+        String uriString = plainNode.stringValue();
         LOGGER.debug( "Encountered a simple threshold source containing a URI: {}", uriString );
         URI uri = UriDeserializer.deserializeUri( uriString );
         return ThresholdSourceBuilder.builder()
@@ -97,12 +99,12 @@ public class ThresholdSourcesDeserializer extends JsonDeserializer<Set<Threshold
      * @param mapper the mapper
      * @param elaboratedNode the elabrated node
      * @return the source
-     * @throws IOException if the source could not be read for any reason
      */
-    private ThresholdSource getElaboratedSource( ObjectReader mapper, JsonNode elaboratedNode ) throws IOException
+    private ThresholdSource getElaboratedSource( ObjectMapper mapper, JsonNode elaboratedNode )
     {
         LOGGER.debug( "Encountered an elaborated threshold source." );
-        return mapper.readValue( elaboratedNode, ThresholdSource.class );
+        ObjectReader reader = mapper.readerFor( ThresholdSource.class );
+        return reader.readValue( elaboratedNode );
     }
 }
 

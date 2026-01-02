@@ -1,14 +1,13 @@
 package wres.reading.wrds.hefs;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,16 +90,16 @@ import wres.datamodel.types.Ensemble;
  *
  * @author James Brown
  */
-class HefsForecastDeserializer extends JsonDeserializer<HefsForecast>
+class HefsForecastDeserializer extends ValueDeserializer<HefsForecast>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( HefsForecastDeserializer.class );
 
     @Override
     public HefsForecast deserialize( JsonParser jsonParser,
-                                     DeserializationContext deserializationContext ) throws IOException
+                                     DeserializationContext deserializationContext )
     {
-        ObjectMapper mapper = ( ObjectMapper ) jsonParser.getCodec();
+        ObjectReadContext mapper = jsonParser.objectReadContext();
         HefsTrace[] traces = mapper.readValue( jsonParser, HefsTrace[].class );
 
         Map<String, TimeSeries<Double>> traceSeries = new TreeMap<>();

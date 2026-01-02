@@ -1,32 +1,19 @@
 package wres.reading.wrds.ahps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * A location.
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
+@Getter
+@Setter
 public class Location
 {
     private LocationNames names;
-
-    /**
-     * @return the location names
-     */
-    public LocationNames getNames()
-    {
-        return names;
-    }
-
-    /**
-     * Sets the location names.
-     * @param names the location names
-     */
-    public void setNames( LocationNames names )
-    {
-        this.names = names;
-    }
 
     @Override
     public String toString()

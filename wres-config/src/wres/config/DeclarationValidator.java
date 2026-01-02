@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.networknt.schema.Schema;
 import com.networknt.schema.Error;
 import org.apache.commons.lang3.tuple.Pair;
@@ -211,7 +211,7 @@ public class DeclarationValidator
                 events.addAll( businessEvents );
             }
             // Catch exceptions here that can occur during deserialization
-            catch ( IOException | DeclarationException e )
+            catch ( DeclarationException e )
             {
                 EvaluationStatusEvent error =
                         EvaluationStatusEvent.newBuilder()

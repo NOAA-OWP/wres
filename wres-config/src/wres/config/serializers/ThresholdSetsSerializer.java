@@ -1,14 +1,13 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,7 @@ import wres.config.components.ThresholdType;
  * common threshold metadata.
  * @author James Brown
  */
-public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
+public class ThresholdSetsSerializer extends ValueSerializer<Set<Threshold>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdSetsSerializer.class );
@@ -32,7 +31,7 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
     @Override
     public void serialize( Set<Threshold> thresholds,
                            JsonGenerator writer,
-                           SerializerProvider serializers ) throws IOException
+                           SerializationContext serializers )
     {
         Map<Threshold, Set<Threshold>> grouped = this.groupThresholdsByType( thresholds );
 
@@ -53,17 +52,17 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
                 Set<Threshold> thresholdSet = nextThresholds.getValue();
                 if ( type == ThresholdType.VALUE )
                 {
-                    writer.writeFieldName( "thresholds" );
+                    writer.writeName( "thresholds" );
                     THRESHOLDS_SERIALIZER.serialize( thresholdSet, writer, serializers );
                 }
                 else if ( type == ThresholdType.PROBABILITY )
                 {
-                    writer.writeFieldName( "probability_thresholds" );
+                    writer.writeName( "probability_thresholds" );
                     THRESHOLDS_SERIALIZER.serialize( thresholdSet, writer, serializers );
                 }
                 else if ( type == ThresholdType.PROBABILITY_CLASSIFIER )
                 {
-                    writer.writeFieldName( "classifier_thresholds" );
+                    writer.writeName( "classifier_thresholds" );
                     THRESHOLDS_SERIALIZER.serialize( thresholdSet, writer, serializers );
                 }
 
@@ -77,7 +76,7 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider provider, Set<Threshold> thresholds )
+    public boolean isEmpty( SerializationContext provider, Set<Threshold> thresholds )
     {
         return thresholds.isEmpty();
     }

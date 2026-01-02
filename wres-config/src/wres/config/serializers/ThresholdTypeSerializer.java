@@ -1,10 +1,8 @@
 package wres.config.serializers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.DeclarationFactory;
 import wres.config.components.ThresholdType;
@@ -13,16 +11,16 @@ import wres.config.components.ThresholdType;
  * Only serializes a {@link ThresholdType} that is not default.
  * @author James Brown
  */
-public class ThresholdTypeSerializer extends JsonSerializer<ThresholdType>
+public class ThresholdTypeSerializer extends ValueSerializer<ThresholdType>
 {
     @Override
-    public void serialize( ThresholdType type, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( ThresholdType type, JsonGenerator writer, SerializationContext serializers )
     {
-        writer.writeObject( type );
+        writer.writePOJO( type );
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, ThresholdType type )
+    public boolean isEmpty( SerializationContext serializers, ThresholdType type )
     {
         // Do not write the default
         return type == DeclarationFactory.DEFAULT_THRESHOLD_TYPE;

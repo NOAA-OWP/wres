@@ -1,12 +1,11 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,20 +17,20 @@ import wres.statistics.generated.Geometry;
  * Serializes a {@link Features}.
  * @author James Brown
  */
-public class FeaturesSerializer extends JsonSerializer<Features>
+public class FeaturesSerializer extends ValueSerializer<Features>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeaturesSerializer.class );
 
     @Override
-    public void serialize( Features features, JsonGenerator gen, SerializerProvider serializers ) throws IOException
+    public void serialize( Features features, JsonGenerator gen, SerializationContext serializers )
     {
         Set<GeometryTuple> geometries = features.geometries();
         this.serialize( geometries, gen );
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, Features features )
+    public boolean isEmpty( SerializationContext serializers, Features features )
     {
         return Objects.isNull( features ) || features.geometries()
                                                      .isEmpty();
@@ -41,9 +40,8 @@ public class FeaturesSerializer extends JsonSerializer<Features>
      * Serialize the geometries.
      * @param geometries the geometries
      * @param writer the writer
-     * @throws IOException if the geometries could not be written for any reason
      */
-    void serialize( Set<GeometryTuple> geometries, JsonGenerator writer ) throws IOException
+    void serialize( Set<GeometryTuple> geometries, JsonGenerator writer )
     {
         if ( !geometries.isEmpty() )
         {
@@ -66,16 +64,9 @@ public class FeaturesSerializer extends JsonSerializer<Features>
      * Writes a {@link GeometryTuple}.
      * @param geometryTuple the geometry tuple
      * @param writer the writer
-     * @throws IOException if the geometry tuple could not be written for any reason
      */
-    private void writeGeometryTuple( GeometryTuple geometryTuple, JsonGenerator writer ) throws IOException
+    private void writeGeometryTuple( GeometryTuple geometryTuple, JsonGenerator writer )
     {
-        // Use flow style if possible
-        if( writer instanceof CustomGenerator custom )
-        {
-            custom.setFlowStyleOn();
-        }
-
         writer.writeStartObject();
         if ( geometryTuple.hasLeft() )
         {
@@ -90,12 +81,6 @@ public class FeaturesSerializer extends JsonSerializer<Features>
             this.writeGeometry( geometryTuple.getBaseline(), writer, "baseline" );
         }
         writer.writeEndObject();
-
-        // Return to default style
-        if( writer instanceof CustomGenerator custom )
-        {
-            custom.setFlowStyleOff();
-        }
     }
 
     /**
@@ -103,35 +88,33 @@ public class FeaturesSerializer extends JsonSerializer<Features>
      * @param geometry the geometry
      * @param writer the writer
      * @param context the context for the geometry
-     * @throws IOException if the geometry could not be written for any reason
      */
-    private void writeGeometry( Geometry geometry, JsonGenerator writer, String context ) throws IOException
+    private void writeGeometry( Geometry geometry, JsonGenerator writer, String context )
     {
         if ( this.isSimpleGeometry( geometry ) )
         {
-            writer.writeFieldName( context );
+            writer.writeName( context );
             writer.writeString( geometry.getName() );
         }
         else
         {
-            writer.writeFieldName( context );
+            writer.writeName( context );
             writer.writeStartObject();
-            writer.writeStringField( "name", geometry.getName() );
+            writer.writeStringProperty( "name", geometry.getName() );
 
             if ( !geometry.getDescription()
                           .isBlank() )
             {
-                writer.writeStringField( "description", geometry.getDescription() );
+                writer.writeStringProperty( "description", geometry.getDescription() );
             }
             if ( !geometry.getWkt()
                           .isBlank() )
             {
-                writer.writeStringField( "wkt", geometry.getWkt() );
+                writer.writeStringProperty( "wkt", geometry.getWkt() );
             }
             if ( geometry.getSrid() != 0 )
             {
-                writer.writeFieldName( "srid" );
-                writer.writeNumber( geometry.getSrid() );
+                writer.writeNumberProperty( "srid", geometry.getSrid() );
             }
             writer.writeEndObject();
         }

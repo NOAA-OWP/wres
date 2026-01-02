@@ -1,15 +1,14 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 
 import com.google.protobuf.Timestamp;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,14 +20,13 @@ import wres.statistics.generated.TimeWindow;
  *
  * @author James Brown
  */
-public class TimeWindowSerializer extends JsonSerializer<Set<TimeWindow>>
+public class TimeWindowSerializer extends ValueSerializer<Set<TimeWindow>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeWindowSerializer.class );
 
     @Override
-    public void serialize( Set<TimeWindow> timeWindows, JsonGenerator gen, SerializerProvider serializers )
-            throws IOException
+    public void serialize( Set<TimeWindow> timeWindows, JsonGenerator gen, SerializationContext serializers )
     {
         if ( LOGGER.isDebugEnabled() )
         {
@@ -50,7 +48,7 @@ public class TimeWindowSerializer extends JsonSerializer<Set<TimeWindow>>
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider provider, Set<TimeWindow> timeWindows )
+    public boolean isEmpty( SerializationContext provider, Set<TimeWindow> timeWindows )
     {
         return Objects.isNull( timeWindows ) || timeWindows.isEmpty();
     }
@@ -61,7 +59,7 @@ public class TimeWindowSerializer extends JsonSerializer<Set<TimeWindow>>
      * @param timeWindow the time window
      * @param writer the writer
      */
-    private void writeTimeWindow( TimeWindow timeWindow, JsonGenerator writer ) throws IOException
+    private void writeTimeWindow( TimeWindow timeWindow, JsonGenerator writer )
     {
         if ( timeWindow.hasEarliestLeadDuration()
              || timeWindow.hasLatestLeadDuration() )
@@ -95,24 +93,24 @@ public class TimeWindowSerializer extends JsonSerializer<Set<TimeWindow>>
      * @param writer the writer
      */
     private void writeLeadDurations( TimeWindow timeWindow,
-                                     JsonGenerator writer ) throws IOException
+                                     JsonGenerator writer )
     {
-        writer.writeFieldName( "lead_times" );
+        writer.writeName( "lead_times" );
 
         writer.writeStartObject();
 
         if ( timeWindow.hasEarliestLeadDuration() )
         {
-            writer.writeNumberField( "minimum", timeWindow.getEarliestLeadDuration()
-                                                          .getSeconds() );
+            writer.writeNumberProperty( "minimum", timeWindow.getEarliestLeadDuration()
+                                                             .getSeconds() );
         }
         if ( timeWindow.hasLatestLeadDuration() )
         {
-            writer.writeNumberField( "maximum", timeWindow.getLatestLeadDuration()
-                                                          .getSeconds() );
+            writer.writeNumberProperty( "maximum", timeWindow.getLatestLeadDuration()
+                                                             .getSeconds() );
         }
 
-        writer.writeStringField( "unit", "seconds" );
+        writer.writeStringProperty( "unit", "seconds" );
 
         writer.writeEndObject();
     }
@@ -128,21 +126,21 @@ public class TimeWindowSerializer extends JsonSerializer<Set<TimeWindow>>
     private void writeTimestamps( String name,
                                   Timestamp earliest,
                                   Timestamp latest,
-                                  JsonGenerator writer ) throws IOException
+                                  JsonGenerator writer )
     {
-        writer.writeFieldName( name );
+        writer.writeName( name );
 
         writer.writeStartObject();
 
         if ( Objects.nonNull( earliest ) )
         {
             Instant instant = MessageUtilities.getInstant( earliest );
-            writer.writeStringField( "minimum", instant.toString() );
+            writer.writeStringProperty( "minimum", instant.toString() );
         }
         if ( Objects.nonNull( latest ) )
         {
             Instant instant = MessageUtilities.getInstant( latest );
-            writer.writeStringField( "maximum", instant.toString() );
+            writer.writeStringProperty( "maximum", instant.toString() );
         }
 
         writer.writeEndObject();

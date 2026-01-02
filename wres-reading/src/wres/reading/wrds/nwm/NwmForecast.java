@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Getter;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -17,6 +18,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmForecast
 {
+    @Getter
     private final Instant referenceDatetime;
     private final List<NwmFeature> nwmFeatures;
 
@@ -36,14 +38,6 @@ public class NwmForecast
     {
         this.referenceDatetime = referenceDatetime;
         this.nwmFeatures = nwmFeatures;
-    }
-
-    /**
-     * @return the reference time
-     */
-    public Instant getReferenceDatetime()
-    {
-        return this.referenceDatetime;
     }
 
     /**
