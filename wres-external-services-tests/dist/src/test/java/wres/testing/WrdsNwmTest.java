@@ -11,6 +11,8 @@ import javax.net.ssl.X509TrustManager;
 
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import okhttp3.OkHttpClient;
