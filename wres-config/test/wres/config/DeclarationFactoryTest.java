@@ -3413,8 +3413,8 @@ class DeclarationFactoryTest
                     - uri: file:/some/directory
                       pattern: '**/*.csv*'
                       time_zone_offset: "-0600"
-                      missing_value: -999.0
                       daylight_savings: true
+                      missing_value: -999.0
                     - uri: https://foo.bar
                       interface: usgs nwis
                       parameters:

@@ -1,12 +1,10 @@
 package wres.reading.nwis.dv.response;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,8 +18,9 @@ class ResponseTest
 {
     /** An object mapper. */
     private static final ObjectMapper OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /** An example response. */
     private static final String RESPONSE = """
@@ -297,7 +296,7 @@ class ResponseTest
             """;
 
     @Test
-    void testDeserialize() throws IOException
+    void testDeserialize()
     {
         Response response = OBJECT_MAPPER.readValue( RESPONSE.getBytes(), Response.class );
 

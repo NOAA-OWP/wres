@@ -2,7 +2,8 @@ package wres.reading.nwis.iv.response;
 
 import java.io.Serial;
 import java.io.Serializable;
-import javax.xml.bind.annotation.XmlRootElement;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import lombok.Getter;
 import lombok.Setter;

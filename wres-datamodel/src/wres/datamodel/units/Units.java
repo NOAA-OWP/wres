@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -27,16 +28,15 @@ import javax.measure.quantity.Speed;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
-import com.networknt.schema.serialization.JsonNodeReader;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import com.networknt.schema.Error;
+import com.networknt.schema.serialization.NodeReader;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,8 @@ import systems.uom.ucum.internal.format.TokenMgrError;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.quantity.time.TemporalQuantity;
 import tech.units.indriya.unit.UnitDimension;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 import wres.config.DeclarationFactory;
 import wres.datamodel.MissingValues;
@@ -198,12 +200,12 @@ public class Units
     // Read the convenience aliases from a class path resource
     static
     {
-        ObjectMapper mapper =
-                new ObjectMapper( new YAMLFactory()
-                                          .disable( YAMLGenerator.Feature.WRITE_DOC_START_MARKER )
-                                          .disable( YAMLGenerator.Feature.SPLIT_LINES )
-                                          .enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
-                                          .enable( YAMLGenerator.Feature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS ) );
+        ObjectMapper mapper = YAMLMapper.builder()
+                                        .disable( YAMLWriteFeature.WRITE_DOC_START_MARKER )
+                                        .disable( YAMLWriteFeature.SPLIT_LINES )
+                                        .enable( YAMLWriteFeature.MINIMIZE_QUOTES )
+                                        .enable( YAMLWriteFeature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS )
+                                        .build();
 
         // Get the units from the classpath
         URL unitsUrl = DeclarationFactory.class.getClassLoader()
@@ -239,8 +241,10 @@ public class Units
                 }
 
                 // Validate the UCUM units against UCUM
-                Map<String, String> unitsMapped = mapper.readValue( unitsNode.traverse(),
-                                                                    new TypeReference<>() {} );
+                JavaType type = mapper.getTypeFactory()
+                                      .constructMapType( Map.class, String.class, String.class );
+                ObjectReader objectReader = mapper.readerFor( type );
+                Map<String, String> unitsMapped = objectReader.readValue( unitsNode );
 
                 Map<String, String> unitsFailed = new TreeMap<>();
 
@@ -692,16 +696,16 @@ public class Units
         {
             String schemaString = new String( schemaStream.readAllBytes(), StandardCharsets.UTF_8 );
             JsonNode schemaNode = mapper.readTree( schemaString );
-            JsonNodeReader nodeReader = JsonNodeReader.builder()
-                                                      .yamlMapper( mapper )
-                                                      .build();
-            JsonSchemaFactory factory =
-                    JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .jsonNodeReader( nodeReader )
-                                     .build();
-            JsonSchema schema = factory.getSchema( schemaNode );
+            NodeReader nodeReader = NodeReader.builder()
+                                              .yamlMapper( mapper )
+                                              .build();
+            SchemaRegistry factory =
+                    SchemaRegistry.builder( SchemaRegistry.withDefaultDialect( SpecificationVersion.DRAFT_2019_09 ) )
+                                  .nodeReader( nodeReader )
+                                  .build();
+            Schema schema = factory.getSchema( schemaNode );
 
-            Set<ValidationMessage> errors = schema.validate( unitsNode );
+            List<Error> errors = schema.validate( unitsNode );
 
             if ( !errors.isEmpty() )
             {

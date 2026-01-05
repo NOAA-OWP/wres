@@ -32,9 +32,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import okhttp3.Headers;
@@ -44,6 +44,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
@@ -119,8 +120,9 @@ public class NwisDvReader implements TimeSeriesReader
 
     /** For reading feature metadata. */
     private static final ObjectMapper OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /** Mapping between time zone short names and formal IANA time zone names. This is highly brittle but stems from
      * the NWIS DV service providing ambiguous information about time zones via abbreviated names. */

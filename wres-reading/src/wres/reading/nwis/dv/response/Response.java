@@ -3,7 +3,8 @@ package wres.reading.nwis.dv.response;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
-import javax.xml.bind.annotation.XmlRootElement;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
