@@ -355,7 +355,7 @@ project(':wres-datamodel') {
         runtimeOnly 'si.uom:si-units:2.2.3'
         implementation 'tech.units:indriya:2.2.3'
         implementation 'systems.uom:systems-ucum:2.2'
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         implementation 'si.uom:si-quantity:2.2.3'
         implementation 'systems.uom:systems-quantity:2.2'
 
@@ -377,7 +377,6 @@ project(':wres-datamodel') {
         testCompileOnly 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
-        testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
         testImplementation 'org.hamcrest:hamcrest-core:3.0'
         testRuntimeOnly 'si.uom:si-quantity:2.2.3'
         testImplementation 'si.uom:si-units:2.2.3'
@@ -466,7 +465,7 @@ project(':wres-io') {
 
         api 'org.apache.commons:commons-lang3:3.20.0'
         api 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         testImplementation 'org.mockito:mockito-core:5.21.0'
     }
 
@@ -589,10 +588,9 @@ project(':wres-writing') {
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
 
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
         testRuntimeOnly 'org.apache.commons:commons-lang3:3.20.0'
         testImplementation 'org.apache.tika:tika-core:3.2.3'
         testImplementation 'org.mockito:mockito-core:5.21.0'
@@ -782,9 +780,8 @@ project(':wres-eventdetection') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         implementation 'org.apache.commons:commons-lang3:3.20.0'
-        testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
@@ -808,10 +805,9 @@ project(':wres-metrics') {
         api project(':wres-config')
         api project(':wres-statistics')
 
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
-        testRuntimeOnly 'com.google.protobuf:protobuf-java:3.25.6'
         testRuntimeOnly 'org.apache.commons:commons-lang3:3.20.0'
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
@@ -865,7 +861,7 @@ project(':wres-statistics') {
     protobuf {
         // Automatically download and use the correct protobuf compiler
         protoc {
-            artifact = 'com.google.protobuf:protoc:3.25.6'
+            artifact = 'com.google.protobuf:protoc:3.25.8'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -942,7 +938,7 @@ project(':wres-statistics') {
     //compileJava.dependsOn buildProtobufBindingsForPython
 
     dependencies {
-        api 'com.google.protobuf:protobuf-java:3.25.6'
+        api 'com.google.protobuf:protobuf-java:3.25.8'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -1077,7 +1073,7 @@ project(':wres-vis') {
         testImplementation 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         implementation project(':wres-statistics')
 
         testRuntimeOnly files('dist/lib/conf')
@@ -1120,13 +1116,13 @@ project(':wres-config') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        api 'com.google.protobuf:protobuf-java:3.25.6'
+        api 'com.google.protobuf:protobuf-java:3.25.8'
 
         // To validate WKT strings as geometries
         api group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
 
         // Protobuf utilities
-        implementation 'com.google.protobuf:protobuf-java-util:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java-util:3.25.8'
 
         api 'org.apache.commons:commons-lang3:3.20.0'
 
@@ -1183,7 +1179,7 @@ project(':wres-messages') {
     protobuf {
         // Automatically download and use the correct protobuf compiler
         protoc {
-            artifact = 'com.google.protobuf:protoc:3.25.6'
+            artifact = 'com.google.protobuf:protoc:3.25.8'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -1199,7 +1195,7 @@ project(':wres-messages') {
     }
 
     dependencies {
-        api 'com.google.protobuf:protobuf-java:3.25.6'
+        api 'com.google.protobuf:protobuf-java:3.25.8'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
@@ -1255,7 +1251,7 @@ project(':wres-worker') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
         testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // Use mockserver as a mock server for mock API responses
@@ -1509,7 +1505,7 @@ project(':wres-tasker') {
         implementation 'org.apache.commons:commons-lang3:3.20.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
@@ -1710,7 +1706,7 @@ project(':wres-events') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        implementation 'com.google.protobuf:protobuf-java:3.25.6'
+        implementation 'com.google.protobuf:protobuf-java:3.25.8'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -1960,7 +1956,7 @@ dependencies {
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
 
-    implementation 'com.google.protobuf:protobuf-java:3.25.6'
+    implementation 'com.google.protobuf:protobuf-java:3.25.8'
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
     implementation 'org.apache.commons:commons-lang3:3.20.0'
