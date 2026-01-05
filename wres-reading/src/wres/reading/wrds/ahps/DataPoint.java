@@ -4,35 +4,21 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Data point that contains a value and an associated time.
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
+@Getter
+@Setter
 public class DataPoint
 {
     private OffsetDateTime time;
     private String flow;
     private Double value;
-
-    /**
-     * Sets the flow.
-     * @param flow the flow
-     */
-    public void setFlow( String flow )
-    {
-        this.flow = flow;
-    }
-
-    /**
-     * Gets the flow string.
-     * @return the flow
-     */
-    public String getFlow()
-    {
-        return flow;
-    }
 
     /**
      * @return the value
@@ -48,14 +34,6 @@ public class DataPoint
     }
 
     /**
-     * @return the time
-     */
-    public OffsetDateTime getTime()
-    {
-        return time;
-    }
-
-    /**
      * Sets the time.
      * @param time the time
      */
@@ -65,15 +43,6 @@ public class DataPoint
         {
             this.time = OffsetDateTime.parse( time );
         }
-    }
-
-    /**
-     * Sets the value.
-     * @param value the value
-     */
-    public void setValue( Double value )
-    {
-        this.value = value;
     }
 
 }

@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.DeclarationUtilities;
 import wres.config.components.GeneratedBaseline;
@@ -16,7 +15,7 @@ import wres.config.components.GeneratedBaselines;
  * Serializes a {@link GeneratedBaseline}.
  * @author James Brown
  */
-public class GeneratedBaselineSerializer extends JsonSerializer<GeneratedBaseline>
+public class GeneratedBaselineSerializer extends ValueSerializer<GeneratedBaseline>
 {
     /** Generated baseline with default values that should not be serialized. */
     private static final GeneratedBaseline DEFAULT = GeneratedBaselineBuilder.builder()
@@ -25,7 +24,7 @@ public class GeneratedBaselineSerializer extends JsonSerializer<GeneratedBaselin
     @Override
     public void serialize( GeneratedBaseline generatedBaseline,
                            JsonGenerator writer,
-                           SerializerProvider serializers ) throws IOException
+                           SerializationContext serializers )
     {
         GeneratedBaselines method = generatedBaseline.method();
         // All parameters are default, write short form
@@ -40,30 +39,30 @@ public class GeneratedBaselineSerializer extends JsonSerializer<GeneratedBaselin
                   && !Objects.equals( generatedBaseline.order(), DEFAULT.order() ) )
         {
             writer.writeStartObject();
-            writer.writeStringField( "name", method.toString() );
-            writer.writeNumberField( "order", generatedBaseline.order() );
+            writer.writeStringProperty( "name", method.toString() );
+            writer.writeNumberProperty( "order", generatedBaseline.order() );
             writer.writeEndObject();
         }
         else
         {
             writer.writeStartObject();
-            writer.writeStringField( "name", method.toString() );
+            writer.writeStringProperty( "name", method.toString() );
             if ( generatedBaseline.average() != DEFAULT.average() )
             {
                 String enumNameString = generatedBaseline.average()
-                                                   .toString();
+                                                         .toString();
                 String enumString = DeclarationUtilities.fromEnumName( enumNameString );
-                writer.writeStringField( "average", enumString );
+                writer.writeStringProperty( "average", enumString );
             }
             if ( !Objects.equals( generatedBaseline.minimumDate(), DEFAULT.minimumDate() ) )
             {
-                writer.writeStringField( "minimum_date", generatedBaseline.minimumDate()
-                                                                          .toString() );
+                writer.writeStringProperty( "minimum_date", generatedBaseline.minimumDate()
+                                                                             .toString() );
             }
             if ( !Objects.equals( generatedBaseline.maximumDate(), DEFAULT.maximumDate() ) )
             {
-                writer.writeStringField( "maximum_date", generatedBaseline.maximumDate()
-                                                                          .toString() );
+                writer.writeStringProperty( "maximum_date", generatedBaseline.maximumDate()
+                                                                             .toString() );
             }
             writer.writeEndObject();
         }

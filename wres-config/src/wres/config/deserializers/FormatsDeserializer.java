@@ -1,14 +1,13 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.StringNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,29 +21,28 @@ import wres.statistics.generated.Outputs;
  *
  * @author James Brown
  */
-public class FormatsDeserializer extends JsonDeserializer<Formats>
+public class FormatsDeserializer extends ValueDeserializer<Formats>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FormatsDeserializer.class );
 
     @Override
     public Formats deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext mapper = jp.objectReadContext();
         JsonNode node = mapper.readTree( jp );
 
         Outputs.Builder builder = Outputs.newBuilder();
 
         // Singleton
-        if ( node instanceof TextNode textNode )
+        if ( node instanceof StringNode textNode )
         {
             this.addFormat( textNode, builder );
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Discovered a singleton format: {}", textNode.asText() );
+                LOGGER.debug( "Discovered a singleton format: {}", textNode.asString() );
             }
             return new Formats( builder.build() );
         }
@@ -82,7 +80,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         // Simple format
         else
         {
-            this.addSimpleFormat( node.asText()
+            this.addSimpleFormat( node.asString()
                                       .toLowerCase(),
                                   builder );
         }
@@ -119,7 +117,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
     private void addParameterizedFormat( JsonNode node, Outputs.Builder builder )
     {
         String formatName = node.get( "format" )
-                                .asText()
+                                .asString()
                                 .toLowerCase();
 
         LOGGER.debug( "Encountered a parameterized format request for {}.", formatName );
@@ -178,7 +176,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         if ( node.has( "orientation" ) )
         {
             JsonNode orientationNode = node.get( "orientation" );
-            String friendlyText = DeclarationUtilities.toEnumName( orientationNode.asText() );
+            String friendlyText = DeclarationUtilities.toEnumName( orientationNode.asString() );
             Outputs.GraphicFormat.GraphicShape shape = Outputs.GraphicFormat.GraphicShape.valueOf( friendlyText );
             graphicFormatBuilder.setShape( shape );
         }

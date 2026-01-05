@@ -3,7 +3,6 @@ package wres.reading.wrds.nwm;
 import static java.time.DayOfWeek.SUNDAY;
 import static java.time.temporal.TemporalAdjusters.next;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -45,7 +44,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
@@ -729,21 +728,14 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     private static String tryToReadError( InputStream inputStream )
     {
-        try
-        {
-            ObjectMapper mapper = new ObjectMapper();
-            NwmRootDocumentWithError document = mapper.readValue( inputStream,
-                                                                  NwmRootDocumentWithError.class );
-            Map<String, String> messages = document.getMessages();
+        ObjectMapper mapper = new ObjectMapper();
+        NwmRootDocumentWithError document = mapper.readValue( inputStream,
+                                                              NwmRootDocumentWithError.class );
+        Map<String, String> messages = document.getMessages();
 
-            if ( Objects.nonNull( messages ) )
-            {
-                return messages.get( "error" );
-            }
-        }
-        catch ( IOException ioe )
+        if ( Objects.nonNull( messages ) )
         {
-            LOGGER.debug( "Failed to parse an error response body.", ioe );
+            return messages.get( "error" );
         }
 
         return null;

@@ -5,7 +5,8 @@ import java.time.Instant;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.jetbrains.annotations.NotNull;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -24,6 +25,7 @@ public record NwmDataPoint( @JsonProperty( "time" )
                             @JsonProperty( "value" )
                             double value )
 {
+    @NotNull
     @Override
     public String toString()
     {

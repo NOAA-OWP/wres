@@ -1,24 +1,28 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.DeclarationFactory;
 import wres.config.components.Features;
 import wres.config.components.FeaturesBuilder;
 import wres.config.components.Offset;
@@ -30,7 +34,7 @@ import wres.statistics.generated.GeometryTuple;
  *
  * @author James Brown
  */
-public class FeaturesDeserializer extends JsonDeserializer<Features>
+public class FeaturesDeserializer extends ValueDeserializer<Features>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeaturesDeserializer.class );
@@ -45,31 +49,34 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
     private static final String BASELINE = "baseline";
 
     @Override
-    public Features deserialize( JsonParser jp, DeserializationContext context ) throws IOException
+    public Features deserialize( JsonParser jp, DeserializationContext context )
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
         JsonNode node = reader.readTree( jp );
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
 
         // Explicit/sided features
         if ( node instanceof ObjectNode )
         {
             LOGGER.debug( "Discovered an object of features to parse." );
             TreeNode featureNode = node.get( "features" );
-            return this.getFeaturesFromArray( reader, ( ArrayNode ) featureNode );
+            return this.getFeaturesFromArray( mapper, ( ArrayNode ) featureNode );
         }
         // Plain array of feature names
         else if ( node instanceof ArrayNode arrayNode )
         {
             LOGGER.debug( "Discovered a plain array of features to parse." );
-            return this.getFeaturesFromArray( reader, arrayNode );
+            return this.getFeaturesFromArray( mapper, arrayNode );
         }
         else
         {
-            throw new IOException( "When reading the '" + jp.currentName()
-                                   + "' declaration of 'features', discovered an unrecognized data type. Please fix "
-                                   + "this declaration and try again." );
+            throw new UncheckedIOException( new IOException( "When reading the '"
+                                                             + jp.currentName()
+                                                             + "' declaration of 'features', discovered an "
+                                                             + "unrecognized data type. Please fix this declaration "
+                                                             + "and try again." ) );
         }
     }
 
@@ -78,12 +85,10 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
      * @param reader the mapper
      * @param featuresNode the features node
      * @return the features
-     * @throws IOException if the features could not be mapped
      */
 
-    private Features getFeaturesFromArray( ObjectReader reader,
+    private Features getFeaturesFromArray( ObjectMapper reader,
                                            ArrayNode featuresNode )
-            throws IOException
     {
         // Preserve insertion order
         Set<GeometryTuple> features = new LinkedHashSet<>();
@@ -120,7 +125,7 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
                 if ( LOGGER.isDebugEnabled() )
                 {
                     LOGGER.debug( "Discovered implicit feature tuple declaration for feature {}.",
-                                  nextNode.asText() );
+                                  nextNode.asString() );
                 }
             }
         }
@@ -136,10 +141,9 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
      * @param reader the reader
      * @param node the node to check for geometries
      * @return the geometries
-     * @throws IOException if the geometries could not be mapped
      */
 
-    private Pair<GeometryTuple, Offset> getGeometryTuple( ObjectReader reader, JsonNode node ) throws IOException
+    private Pair<GeometryTuple, Offset> getGeometryTuple( ObjectMapper reader, JsonNode node )
     {
         GeometryTuple.Builder builder = GeometryTuple.newBuilder();
 
@@ -179,13 +183,12 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
 
     /**
      * Reads a geometry from a geometry node.
-     * @param reader the reader
+     * @param mapper the object mapper
      * @param geometryNode the geometry node
      * @return the geometry
-     * @throws IOException if the node could not be read
      */
 
-    private Pair<Geometry, Double> getGeometry( ObjectReader reader, JsonNode geometryNode ) throws IOException
+    private Pair<Geometry, Double> getGeometry( ObjectMapper mapper, JsonNode geometryNode )
     {
         if ( geometryNode.has( "name" ) )
         {
@@ -197,12 +200,13 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
                                      .asDouble();
             }
 
-            Geometry geometry = reader.readValue( geometryNode, Geometry.class );
+            ObjectReader reader = mapper.readerFor( Geometry.class );
+            Geometry geometry = reader.readValue( geometryNode );
             return Pair.of( geometry, offset );
         }
         else
         {
-            String name = geometryNode.asText();
+            String name = geometryNode.asString();
             Geometry geometry = Geometry.newBuilder()
                                         .setName( name )
                                         .build();

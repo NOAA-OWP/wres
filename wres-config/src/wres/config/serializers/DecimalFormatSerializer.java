@@ -1,20 +1,19 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 /**
  * Serializes a decimal format string.
  * @author James Brown
  */
-public class DecimalFormatSerializer extends JsonSerializer<DecimalFormat>
+public class DecimalFormatSerializer extends ValueSerializer<DecimalFormat>
 {
     @Override
-    public void serialize( DecimalFormat value, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( DecimalFormat value, JsonGenerator writer, SerializationContext serializers )
     {
         writer.writeString( value.toPattern() );
     }

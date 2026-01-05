@@ -1,18 +1,19 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,7 @@ import wres.statistics.generated.GeometryTuple;
  *
  * @author James Brown
  */
-public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
+public class FeatureGroupsDeserializer extends ValueDeserializer<FeatureGroups>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureGroupsDeserializer.class );
@@ -38,23 +39,23 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
 
     @Override
     public FeatureGroups deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
         JsonNode node = reader.readTree( jp );
 
         // Array of groups
         if ( node instanceof ArrayNode arrayNode )
         {
-            return this.getFeatureGroupsFromArray( reader, context, arrayNode );
+            return this.getFeatureGroupsFromArray( jp.objectReadContext(), context, arrayNode );
         }
         else
         {
-            throw new IOException( "When reading the '" + jp.currentName()
-                                   + "' declaration of 'feature_groups', discovered an unrecognized data type. Please "
-                                   + "fix this declaration and try again." );
+            throw new UncheckedIOException( new IOException( "When reading the '" + jp.currentName()
+                                                             + "' declaration of 'feature_groups', discovered an "
+                                                             + "unrecognized data type. Please fix this declaration "
+                                                             + "and try again." ) );
         }
     }
 
@@ -64,13 +65,11 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
      * @param context the deserialization context
      * @param featureGroupsNode the feature groups node
      * @return the features
-     * @throws IOException if the features could not be mapped
      */
 
-    private FeatureGroups getFeatureGroupsFromArray( ObjectReader reader,
+    private FeatureGroups getFeatureGroupsFromArray( ObjectReadContext reader,
                                                      DeserializationContext context,
                                                      ArrayNode featureGroupsNode )
-            throws IOException
     {
         // Preserve insertion order
         Set<GeometryGroup> featureGroups = new LinkedHashSet<>();
@@ -87,7 +86,7 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
             if ( nextNode.has( "name" ) )
             {
                 JsonNode groupNameNode = nextNode.get( "name" );
-                groupName = groupNameNode.asText();
+                groupName = groupNameNode.asString();
                 LOGGER.debug( "When reading feature groups, discovered a group named {}.", groupName );
             }
 
@@ -95,8 +94,7 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
             if ( nextNode.has( "features" ) )
             {
                 JsonNode featuresNode = nextNode.get( "features" );
-                JsonParser parser = featuresNode.traverse();
-                parser.setCodec( reader );
+                JsonParser parser = featuresNode.traverse( reader );
                 Features features = FEATURES_DESERIALIZER.deserialize( parser, context );
                 geometries = features.geometries();
                 featureOffsets.putAll( features.offsets() );

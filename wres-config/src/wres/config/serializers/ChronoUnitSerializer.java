@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.time.temporal.ChronoUnit;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.DeclarationUtilities;
 
@@ -13,17 +12,17 @@ import wres.config.DeclarationUtilities;
  * Serializes a {@link ChronoUnit}.
  * @author James Brown
  */
-public class ChronoUnitSerializer extends JsonSerializer<ChronoUnit>
+public class ChronoUnitSerializer extends ValueSerializer<ChronoUnit>
 {
     @Override
-    public void serialize( ChronoUnit unit, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( ChronoUnit unit, JsonGenerator writer, SerializationContext serializers )
     {
         String friendlyName = DeclarationUtilities.fromEnumName( unit.name() );
         writer.writeString( friendlyName );
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, ChronoUnit unit )
+    public boolean isEmpty( SerializationContext serializers, ChronoUnit unit )
     {
         // Do not serialize the default
         return ChronoUnit.SECONDS == unit;

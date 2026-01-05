@@ -1,11 +1,10 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
 import wres.config.components.TimePools;
 
@@ -14,7 +13,7 @@ import wres.config.components.TimePools;
  *
  * @author James Brown
  */
-public class TimePoolsDeserializer extends JsonDeserializer<TimePools>
+public class TimePoolsDeserializer extends ValueDeserializer<TimePools>
 {
     /** The underlying deserializer. */
     private static final DurationIntervalDeserializer DURATION_INTERVAL_DESERIALIZER =
@@ -22,7 +21,6 @@ public class TimePoolsDeserializer extends JsonDeserializer<TimePools>
 
     @Override
     public TimePools deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 

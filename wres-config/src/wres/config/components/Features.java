@@ -8,8 +8,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javax.annotation.Nonnull;
+
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.DeclarationFactory;
@@ -57,6 +59,7 @@ public record Features( Set<GeometryTuple> geometries, Map<GeometryTuple,Offset>
     }
 
     @Override
+    @Nonnull
     public String toString()
     {
         // Remove unnecessary whitespace from the JSON protobuf string

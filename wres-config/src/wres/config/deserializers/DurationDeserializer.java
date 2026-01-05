@@ -1,31 +1,34 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
+
+import wres.config.DeclarationFactory;
 
 /**
  * Custom deserializer for a {@link Duration}.
  *
  * @author James Brown
  */
-public class DurationDeserializer extends JsonDeserializer<Duration>
+public class DurationDeserializer extends ValueDeserializer<Duration>
 {
     @Override
     public Duration deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
-        JsonNode node = mapper.readTree( jp );
+        ObjectReadContext reader = jp.objectReadContext();
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
+        JsonNode node = reader.readTree( jp );
 
         return DurationDeserializer.getDuration( mapper, node, "period", "unit" );
     }
@@ -37,13 +40,12 @@ public class DurationDeserializer extends JsonDeserializer<Duration>
      * @param durationNodeName the name of the node that contains the duration quantity
      * @param durationUnitName the duration unit name
      * @return a duration
-     * @throws IOException if the node could not be read
      */
 
-    static Duration getDuration( ObjectReader mapper,
+    static Duration getDuration( ObjectMapper mapper,
                                  JsonNode node,
                                  String durationNodeName,
-                                 String durationUnitName ) throws IOException
+                                 String durationUnitName )
     {
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( node );
@@ -55,8 +57,9 @@ public class DurationDeserializer extends JsonDeserializer<Duration>
             JsonNode periodNode = node.get( durationNodeName );
             JsonNode unitNode = node.get( durationUnitName );
             long durationUnit = periodNode.asLong();
-            String unitString = unitNode.asText();
-            ChronoUnit chronoUnit = mapper.readValue( unitString, ChronoUnit.class );
+            String unitString = unitNode.asString();
+            ObjectReader reader = mapper.readerFor( ChronoUnit.class );
+            ChronoUnit chronoUnit = reader.readValue( unitString );
             duration = Duration.of( durationUnit, chronoUnit );
         }
 

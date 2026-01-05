@@ -1,12 +1,11 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.components.AnalysisTimes;
@@ -15,15 +14,14 @@ import wres.config.components.AnalysisTimes;
  * Serializes a pair of {@link Duration} that represent an analysis duration interval.
  * @author James Brown
  */
-public class AnalysisDurationIntervalSerializer extends JsonSerializer<AnalysisTimes>
+public class AnalysisDurationIntervalSerializer extends ValueSerializer<AnalysisTimes>
 {
     /** The underlying serializer. */
     private static final DurationIntervalSerializer DURATION_INTERVAL_SERIALIZER =
             new DurationIntervalSerializer( "minimum", "maximum" );
 
     @Override
-    public void serialize( AnalysisTimes interval, JsonGenerator gen, SerializerProvider serializers )
-            throws IOException
+    public void serialize( AnalysisTimes interval, JsonGenerator gen, SerializationContext serializers )
     {
         Objects.requireNonNull( interval );
 

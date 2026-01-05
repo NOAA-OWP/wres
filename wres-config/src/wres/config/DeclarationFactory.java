@@ -3,7 +3,6 @@ package wres.config;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Writer;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -20,31 +19,25 @@ import java.util.TreeSet;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.cfg.EnumFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.EnumFeature;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.serialization.JsonNodeReader;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import com.networknt.schema.serialization.NodeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import com.hubspot.jackson3.datatype.protobuf.ProtobufModule;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -55,6 +48,7 @@ import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 import org.yaml.snakeyaml.scanner.ScannerException;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 import wres.config.components.DatasetOrientation;
 import wres.config.components.EvaluationDeclaration;
@@ -63,7 +57,6 @@ import wres.config.components.ThresholdBuilder;
 import wres.config.components.ThresholdOperator;
 import wres.config.components.ThresholdOrientation;
 import wres.config.components.ThresholdType;
-import wres.config.serializers.CustomGenerator;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 
 /**
@@ -166,34 +159,25 @@ public class DeclarationFactory
     private static final String SCHEMA = "schema.yml";
 
     /** Mapper for deserialization. */
-    private static final YAMLMapper DESERIALIZER =
-            ( YAMLMapper ) YAMLMapper.builder()
-                                     .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
-                                     .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
-                                     .enable( DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY )
-                                     .enable( JsonParser.Feature.STRICT_DUPLICATE_DETECTION )
-                                     .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES )
-                                     .build()
-                                     .registerModule( new ProtobufModule() )
-                                     .registerModule( new JavaTimeModule() )
-                                     .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES );
+    private static final ObjectMapper DESERIALIZER = DeclarationFactory.getObjectDeserializer();
 
     /** Mapper for serialization. */
     private static final ObjectMapper SERIALIZER =
-            new ObjectMapper( new YamlFactoryWithCustomGenerator().disable( YAMLGenerator.Feature.WRITE_DOC_START_MARKER )
-                                                                  .disable( YAMLGenerator.Feature.SPLIT_LINES )
-                                                                  .enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
-                                                                  .enable( YAMLGenerator.Feature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS )
-                                                                  .configure( YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR,
-                                                                              true ) )
-                    .registerModule( new JavaTimeModule() )
-                    .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES )
-                    .enable( SerializationFeature.WRITE_ENUMS_USING_TO_STRING )
-                    .disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS )
-                    .enable( SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED )
-                    .setDefaultPropertyInclusion( JsonInclude.Include.NON_NULL )
-                    .setDefaultPropertyInclusion( JsonInclude.Include.NON_EMPTY )
-                    .configure( EnumFeature.WRITE_ENUMS_TO_LOWERCASE, true );
+            YAMLMapper.builder()
+                      .disable( YAMLWriteFeature.WRITE_DOC_START_MARKER )
+                      .disable( YAMLWriteFeature.SPLIT_LINES )
+                      .enable( YAMLWriteFeature.MINIMIZE_QUOTES )
+                      .enable( YAMLWriteFeature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS )
+                      .configure( YAMLWriteFeature.INDENT_ARRAYS_WITH_INDICATOR, true )
+                      .build()
+                      .rebuild()
+                      .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES )
+                      .enable( EnumFeature.WRITE_ENUMS_USING_TO_STRING )
+                      .enable( EnumFeature.WRITE_ENUMS_TO_LOWERCASE )
+                      .enable( SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED )
+                      .changeDefaultPropertyInclusion( p -> p.withValueInclusion( JsonInclude.Include.NON_NULL ) )
+                      .changeDefaultPropertyInclusion( p -> p.withValueInclusion( JsonInclude.Include.NON_EMPTY ) )
+                      .build();
 
     /**
      * Deserializes a YAML string or path containing a YAML string into a POJO and performs validation against the
@@ -301,7 +285,7 @@ public class DeclarationFactory
         JsonNode declaration = DeclarationFactory.deserialize( yaml );
 
         // Get the schema
-        JsonSchema schema = DeclarationFactory.getSchema();
+        Schema schema = DeclarationFactory.getSchema();
 
         // Validate against the schema
         Set<EvaluationStatusEvent> errors = DeclarationValidator.validate( declaration, schema );
@@ -332,23 +316,15 @@ public class DeclarationFactory
      *
      * @param evaluation the evaluation declaration
      * @return the YAML string
-     * @throws IOException if the string could not be written
      * @throws NullPointerException if the evaluation is null
      */
 
-    public static String from( EvaluationDeclaration evaluation ) throws IOException
+    public static String from( EvaluationDeclaration evaluation )
     {
         Objects.requireNonNull( evaluation );
 
-        try
-        {
-            return SERIALIZER.writerWithDefaultPrettyPrinter()
-                             .writeValueAsString( evaluation );
-        }
-        catch ( JsonProcessingException e )
-        {
-            throw new IOException( "While serializing an evaluation to a YAML string.", e );
-        }
+        return SERIALIZER.writerWithDefaultPrettyPrinter()
+                         .writeValueAsString( evaluation );
     }
 
     /**
@@ -454,6 +430,23 @@ public class DeclarationFactory
     }
 
     /**
+     * @return an object deserializer
+     */
+
+    public static ObjectMapper getObjectDeserializer()
+    {
+        return YAMLMapper.builder()
+                         .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
+                         .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
+                         .enable( DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY )
+                         .enable( StreamReadFeature.STRICT_DUPLICATE_DETECTION )
+                         .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES )
+                         .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES )
+                         .addModule( new ProtobufModule() )
+                         .build();
+    }
+
+    /**
      * Deserializes a YAML string into a {@link JsonNode} for further processing.
      * @param yaml the yaml string
      * @return the node
@@ -490,7 +483,7 @@ public class DeclarationFactory
             // Deserialize with Jackson now that any anchors/references are resolved
             return DESERIALIZER.readTree( resolvedYamlString );
         }
-        catch ( ScannerException | ParserException | JsonProcessingException | DuplicateKeyException e )
+        catch ( ScannerException | ParserException | DuplicateKeyException e )
         {
             throw new IOException( "Failed to deserialize a YAML string.", e );
         }
@@ -502,7 +495,7 @@ public class DeclarationFactory
      * @throws IOException if the schema could not be found or read for any reason
      */
 
-    static JsonSchema getSchema() throws IOException
+    static Schema getSchema() throws IOException
     {
         // Get the schema from the classpath
         URL schema = DeclarationFactory.class.getClassLoader().getResource( SCHEMA );
@@ -521,15 +514,15 @@ public class DeclarationFactory
             String schemaString = new String( stream.readAllBytes(), StandardCharsets.UTF_8 );
 
             // Map the schema to a json node
-            JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
+            tools.jackson.databind.JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
 
-            JsonNodeReader nodeReader = JsonNodeReader.builder()
-                                                      .yamlMapper( DESERIALIZER )
-                                                      .build();
-            JsonSchemaFactory factory =
-                    JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .jsonNodeReader( nodeReader )
-                                     .build();
+            NodeReader nodeReader = NodeReader.builder()
+                                              .yamlMapper( DESERIALIZER )
+                                              .build();
+            SchemaRegistry factory =
+                    SchemaRegistry.builder( SchemaRegistry.withDefaultDialect( SpecificationVersion.DRAFT_2019_09 ) )
+                                  .nodeReader( nodeReader )
+                                  .build();
 
             return factory.getSchema( schemaNode );
         }
@@ -539,20 +532,12 @@ public class DeclarationFactory
      * Deserializes the prescribed {@link JsonNode} into an {@link EvaluationDeclaration}.
      * @param declaration the declaration node
      * @return the deserialized declaration
-     * @throws IOException if the node could not be deserialized for any reason
      */
 
-    static EvaluationDeclaration deserialize( JsonNode declaration ) throws IOException
+    static EvaluationDeclaration deserialize( JsonNode declaration )
     {
-        try
-        {
-            return DESERIALIZER.reader()
-                               .readValue( declaration, EvaluationDeclaration.class );
-        }
-        catch ( JsonMappingException e )
-        {
-            throw new IOException( "Failed to deserialize an evaluation declaration.", e );
-        }
+        return DESERIALIZER.readerFor( EvaluationDeclaration.class )
+                           .readValue( declaration );
     }
 
     /**
@@ -599,22 +584,6 @@ public class DeclarationFactory
 
     private DeclarationFactory()
     {
-    }
-
-    /**
-     * See the explanation in {@link CustomGenerator}. This is a workaround to expose the SnakeYAML
-     * serialization options that Jackson can see, but fails to expose to configuration.
-     *
-     * @author James Brown
-     */
-    private static class YamlFactoryWithCustomGenerator extends YAMLFactory
-    {
-        @Override
-        protected YAMLGenerator _createGenerator( Writer out, IOContext ctxt ) throws IOException
-        {
-            return new CustomGenerator( ctxt, _generatorFeatures, _yamlGeneratorFeatures,
-                                        _quotingChecker, _objectCodec, out, _version );
-        }
     }
 
 }

@@ -5,9 +5,11 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.junit.jupiter.api.Test;
 import okhttp3.OkHttpClient;
 
@@ -23,10 +25,13 @@ public class NwisTest
 {
     private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
     private static final ObjectMapper OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    private static final URI NWIS_URI_ONE = URI.create( "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-07T23:59:59Z" );
-    private static final URI NWIS_URI_TWO = URI.create( "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=01631000&parameterCd=00060&startDT=2020-03-01T00:00:00Z&endDT=2020-04-30T23:59:59Z" );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
+    private static final URI NWIS_URI_ONE = URI.create(
+            "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-07T23:59:59Z" );
+    private static final URI NWIS_URI_TWO = URI.create(
+            "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=01631000&parameterCd=00060&startDT=2020-03-01T00:00:00Z&endDT=2020-04-30T23:59:59Z" );
 
     @Test
     void canGetMinimalResponseFromNwisWithWebClient() throws IOException

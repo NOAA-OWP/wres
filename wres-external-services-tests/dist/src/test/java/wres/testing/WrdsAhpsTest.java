@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class WrdsAhpsTest
                                                    + e.getMessage() );
         }
     }
-    
+
     private static final WebClient WEB_CLIENT = new WebClient( true, OK_HTTP_CLIENT );
     private static final URI WRDS_AHPS_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME

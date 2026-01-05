@@ -3262,7 +3262,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithShortSources() throws IOException
+    void testSerializeWithShortSources()
     {
         String expected = """
                 observed:
@@ -3282,7 +3282,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithShortSourcesAndBaseline() throws IOException
+    void testSerializeWithShortSourcesAndBaseline()
     {
         String expected = """
                 observed:
@@ -3319,7 +3319,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithPersistenceBaseline() throws IOException
+    void testSerializeWithPersistenceBaseline()
     {
         String expected = """
                 observed:
@@ -3360,7 +3360,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithClimatologyBaselineAndParameters() throws IOException
+    void testSerializeWithClimatologyBaselineAndParameters()
     {
         String expected = """
                 observed:
@@ -3404,7 +3404,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithLongSources() throws IOException
+    void testSerializeWithLongSources()
     {
         String expected = """
                 observed:
@@ -3532,7 +3532,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithLongMetrics() throws IOException
+    void testSerializeWithLongMetrics()
     {
         String expected = """
                 observed:
@@ -3635,7 +3635,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithFeatureGroup() throws IOException
+    void testSerializeWithFeatureGroup()
     {
         String expected = """
                 observed:
@@ -3645,8 +3645,10 @@ class DeclarationFactoryTest
                 feature_groups:
                   - name: a group
                     features:
-                      - {observed: DRRC2, predicted: DRRC2}
-                      - {observed: DOLC2, predicted: DOLC2}
+                      - observed: DRRC2
+                        predicted: DRRC2
+                      - observed: DOLC2
+                        predicted: DOLC2
                 """;
 
         GeometryTuple first = GeometryTuple.newBuilder()
@@ -3682,7 +3684,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithFeatureServiceAndSingletonGroup() throws IOException
+    void testSerializeWithFeatureServiceAndSingletonGroup()
     {
         String expected = """
                 observed:
@@ -3718,7 +3720,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithFeatureServiceAndTwoGroups() throws IOException
+    void testSerializeWithFeatureServiceAndTwoGroups()
     {
         String expected = """
                 observed:
@@ -3766,7 +3768,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSpatialMask() throws IOException, ParseException
+    void testSerializeWithSpatialMask() throws ParseException
     {
         String expected = """
                 observed:
@@ -3795,7 +3797,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithTimePools() throws IOException
+    void testSerializeWithTimePools()
     {
         String expected = """
                 observed:
@@ -3879,7 +3881,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithTimeScale() throws IOException
+    void testSerializeWithTimeScale()
     {
         String expected = """
                 observed:
@@ -3910,7 +3912,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithUnitAndUnitAliases() throws IOException
+    void testSerializeWithUnitAndUnitAliases()
     {
         String expected = """
                 observed:
@@ -3946,7 +3948,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithPairFrequency() throws IOException
+    void testSerializeWithPairFrequency()
     {
         String expected = """
                 observed:
@@ -3970,7 +3972,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithCrossPairExact() throws IOException
+    void testSerializeWithCrossPairExact()
     {
         String expected = """
                 observed:
@@ -3993,7 +3995,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithCrossPairMethodFuzzyAndScopeWithinFeatures() throws IOException
+    void testSerializeWithCrossPairMethodFuzzyAndScopeWithinFeatures()
     {
         String expected = """
                 observed:
@@ -4019,7 +4021,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithEnsembleAverage() throws IOException
+    void testSerializeWithEnsembleAverage()
     {
         String expected = """
                 observed:
@@ -4041,7 +4043,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSeasonFilter() throws IOException
+    void testSerializeWithSeasonFilter()
     {
         String expected = """
                 observed:
@@ -4068,7 +4070,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithValuesFilter() throws IOException
+    void testSerializeWithValuesFilter()
     {
         String expected = """
                 observed:
@@ -4095,7 +4097,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithOutputFormats() throws IOException
+    void testSerializeWithOutputFormats()
     {
         String expected = """
                 observed:
@@ -4151,7 +4153,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithThresholds() throws IOException
+    void testSerializeWithThresholds()
     {
         String expected = """
                 observed:
@@ -4161,15 +4163,22 @@ class DeclarationFactoryTest
                 thresholds:
                   name: MAJOR FLOOD
                   values:
-                    - {value: 27.0, feature: DOLC2}
-                    - {value: 23.0, feature: DRRC2}
+                    - value: 27.0
+                      feature: DOLC2
+                    - value: 23.0
+                      feature: DRRC2
                   apply_to: predicted
-                probability_thresholds: [0.1, 0.2, 0.9]
+                probability_thresholds:
+                  - 0.1
+                  - 0.2
+                  - 0.9
                 classifier_thresholds:
                   name: COLONEL DROUGHT
                   values:
-                    - {value: 0.3, feature: DOLC2}
-                    - {value: 0.2, feature: DRRC2}
+                    - value: 0.3
+                      feature: DOLC2
+                    - value: 0.2
+                      feature: DRRC2
                 """;
 
         Threshold pOne = Threshold.newBuilder()
@@ -4284,7 +4293,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithThresholdSets() throws IOException
+    void testSerializeWithThresholdSets()
     {
         String expected = """
                 observed:
@@ -4293,7 +4302,9 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 threshold_sets:
                   - probability_thresholds:
-                      values: [0.1, 0.2]
+                      values:
+                        - 0.1
+                        - 0.2
                       operator: greater equal
                 """;
 
@@ -4333,7 +4344,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithBaselineAndSeparateMetrics() throws IOException
+    void testSerializeWithBaselineAndSeparateMetrics()
     {
         String expected = """
                 observed:
@@ -4362,7 +4373,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithThresholdSources() throws IOException
+    void testSerializeWithThresholdSources()
     {
         String expected = """
                 observed:
@@ -4400,7 +4411,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithMultipleSetsOfClassifierThresholds() throws IOException
+    void testSerializeWithMultipleSetsOfClassifierThresholds()
     {
         // #120048
         String expected = """
@@ -4409,10 +4420,14 @@ class DeclarationFactoryTest
                 predicted:
                   sources: another_file.csv
                 classifier_thresholds:
-                  - values: [0.05, 0.1]
+                  - values:
+                      - 0.05
+                      - 0.1
                     operator: less equal
                     apply_to: observed and predicted
-                  - values: [0.05, 0.1]
+                  - values:
+                      - 0.05
+                      - 0.1
                     operator: equal
                     apply_to: any predicted
                 """;
@@ -4484,7 +4499,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatistics() throws IOException
+    void testSerializeWithSummaryStatistics()
     {
         String expected = """
                 observed:
@@ -4512,7 +4527,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndDimensions() throws IOException
+    void testSerializeWithSummaryStatisticsAndDimensions()
     {
         String expected = """
                 observed:
@@ -4544,7 +4559,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndHistogramWithDefaultBins() throws IOException
+    void testSerializeWithSummaryStatisticsAndHistogramWithDefaultBins()
     {
         String expected = """
                 observed:
@@ -4572,7 +4587,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndHistogramWithNonDefaultBins() throws IOException
+    void testSerializeWithSummaryStatisticsAndHistogramWithNonDefaultBins()
     {
         String expected = """
                 observed:
@@ -4602,7 +4617,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndQuantilesWithDefaultProbabilities() throws IOException
+    void testSerializeWithSummaryStatisticsAndQuantilesWithDefaultProbabilities()
     {
         String expected = """
                 observed:
@@ -4633,7 +4648,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndQuantilesWithNonDefaultProbabilities() throws IOException
+    void testSerializeWithSummaryStatisticsAndQuantilesWithNonDefaultProbabilities()
     {
         String expected = """
                 observed:
@@ -4642,7 +4657,9 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 summary_statistics:
                   - name: quantiles
-                    probabilities: [0.05, 0.95]
+                    probabilities:
+                      - 0.05
+                      - 0.95
                 """;
 
         Set<SummaryStatistic> summaryStatistics =
@@ -4667,7 +4684,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithCovariates() throws IOException
+    void testSerializeWithCovariates()
     {
         String expected = """
                 observed:
@@ -4731,7 +4748,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithEventDetectionUsingExplicitDatasetAndMethodWithCombinationParameters() throws IOException
+    void testSerializeWithEventDetectionUsingExplicitDatasetAndMethodWithCombinationParameters()
     {
         String expected = """
                 observed:
@@ -4779,7 +4796,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithExplicitTimePools() throws IOException
+    void testSerializeWithExplicitTimePools()
     {
         String expected = """
                 observed:
@@ -4856,7 +4873,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSingletonThresholdSource() throws IOException
+    void testSerializeWithSingletonThresholdSource()
     {
         String expected = """
                 observed:
@@ -4884,7 +4901,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSingletonThresholdSourceAndProperties() throws IOException
+    void testSerializeWithSingletonThresholdSourceAndProperties()
     {
         String expected = """
                 observed:
@@ -4923,7 +4940,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithMultipleThresholdSources() throws IOException
+    void testSerializeWithMultipleThresholdSources()
     {
         String expected = """
                 observed:

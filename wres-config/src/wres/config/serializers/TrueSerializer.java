@@ -1,25 +1,23 @@
 package wres.config.serializers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 /**
  * Only serializes a {@link Boolean} value when <code>true</code>.
  * @author James Brown
  */
-public class TrueSerializer extends JsonSerializer<Boolean>
+public class TrueSerializer extends ValueSerializer<Boolean>
 {
     @Override
-    public void serialize( Boolean value, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( Boolean value, JsonGenerator writer, SerializationContext serializers )
     {
         writer.writeBoolean( value );
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, Boolean value )
+    public boolean isEmpty( SerializationContext serializers, Boolean value )
     {
         return !value;
     }

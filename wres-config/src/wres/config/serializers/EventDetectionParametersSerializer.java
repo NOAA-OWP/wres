@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +15,13 @@ import wres.config.components.EventDetectionParameters;
  * Serializes {@link EventDetectionParameters}.
  * @author James Brown
  */
-public class EventDetectionParametersSerializer extends JsonSerializer<EventDetectionParameters>
+public class EventDetectionParametersSerializer extends ValueSerializer<EventDetectionParameters>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EventDetectionParametersSerializer.class );
 
     @Override
-    public void serialize( EventDetectionParameters parameters, JsonGenerator gen, SerializerProvider serializers )
-            throws IOException
+    public void serialize( EventDetectionParameters parameters, JsonGenerator gen, SerializationContext serializers )
     {
         Objects.requireNonNull( parameters );
 
@@ -36,29 +34,29 @@ public class EventDetectionParametersSerializer extends JsonSerializer<EventDete
 
         if ( Objects.nonNull( parameters.windowSize() ) )
         {
-            gen.writeNumberField( "window_size", parameters.windowSize()
-                                                           .getSeconds() );
+            gen.writeNumberProperty( "window_size", parameters.windowSize()
+                                                              .getSeconds() );
             durationWritten = true;
         }
 
         if ( Objects.nonNull( parameters.startRadius() ) )
         {
-            gen.writeNumberField( "start_radius", parameters.startRadius()
-                                                            .getSeconds() );
+            gen.writeNumberProperty( "start_radius", parameters.startRadius()
+                                                               .getSeconds() );
             durationWritten = true;
         }
 
         if ( Objects.nonNull( parameters.halfLife() ) )
         {
-            gen.writeNumberField( "half_life", parameters.halfLife()
-                                                         .getSeconds() );
+            gen.writeNumberProperty( "half_life", parameters.halfLife()
+                                                            .getSeconds() );
             durationWritten = true;
         }
 
         if ( Objects.nonNull( parameters.minimumEventDuration() ) )
         {
-            gen.writeNumberField( "minimum_event_duration", parameters.minimumEventDuration()
-                                                                      .getSeconds() );
+            gen.writeNumberProperty( "minimum_event_duration", parameters.minimumEventDuration()
+                                                                         .getSeconds() );
             durationWritten = true;
         }
 
@@ -67,17 +65,17 @@ public class EventDetectionParametersSerializer extends JsonSerializer<EventDete
             // Write the combination and aggregation together
             if ( Objects.nonNull( parameters.aggregation() ) )
             {
-                gen.writeFieldName( "combination" );
+                gen.writeName( "combination" );
 
                 gen.writeStartObject();
 
                 String combinationString = DeclarationUtilities.fromEnumName( parameters.combination()
                                                                                         .name() );
-                gen.writeStringField( "operation", combinationString );
+                gen.writeStringProperty( "operation", combinationString );
 
                 String aggregationString = DeclarationUtilities.fromEnumName( parameters.aggregation()
                                                                                         .name() );
-                gen.writeStringField( "aggregation", aggregationString );
+                gen.writeStringProperty( "aggregation", aggregationString );
 
                 gen.writeEndObject();
             }
@@ -86,13 +84,13 @@ public class EventDetectionParametersSerializer extends JsonSerializer<EventDete
             {
                 String combinationString = DeclarationUtilities.fromEnumName( parameters.combination()
                                                                                         .name() );
-                gen.writeStringField( "combination", combinationString );
+                gen.writeStringProperty( "combination", combinationString );
             }
         }
 
         if ( durationWritten )
         {
-            gen.writeStringField( "duration_unit", "seconds" );
+            gen.writeStringProperty( "duration_unit", "seconds" );
         }
 
         // End the parameters object

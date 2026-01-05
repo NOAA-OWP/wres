@@ -1,48 +1,18 @@
 package wres.reading.wrds.ahps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * A forecast request.
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
+@Getter
+@Setter
 public class ForecastRequest
 {
     private String url;
     private String path;
-
-    /**
-     * @return the URL
-     */
-    public String getUrl()
-    {
-        return this.url;
-    }
-
-    /**
-     * Sets the URL.
-     * @param url the URL
-     */
-    public void setUrl( String url )
-    {
-        this.url = url;
-    }
-
-    /**
-     * @return the path
-     */
-    public String getPath()
-    {
-        return path;
-    }
-
-    /**
-     * Sets the path.
-     * @param path the path
-     */
-    public void setPath( String path )
-    {
-        this.path = path;
-    }
 }

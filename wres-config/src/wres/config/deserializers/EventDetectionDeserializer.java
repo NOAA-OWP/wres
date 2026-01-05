@@ -1,18 +1,22 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
 
+import wres.config.DeclarationFactory;
 import wres.config.components.EventDetection;
 import wres.config.components.TimeWindowAggregation;
 import wres.config.components.EventDetectionBuilder;
@@ -27,7 +31,7 @@ import wres.config.components.EventDetectionParametersBuilder;
  *
  * @author James Brown
  */
-public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
+public class EventDetectionDeserializer extends ValueDeserializer<EventDetection>
 {
 
     /** Duration unit name. */
@@ -39,21 +43,21 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
 
     @Override
     public EventDetection deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
         JsonNode node = reader.readTree( jp );
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
 
         Set<EventDetectionDataset> datasets = Set.of();
 
         EventDetectionMethod method = null;
 
         // Single string
-        if ( node.isTextual() )
+        if ( node.isString() )
         {
-            String datasetString = node.asText()
+            String datasetString = node.asString()
                                        .toUpperCase();
             EventDetectionDataset dataset = EventDetectionDataset.valueOf( datasetString );
             datasets = Collections.singleton( dataset );
@@ -61,29 +65,31 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
         else if ( node.has( "dataset" ) )
         {
             JsonNode datasetNode = node.get( "dataset" );
-            if ( datasetNode.isTextual() )
+            if ( datasetNode.isString() )
             {
-                String datasetString = datasetNode.asText()
+                String datasetString = datasetNode.asString()
                                                   .toUpperCase();
                 EventDetectionDataset dataset = EventDetectionDataset.valueOf( datasetString );
                 datasets = Collections.singleton( dataset );
             }
             else if ( datasetNode.isArray() )
             {
-                JavaType type = reader.getTypeFactory()
+                JsonParser parser = mapper.treeAsTokens( datasetNode );
+                JavaType type = mapper.getTypeFactory()
                                       .constructCollectionType( Set.class, EventDetectionDataset.class );
-                JsonParser parser = reader.treeAsTokens( datasetNode );
-                datasets = reader.readValue( parser, type );
+                ObjectReader objectReader = mapper.readerFor( type );
+                datasets = objectReader.readValue( parser );
             }
         }
 
         if ( node.has( "method" ) )
         {
             JsonNode methodNode = node.get( "method" );
-            method = reader.readValue( methodNode, EventDetectionMethod.class );
+            ObjectReader objectReader = mapper.readerFor( EventDetectionMethod.class );
+            method = objectReader.readValue( methodNode );
         }
 
-        EventDetectionParameters parameters = this.deserializeParameters( node, reader );
+        EventDetectionParameters parameters = this.deserializeParameters( node, mapper );
 
         return EventDetectionBuilder.builder()
                                     .datasets( datasets )
@@ -97,9 +103,8 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
      * @param node the node
      * @param reader the reader
      * @return the parameters
-     * @throws IOException if the parameters could not be deserialized for any reason
      */
-    private EventDetectionParameters deserializeParameters( JsonNode node, ObjectReader reader ) throws IOException
+    private EventDetectionParameters deserializeParameters( JsonNode node, ObjectMapper reader )
     {
         EventDetectionParametersBuilder parameters = EventDetectionParametersBuilder.builder();
 
@@ -157,17 +162,16 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
     /**
      * Deserializes the event combination parameters.
      * @param combinationNode the combination node
-     * @param reader the reader
-     * @throws IOException if the parameters could not be deserialized for any reason
+     * @param mapper the mapper
      */
     private void deserializeCombinationParameters( JsonNode combinationNode,
-                                                   ObjectReader reader,
-                                                   EventDetectionParametersBuilder parameters ) throws IOException
+                                                   ObjectMapper mapper,
+                                                   EventDetectionParametersBuilder parameters )
     {
-        if ( combinationNode.isTextual() )
+        if ( combinationNode.isString() )
         {
-            EventDetectionCombination operation = reader.readValue( combinationNode,
-                                                                    EventDetectionCombination.class );
+            ObjectReader reader = mapper.readerFor( EventDetectionCombination.class );
+            EventDetectionCombination operation = reader.readValue( combinationNode );
             parameters.combination( operation );
         }
         else
@@ -175,15 +179,15 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
             if ( combinationNode.has( "operation" ) )
             {
                 JsonNode operationNode = combinationNode.get( "operation" );
-                EventDetectionCombination operation = reader.readValue( operationNode,
-                                                                        EventDetectionCombination.class );
+                ObjectReader reader = mapper.readerFor( EventDetectionCombination.class );
+                EventDetectionCombination operation = reader.readValue( operationNode );
                 parameters.combination( operation );
             }
             if ( combinationNode.has( "aggregation" ) )
             {
                 JsonNode aggregationNode = combinationNode.get( "aggregation" );
-                TimeWindowAggregation aggregation = reader.readValue( aggregationNode,
-                                                                      TimeWindowAggregation.class );
+                ObjectReader reader = mapper.readerFor( TimeWindowAggregation.class );
+                TimeWindowAggregation aggregation = reader.readValue( aggregationNode );
                 parameters.aggregation( aggregation );
             }
         }
@@ -194,19 +198,19 @@ public class EventDetectionDeserializer extends JsonDeserializer<EventDetection>
      *
      * @param node the node
      * @param parameterName the parameter name
-     * @throws IOException if the duration unit is missing
      */
-    private void validateDurationUnit( JsonNode node, String parameterName ) throws IOException
+    private void validateDurationUnit( JsonNode node, String parameterName )
     {
         if ( !node.has( EventDetectionDeserializer.DURATION_UNIT ) )
         {
-            throw new IOException( "While deserializing the event detection parameters, discovered a duration "
-                                   + "parameter, '"
-                                   + parameterName
-                                   + "', without the required duration unit, '"
-                                   + EventDetectionDeserializer.DURATION_UNIT + "'. Please declare the '"
-                                   + EventDetectionDeserializer.DURATION_UNIT + "' "
-                                   + "and try again." );
+            throw new UncheckedIOException( new IOException( "While deserializing the event detection parameters, "
+                                                             + "discovered a duration parameter, '"
+                                                             + parameterName
+                                                             + "', without the required duration unit, '"
+                                                             + EventDetectionDeserializer.DURATION_UNIT
+                                                             + "'. Please declare the '"
+                                                             + EventDetectionDeserializer.DURATION_UNIT + "' "
+                                                             + "and try again." ) );
         }
     }
 }

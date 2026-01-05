@@ -1,6 +1,5 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
@@ -8,11 +7,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.SortedSet;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
 
 import wres.config.DeclarationFactory;
 import wres.config.DeclarationUtilities;
@@ -24,17 +25,17 @@ import wres.statistics.generated.SummaryStatistic;
  * @author James Brown
  */
 public class SummaryStatisticsDeserializer
-        extends JsonDeserializer<Set<SummaryStatistic>>
+        extends ValueDeserializer<Set<SummaryStatistic>>
 {
     @Override
     public Set<SummaryStatistic> deserialize( JsonParser jp,
                                               DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
-        JsonNode node = mapper.readTree( jp );
+        ObjectReadContext reader = jp.objectReadContext();
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
+        JsonNode node = reader.readTree( jp );
 
         // Preserve insertion order
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
@@ -64,7 +65,7 @@ public class SummaryStatisticsDeserializer
                 for ( int i = 0; i < count; i++ )
                 {
                     String nodeText = dimensionsNode.get( i )
-                                                    .asText();
+                                                    .asString();
 
                     String enumName = DeclarationUtilities.toEnumName( nodeText );
 
@@ -97,13 +98,12 @@ public class SummaryStatisticsDeserializer
      * @param summaryStatistics the container to populate
      * @param mapper the object mapper
      * @param template the template builder to use
-     * @throws IOException if the statistic could not be read for any reason
      */
 
     private void readStatisticsFromArrayNode( JsonNode arrayNode,
                                               Set<SummaryStatistic> summaryStatistics,
-                                              ObjectReader mapper,
-                                              SummaryStatistic.Builder template ) throws IOException
+                                              ObjectMapper mapper,
+                                              SummaryStatistic.Builder template )
     {
         int count = arrayNode.size();
         for ( int i = 0; i < count; i++ )
@@ -123,11 +123,10 @@ public class SummaryStatisticsDeserializer
      * @param mapper the object mapper
      * @param startFrom an optional builder to start from
      * @return the summary statistics
-     * @throws IOException if the statistics could not be read for any reason
      */
     private Set<SummaryStatistic> getSummaryStatistics( JsonNode nextNode,
-                                                        ObjectReader mapper,
-                                                        SummaryStatistic.Builder startFrom ) throws IOException
+                                                        ObjectMapper mapper,
+                                                        SummaryStatistic.Builder startFrom )
     {
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
 
@@ -136,7 +135,7 @@ public class SummaryStatisticsDeserializer
              && nextNode.has( "name" ) )
         {
             JsonNode nameNode = nextNode.get( "name" );
-            String nodeText = nameNode.asText();
+            String nodeText = nameNode.asString();
             SummaryStatistic.Builder builder = this.getNamedStatisticBuilder( nodeText,
                                                                               startFrom );
 
@@ -150,7 +149,8 @@ public class SummaryStatisticsDeserializer
             else if ( nextNode.has( "probabilities" ) )
             {
                 JsonNode probabilitiesNode = nextNode.get( "probabilities" );
-                double[] probabilities = mapper.readValue( probabilitiesNode, double[].class );
+                ObjectReader reader = mapper.readerFor( double[].class );
+                double[] probabilities = reader.readValue( probabilitiesNode );
                 Arrays.stream( probabilities )
                       .forEach( n -> summaryStatistics.add( builder.setProbability( n )
                                                                    .build() ) );
@@ -172,7 +172,7 @@ public class SummaryStatisticsDeserializer
         // Summary statistic without parameters
         else
         {
-            String nodeText = nextNode.asText();
+            String nodeText = nextNode.asString();
             SummaryStatistic.Builder builder = this.getNamedStatisticBuilder( nodeText, startFrom );
 
             switch ( builder.getStatistic() )
