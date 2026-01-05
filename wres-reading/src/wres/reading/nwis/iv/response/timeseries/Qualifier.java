@@ -5,6 +5,7 @@ import java.io.Serializable;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A qualifier.
@@ -23,6 +24,7 @@ public record Qualifier( String qualifierCode,
     @Serial
     private static final long serialVersionUID = -3380625359503743133L;
 
+    @NotNull
     @Override
     public String toString()
     {

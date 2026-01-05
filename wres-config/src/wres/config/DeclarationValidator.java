@@ -20,9 +20,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.ValidationMessage;
+import tools.jackson.databind.JsonNode;
+import com.networknt.schema.Schema;
+import com.networknt.schema.Error;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.mime.MediaType;
 import org.slf4j.Logger;
@@ -76,7 +76,7 @@ import wres.statistics.generated.GeometryTuple;
  * <li>1. Validation that the declaration string is a valid string in the expected serialization format (YAML), which
  *        is performed by {@link DeclarationFactory#from(String)}.</li>
  * <li>2. Validation that the declaration is compatible with the declaration schema, which is performed here using
- *        {@link DeclarationValidator#validate(JsonNode, JsonSchema)}; and</li>
+ *        {@link DeclarationValidator#validate(JsonNode, Schema)}; and</li>
  * <li>3. Validation that the declaration is internally consistent and reasonable (i.e., "business logic"), which is
  *        also performed here using {@link DeclarationValidator#validate(EvaluationDeclaration, boolean, boolean)}.</li>
  * </ol>
@@ -135,7 +135,7 @@ public class DeclarationValidator
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation if there are no schema
-     * validation errors. First, reads the declaration string, then calls {@link #validate(JsonNode, JsonSchema)},
+     * validation errors. First, reads the declaration string, then calls {@link #validate(JsonNode, Schema)},
      * then finally calls {@link #validate(EvaluationDeclaration, boolean)}. This method is intended for a caller that
      * wants to validate the declaration without performing any subsequent activities, such as executing an evaluation.
      * Optionally, omit the validation of data sources, which may be necessary when building a declaration from posted
@@ -192,7 +192,7 @@ public class DeclarationValidator
         }
 
         // Get the schema
-        JsonSchema schema = DeclarationFactory.getSchema();
+        Schema schema = DeclarationFactory.getSchema();
 
         // Validate against the schema
         Set<EvaluationStatusEvent> schemaEvents = DeclarationValidator.validate( declaration, schema );
@@ -211,7 +211,7 @@ public class DeclarationValidator
                 events.addAll( businessEvents );
             }
             // Catch exceptions here that can occur during deserialization
-            catch ( IOException | DeclarationException e )
+            catch ( DeclarationException e )
             {
                 EvaluationStatusEvent error =
                         EvaluationStatusEvent.newBuilder()
@@ -272,7 +272,7 @@ public class DeclarationValidator
                                                            + "declaration language has been removed and support "
                                                            + "for this language has now ended. Please restate your "
                                                            + "evaluation with the new (YAML) declaration language and "
-                                                           + "try again." )
+                                                           + TRY_AGAIN )
                                          .build();
 
             return List.of( error );
@@ -290,12 +290,12 @@ public class DeclarationValidator
      * @throws NullPointerException if either input is null
      */
 
-    public static Set<EvaluationStatusEvent> validate( JsonNode declaration, JsonSchema schema )
+    public static Set<EvaluationStatusEvent> validate( JsonNode declaration, Schema schema )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( schema );
 
-        Set<ValidationMessage> errors = schema.validate( declaration );
+        List<Error> errors = schema.validate( declaration );
 
         LOGGER.debug( "Validated a declaration string against the schema, which produced {} errors.",
                       errors.size() );
@@ -305,7 +305,7 @@ public class DeclarationValidator
                 errors.stream()
                       .map( next -> EvaluationStatusEvent.newBuilder()
                                                          .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                                         .setEventMessage( next.getMessage() )
+                                                         .setEventMessage( next.toString() )
                                                          .build() )
                       .toList();
 
@@ -3861,7 +3861,7 @@ public class DeclarationValidator
                                                              + "option is, therefore, redundant and will be ignored. "
                                                              + "If this is not intended, please add "
                                                              + "'separate_metrics: true' to the 'baseline' and try "
-                                                             + "again." )
+                                                             + AGAIN )
                                            .build();
             events.add( event );
         }

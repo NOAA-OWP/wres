@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,13 +17,13 @@ import wres.statistics.generated.Outputs;
  * Serializes a {@link Formats}.
  * @author James Brown
  */
-public class FormatsSerializer extends JsonSerializer<Formats>
+public class FormatsSerializer extends ValueSerializer<Formats>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FormatsSerializer.class );
 
     @Override
-    public void serialize( Formats formats, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( Formats formats, JsonGenerator writer, SerializationContext serializers )
     {
         writer.writeStartArray();
 
@@ -58,7 +57,7 @@ public class FormatsSerializer extends JsonSerializer<Formats>
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, Formats formats )
+    public boolean isEmpty( SerializationContext serializers, Formats formats )
     {
         return Objects.isNull( formats ) || formats.equals( FormatsBuilder.builder()
                                                                           .build() );
@@ -68,11 +67,10 @@ public class FormatsSerializer extends JsonSerializer<Formats>
      * Writes the formats that support parameter values,
      * @param outputs the outputs
      * @param writer the writer
-     * @throws IOException if the writing failed for any reason
      */
 
     private void writeParameterizedFormats( Outputs outputs,
-                                            JsonGenerator writer ) throws IOException
+                                            JsonGenerator writer )
     {
         if ( outputs.hasPng() )
         {
@@ -115,35 +113,34 @@ public class FormatsSerializer extends JsonSerializer<Formats>
      * @param formatName the format name
      * @param parameters the format parameters
      * @param defaults the default parameter values, which should not be written
-     * @throws IOException if the format could not be written for any reason
      */
     private void writeNonDefaultGraphicsFormat( String formatName,
                                                 Outputs.GraphicFormat parameters,
                                                 Outputs.GraphicFormat defaults,
-                                                JsonGenerator writer ) throws IOException
+                                                JsonGenerator writer )
     {
         LOGGER.debug( "Discovered a graphic format with non-default parameter values." );
 
         // Start
         writer.writeStartObject();
 
-        writer.writeStringField( "format", formatName );
+        writer.writeStringProperty( "format", formatName );
 
         if ( parameters.getWidth() != defaults.getWidth() )
         {
-            writer.writeNumberField( "width", parameters.getWidth() );
+            writer.writeNumberProperty( "width", parameters.getWidth() );
         }
 
         if ( parameters.getHeight() != defaults.getHeight() )
         {
-            writer.writeNumberField( "height", parameters.getHeight() );
+            writer.writeNumberProperty( "height", parameters.getHeight() );
         }
 
         if ( parameters.getShape() != defaults.getShape() )
         {
             Outputs.GraphicFormat.GraphicShape shape = parameters.getShape();
             String friendlyShape = DeclarationUtilities.fromEnumName( shape.name() );
-            writer.writeStringField( "orientation", friendlyShape );
+            writer.writeStringProperty( "orientation", friendlyShape );
         }
 
         // End

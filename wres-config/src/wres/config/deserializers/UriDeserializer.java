@@ -1,15 +1,14 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,18 +17,18 @@ import org.slf4j.LoggerFactory;
  *
  * @author James Brown
  */
-public class UriDeserializer extends JsonDeserializer<URI>
+public class UriDeserializer extends ValueDeserializer<URI>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( UriDeserializer.class );
 
     @Override
-    public URI deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException
+    public URI deserialize( JsonParser p, DeserializationContext ctxt )
     {
-        ObjectReader mapper = ( ObjectReader ) p.getCodec();
+        ObjectReadContext mapper = p.objectReadContext();
         JsonNode node = mapper.readTree( p );
 
-        String uriText = node.asText();
+        String uriText = node.asString();
 
         return UriDeserializer.deserializeUri( uriText );
     }

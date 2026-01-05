@@ -1,18 +1,21 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +35,7 @@ import wres.statistics.generated.Threshold.ThresholdDataType;
  *
  * @author James Brown
  */
-public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
+public class ThresholdsDeserializer extends ValueDeserializer<Set<Threshold>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsDeserializer.class );
@@ -44,40 +47,37 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
     @Override
     public Set<Threshold> deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
         JsonNode node = reader.readTree( jp );
 
         String currentName = jp.currentName();
 
         LOGGER.debug( "Attempting to deserialize thresholds from the node named {}.", currentName );
 
-        return this.deserialize( reader, node, currentName );
+        return this.deserialize( node, currentName );
     }
 
     /**
      * Deserializes a threshold node.
      *
-     * @param reader the reader, required
      * @param thresholdsNode the thresholds node, required
      * @param nodeName the name of the node, required
      * @return the thresholds
-     * @throws IOException if the thresholds could not be read
      * @throws NullPointerException if any required input is null
      */
 
-    Set<Threshold> deserialize( ObjectReader reader,
-                                JsonNode thresholdsNode,
-                                String nodeName ) throws IOException
+    Set<Threshold> deserialize( JsonNode thresholdsNode,
+                                String nodeName )
     {
-        Objects.requireNonNull( reader );
         Objects.requireNonNull( thresholdsNode );
         Objects.requireNonNull( nodeName );
 
         Set<Threshold> thresholds = new LinkedHashSet<>();
+
+        ObjectMapper mapper = new ObjectMapper();
 
         // Determine the declaration context for the thresholds
         ThresholdType type = DeclarationUtilities.getThresholdType( nodeName );
@@ -86,11 +86,11 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdsNode instanceof ObjectNode )
         {
             LOGGER.debug( "Encountered an embellished set of thresholds for node {}.", nodeName );
-            Set<Threshold> innerThresholds = this.getThresholds( reader, thresholdsNode, type );
+            Set<Threshold> innerThresholds = this.getThresholds( mapper, thresholdsNode, type );
             thresholds.addAll( innerThresholds );
         }
         // Schema requires a constant value, all data
-        else if ( thresholdsNode.isTextual() )
+        else if ( thresholdsNode.isString() )
         {
             LOGGER.debug( "Discovered an 'all data' threshold." );
             thresholds.add( DeclarationUtilities.ALL_DATA_THRESHOLD );
@@ -125,7 +125,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                 for ( int i = 0; i < setCount; i++ )
                 {
                     JsonNode innerThresholdsNode = arrayNode.get( i );
-                    Set<Threshold> innerThresholds = this.getThresholds( reader, innerThresholdsNode, type );
+                    Set<Threshold> innerThresholds = this.getThresholds( mapper, innerThresholdsNode, type );
                     thresholds.addAll( innerThresholds );
                 }
             }
@@ -135,13 +135,14 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                 LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
                 wres.statistics.generated.Threshold.Builder builder
                         = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
-                Set<Threshold> innerThresholds = this.getThresholdsFromArray( reader, arrayNode, type, builder );
+                Set<Threshold> innerThresholds = this.getThresholdsFromArray( mapper, arrayNode, type, builder );
                 thresholds.addAll( innerThresholds );
             }
         }
         else
         {
-            throw new IOException( "Unsupported type of threshold node: " + thresholdsNode.getClass() );
+            throw new UncheckedIOException( new IOException( "Unsupported type of threshold node: "
+                                                             + thresholdsNode.getClass() ) );
         }
 
         LOGGER.debug( "Deserialized the following thresholds: {}.", thresholds );
@@ -205,12 +206,11 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      * @param thresholdNode the threshold node
      * @param type the type of thresholds
      * @return the thresholds
-     * @throws IOException if the thresholds could not be read
      */
 
-    private Set<Threshold> getThresholds( ObjectReader reader,
+    private Set<Threshold> getThresholds( ObjectMapper reader,
                                           JsonNode thresholdNode,
-                                          ThresholdType type ) throws IOException
+                                          ThresholdType type )
     {
         wres.statistics.generated.Threshold.Builder builder =
                 DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
@@ -218,7 +218,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdNode.has( "name" ) )
         {
             JsonNode nameNode = thresholdNode.get( "name" );
-            String name = nameNode.asText();
+            String name = nameNode.asString();
             builder.setName( name );
         }
 
@@ -227,8 +227,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             JsonNode operatorNode = thresholdNode.get( "operator" );
 
             // Map between user-friendly and canonical operators
-            wres.config.components.ThresholdOperator friendlyOperator =
-                    reader.readValue( operatorNode, wres.config.components.ThresholdOperator.class );
+            ObjectReader objectReader = reader.readerFor( wres.config.components.ThresholdOperator.class );
+            wres.config.components.ThresholdOperator friendlyOperator = objectReader.readValue( operatorNode );
             ThresholdOperator operator = friendlyOperator.canonical();
             builder.setOperator( operator );
         }
@@ -236,7 +236,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdNode.has( "apply_to" ) )
         {
             JsonNode dataTypeNode = thresholdNode.get( "apply_to" );
-            ThresholdOrientation orientation = reader.readValue( dataTypeNode, ThresholdOrientation.class );
+            ObjectReader objectReader = reader.readerFor( wres.config.components.ThresholdOrientation.class );
+            ThresholdOrientation orientation = objectReader.readValue( dataTypeNode );
             ThresholdDataType dataType = orientation.canonical();
             builder.setDataType( dataType );
         }
@@ -244,7 +245,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdNode.has( "unit" ) )
         {
             JsonNode unitNode = thresholdNode.get( "unit" );
-            String unitString = unitNode.asText();
+            String unitString = unitNode.asString();
             builder.setThresholdValueUnits( unitString );
         }
 
@@ -286,7 +287,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
             else
             {
-                throw new IOException( "Unsupported type of threshold values node: " + valuesNode.getClass() );
+                throw new UncheckedIOException( new IOException( "Unsupported type of threshold values node: "
+                                                                 + valuesNode.getClass() ) );
             }
         }
 
@@ -301,15 +303,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      * @param type the type of thresholds
      * @param builder the threshold builder
      * @return the thresholds
-     * @throws IOException if the embellished attributes could not be read
      */
 
-    private Set<Threshold> getEmbellishedThresholds( ObjectReader reader,
+    private Set<Threshold> getEmbellishedThresholds( ObjectMapper reader,
                                                      JsonNode valuesNode,
                                                      JsonNode thresholdNode,
                                                      ThresholdType type,
                                                      wres.statistics.generated.Threshold.Builder builder )
-            throws IOException
     {
         int thresholdCount = valuesNode.size();
 
@@ -347,7 +347,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             if ( nextNode.has( "feature" ) )
             {
                 JsonNode featureNode = nextNode.get( "feature" );
-                String featureName = featureNode.asText();
+                String featureName = featureNode.asString();
                 feature = Geometry.newBuilder()
                                   .setName( featureName )
                                   .build();
@@ -358,7 +358,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             if ( thresholdNode.has( "feature_name_from" ) )
             {
                 JsonNode orientationNode = thresholdNode.get( "feature_name_from" );
-                featureNameFrom = reader.readValue( orientationNode, DatasetOrientation.class );
+                ObjectReader objectReader = reader.readerFor( DatasetOrientation.class );
+                featureNameFrom = objectReader.readValue( orientationNode );
             }
 
             Threshold nextThreshold =
@@ -381,20 +382,19 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      * @param type the threshold type
      * @param thresholdBuilder the threshold builder
      * @return the thresholds
-     * @throws IOException if the thresholds could not be mapped
      */
 
-    private Set<Threshold> getThresholdsFromArray( ObjectReader reader,
+    private Set<Threshold> getThresholdsFromArray( ObjectMapper reader,
                                                    ArrayNode thresholdsNode,
                                                    ThresholdType type,
                                                    wres.statistics.generated.Threshold.Builder thresholdBuilder )
-            throws IOException
     {
         // Preserve insertion order
         Set<Threshold> thresholds = new LinkedHashSet<>();
 
         // Threshold values are validated at schema validation time
-        double[] values = reader.readValue( thresholdsNode, double[].class );
+        ObjectReader objectReader = reader.readerFor( double[].class );
+        double[] values = objectReader.readValue( thresholdsNode );
 
         for ( int i = 0; i < values.length; i++ )
         {

@@ -1,6 +1,5 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -10,9 +9,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ import wres.statistics.generated.Threshold.ThresholdOperator;
  * metadata, other than feature names.
  * @author James Brown
  */
-public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
+public class ThresholdsSerializer extends ValueSerializer<Set<Threshold>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsSerializer.class );
@@ -42,11 +41,11 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     @Override
     public void serialize( Set<Threshold> thresholds,
                            JsonGenerator writer,
-                           SerializerProvider serializers ) throws IOException
+                           SerializationContext serializers )
     {
         // Determine the type of thresholds
-        String context = writer.getOutputContext()
-                               .getCurrentName();
+        String context = writer.streamWriteContext()
+                               .currentName();
 
         ThresholdType type = DeclarationUtilities.getThresholdType( context );
 
@@ -58,7 +57,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             if ( this.hasDefaultMetadata( thresholds ) )
             {
                 double[] values = this.getThresholdValues( type, thresholds );
-                writer.writeObject( values );
+                writer.writePOJO( values );
             }
             // Write the thresholds with their full metadata
             else
@@ -69,7 +68,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider provider, Set<Threshold> thresholds )
+    public boolean isEmpty( SerializationContext provider, Set<Threshold> thresholds )
     {
         return thresholds.isEmpty();
     }
@@ -79,12 +78,11 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
      * @param thresholds the thresholds
      * @param type the threshold type
      * @param writer the writer
-     * @throws IOException if the threshold could not be written for any reason
      */
 
     private void groupAndWriteThresholdsWithFullMetadata( Set<Threshold> thresholds,
                                                           ThresholdType type,
-                                                          JsonGenerator writer ) throws IOException
+                                                          JsonGenerator writer )
     {
         // Preserve insertion order
         List<Set<Threshold>> grouped = this.getGroupedThresholds( thresholds );
@@ -111,12 +109,11 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
      * @param thresholds the thresholds
      * @param type the threshold type
      * @param writer the writer
-     * @throws IOException if the threshold could not be written for any reason
      */
 
     private void writeThresholdsWithFullMetadata( Set<Threshold> thresholds,
                                                   ThresholdType type,
-                                                  JsonGenerator writer ) throws IOException
+                                                  JsonGenerator writer )
     {
         writer.writeStartObject();
 
@@ -129,7 +126,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         if ( !innerThreshold.getName()
                             .isBlank() )
         {
-            writer.writeStringField( "name", innerThreshold.getName() );
+            writer.writeStringProperty( "name", innerThreshold.getName() );
         }
 
         // More than one feature?
@@ -142,7 +139,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         else
         {
             double[] values = this.getThresholdValues( type, thresholds );
-            writer.writeObjectField( "values", values );
+            writer.writePOJOProperty( "values", values );
         }
 
         // Write the user-friendly threshold operator name, if not default
@@ -150,28 +147,28 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         {
             ThresholdOperator operator = innerThreshold.getOperator();
             String operatorName = DeclarationUtilities.fromEnumName( operator.name() );
-            writer.writeStringField( "operator", operatorName );
+            writer.writeStringProperty( "operator", operatorName );
         }
         // Write the data orientation
         if ( innerThreshold.getDataType() != DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.getDataType() )
         {
             ThresholdDataType dataType = innerThreshold.getDataType();
             ThresholdOrientation orientation = ThresholdOrientation.valueOf( dataType.name() );
-            writer.writeObjectField( "apply_to", orientation );
+            writer.writePOJOProperty( "apply_to", orientation );
         }
 
         if ( type == ThresholdType.VALUE
              && !innerThreshold.getThresholdValueUnits()
                                .isBlank() )
         {
-            writer.writeStringField( "unit", innerThreshold.getThresholdValueUnits() );
+            writer.writeStringProperty( "unit", innerThreshold.getThresholdValueUnits() );
         }
 
         if ( Objects.nonNull( first.featureNameFrom() )
              && first.featureNameFrom() != Threshold.DEFAULT_FEATURE_NAME_FROM )
         {
-            writer.writeStringField( "feature_name_from", first.featureNameFrom()
-                                                               .toString() );
+            writer.writeStringProperty( "feature_name_from", first.featureNameFrom()
+                                                                  .toString() );
         }
 
         writer.writeEndObject();
@@ -182,14 +179,13 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
      * @param thresholds the featureful thresholds
      * @param type the threshold type
      * @param writer the writer
-     * @throws IOException if the writing fails for any reason
      */
 
     private void writeFeaturefulThresholdValues( Set<Threshold> thresholds,
                                                  ThresholdType type,
-                                                 JsonGenerator writer ) throws IOException
+                                                 JsonGenerator writer )
     {
-        writer.writeFieldName( "values" );
+        writer.writeName( "values" );
 
         // Start the array
         writer.writeStartArray();
@@ -212,22 +208,10 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             double[] values = this.getThresholdValues( type, nextThresholds );
             for ( double nextValue : values )
             {
-                // Use flow style if possible
-                if ( writer instanceof CustomGenerator custom )
-                {
-                    custom.setFlowStyleOn();
-                }
-
                 writer.writeStartObject();
-                writer.writeNumberField( VALUE, nextValue );
-                writer.writeStringField( "feature", geometry.getName() );
+                writer.writeNumberProperty( VALUE, nextValue );
+                writer.writeStringProperty( "feature", geometry.getName() );
                 writer.writeEndObject();
-
-                // Return to default style
-                if ( writer instanceof CustomGenerator custom )
-                {
-                    custom.setFlowStyleOff();
-                }
             }
         }
 
@@ -239,7 +223,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         for ( double nextValue : values )
         {
             writer.writeStartObject();
-            writer.writeNumberField( VALUE, nextValue );
+            writer.writeNumberProperty( VALUE, nextValue );
             writer.writeEndObject();
         }
 

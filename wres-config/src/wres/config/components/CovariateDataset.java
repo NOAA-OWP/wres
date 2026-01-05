@@ -5,7 +5,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.deserializers.CovariateDatasetDeserializer;
@@ -22,7 +23,8 @@ import wres.statistics.generated.TimeScale;
  */
 @RecordBuilder
 @JsonDeserialize( using = CovariateDatasetDeserializer.class )
-public record CovariateDataset( wres.config.components.Dataset dataset,
+public record CovariateDataset( @JsonUnwrapped   // Use unwrap annotation to serialize everything on the same level
+                                wres.config.components.Dataset dataset,
                                 @JsonProperty( "minimum" ) Double minimum,
                                 @JsonProperty( "maximum" ) Double maximum,
                                 DatasetOrientation featureNameOrientation,

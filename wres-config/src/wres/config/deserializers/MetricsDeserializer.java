@@ -1,23 +1,27 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.DeclarationFactory;
 import wres.config.MetricConstants;
 import wres.config.DeclarationUtilities;
 import wres.config.components.Metric;
@@ -28,34 +32,35 @@ import wres.config.components.MetricParameters;
  *
  * @author James Brown
  */
-public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
+public class MetricsDeserializer extends ValueDeserializer<Set<Metric>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricsDeserializer.class );
 
     @Override
-    public Set<Metric> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
+    public Set<Metric> deserialize( JsonParser jp, DeserializationContext context )
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
         JsonNode node = reader.readTree( jp );
 
         // Metrics with parameters
         if ( node instanceof ObjectNode )
         {
             TreeNode metricsNode = node.get( "metrics" );
-            return this.getMetricsFromArray( ( ArrayNode ) metricsNode, reader );
+            return this.getMetricsFromArray( ( ArrayNode ) metricsNode, mapper );
         }
         // Plain array of metrics
         else if ( node instanceof ArrayNode arrayNode )
         {
-            return this.getMetricsFromArray( arrayNode, reader );
+            return this.getMetricsFromArray( arrayNode, mapper );
         }
         // Singleton without parameters
-        else if( node instanceof TextNode textNode )
+        else if ( node instanceof StringNode textNode )
         {
-            String nameString = DeclarationUtilities.toEnumName( textNode.asText() );
+            String nameString = DeclarationUtilities.toEnumName( textNode.asString() );
             MetricConstants metricName = MetricConstants.valueOf( nameString );
             LOGGER.debug( "Discovered a singleton metric without parameters: {}. ", nameString );
             Metric metric = new Metric( metricName, null );
@@ -63,10 +68,11 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
         }
         else
         {
-            throw new IOException( "When reading the '" + jp.currentName()
-                                   + "' declaration of 'metrics', discovered an unrecognized data type: "
-                                   + node.getClass()
-                                   +". Please fix this declaration and try again." );
+            throw new UncheckedIOException( new IOException( "When reading the '" + jp.currentName()
+                                                             + "' declaration of 'metrics', discovered an unrecognized "
+                                                             + "data type: "
+                                                             + node.getClass()
+                                                             + ". Please fix this declaration and try again." ) );
         }
     }
 
@@ -75,11 +81,10 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
      * @param metricsNode the metrics node
      * @param reader the reader
      * @return the metrics
-     * @throws IOException if a metric could not be parsed
      */
 
     private Set<Metric> getMetricsFromArray( ArrayNode metricsNode,
-                                             ObjectReader reader ) throws IOException
+                                             ObjectMapper reader )
     {
         // Preserve insertion order
         Set<Metric> metrics = new LinkedHashSet<>();
@@ -97,7 +102,7 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
             }
             else
             {
-                String nameString = DeclarationUtilities.toEnumName( nextNode.asText() );
+                String nameString = DeclarationUtilities.toEnumName( nextNode.asString() );
                 MetricConstants metricName = MetricConstants.valueOf( nameString );
                 nextMetric = new Metric( metricName, null );
                 LOGGER.debug( "Discovered a metric without parameters: {}. ", nextMetric.name() );
@@ -114,13 +119,12 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
      * @param node the metric node
      * @param reader the reader
      * @return the metric
-     * @throws IOException if the metric could not be parsed
      */
 
-    private Metric getMetric( JsonNode node, ObjectReader reader ) throws IOException
+    private Metric getMetric( JsonNode node, ObjectMapper reader )
     {
         JsonNode nameNode = node.get( "name" );
-        String enumName = DeclarationUtilities.toEnumName( nameNode.asText() );
+        String enumName = DeclarationUtilities.toEnumName( nameNode.asString() );
         MetricConstants metricName = MetricConstants.valueOf( enumName );
         MetricParameters parameters = this.getMetricParameters( node, reader );
         return new Metric( metricName, parameters );
@@ -129,18 +133,19 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
     /**
      * Reads the metric parameters from a json node, if any.
      * @param node the metric node
-     * @param reader the reader
+     * @param mapper the mapper
      * @return the metric parameters or null
-     * @throws IOException if the metric parameters could not be read
      */
 
-    private MetricParameters getMetricParameters( JsonNode node, ObjectReader reader ) throws IOException
+    private MetricParameters getMetricParameters( JsonNode node, ObjectMapper mapper )
     {
         MetricParameters parameters = null;
 
+        ObjectReader reader = mapper.readerFor( MetricParameters.class );
+
         if ( node.size() > 1 )
         {
-            parameters = reader.readValue( node, MetricParameters.class );
+            parameters = reader.readValue( node );
         }
 
         return parameters;

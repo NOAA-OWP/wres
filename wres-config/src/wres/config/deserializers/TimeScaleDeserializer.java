@@ -1,15 +1,16 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
 import com.google.protobuf.Duration;
 
+import wres.config.DeclarationFactory;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
@@ -18,16 +19,16 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  *
  * @author James Brown
  */
-public class TimeScaleDeserializer extends JsonDeserializer<wres.config.components.TimeScale>
+public class TimeScaleDeserializer extends ValueDeserializer<wres.config.components.TimeScale>
 {
     @Override
     public wres.config.components.TimeScale deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
-        JsonNode node = mapper.readTree( jp );
+        ObjectReadContext reader = jp.objectReadContext();
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
+        JsonNode node = reader.readTree( jp );
 
         TimeScale.Builder builder = TimeScale.newBuilder()
                                              // Default function
@@ -36,7 +37,7 @@ public class TimeScaleDeserializer extends JsonDeserializer<wres.config.componen
         if ( node.has( "function" ) )
         {
             JsonNode functionNode = node.get( "function" );
-            String functionString = functionNode.asText()
+            String functionString = functionNode.asString()
                                                 .toUpperCase();
             TimeScaleFunction function = TimeScaleFunction.valueOf( functionString );
             builder.setFunction( function );

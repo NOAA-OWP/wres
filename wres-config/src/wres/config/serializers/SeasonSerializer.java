@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.components.Season;
 
@@ -13,31 +12,27 @@ import wres.config.components.Season;
  * Serializes a {@link Season}.
  * @author James Brown
  */
-public class SeasonSerializer extends JsonSerializer<Season>
+public class SeasonSerializer extends ValueSerializer<Season>
 {
     @Override
-    public void serialize( Season value, JsonGenerator gen, SerializerProvider serializers ) throws IOException
+    public void serialize( Season value, JsonGenerator gen, SerializationContext serializers )
     {
         // Start
         gen.writeStartObject();
 
         if ( Objects.nonNull( value.minimum() ) )
         {
-            gen.writeFieldName( "minimum_day" );
-            gen.writeNumber( value.minimum()
-                                  .getDayOfMonth() );
-            gen.writeFieldName( "minimum_month" );
-            gen.writeNumber( value.minimum()
-                                  .getMonthValue() );
+            gen.writeNumberProperty( "minimum_day", value.minimum()
+                                                         .getDayOfMonth() );
+            gen.writeNumberProperty( "minimum_month", value.minimum()
+                                                           .getMonthValue() );
         }
         if ( Objects.nonNull( value.maximum() ) )
         {
-            gen.writeFieldName( "maximum_day" );
-            gen.writeNumber( value.maximum()
-                                  .getDayOfMonth() );
-            gen.writeFieldName( "maximum_month" );
-            gen.writeNumber( value.maximum()
-                                  .getMonthValue() );
+            gen.writeNumberProperty( "maximum_day", value.maximum()
+                                                         .getDayOfMonth() );
+            gen.writeNumberProperty( "maximum_month", value.maximum()
+                                                           .getMonthValue() );
         }
 
         // End

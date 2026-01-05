@@ -1,14 +1,16 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectReader;
 
+import wres.config.DeclarationFactory;
 import wres.config.components.CrossPair;
 import wres.config.components.CrossPairMethod;
 
@@ -17,26 +19,28 @@ import wres.config.components.CrossPairMethod;
  *
  * @author James Brown
  */
-public class CrossPairDeserializer extends JsonDeserializer<CrossPair>
+public class CrossPairDeserializer extends ValueDeserializer<CrossPair>
 {
     @Override
     public CrossPair deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
         JsonNode node = reader.readTree( jp );
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
 
         // Single string
-        if ( node.isTextual() )
+        if ( node.isString() )
         {
-            CrossPairMethod method = reader.readValue( node, CrossPairMethod.class );
+            ObjectReader objectReader = mapper.readerFor( CrossPairMethod.class );
+            CrossPairMethod method = objectReader.readValue( node );
             return new CrossPair( method, null );
         }
 
         // Full declaration
-        return reader.readValue( node, CrossPair.class );
+        ObjectReader objectReader = mapper.readerFor( CrossPair.class );
+        return objectReader.readValue( node );
     }
 }
 

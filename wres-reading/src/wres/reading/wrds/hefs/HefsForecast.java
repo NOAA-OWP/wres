@@ -1,8 +1,9 @@
 package wres.reading.wrds.hefs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.types.Ensemble;
@@ -18,6 +19,7 @@ import wres.datamodel.types.Ensemble;
 @JsonDeserialize( using = HefsForecastDeserializer.class )
 public record HefsForecast( TimeSeries<Ensemble> timeSeries )
 {
+    @NotNull
     @Override
     public String toString()
     {

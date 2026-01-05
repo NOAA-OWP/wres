@@ -5,12 +5,16 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The location names.
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
+@Getter
+@Setter
 public class LocationNames
 {
     private String nwsLid;
@@ -18,74 +22,6 @@ public class LocationNames
     @JsonProperty( "nwm_feature_id" )
     private String nwmFeatureId;
     private String nwsName;
-
-    /**
-     * @return the NWM feature ID
-     */
-    public String getNwmFeatureId()
-    {
-        return nwmFeatureId;
-    }
-
-    /**
-     * Sets the NWM feature ID.
-     * @param nwmFeatureId the NWM feature ID
-     */
-    public void setNwmFeatureId( String nwmFeatureId )
-    {
-        this.nwmFeatureId = nwmFeatureId;
-    }
-
-    /**
-     * @return the NWS LID.
-     */
-    public String getNwsLid()
-    {
-        return nwsLid;
-    }
-
-    /**
-     * Sets the NWS LID.
-     * @param nwsLid the NWS LID
-     */
-    public void setNwsLid( String nwsLid )
-    {
-        this.nwsLid = nwsLid;
-    }
-
-    /**
-     * @return the NWS name
-     */
-    public String getNwsName()
-    {
-        return nwsName;
-    }
-
-    /**
-     * Sets the NWS name.
-     * @param nwsName the NWS name
-     */
-    public void setNwsName( String nwsName )
-    {
-        this.nwsName = nwsName;
-    }
-
-    /**
-     * @return the USGS site code
-     */
-    public String getUsgsSiteCode()
-    {
-        return usgsSiteCode;
-    }
-
-    /**
-     * Sets the USGS site code.
-     * @param usgsSiteCode the USGS site code
-     */
-    public void setUsgsSiteCode( String usgsSiteCode )
-    {
-        this.usgsSiteCode = usgsSiteCode;
-    }
 
     @Override
     public String toString()

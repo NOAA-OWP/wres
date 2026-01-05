@@ -26,7 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import wres.config.DeclarationException;
 import wres.config.components.EvaluationDeclaration;
@@ -242,39 +242,24 @@ class FeatureService
         //Get the version information
         if ( LOGGER.isDebugEnabled() )
         {
-            try
+            LocationRootVersionDocument versionDoc =
+                    OBJECT_MAPPER.readValue( rawResponseBytes, LocationRootVersionDocument.class );
+            if ( versionDoc.isDeploymentInfoPresent() )
             {
-                LocationRootVersionDocument versionDoc =
-                        OBJECT_MAPPER.readValue( rawResponseBytes, LocationRootVersionDocument.class );
-                if ( versionDoc.isDeploymentInfoPresent() )
-                {
-                    LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
-                                                                          .version() );
-                }
-                else
-                {
-                    throw new UnsupportedOperationException( "Unsupported API version: could not find the expected "
-                                                             + "deployment information in the threshold response body." );
-                }
+                LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
+                                                                      .version() );
             }
-            catch ( IOException e )
+            else
             {
-                LOGGER.debug( "Failed to parse API version information from {}.", uri );
+                throw new UnsupportedOperationException( "Unsupported API version: could not find the expected "
+                                                         + "deployment information in the threshold response body." );
             }
         }
 
         // Read the locations
-        try
-        {
-            LocationRootDocument doc = OBJECT_MAPPER.readValue( rawResponseBytes,
-                                                                LocationRootDocument.class );
-            return doc.getLocations();
-        }
-        catch ( IOException ioe )
-        {
-            throw new ReadException( "Failed to parse location information from document from "
-                                     + uri, ioe );
-        }
+        LocationRootDocument doc = OBJECT_MAPPER.readValue( rawResponseBytes,
+                                                            LocationRootDocument.class );
+        return doc.getLocations();
     }
 
     /**

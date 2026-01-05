@@ -3262,7 +3262,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithShortSources() throws IOException
+    void testSerializeWithShortSources()
     {
         String expected = """
                 observed:
@@ -3282,7 +3282,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithShortSourcesAndBaseline() throws IOException
+    void testSerializeWithShortSourcesAndBaseline()
     {
         String expected = """
                 observed:
@@ -3319,7 +3319,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithPersistenceBaseline() throws IOException
+    void testSerializeWithPersistenceBaseline()
     {
         String expected = """
                 observed:
@@ -3360,7 +3360,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithClimatologyBaselineAndParameters() throws IOException
+    void testSerializeWithClimatologyBaselineAndParameters()
     {
         String expected = """
                 observed:
@@ -3404,7 +3404,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithLongSources() throws IOException
+    void testSerializeWithLongSources()
     {
         String expected = """
                 observed:
@@ -3536,7 +3536,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithLongMetrics() throws IOException
+    void testSerializeWithLongMetrics()
     {
         String expected = """
                 observed:
@@ -3639,7 +3639,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithFeatureGroup() throws IOException
+    void testSerializeWithFeatureGroup()
     {
         String expected = """
                 observed:
@@ -3649,8 +3649,10 @@ class DeclarationFactoryTest
                 feature_groups:
                   - name: a group
                     features:
-                      - {observed: DRRC2, predicted: DRRC2}
-                      - {observed: DOLC2, predicted: DOLC2}
+                      - observed: DRRC2
+                        predicted: DRRC2
+                      - observed: DOLC2
+                        predicted: DOLC2
                 """;
 
         GeometryTuple first = GeometryTuple.newBuilder()
@@ -3686,7 +3688,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithFeatureServiceAndSingletonGroup() throws IOException
+    void testSerializeWithFeatureServiceAndSingletonGroup()
     {
         String expected = """
                 observed:
@@ -3722,7 +3724,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithFeatureServiceAndTwoGroups() throws IOException
+    void testSerializeWithFeatureServiceAndTwoGroups()
     {
         String expected = """
                 observed:
@@ -3770,7 +3772,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSpatialMask() throws IOException, ParseException
+    void testSerializeWithSpatialMask() throws ParseException
     {
         String expected = """
                 observed:
@@ -3799,7 +3801,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithTimePools() throws IOException
+    void testSerializeWithTimePools()
     {
         String expected = """
                 observed:
@@ -3883,7 +3885,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithTimeScale() throws IOException
+    void testSerializeWithTimeScale()
     {
         String expected = """
                 observed:
@@ -3914,7 +3916,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithUnitAndUnitAliases() throws IOException
+    void testSerializeWithUnitAndUnitAliases()
     {
         String expected = """
                 observed:
@@ -3950,7 +3952,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithPairFrequency() throws IOException
+    void testSerializeWithPairFrequency()
     {
         String expected = """
                 observed:
@@ -3974,7 +3976,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithCrossPairExact() throws IOException
+    void testSerializeWithCrossPairExact()
     {
         String expected = """
                 observed:
@@ -3997,7 +3999,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithCrossPairMethodFuzzyAndScopeWithinFeatures() throws IOException
+    void testSerializeWithCrossPairMethodFuzzyAndScopeWithinFeatures()
     {
         String expected = """
                 observed:
@@ -4023,7 +4025,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithEnsembleAverage() throws IOException
+    void testSerializeWithEnsembleAverage()
     {
         String expected = """
                 observed:
@@ -4045,7 +4047,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSeasonFilter() throws IOException
+    void testSerializeWithSeasonFilter()
     {
         String expected = """
                 observed:
@@ -4072,7 +4074,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithValuesFilter() throws IOException
+    void testSerializeWithValuesFilter()
     {
         String expected = """
                 observed:
@@ -4099,7 +4101,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithOutputFormats() throws IOException
+    void testSerializeWithOutputFormats()
     {
         String expected = """
                 observed:
@@ -4155,7 +4157,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithThresholds() throws IOException
+    void testSerializeWithThresholds()
     {
         String expected = """
                 observed:
@@ -4165,15 +4167,22 @@ class DeclarationFactoryTest
                 thresholds:
                   name: MAJOR FLOOD
                   values:
-                    - {value: 27.0, feature: DOLC2}
-                    - {value: 23.0, feature: DRRC2}
+                    - value: 27.0
+                      feature: DOLC2
+                    - value: 23.0
+                      feature: DRRC2
                   apply_to: predicted
-                probability_thresholds: [0.1, 0.2, 0.9]
+                probability_thresholds:
+                  - 0.1
+                  - 0.2
+                  - 0.9
                 classifier_thresholds:
                   name: COLONEL DROUGHT
                   values:
-                    - {value: 0.3, feature: DOLC2}
-                    - {value: 0.2, feature: DRRC2}
+                    - value: 0.3
+                      feature: DOLC2
+                    - value: 0.2
+                      feature: DRRC2
                 """;
 
         Threshold pOne = Threshold.newBuilder()
@@ -4288,7 +4297,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithThresholdSets() throws IOException
+    void testSerializeWithThresholdSets()
     {
         String expected = """
                 observed:
@@ -4297,7 +4306,9 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 threshold_sets:
                   - probability_thresholds:
-                      values: [0.1, 0.2]
+                      values:
+                        - 0.1
+                        - 0.2
                       operator: greater equal
                 """;
 
@@ -4337,7 +4348,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithBaselineAndSeparateMetrics() throws IOException
+    void testSerializeWithBaselineAndSeparateMetrics()
     {
         String expected = """
                 observed:
@@ -4366,7 +4377,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithThresholdSources() throws IOException
+    void testSerializeWithThresholdSources()
     {
         String expected = """
                 observed:
@@ -4404,7 +4415,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithMultipleSetsOfClassifierThresholds() throws IOException
+    void testSerializeWithMultipleSetsOfClassifierThresholds()
     {
         // #120048
         String expected = """
@@ -4413,10 +4424,14 @@ class DeclarationFactoryTest
                 predicted:
                   sources: another_file.csv
                 classifier_thresholds:
-                  - values: [0.05, 0.1]
+                  - values:
+                      - 0.05
+                      - 0.1
                     operator: less equal
                     apply_to: observed and predicted
-                  - values: [0.05, 0.1]
+                  - values:
+                      - 0.05
+                      - 0.1
                     operator: equal
                     apply_to: any predicted
                 """;
@@ -4488,7 +4503,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatistics() throws IOException
+    void testSerializeWithSummaryStatistics()
     {
         String expected = """
                 observed:
@@ -4516,7 +4531,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndDimensions() throws IOException
+    void testSerializeWithSummaryStatisticsAndDimensions()
     {
         String expected = """
                 observed:
@@ -4548,7 +4563,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndHistogramWithDefaultBins() throws IOException
+    void testSerializeWithSummaryStatisticsAndHistogramWithDefaultBins()
     {
         String expected = """
                 observed:
@@ -4576,7 +4591,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndHistogramWithNonDefaultBins() throws IOException
+    void testSerializeWithSummaryStatisticsAndHistogramWithNonDefaultBins()
     {
         String expected = """
                 observed:
@@ -4606,7 +4621,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndQuantilesWithDefaultProbabilities() throws IOException
+    void testSerializeWithSummaryStatisticsAndQuantilesWithDefaultProbabilities()
     {
         String expected = """
                 observed:
@@ -4637,7 +4652,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSummaryStatisticsAndQuantilesWithNonDefaultProbabilities() throws IOException
+    void testSerializeWithSummaryStatisticsAndQuantilesWithNonDefaultProbabilities()
     {
         String expected = """
                 observed:
@@ -4646,7 +4661,9 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 summary_statistics:
                   - name: quantiles
-                    probabilities: [0.05, 0.95]
+                    probabilities:
+                      - 0.05
+                      - 0.95
                 """;
 
         Set<SummaryStatistic> summaryStatistics =
@@ -4666,6 +4683,305 @@ class DeclarationFactoryTest
                                             .build();
 
         String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithCovariates()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                covariates:
+                  - sources: precipitation.tgz
+                    variable: precipitation
+                    minimum: 0.25
+                  - sources: temperature.tgz
+                    variable: temperature
+                    maximum: 0.0
+                    rescale_function: mean
+                """;
+
+        URI covariateOneUri = URI.create( "precipitation.tgz" );
+        Source covariateOneSource = SourceBuilder.builder()
+                                                 .uri( covariateOneUri )
+                                                 .build();
+
+        List<Source> covariateOneSources = List.of( covariateOneSource );
+
+        Dataset covariateOneDataset = DatasetBuilder.builder()
+                                                    .sources( covariateOneSources )
+                                                    .variable( new Variable( "precipitation", null, Set.of() ) )
+                                                    .build();
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateOneDataset )
+                                                               .minimum( 0.25 )
+                                                               .build();
+
+        URI covariateTwoUri = URI.create( "temperature.tgz" );
+        Source covariateTwoSource = SourceBuilder.builder()
+                                                 .uri( covariateTwoUri )
+                                                 .build();
+
+        List<Source> covariateTwoSources = List.of( covariateTwoSource );
+
+        Dataset covariateTwoDataset = DatasetBuilder.builder()
+                                                    .sources( covariateTwoSources )
+                                                    .variable( new Variable( "temperature", null, Set.of() ) )
+                                                    .build();
+
+        CovariateDataset covariateTwo = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateTwoDataset )
+                                                               .maximum( 0.0 )
+                                                               .rescaleFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                               .build();
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .covariates( covariateDatasets )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithEventDetectionUsingExplicitDatasetAndMethodWithCombinationParameters()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                event_detection:
+                  dataset: observed
+                  method: regina-ogden
+                  parameters:
+                    window_size: 3600
+                    start_radius: 7200
+                    half_life: 10800
+                    minimum_event_duration: 14400
+                    combination:
+                      operation: intersection
+                      aggregation: minimum
+                    duration_unit: seconds
+                """;
+
+        EventDetectionParameters parameters =
+                EventDetectionParametersBuilder.builder()
+                                               .windowSize( java.time.Duration.ofHours( 1 ) )
+                                               .startRadius( java.time.Duration.ofHours( 2 ) )
+                                               .halfLife( java.time.Duration.ofHours( 3 ) )
+                                               .minimumEventDuration( java.time.Duration.ofHours( 4 ) )
+                                               .combination( EventDetectionCombination.INTERSECTION )
+                                               .aggregation( TimeWindowAggregation.MINIMUM )
+                                               .build();
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .method( EventDetectionMethod.REGINA_OGDEN )
+                                                             .parameters( parameters )
+                                                             .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .eventDetection( eventDetection )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithExplicitTimePools()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                time_pools:
+                  - lead_times:
+                      minimum: 3600
+                      maximum: 21600
+                      unit: seconds
+                    reference_dates:
+                      minimum: 2551-03-17T00:00:00Z
+                      maximum: 2551-03-20T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-18T00:00:00Z
+                      maximum: 2551-03-21T00:00:00Z
+                  - lead_times:
+                      minimum: 25200
+                      maximum: 43200
+                      unit: seconds
+                    reference_dates:
+                      minimum: 2551-03-21T00:00:00Z
+                      maximum: 2551-03-23T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-22T00:00:00Z
+                      maximum: 2551-03-24T00:00:00Z
+                """;
+
+        Instant expectedInstantOne = Instant.parse( "2551-03-17T00:00:00Z" );
+        Instant expectedInstantTwo = Instant.parse( "2551-03-18T00:00:00Z" );
+        Instant expectedInstantThree = Instant.parse( "2551-03-20T00:00:00Z" );
+        Instant expectedInstantFour = Instant.parse( "2551-03-21T00:00:00Z" );
+        Instant expectedInstantFive = Instant.parse( "2551-03-22T00:00:00Z" );
+        Instant expectedInstantSix = Instant.parse( "2551-03-23T00:00:00Z" );
+        Instant expectedInstantSeven = Instant.parse( "2551-03-24T00:00:00Z" );
+
+        java.time.Duration expectedDurationOne = java.time.Duration.ofHours( 1 );
+        java.time.Duration expectedDurationTwo = java.time.Duration.ofHours( 6 );
+        java.time.Duration expectedDurationThree = java.time.Duration.ofHours( 7 );
+        java.time.Duration expectedDurationFour = java.time.Duration.ofHours( 12 );
+
+        TimeWindow expectedOne = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantTwo ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantThree ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationTwo ) )
+                                           .build();
+
+        TimeWindow expectedTwo = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageUtilities.getTimestamp( expectedInstantFive ) )
+                                           .setLatestValidTime( MessageUtilities.getTimestamp( expectedInstantSeven ) )
+                                           .setEarliestReferenceTime( MessageUtilities.getTimestamp( expectedInstantFour ) )
+                                           .setLatestReferenceTime( MessageUtilities.getTimestamp( expectedInstantSix ) )
+                                           .setEarliestLeadDuration( MessageUtilities.getDuration( expectedDurationThree ) )
+                                           .setLatestLeadDuration( MessageUtilities.getDuration( expectedDurationFour ) )
+                                           .build();
+
+        Set<TimeWindow> timePools = new LinkedHashSet<>();
+        timePools.add( expectedOne );
+        timePools.add( expectedTwo );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .timePools( timePools )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSingletonThresholdSource()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                """;
+
+        ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
+
+        Set<ThresholdSource> sources = Set.of( thresholdSourceOne );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( sources )
+                                                                        .build();
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSingletonThresholdSourceAndProperties()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  uri: https://foo
+                  feature_name_from: predicted
+                  parameter: moon
+                  unit: qux
+                  provider: bar
+                  rating_provider: baz
+                  missing_value: -9999999.0
+                """;
+
+        ThresholdSource thresholdSource = ThresholdSourceBuilder.builder()
+                                                                .uri( URI.create( "https://foo" ) )
+                                                                .provider( "bar" )
+                                                                .ratingProvider( "baz" )
+                                                                .parameter( "moon" )
+                                                                .missingValue( -9999999.0 )
+                                                                .unit( "qux" )
+                                                                .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( Set.of( thresholdSource ) )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithMultipleThresholdSources()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                threshold_sources:
+                  - uri: https://foo
+                  - uri: https://bar
+                  - uri: https://baz
+                """;
+
+        ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
+
+        ThresholdSource thresholdSourceTwo = ThresholdSourceBuilder.builder()
+                                                                   .uri( URI.create( "https://bar" ) )
+                                                                   .build();
+
+        ThresholdSource thresholdSourceThree = ThresholdSourceBuilder.builder()
+                                                                     .uri( URI.create( "https://baz" ) )
+                                                                     .build();
+
+        // Preserve insertion order
+        Set<ThresholdSource> thresholdSources = new LinkedHashSet<>();
+        thresholdSources.add( thresholdSourceOne );
+        thresholdSources.add( thresholdSourceTwo );
+        thresholdSources.add( thresholdSourceThree );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .thresholdSources( thresholdSources )
+                                                                        .build();
+
+        String actual = DeclarationFactory.from( declaration );
 
         assertEquals( expected, actual );
     }

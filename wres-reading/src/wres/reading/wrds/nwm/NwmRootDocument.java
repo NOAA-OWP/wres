@@ -2,7 +2,6 @@ package wres.reading.wrds.nwm;
 
 import java.util.List;
 import java.util.Map;
-import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -10,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import wres.reading.wrds.ahps.ParameterCodes;
 
+import jakarta.xml.bind.annotation.XmlRootElement;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 

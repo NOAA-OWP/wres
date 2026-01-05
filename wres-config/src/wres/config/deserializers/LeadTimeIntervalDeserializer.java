@@ -1,10 +1,8 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
 import wres.config.components.LeadTimeInterval;
 
@@ -13,7 +11,7 @@ import wres.config.components.LeadTimeInterval;
  *
  * @author James Brown
  */
-public class LeadTimeIntervalDeserializer extends JsonDeserializer<LeadTimeInterval>
+public class LeadTimeIntervalDeserializer extends ValueDeserializer<LeadTimeInterval>
 {
     /** The underlying deserializer. */
     private static final DurationIntervalDeserializer DURATION_INTERVAL_DESERIALIZER =
@@ -21,7 +19,6 @@ public class LeadTimeIntervalDeserializer extends JsonDeserializer<LeadTimeInter
 
     @Override
     public LeadTimeInterval deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         DurationInterval interval = DURATION_INTERVAL_DESERIALIZER.deserialize( jp, context );
         return new LeadTimeInterval( interval.left(), interval.right() );

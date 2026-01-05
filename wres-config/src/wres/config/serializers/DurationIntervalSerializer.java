@@ -1,12 +1,11 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +16,7 @@ import wres.config.DeclarationUtilities;
  * Serializes a pair of {@link Duration} that represent an interval.
  * @author James Brown
  */
-public class DurationIntervalSerializer extends JsonSerializer<Pair<Duration, Duration>>
+public class DurationIntervalSerializer extends ValueSerializer<Pair<Duration, Duration>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DurationIntervalSerializer.class );
@@ -29,13 +28,17 @@ public class DurationIntervalSerializer extends JsonSerializer<Pair<Duration, Du
     private final String secondName;
 
     @Override
-    public void serialize( Pair<Duration, Duration> durations, JsonGenerator gen, SerializerProvider serializers )
-            throws IOException
+    public void serialize( Pair<Duration, Duration> durations, JsonGenerator gen, SerializationContext serializers )
     {
         Objects.requireNonNull( durations );
 
-        LOGGER.debug( "Discovered a duration interval of {} to serialize for the {}.", durations, gen.getOutputContext()
-                                                                                                     .getCurrentName() );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Discovered a duration interval of {} to serialize for the {}.",
+                          durations,
+                          gen.streamWriteContext()
+                             .currentName() );
+        }
 
         // Start
         gen.writeStartObject();
@@ -50,19 +53,19 @@ public class DurationIntervalSerializer extends JsonSerializer<Pair<Duration, Du
             if ( Objects.nonNull( first ) )
             {
                 Pair<Long, String> serialized = DeclarationUtilities.getDurationInPreferredUnits( first );
-                gen.writeNumberField( this.firstName, serialized.getLeft() );
+                gen.writeNumberProperty( this.firstName, serialized.getLeft() );
                 unit = serialized.getRight();
             }
 
             if ( Objects.nonNull( second ) )
             {
                 Pair<Long, String> serialized = DeclarationUtilities.getDurationInPreferredUnits( second );
-                gen.writeNumberField( this.secondName, serialized.getLeft() );
+                gen.writeNumberProperty( this.secondName, serialized.getLeft() );
                 unit = serialized.getRight();
             }
 
             // Units
-            gen.writeStringField( "unit", unit );
+            gen.writeStringProperty( "unit", unit );
         }
 
         // End

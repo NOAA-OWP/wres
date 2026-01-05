@@ -1,14 +1,16 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+
+import wres.config.DeclarationFactory;
 
 /**
  * Custom deserializer for a pair of {@link Duration} that represents an interval, together with an indicator about
@@ -17,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
  *
  * @author James Brown
  */
-public class DurationIntervalDeserializer extends JsonDeserializer<DurationInterval>
+public class DurationIntervalDeserializer extends ValueDeserializer<DurationInterval>
 {
     /** The name of the first duration within the interval. */
     private final String firstName;
@@ -27,12 +29,12 @@ public class DurationIntervalDeserializer extends JsonDeserializer<DurationInter
 
     @Override
     public DurationInterval deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
-        JsonNode node = mapper.readTree( jp );
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
+        ObjectReadContext reader = jp.objectReadContext();
+        JsonNode node = reader.readTree( jp );
         Duration first = DurationDeserializer.getDuration( mapper, node, this.firstName, "unit" );
         Duration second = DurationDeserializer.getDuration( mapper, node, this.secondName, "unit" );
 

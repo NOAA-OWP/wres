@@ -3,11 +3,15 @@ package wres.reading.wrds.ahps;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The forecast units.
  */
 
+@Getter
+@Setter
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class ForecastUnits
 {
@@ -30,57 +34,6 @@ public class ForecastUnits
         }
 
         return this.stage;
-    }
-
-    /**
-     * @return the flow
-     */
-    public String getFlow()
-    {
-        return flow;
-    }
-
-    /**
-     * Sets the flow.
-     * @param flow the flow
-     */
-    public void setFlow( String flow )
-    {
-        this.flow = flow;
-    }
-
-    /**
-     * Sets the streamflow.
-     * @param streamflow the streamflow
-     */
-    public void setStreamflow( String streamflow )
-    {
-        this.streamflow = streamflow;
-    }
-
-    /**
-     * Sets the stage.
-     * @param stage the stage
-     */
-    public void setStage( String stage )
-    {
-        this.stage = stage;
-    }
-
-    /**
-     * @return the streamflow
-     */
-    public String getStreamflow()
-    {
-        return streamflow;
-    }
-
-    /**
-     * @return the stage
-     */
-    public String getStage()
-    {
-        return stage;
     }
 
     /**

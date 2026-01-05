@@ -1,6 +1,7 @@
 package wres.config.deserializers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.ZoneOffset;
@@ -11,20 +12,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.DeclarationFactory;
 import wres.config.DeclarationUtilities;
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
@@ -41,7 +44,7 @@ import wres.config.components.Variable;
  *
  * @author James Brown
  */
-public class DatasetDeserializer extends JsonDeserializer<Dataset>
+public class DatasetDeserializer extends ValueDeserializer<Dataset>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DatasetDeserializer.class );
@@ -59,12 +62,13 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
     private static final TimeScaleDeserializer TIME_SCALE_DESERIALIZER = new TimeScaleDeserializer();
 
     @Override
-    public Dataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
+    public Dataset deserialize( JsonParser jp, DeserializationContext context )
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext reader = jp.objectReadContext();
         JsonNode node = reader.readTree( jp );
+        ObjectMapper mapper = DeclarationFactory.getObjectDeserializer();
 
         // Set the last node read
         this.lastNode = node;
@@ -78,15 +82,15 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             // Explicit array?
             if ( sourcesNode instanceof ObjectNode sourceNode )
             {
-                Source nextSource = reader.readValue( sourceNode, Source.class );
+                Source nextSource = mapper.treeToValue( sourceNode, Source.class );
                 sources = List.of( nextSource );
             }
             else if ( sourcesNode instanceof ArrayNode arrayNode )
             {
-                sources = this.getSourcesFromArray( reader, arrayNode );
+                sources = this.getSourcesFromArray( mapper, arrayNode );
             }
             // Singleton
-            else if ( sourcesNode instanceof TextNode textNode )
+            else if ( sourcesNode instanceof StringNode textNode )
             {
                 sources = this.getSingletonSource( textNode );
             }
@@ -98,19 +102,21 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             }
             else
             {
-                throw new IOException( "Unsupported format for sources node: " + sourcesNode.getClass() );
+                throw new UncheckedIOException( new IOException( "Unsupported format for sources node: "
+                                                                 + sourcesNode.getClass() ) );
             }
 
-            Variable variable = this.getVariable( reader, node );
+            Variable variable = this.getVariable( mapper, node );
             FeatureAuthority featureAuthority = this.getFeatureAuthority( node );
-            DataType dataType = this.getDataType( reader, node, jp.currentName() );
-            String label = this.getStringValue( reader, node.get( "label" ) );
-            EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
-            Duration timeShift = this.getTimeShift( node.get( "time_shift" ), reader, context );
-            ZoneOffset zoneOffset = this.getTimeZoneOffset( node.get( "time_zone_offset" ), reader, context );
-            List<Double> missingValue = this.getMissingValue( node.get( "missing_value" ), reader );
-            TimeScale timeScale = this.getTimeScale( node.get( "time_scale" ), reader, context );
-            String unit = this.getStringValue( reader, node.get( "unit" ) );
+            DataType dataType = this.getDataType( mapper, node, jp.currentName() );
+            String label = this.getStringValue( mapper, node.get( "label" ) );
+            EnsembleFilter ensembleFilter = this.getEnsembleFilter( mapper, node );
+            Duration timeShift = this.getTimeShift( node.get( "time_shift" ), jp.objectReadContext(), context );
+            ZoneOffset zoneOffset =
+                    this.getTimeZoneOffset( node.get( "time_zone_offset" ), jp.objectReadContext(), context );
+            List<Double> missingValue = this.getMissingValue( node.get( "missing_value" ), jp.objectReadContext() );
+            TimeScale timeScale = this.getTimeScale( node.get( "time_scale" ), jp.objectReadContext(), context );
+            String unit = this.getStringValue( mapper, node.get( "unit" ) );
             return DatasetBuilder.builder()
                                  .sources( sources )
                                  .variable( variable )
@@ -126,7 +132,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
                                  .build();
         }
         // Singleton
-        else if ( node instanceof TextNode textNode )
+        else if ( node instanceof StringNode textNode )
         {
             List<Source> sources = this.getSingletonSource( textNode );
             return DatasetBuilder.builder()
@@ -136,16 +142,17 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         // Plain array of sources
         else if ( node instanceof ArrayNode arrayNode )
         {
-            List<Source> sources = this.getSourcesFromArray( reader, arrayNode );
+            List<Source> sources = this.getSourcesFromArray( mapper, arrayNode );
             return DatasetBuilder.builder()
                                  .sources( sources )
                                  .build();
         }
         else
         {
-            throw new IOException( "When reading the '" + jp.currentName()
-                                   + "' declaration of 'sources', discovered an unrecognized data type. Please "
-                                   + "fix this declaration and try again." );
+            throw new UncheckedIOException( new IOException( "When reading the '"
+                                                             + jp.currentName()
+                                                             + "' declaration of 'sources', discovered an unrecognized "
+                                                             + "data type. Please fix this declaration and try again." ) );
         }
     }
 
@@ -163,10 +170,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @param reader the mapper
      * @param sourcesNode the sources node
      * @return the sources
-     * @throws IOException if the sources could not be mapped
      */
 
-    private List<Source> getSourcesFromArray( ObjectReader reader, ArrayNode sourcesNode ) throws IOException
+    private List<Source> getSourcesFromArray( ObjectMapper reader, ArrayNode sourcesNode )
     {
         List<Source> sources = new ArrayList<>();
         int nodeCount = sourcesNode.size();
@@ -179,11 +185,12 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             // May or may not be addressable with a 'uri' key
             if ( nextNode.has( "uri" ) )
             {
-                nextSource = reader.readValue( nextNode, Source.class );
+                nextSource = reader.readerFor( Source.class )
+                                   .readValue( nextNode );
             }
             else
             {
-                String nextUriString = nextNode.asText();
+                String nextUriString = nextNode.asString();
 
                 URI uri = UriDeserializer.deserializeUri( nextUriString );
                 nextSource = SourceBuilder.builder()
@@ -203,9 +210,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @return the list of sources
      */
 
-    private List<Source> getSingletonSource( TextNode node )
+    private List<Source> getSingletonSource( StringNode node )
     {
-        String nextUriString = node.asText();
+        String nextUriString = node.asString();
         URI uri = UriDeserializer.deserializeUri( nextUriString );
         Source source = SourceBuilder.builder()
                                      .uri( uri )
@@ -218,10 +225,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @param reader the mapper
      * @param node the node to check for a variable
      * @return the variable or null
-     * @throws IOException if the variable could not be mapped
      */
 
-    private Variable getVariable( ObjectReader reader, JsonNode node ) throws IOException
+    private Variable getVariable( ObjectMapper reader, JsonNode node )
     {
         if ( !node.has( "variable" ) )
         {
@@ -233,12 +239,13 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         // Plain variable declaration
         if ( !variableNode.has( "name" ) )
         {
-            String variableName = variableNode.asText();
+            String variableName = variableNode.asString();
             return new Variable( variableName, null, Set.of() );
         }
 
         // Ordinary variable declaration
-        return reader.readValue( variableNode, Variable.class );
+        return reader.readerFor( Variable.class )
+                     .readValue( variableNode );
     }
 
     /**
@@ -253,7 +260,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         if ( Objects.nonNull( node.get( "feature_authority" ) ) )
         {
             JsonNode featureAuthorityNode = node.get( "feature_authority" );
-            String featureAuthorityName = DeclarationUtilities.toEnumName( featureAuthorityNode.asText() );
+            String featureAuthorityName = DeclarationUtilities.toEnumName( featureAuthorityNode.asString() );
             featureAuthority = FeatureAuthority.valueOf( featureAuthorityName );
         }
 
@@ -265,17 +272,17 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @param reader the mapper
      * @param node the node
      * @return the string or null
-     * @throws IOException if the feature authority could not be mapped
      */
 
-    private String getStringValue( ObjectReader reader, JsonNode node ) throws IOException
+    private String getStringValue( ObjectMapper reader, JsonNode node )
     {
         if ( Objects.isNull( node ) )
         {
             return null;
         }
 
-        return reader.readValue( node, String.class );
+        return reader.readerFor( String.class )
+                     .readValue( node );
     }
 
     /**
@@ -283,10 +290,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @param reader the mapper
      * @param node the node to check for an ensemble filter
      * @return the filter or null
-     * @throws IOException if the filter could not be mapped
      */
 
-    private EnsembleFilter getEnsembleFilter( ObjectReader reader, JsonNode node ) throws IOException
+    private EnsembleFilter getEnsembleFilter( ObjectMapper reader, JsonNode node )
     {
         if ( !node.has( "ensemble_filter" ) )
         {
@@ -320,15 +326,15 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @param reader the reader
      * @param node the node
      * @return a set of ensemble members to filter
-     * @throws IOException if the members could not be read
      */
 
-    private Set<String> getMembers( ObjectReader reader, JsonNode node ) throws IOException
+    private Set<String> getMembers( ObjectMapper reader, JsonNode node )
     {
+        JsonParser parser = reader.treeAsTokens( node );
         JavaType type = reader.getTypeFactory()
                               .constructCollectionType( Set.class, String.class );
-        JsonParser parser = reader.treeAsTokens( node );
-        Set<String> rawSources = reader.readValue( parser, type );
+        Set<String> rawSources = reader.readerFor( type )
+                                       .readValue( parser );
         return Collections.unmodifiableSet( rawSources );
     }
 
@@ -339,8 +345,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @return the time shift or null
      */
 
-    private Duration getTimeShift( JsonNode node, ObjectReader reader, DeserializationContext context )
-            throws IOException
+    private Duration getTimeShift( JsonNode node, ObjectReadContext reader, DeserializationContext context )
     {
         if ( Objects.isNull( node ) )
         {
@@ -357,8 +362,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @return the time shift or null
      */
 
-    private ZoneOffset getTimeZoneOffset( JsonNode node, ObjectReader reader, DeserializationContext context )
-            throws IOException
+    private ZoneOffset getTimeZoneOffset( JsonNode node, ObjectReadContext reader, DeserializationContext context )
     {
         if ( Objects.isNull( node ) )
         {
@@ -374,8 +378,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @return the time shift or null
      */
 
-    private List<Double> getMissingValue( JsonNode node, ObjectReader reader )
-            throws IOException
+    private List<Double> getMissingValue( JsonNode node, ObjectReadContext reader )
     {
         if ( Objects.isNull( node ) )
         {
@@ -393,8 +396,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @return the time shift or null
      */
 
-    private TimeScale getTimeScale( JsonNode node, ObjectReader reader, DeserializationContext context )
-            throws IOException
+    private TimeScale getTimeScale( JsonNode node, ObjectReadContext reader, DeserializationContext context )
     {
         if ( Objects.isNull( node ) )
         {
@@ -410,13 +412,13 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @param node the node to read
      * @param context the context to help with logging
      * @return the data type or null
-     * @throws IOException if the type could not be read
      */
-    private DataType getDataType( ObjectReader reader, JsonNode node, String context ) throws IOException
+    private DataType getDataType( ObjectMapper reader, JsonNode node, String context )
     {
         if ( node.has( "type" ) )
         {
-            return reader.readValue( node.get( "type" ), DataType.class );
+            return reader.readerFor( DataType.class )
+                         .readValue( node.get( "type" ) );
         }
 
         LOGGER.debug( "No data type discovered for {}. The data type will be inferred.", context );

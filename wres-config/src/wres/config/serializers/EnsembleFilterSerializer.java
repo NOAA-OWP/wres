@@ -1,10 +1,8 @@
 package wres.config.serializers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.components.EnsembleFilter;
 
@@ -12,24 +10,23 @@ import wres.config.components.EnsembleFilter;
  * Serializes a {@link EnsembleFilter}.
  * @author James Brown
  */
-public class EnsembleFilterSerializer extends JsonSerializer<EnsembleFilter>
+public class EnsembleFilterSerializer extends ValueSerializer<EnsembleFilter>
 {
     @Override
-    public void serialize( EnsembleFilter filter, JsonGenerator writer, SerializerProvider serializers )
-            throws IOException
+    public void serialize( EnsembleFilter filter, JsonGenerator writer, SerializationContext serializers )
     {
         // If the exclude option is not default, write that too
         if ( filter.exclude() )
         {
-            writer.writeObjectField( "members", filter.members()
-                                                      .toArray() );
-            writer.writeBooleanField( "exclude", true );
+            writer.writePOJOProperty( "members", filter.members()
+                                                       .toArray() );
+            writer.writeBooleanProperty( "exclude", true );
         }
         // Otherwise, write a simple array of labels
         else
         {
-            writer.writeObject( filter.members()
-                                      .toArray() );
+            writer.writePOJO( filter.members()
+                                    .toArray() );
         }
     }
 }

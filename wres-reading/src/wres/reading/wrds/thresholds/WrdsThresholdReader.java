@@ -22,15 +22,15 @@ import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import wres.config.DeclarationUtilities;
 import wres.config.components.DatasetOrientation;
@@ -71,8 +71,9 @@ public class WrdsThresholdReader implements ThresholdReader
 
     /** Mapper for reading service responses in JSON format and translating them to POJOs. */
     private static final ObjectMapper JSON_OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /** Custom HttpClient to use */
     private static final OkHttpClient OK_HTTP_CLIENT;
@@ -133,8 +134,8 @@ public class WrdsThresholdReader implements ThresholdReader
      */
     @Override
     public Set<wres.config.components.Threshold> read( ThresholdSource thresholdSource,
-                                                            Set<String> featureNames,
-                                                            FeatureAuthority featureAuthority )
+                                                       Set<String> featureNames,
+                                                       FeatureAuthority featureAuthority )
     {
         Objects.requireNonNull( thresholdSource );
         Objects.requireNonNull( featureNames );
@@ -325,65 +326,58 @@ public class WrdsThresholdReader implements ThresholdReader
         ThresholdOrientation side = thresholdSource.applyTo();
         ThresholdOperator operator = thresholdSource.operator();
 
-        try
+        // Read the version information from the response, first.  This is used to
+        // identify version being processed
+        LocationRootVersionDocument versionDoc =
+                JSON_OBJECT_MAPPER.readValue( responseBytes, LocationRootVersionDocument.class );
+
+        if ( versionDoc.isDeploymentInfoPresent() )
         {
-            // Read the version information from the response, first.  This is used to
-            // identify version being processed
-            LocationRootVersionDocument versionDoc =
-                    JSON_OBJECT_MAPPER.readValue( responseBytes, LocationRootVersionDocument.class );
-
-            if ( versionDoc.isDeploymentInfoPresent() )
+            if ( LOGGER.isDebugEnabled() )
             {
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
-                                                                          .version() );
-                }
+                LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
+                                                                      .version() );
             }
-            else
-            {
-                throw new UnsupportedOperationException( "Unsupported API version: could not find the expected "
-                                                         + "deployment information in the threshold response body." );
-            }
-
-            // Get the response and construct the extractor.
-            ThresholdResponse response =
-                    JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
-            ThresholdExtractor extractor = ThresholdExtractor.builder()
-                                                             .response( response )
-                                                             .operator( operator )
-                                                             .orientation( side )
-                                                             .provider( thresholdSource.provider() )
-                                                             .ratingProvider( thresholdSource.ratingProvider() )
-                                                             .build();
-
-            // Flow is the default if the parameter is not specified. Note that this
-            // works for unified schema thresholds, such as recurrence flows, because the metadata
-            // does not specify the parameter, so that parameter is ignored.
-            if ( "stage".equalsIgnoreCase( thresholdSource.parameter() ) )
-            {
-                extractor = extractor.toBuilder()
-                                     .type( ThresholdType.STAGE )
-                                     .build();
-            }
-            else
-            {
-                extractor = extractor.toBuilder()
-                                     .type( ThresholdType.FLOW )
-                                     .build();
-            }
-
-            Map<Location, Set<Threshold>> thresholds = extractor.extract();
-
-            // Increment the warnings
-            warnings.addAll( extractor.getWarnings() );
-
-            return thresholds;
         }
-        catch ( IOException ioe )
+        else
         {
-            throw new ThresholdReadingException( "Error encountered while requesting WRDS threshold data", ioe );
+            throw new UnsupportedOperationException( "Unsupported API version: could not find the expected "
+                                                     + "deployment information in the threshold response body." );
         }
+
+        // Get the response and construct the extractor.
+        ThresholdResponse response =
+                JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
+        ThresholdExtractor extractor = ThresholdExtractor.builder()
+                                                         .response( response )
+                                                         .operator( operator )
+                                                         .orientation( side )
+                                                         .provider( thresholdSource.provider() )
+                                                         .ratingProvider( thresholdSource.ratingProvider() )
+                                                         .build();
+
+        // Flow is the default if the parameter is not specified. Note that this
+        // works for unified schema thresholds, such as recurrence flows, because the metadata
+        // does not specify the parameter, so that parameter is ignored.
+        if ( "stage".equalsIgnoreCase( thresholdSource.parameter() ) )
+        {
+            extractor = extractor.toBuilder()
+                                 .type( ThresholdType.STAGE )
+                                 .build();
+        }
+        else
+        {
+            extractor = extractor.toBuilder()
+                                 .type( ThresholdType.FLOW )
+                                 .build();
+        }
+
+        Map<Location, Set<Threshold>> thresholds = extractor.extract();
+
+        // Increment the warnings
+        warnings.addAll( extractor.getWarnings() );
+
+        return thresholds;
     }
 
     /**
@@ -577,9 +571,9 @@ public class WrdsThresholdReader implements ThresholdReader
      * @return the featureful thresholds
      */
     private static Set<wres.config.components.Threshold> getFeaturefulThresholds( Map<Location, Set<Threshold>> thresholds,
-                                                                                       DatasetOrientation orientation,
-                                                                                       Map<String, String> featureNames,
-                                                                                       FeatureAuthority featureAuthority )
+                                                                                  DatasetOrientation orientation,
+                                                                                  Map<String, String> featureNames,
+                                                                                  FeatureAuthority featureAuthority )
     {
         // Ordered, mapped thresholds
         Set<wres.config.components.Threshold> mappedThresholds = new HashSet<>();

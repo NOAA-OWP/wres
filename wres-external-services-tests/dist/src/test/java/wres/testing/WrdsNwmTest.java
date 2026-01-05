@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import okhttp3.OkHttpClient;
@@ -45,8 +47,9 @@ public class WrdsNwmTest
     }
 
     private static final ObjectMapper JSON_OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /** Custom HttpClient to use */
     private static final OkHttpClient OK_HTTP_CLIENT;
@@ -68,7 +71,7 @@ public class WrdsNwmTest
                                                    + e.getMessage() );
         }
     }
-    
+
     private static final WebClient WEB_CLIENT = new WebClient( true, OK_HTTP_CLIENT );
     private static final URI WRDS_NWM_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
@@ -93,7 +96,6 @@ public class WrdsNwmTest
             );
         }
     }
-
 
     @Test
     void canGetAndParseResponseFromWrdsNwmWithWebClient() throws IOException

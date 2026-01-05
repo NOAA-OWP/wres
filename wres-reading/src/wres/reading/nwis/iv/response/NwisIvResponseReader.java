@@ -30,9 +30,9 @@ import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -93,8 +93,9 @@ public class NwisIvResponseReader implements TimeSeriesReader
 
     /** Maps WaterML bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /**
      * @return an instance

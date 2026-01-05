@@ -1,12 +1,11 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +19,7 @@ import wres.config.components.MetricParametersBuilder;
  * Serializes a {@link Metric}.
  * @author James Brown
  */
-public class MetricSerializer extends JsonSerializer<Metric>
+public class MetricSerializer extends ValueSerializer<Metric>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricSerializer.class );
@@ -28,7 +27,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
     private static final ThresholdsSerializer THRESHOLDS_SERIALIZER = new ThresholdsSerializer();
 
     @Override
-    public void serialize( Metric metric, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( Metric metric, JsonGenerator writer, SerializationContext serializers )
     {
         MetricConstants name = metric.name();
         String friendlyName = DeclarationUtilities.fromEnumName( name.name() );
@@ -51,40 +50,38 @@ public class MetricSerializer extends JsonSerializer<Metric>
      * @param friendlyName the friendly name
      * @param writer the writer
      * @param serializers the serializer provider
-     * @throws IOException if the metric could not be written for any reason
      */
 
     private void writeMetricWithParameters( Metric metric,
                                             String friendlyName,
                                             JsonGenerator writer,
-                                            SerializerProvider serializers )
-            throws IOException
+                                            SerializationContext serializers )
     {
         LOGGER.debug( "Discovered a metric named {}, which had parameters.", friendlyName );
 
         MetricParameters parameters = metric.parameters();
         writer.writeStartObject();
-        writer.writeStringField( "name", friendlyName );
+        writer.writeStringProperty( "name", friendlyName );
 
         // Value thresholds
         if ( !parameters.thresholds()
                         .isEmpty() )
         {
-            writer.writeFieldName( "thresholds" );
+            writer.writeName( "thresholds" );
             THRESHOLDS_SERIALIZER.serialize( parameters.thresholds(), writer, serializers );
         }
         // Probability thresholds
         if ( !parameters.probabilityThresholds()
                         .isEmpty() )
         {
-            writer.writeFieldName( "probability_thresholds" );
+            writer.writeName( "probability_thresholds" );
             THRESHOLDS_SERIALIZER.serialize( parameters.probabilityThresholds(), writer, serializers );
         }
         // Classifier thresholds
         if ( !parameters.classifierThresholds()
                         .isEmpty() )
         {
-            writer.writeFieldName( "classifier_thresholds" );
+            writer.writeName( "classifier_thresholds" );
             THRESHOLDS_SERIALIZER.serialize( parameters.classifierThresholds(), writer, serializers );
         }
         // Summary statistics
@@ -97,18 +94,18 @@ public class MetricSerializer extends JsonSerializer<Metric>
                                                         .name() )
                                             .map( DeclarationUtilities::fromEnumName )
                                             .toList();
-            writer.writeObjectField( "summary_statistics", mapped );
+            writer.writePOJOProperty( "summary_statistics", mapped );
         }
         // PNG graphics, if not default
         if ( Boolean.FALSE.equals( parameters.png() ) )
         {
-            writer.writeBooleanField( "png", false );
+            writer.writeBooleanProperty( "png", false );
         }
 
         // SVG graphics, if not default
         if ( Boolean.FALSE.equals( parameters.svg() ) )
         {
-            writer.writeBooleanField( "svg", false );
+            writer.writeBooleanProperty( "svg", false );
         }
 
         writer.writeEndObject();

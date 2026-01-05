@@ -1,17 +1,16 @@
 package wres.reading.wrds.hefs;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +95,7 @@ import wres.reading.TimeSeriesHeader;
  *
  * @author James Brown
  */
-class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
+class HefsTraceDeserializer extends ValueDeserializer<HefsTrace>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( HefsTraceDeserializer.class );
@@ -112,9 +111,9 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
 
     @Override
     public HefsTrace deserialize( JsonParser jsonParser,
-                                  DeserializationContext deserializationContext ) throws IOException
+                                  DeserializationContext deserializationContext )
     {
-        ObjectMapper mapper = ( ObjectMapper ) jsonParser.getCodec();
+        ObjectReadContext mapper = jsonParser.objectReadContext();
         JsonNode node = mapper.readTree( jsonParser );
 
         TimeSeriesHeader header = this.readHeader( node );
@@ -148,7 +147,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
                      && nextEvent.has( "value" ) )
                 {
                     String validDateTime = nextEvent.get( "valid_datetime" )
-                                                    .asText();
+                                                    .asString();
                     double value = nextEvent.get( "value" )
                                             .doubleValue();
 
@@ -176,14 +175,14 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
 
         if ( resultNode.has( PARAMETER_ID ) )
         {
-            String parameterId = resultNode.get( PARAMETER_ID ).asText();
+            String parameterId = resultNode.get( PARAMETER_ID ).asString();
             builder.parameterId( parameterId );
             LOGGER.debug( "Discovered a parameter_id of {}.", parameterId );
         }
 
         if ( resultNode.has( ENSEMBLE_ID ) )
         {
-            String ensembleId = resultNode.get( ENSEMBLE_ID ).asText();
+            String ensembleId = resultNode.get( ENSEMBLE_ID ).asString();
             builder.ensembleId( ensembleId );
             LOGGER.debug( "Discovered an ensemble_id of {}.", ensembleId );
         }
@@ -191,7 +190,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( ENSEMBLE_MEMBER_INDEX ) )
         {
             String ensembleMemberIndex = resultNode.get( ENSEMBLE_MEMBER_INDEX )
-                                                   .asText();
+                                                   .asString();
             builder.ensembleMemberIndex( ensembleMemberIndex );
             LOGGER.debug( "Discovered an ensemble_member_index of {}.", ensembleMemberIndex );
         }
@@ -199,7 +198,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( "forecast_datetime" ) )
         {
             String forecastDateTime = resultNode.get( "forecast_datetime" )
-                                                .asText();
+                                                .asString();
             LOGGER.debug( "Discovered a forecast_datetime of {}.", forecastDateTime );
             String[] split = forecastDateTime.split( "T" );
             builder.forecastDateDate( split[0] );
@@ -209,27 +208,27 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( UNITS ) )
         {
             String units = resultNode.get( UNITS )
-                                     .asText();
+                                     .asString();
             builder.units( units );
             LOGGER.debug( "Discovered units of {}.", units );
         }
 
         if ( resultNode.has( MODULE_INSTANCE_ID )
              && !NULL.equals( resultNode.get( MODULE_INSTANCE_ID )
-                                        .asText() ) )
+                                        .asString() ) )
         {
             String moduleInstanceId = resultNode.get( MODULE_INSTANCE_ID )
-                                                .asText();
+                                                .asString();
             builder.moduleInstanceId( moduleInstanceId );
             LOGGER.debug( "Discovered a module_instance_id of {}.", moduleInstanceId );
         }
 
         if ( resultNode.has( QUALIFIER_ID )
              && !NULL.equals( resultNode.get( QUALIFIER_ID )
-                                        .asText() ) )
+                                        .asString() ) )
         {
             String qualifierId = resultNode.get( QUALIFIER_ID )
-                                           .asText();
+                                           .asString();
             builder.qualifierId( qualifierId );
             LOGGER.debug( "Discovered a qualifier_id of {}.", qualifierId );
         }
@@ -237,7 +236,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( "type" ) )
         {
             String type = resultNode.get( "type" )
-                                    .asText();
+                                    .asString();
             builder.type( type );
             LOGGER.debug( "Discovered a type of {}.", type );
         }
@@ -245,7 +244,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( "time_step_multiplier" ) )
         {
             String timeStepMultiplier = resultNode.get( "time_step_multiplier" )
-                                                  .asText();
+                                                  .asString();
             builder.timeStepMultiplier( timeStepMultiplier );
             LOGGER.debug( "Discovered a time_step_multiplier of {}.", timeStepMultiplier );
         }
@@ -253,7 +252,7 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( "time_step_unit" ) )
         {
             String timeStepUnit = resultNode.get( "time_step_unit" )
-                                            .asText();
+                                            .asString();
             builder.timeStepUnit( timeStepUnit );
             LOGGER.debug( "Discovered a time_step_unit of {}.", timeStepUnit );
         }
@@ -277,51 +276,51 @@ class HefsTraceDeserializer extends JsonDeserializer<HefsTrace>
         if ( resultNode.has( "location_id" ) )
         {
             String locationId = resultNode.get( "location_id" ) // NOSONAR
-                                          .asText();
+                                          .asString();
             builder.locationId( locationId );
         }
 
         if ( resultNode.has( STATION_NAME )
              && !NULL.equals( resultNode.get( STATION_NAME )
-                                        .asText() ) )
+                                        .asString() ) )
         {
             String locationDescription = resultNode.get( STATION_NAME ) // NOSONAR
-                                                   .asText();
+                                                   .asString();
             builder.locationDescription( locationDescription );
         }
 
         if ( resultNode.has( "x" ) )
         {
             String x = resultNode.get( "x" ) // NOSONAR
-                                 .asText();
+                                 .asString();
             builder.x( x );
         }
 
         if ( resultNode.has( "y" ) )
         {
             String y = resultNode.get( "y" ) // NOSONAR
-                                 .asText();
+                                 .asString();
             builder.y( y );
         }
 
         if ( resultNode.has( "z" ) )
         {
             String z = resultNode.get( "z" ) // NOSONAR
-                                 .asText();
+                                 .asString();
             builder.z( z );
         }
 
         if ( resultNode.has( "lat" ) )
         {
             String latitude = resultNode.get( "lat" ) // NOSONAR
-                                        .asText();
+                                        .asString();
             builder.latitude( latitude );
         }
 
         if ( resultNode.has( "lon" ) )
         {
             String longitude = resultNode.get( "lon" ) // NOSONAR
-                                         .asText();
+                                         .asString();
             builder.longitude( longitude );
         }
 

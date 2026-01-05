@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTWriter;
 
@@ -15,7 +14,7 @@ import wres.config.components.SpatialMask;
  * Serializes a {@link SpatialMask}.
  * @author James Brown
  */
-public class SpatialMaskSerializer extends JsonSerializer<SpatialMask>
+public class SpatialMaskSerializer extends ValueSerializer<SpatialMask>
 {
     /** Converts from geometries to WKT strings. */
     private static final WKTWriter WKT_WRITER = new WKTWriter();
@@ -23,7 +22,7 @@ public class SpatialMaskSerializer extends JsonSerializer<SpatialMask>
     @Override
     public void serialize( SpatialMask spatialMask,
                            JsonGenerator gen,
-                           SerializerProvider serializers ) throws IOException
+                           SerializationContext serializers )
     {
         // Start
         gen.writeStartObject();
@@ -39,22 +38,22 @@ public class SpatialMaskSerializer extends JsonSerializer<SpatialMask>
         // Full description
         if ( Objects.nonNull( name ) || srid != 0 )
         {
-            if( Objects.nonNull( name ) && ! name.isBlank() )
+            if ( Objects.nonNull( name ) && !name.isBlank() )
             {
-                gen.writeStringField( "name", name );
+                gen.writeStringProperty( "name", name );
             }
 
-            gen.writeStringField( "wkt", wktString );
+            gen.writeStringProperty( "wkt", wktString );
 
-            if( srid != 0 )
+            if ( srid != 0 )
             {
-                gen.writeNumberField( "srid", srid );
+                gen.writeNumberProperty( "srid", srid );
             }
         }
         // WKT string only
         else
         {
-            gen.writeStringField( "spatial_mask", wktString );
+            gen.writeStringProperty( "spatial_mask", wktString );
         }
 
         // End

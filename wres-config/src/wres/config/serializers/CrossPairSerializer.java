@@ -1,11 +1,10 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 
 import wres.config.components.CrossPair;
 
@@ -13,22 +12,22 @@ import wres.config.components.CrossPair;
  * Serializes a {@link CrossPair}.
  * @author James Brown
  */
-public class CrossPairSerializer extends JsonSerializer<CrossPair>
+public class CrossPairSerializer extends ValueSerializer<CrossPair>
 {
     @Override
-    public void serialize( CrossPair crossPair, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( CrossPair crossPair, JsonGenerator writer, SerializationContext serializers )
     {
         // Method only
-        if( Objects.isNull( crossPair.scope() ) )
+        if ( Objects.isNull( crossPair.scope() ) )
         {
-            writer.writeObject( crossPair.method() );
+            writer.writePOJO( crossPair.method() );
         }
         // Full declaration, method and scope
         else
         {
             writer.writeStartObject();
-            writer.writeObjectField( "method", crossPair.method() );
-            writer.writeObjectField( "scope", crossPair.scope() );
+            writer.writePOJOProperty( "method", crossPair.method() );
+            writer.writePOJOProperty( "scope", crossPair.scope() );
             writer.writeEndObject();
         }
     }

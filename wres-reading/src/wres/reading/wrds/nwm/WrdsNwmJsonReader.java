@@ -23,9 +23,9 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -73,8 +73,9 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
     /** Maps JSON bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
-            new ObjectMapper().registerModule( new JavaTimeModule() )
-                              .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
+            JsonMapper.builder()
+                      .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                      .build();
 
     /**
      * @return an instance
@@ -437,20 +438,9 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
     private NwmRootDocument getNwmRootDocument( InputStream inputStream, URI uri )
     {
         LOGGER.debug( "Reading a WRDS NWM source from {}.", uri );
-
-        try
-        {
-            NwmRootDocument document = OBJECT_MAPPER.readValue( inputStream, NwmRootDocument.class );
-            LOGGER.debug( "Parsed this document: {}", document );
-            return document;
-        }
-        catch ( IOException ioe )
-        {
-            throw new ReadException( "Failed to read NWM data from "
-                                     + uri
-                                     + ".",
-                                     ioe );
-        }
+        NwmRootDocument document = OBJECT_MAPPER.readValue( inputStream, NwmRootDocument.class );
+        LOGGER.debug( "Parsed this document: {}", document );
+        return document;
     }
 
     /**

@@ -1,6 +1,5 @@
 package wres.config.serializers;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -8,9 +7,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,7 @@ import wres.statistics.generated.SummaryStatistic;
  * Serializes {@link SummaryStatistic}.
  * @author James Brown
  */
-public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStatistic>>
+public class SummaryStatisticsSerializer extends ValueSerializer<Set<SummaryStatistic>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SummaryStatisticsSerializer.class );
@@ -30,7 +29,7 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
     @Override
     public void serialize( Set<SummaryStatistic> summaryStatistics,
                            JsonGenerator writer,
-                           SerializerProvider serializers ) throws IOException
+                           SerializationContext serializers )
     {
         if ( Objects.nonNull( summaryStatistics )
              && !summaryStatistics.isEmpty() )
@@ -52,11 +51,11 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
                 // Statistics
                 writer.writeStartObject();
 
-                writer.writeFieldName( "statistics" );
+                writer.writeName( "statistics" );
                 this.writeSummaryStatistics( summaryStatistics, writer );
 
                 // dimensions
-                writer.writeFieldName( "dimensions" );
+                writer.writeName( "dimensions" );
 
                 writer.writeStartArray();
                 for ( SummaryStatistic.StatisticDimension dimension : dimensions )
@@ -72,7 +71,7 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider provider, Set<SummaryStatistic> summaryStatistics )
+    public boolean isEmpty( SerializationContext provider, Set<SummaryStatistic> summaryStatistics )
     {
         return Objects.isNull( summaryStatistics ) || summaryStatistics.isEmpty();
     }
@@ -81,10 +80,8 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
      * Writes a set of {@link SummaryStatistic}.
      * @param summaryStatistics the summary statistics
      * @param writer the writer
-     * @throws IOException if the summary statistics could not be written for any reason
      */
     private void writeSummaryStatistics( Set<SummaryStatistic> summaryStatistics, JsonGenerator writer )
-            throws IOException
     {
         writer.writeStartArray();
 
@@ -120,25 +117,17 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
      * Writes the quantile statistics.
      * @param probabilities the probabilities
      * @param writer the writer
-     * @throws IOException if the writing failed for any reason
      */
 
-    private void writeQuantiles( Set<Double> probabilities, JsonGenerator writer ) throws IOException
+    private void writeQuantiles( Set<Double> probabilities, JsonGenerator writer )
     {
         if ( !probabilities.isEmpty() )
         {
             if ( !probabilities.equals( DeclarationFactory.DEFAULT_QUANTILES ) )
             {
                 writer.writeStartObject();
-                writer.writeFieldName( "name" );
-                writer.writeString( "quantiles" );
-                writer.writeFieldName( "probabilities" );
-
-                // Use flow style for the array if possible
-                if ( writer instanceof CustomGenerator custom )
-                {
-                    custom.setFlowStyleOn();
-                }
+                writer.writeStringProperty( "name", "quantiles" );
+                writer.writeName( "probabilities" );
 
                 double[] p = probabilities.stream()
                                           .mapToDouble( d -> d )
@@ -146,12 +135,6 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
                 writer.writeArray( p, 0, p.length );
 
                 writer.writeEndObject();
-
-                // Turn off flow style
-                if ( writer instanceof CustomGenerator custom )
-                {
-                    custom.setFlowStyleOff();
-                }
             }
             else
             {
@@ -164,10 +147,9 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
      * Writes a histogram, if present.
      * @param summaryStatistics the probabilities
      * @param writer the writer
-     * @throws IOException if the writing failed for any reason
      */
 
-    private void writeHistogram( Set<SummaryStatistic> summaryStatistics, JsonGenerator writer ) throws IOException
+    private void writeHistogram( Set<SummaryStatistic> summaryStatistics, JsonGenerator writer )
     {
         // Write a histogram, if present
         Optional<SummaryStatistic> possibleHistogram =
@@ -182,10 +164,8 @@ public class SummaryStatisticsSerializer extends JsonSerializer<Set<SummaryStati
             {
                 writer.writeStartObject();
 
-                writer.writeFieldName( "name" );
-                writer.writeString( "histogram" );
-                writer.writeFieldName( "bins" );
-                writer.writeNumber( histogram.getHistogramBins() );
+                writer.writeStringProperty( "name", "histogram" );
+                writer.writeNumberProperty( "bins", histogram.getHistogramBins() );
 
                 writer.writeEndObject();
             }

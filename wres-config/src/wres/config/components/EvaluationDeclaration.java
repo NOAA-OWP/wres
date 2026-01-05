@@ -10,8 +10,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +34,7 @@ import wres.config.serializers.PositiveIntegerSerializer;
 import wres.config.serializers.SummaryStatisticsSerializer;
 import wres.config.serializers.ThresholdSetsSerializer;
 import wres.config.serializers.ThresholdsSerializer;
+import wres.config.serializers.TimeWindowSerializer;
 import wres.config.serializers.TrueSerializer;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
@@ -96,6 +97,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "spatial_mask" ) SpatialMask spatialMask,
                                      @JsonProperty( "unit" ) String unit,
                                      @JsonProperty( "unit_aliases" ) Set<UnitAlias> unitAliases,
+                                     @JsonSerialize( using = TimeWindowSerializer.class )
                                      @JsonDeserialize( using = TimeWindowDeserializer.class )
                                      @JsonProperty( "time_pools" ) Set<TimeWindow> timePools,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
@@ -124,8 +126,8 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
                                      @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-                                     @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonSerialize( using = ThresholdSetsSerializer.class )
+                                     @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
                                      @JsonDeserialize( using = ThresholdSourcesDeserializer.class )
                                      @JsonProperty( "threshold_sources" ) Set<ThresholdSource> thresholdSources,

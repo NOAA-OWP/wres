@@ -1,14 +1,13 @@
 package wres.config.deserializers;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
 
 import wres.config.components.DecimalFormatPretty;
 
@@ -17,16 +16,15 @@ import wres.config.components.DecimalFormatPretty;
  *
  * @author James Brown
  */
-public class DecimalFormatDeserializer extends JsonDeserializer<DecimalFormat>
+public class DecimalFormatDeserializer extends ValueDeserializer<DecimalFormat>
 {
     @Override
     public DecimalFormat deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
-        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
+        ObjectReadContext mapper = jp.objectReadContext();
         JsonNode node = mapper.readTree( jp );
-        return new DecimalFormatPretty( node.asText() );
+        return new DecimalFormatPretty( node.asString() );
     }
 }
 
