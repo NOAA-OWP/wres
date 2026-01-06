@@ -604,7 +604,7 @@ public class NwisDvReader implements TimeSeriesReader
         URI baseUri = dataSource.uri();
         URIBuilder uriBuilder = new URIBuilder( baseUri );
         String path = baseUri.getPath();
-        path = path.replace( "daily", "monitoring-locations" );
+        path = path.replaceAll( "(?<=collections/)(.*)(?=/items)","monitoring-locations" );
         StringJoiner pathBuilder = new StringJoiner( "/" );
         pathBuilder.add( path );
         if ( !path.endsWith( ITEMS ) )
@@ -791,10 +791,10 @@ public class NwisDvReader implements TimeSeriesReader
 
         if ( !baseUri.toString()
                      .toLowerCase()
-                     .contains( "collections/daily" )
+                     .contains( "collections/" )
              && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "Expected a URI like 'https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily' but got {}.",
+            LOGGER.warn( "Expected a URI like 'https://api.waterdata.usgs.gov/ogcapi/v0/collections/' but got {}.",
                          baseUri );
         }
 

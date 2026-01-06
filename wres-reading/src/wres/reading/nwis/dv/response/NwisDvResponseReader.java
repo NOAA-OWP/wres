@@ -350,6 +350,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
                             .toText();
         Properties properties = feature.getProperties();
         String locationId = properties.getLocationId();
+
         // Format promise is a feature authority or agency code followed by a feature identifier. Remove the authority.
         if ( locationId.contains( "-" ) )
         {
@@ -365,19 +366,45 @@ public class NwisDvResponseReader implements TimeSeriesReader
         wres.datamodel.space.Feature internalFeature = wres.datamodel.space.Feature.of( geometry );
 
         String statistic = properties.getStatistic();
-        TimeScale.TimeScaleFunction scaleFunction = this.getTimeScaleFunction( statistic );
-        Duration period = MessageUtilities.getDuration( java.time.Duration.ofDays( 1 ) );
-        TimeScale timeScale = TimeScale.newBuilder().setFunction( scaleFunction )
-                                       .setPeriod( period )
-                                       .build();
-        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
+        TimeScaleOuter timeScale = this.getTimeScale( statistic );
         TimeSeriesMetadata.Builder builder = new TimeSeriesMetadata.Builder();
         return builder.setFeature( internalFeature )
                       .setVariableName( properties.getParameterCode() )
                       .setUnit( properties.getUnit() )
                       .setReferenceTimes( Map.of() ) // No reference time
-                      .setTimeScale( timeScaleOuter )
+                      .setTimeScale( timeScale )
                       .build();
+    }
+
+    /**
+     * Generates the timescale metadata from the statistic string.
+     * @param statistic the statistic
+     * @return the timescale
+     * @throws NullPointerException if the input is null
+     */
+
+    private TimeScaleOuter getTimeScale( String statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        if ( "00011".equals( statistic ) )
+        {
+            LOGGER.debug( "Detected an instantaneous time-scale with statistic identifier, '00011'." );
+
+            return TimeScaleOuter.of();
+        }
+
+        // There are currently two OGC services, each of which is associated with time-series that that has a fixed
+        // timescale. Since this is not instantaneous data (above), it must be daily data. If other services are added,
+        // this logic will need to become more sophisticated
+        LOGGER.debug( "Assuming that the time-series data has a time-scale of one day." );
+
+        TimeScale.TimeScaleFunction scaleFunction = this.getTimeScaleFunction( statistic );
+        Duration period = MessageUtilities.getDuration( java.time.Duration.ofDays( 1 ) );
+        TimeScale timeScale = TimeScale.newBuilder().setFunction( scaleFunction )
+                                       .setPeriod( period )
+                                       .build();
+        return TimeScaleOuter.of( timeScale );
     }
 
     /**

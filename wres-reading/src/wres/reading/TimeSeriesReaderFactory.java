@@ -129,7 +129,7 @@ public class TimeSeriesReaderFactory
             case GEOJSON ->
             {
                 // A GeoJSON source from USGS NWIS?
-                if ( ReaderUtilities.isNwisDvSource( dataSource ) )
+                if ( ReaderUtilities.isNwisOgcSource( dataSource ) )
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );

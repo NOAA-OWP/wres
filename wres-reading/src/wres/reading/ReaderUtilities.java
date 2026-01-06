@@ -450,12 +450,15 @@ public class ReaderUtilities
     }
 
     /**
+     * Return whether the source points to a National Water Information System (NWIS) Open Geospatial Consortium (OGC)
+     * web service.
+     *
      * @param source the data source
-     * @return whether the source points to the National Water Information System Daily Values (DV) web service
+     * @return whether the service is an NWIS OGC service
      * @throws NullPointerException if the source is null
      */
 
-    public static boolean isNwisDvSource( DataSource source )
+    public static boolean isNwisOgcSource( DataSource source )
     {
         Objects.requireNonNull( source );
 
@@ -470,12 +473,12 @@ public class ReaderUtilities
 
         return ReaderUtilities.isWebSource( uri )
                && Objects.nonNull( uri.getPath() )
+               && uri.getHost()
+                     .toLowerCase()
+                     .contains( "usgs" ) // Host
                && uri.getPath()
                      .toLowerCase()
-                     .contains( "ogcapi" ) // API
-               && uri.getPath()
-                     .toLowerCase()
-                     .contains( "daily" ); // Endpoint
+                     .contains( "ogcapi" ); // API
     }
 
     /**
@@ -929,6 +932,8 @@ public class ReaderUtilities
 
     public static URI getUriWithParameters( URI uri, Map<String, String> urlParameters )
     {
+        LOGGER.debug( "Adding these parameters: {} to this URL: {}", urlParameters, uri );
+
         Objects.requireNonNull( uri );
         Objects.requireNonNull( urlParameters );
 

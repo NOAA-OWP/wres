@@ -581,7 +581,7 @@ public class SourceLoader
                 LOGGER.debug( "Identified a source as a USGS IV source: {}.", dataSource );
                 return DataDisposition.JSON_WATERML;
             }
-            if ( ReaderUtilities.isNwisDvSource( dataSource ) )
+            if ( ReaderUtilities.isNwisOgcSource( dataSource ) )
             {
                 LOGGER.debug( "Identified a source as a USGS DV source: {}.", dataSource );
                 return DataDisposition.GEOJSON;
