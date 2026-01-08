@@ -266,8 +266,10 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         // Log
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      pool.getMetadata().getFeatureGroup(),
-                      pool.getMetadata().getTimeWindow() );
+                      pool.getMetadata()
+                          .getFeatureGroup(),
+                      pool.getMetadata()
+                          .getTimeWindow() );
 
         // Process and return the result
         return futures.build();

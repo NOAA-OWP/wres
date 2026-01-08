@@ -807,7 +807,9 @@ public final class TestDataFactory
     public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsThree()
     {
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
-        values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ), Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
+        values.add( Event.of( Instant.parse( "1985-03-12T00:00:00Z" ),
+                              Pair.of( 22.9, Ensemble.of( new double[] { 22.8, 23.9 },
+                                                          Ensemble.Labels.of( "1", "2" ) ) ) ) );
 
         TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
