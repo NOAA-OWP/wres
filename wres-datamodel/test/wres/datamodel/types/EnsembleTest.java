@@ -304,6 +304,15 @@ final class EnsembleTest
     }
 
     @Test
+    void testDefaultLabels()
+    {
+        Ensemble actual = Ensemble.of( new double[] { 1, 2, 3, 4 }, true );
+        Ensemble expected = Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                         Labels.of( "MEMBER 1", "MEMBER 2", "MEMBER 3", "MEMBER 4" ) );
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void checkForExpectedExceptionOnConstructionWhenThereAreMoreLabelsThanMembers()
     {
         Labels labels = Labels.of( "A", "B" );

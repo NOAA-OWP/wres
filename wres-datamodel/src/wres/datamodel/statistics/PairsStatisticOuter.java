@@ -84,6 +84,12 @@ public class PairsStatisticOuter implements Statistic<PairsStatistic>
                                       .getName() );
 
         builder.append( "metadata", this.getPoolMetadata() );
+        builder.append( "leftNames", this.getStatistic()
+                                         .getStatistics()
+                                         .getLeftVariableNamesList() );
+        builder.append( "rightNames", this.getStatistic()
+                                         .getStatistics()
+                                         .getRightVariableNamesList() );
 
         return builder.toString();
     }

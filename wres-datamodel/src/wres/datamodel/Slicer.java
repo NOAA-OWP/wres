@@ -8,10 +8,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
@@ -491,6 +493,41 @@ public final class Slicer
         return input.stream()
                     .collect( Collectors.groupingBy( pair -> pair.getRight()
                                                                  .size() ) );
+    }
+
+    /**
+     * Enforces a common set of ensemble member labels, padding with missing values where needed.
+     * @param unpadded the unpadded ensemble
+     * @param labels the labels to enforce
+     * @return the padded series
+     */
+
+    public static Ensemble pad( Ensemble unpadded, SortedSet<String> labels )
+    {
+        Objects.requireNonNull( unpadded );
+        Objects.requireNonNull( labels );
+
+        Ensemble.Labels nextLabels = unpadded.getLabels();
+        Set<String> current = new HashSet<>( Arrays.asList( nextLabels.getLabels() ) );
+        Set<String> difference = new HashSet<>( labels );
+        difference.removeAll( current );
+
+        int index = 0;
+        double[] members = new double[labels.size()];
+        for ( String nextLabel : labels )
+        {
+            if ( difference.contains( nextLabel ) )
+            {
+                members[index] = MissingValues.DOUBLE;
+            }
+            else
+            {
+                members[index] = unpadded.getMember( nextLabel );
+            }
+            index++;
+        }
+        Ensemble.Labels newLabels = Ensemble.Labels.of( labels.toArray( new String[0] ) );
+        return Ensemble.of( members, newLabels );
     }
 
     /**

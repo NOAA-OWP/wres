@@ -922,10 +922,10 @@ public final class TimeSeriesSlicer
      *
      * <p>Reference datetimes metadata are lost but ensemble labels are preserved.
      *
-     * @param timeSeries The time-series to decompose
-     * @return A map with the trace label as key, sorted set of Events as value.
-     * @throws UnsupportedOperationException When the ensemble events contain a varying number of members and the 
-     *            ensemble labels have not been provided to distinguish between them.
+     * @param timeSeries the time-series to decompose
+     * @return a map with the trace label as key, sorted set of Events as value
+     * @throws UnsupportedOperationException when the ensemble events contain a varying number of members and the
+     *            ensemble labels have not been provided to distinguish between them
      */
 
     public static Map<Object, SortedSet<Event<Double>>> decomposeWithLabels( TimeSeries<Ensemble> timeSeries )
@@ -946,7 +946,8 @@ public final class TimeSeriesSlicer
         for ( Event<Ensemble> next : timeSeries.getEvents() )
         {
             // No labels, so check for a constant number of ensemble members
-            if ( Objects.nonNull( traceCount ) && next.getValue().size() != traceCount )
+            if ( Objects.nonNull( traceCount ) && next.getValue()
+                                                      .size() != traceCount )
             {
                 throw new UnsupportedOperationException( "Cannot determine the ensemble traces from the input "
                                                          + "time-series because the number of ensemble members "

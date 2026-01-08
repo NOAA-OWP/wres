@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -293,27 +294,41 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         Pool<Pair<Double, Ensemble>> unpacked =
                 this.doWorkWithSlicingExecutor( () -> PoolSlicer.unpack( adjustedPool ) );
 
+        // Remove any missing ensemble members from the unpacked pool only, preserving the original structure for the
+        // time-series metrics. See GitHub #711. This step was previously abstracted to the PoolFactory for performance
+        // reasons when conducting sampling uncertainty estimation. See Redmine #118831-88. However, it is convenient
+        // to preserve the original time-series structure for time-series metrics. This structure cannot be
+        // reconstructed across pools when each pool is processed separately, which may lead to inconsistencies
+        // (e.g., in the ensemble series/labels present across pools). Thus, the filtering was restored here to address
+        // GitHub #711, allowing the unpacked pool to have missing values removed and the timed pool to retain its
+        // original structure.
+        Supplier<Pool<Pair<Double, Ensemble>>> slicingTask =
+                () -> PoolSlicer.transform( unpacked,
+                                            Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue ),
+                                            metaMapper );
+        Pool<Pair<Double, Ensemble>> unpackedNoMissing = this.doWorkWithSlicingExecutor( slicingTask );
 
         LOGGER.debug( "Computing ensemble statistics from {} pairs.",
-                      unpacked.get()
-                              .size() );
+                      unpackedNoMissing.get()
+                                       .size() );
 
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
-            this.processEnsemblePairs( unpacked, futures );
+            this.processEnsemblePairs( unpackedNoMissing, futures );
         }
 
         // Process the metrics that consume time-series of ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE_TIME_SERIES ) )
         {
+            // Note that missing values are still in place for this dataset. See above and GitHub #711.
             this.processEnsembleTimeSeriesPairs( adjustedPool, futures );
         }
 
         // Process the metrics that consume discrete probability pairs derived from the ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
         {
-            this.processDiscreteProbabilityPairs( unpacked, futures );
+            this.processDiscreteProbabilityPairs( unpackedNoMissing, futures );
         }
 
         // Process the metrics that consume dichotomous pairs derived from the ensemble pairs
@@ -323,7 +338,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             LOGGER.debug( "Encountered dichotomous metrics and decision thresholds, which means that dichtomous "
                           + "metrics will be computed for the ensemble pairs." );
 
-            this.processPairsForDichotomousMetrics( unpacked, futures );
+            this.processPairsForDichotomousMetrics( unpackedNoMissing, futures );
         }
 
         // Process the ensemble result, which do not yet include single-valued metrics
@@ -850,7 +865,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                     StatisticsStore.Builder futures )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.get().isEmpty() )
+        if ( pairs.get()
+                  .isEmpty() )
         {
             LOGGER.debug( SKIPPING_THE_CALCULATION_OF_STATISTICS_FOR_AN_EMPTY_POOL_OF_PAIRS_WITH_METADATA,
                           pairs.getMetadata() );

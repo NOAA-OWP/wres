@@ -1247,11 +1247,14 @@ public final class MetricTestDataFactory
     {
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
         values.add( Event.of( Instant.parse( "1985-03-13T00:00:00Z" ),
-                              Pair.of( 22.9, Ensemble.of( 22.8, 23.9 ) ) ) );
+                              Pair.of( 22.9, Ensemble.of( new double[] { 22.8, 23.9 },
+                                                          Ensemble.Labels.of( "1", "2" ) ) ) ) );
         values.add( Event.of( Instant.parse( "1985-03-13T06:00:00Z" ),
-                              Pair.of( 26.4, Ensemble.of( 23.8, 23.7 ) ) ) );
+                              Pair.of( 26.4, Ensemble.of( new double[] { 23.8, 23.7 },
+                                                          Ensemble.Labels.of( "1", "2" ) ) ) ) );
         values.add( Event.of( Instant.parse( "1985-03-13T12:00:00Z" ),
-                              Pair.of( 23.2, Ensemble.of( 16.1, 18.4 ) ) ) );
+                              Pair.of( 23.2, Ensemble.of( new double[] { 16.1, 18.4 },
+                                                          Ensemble.Labels.of( "1", "2" ) ) ) ) );
 
         TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                            Instant.parse( SECOND_TIME ),
@@ -1278,6 +1281,64 @@ public final class MetricTestDataFactory
         Instant refTime = Instant.parse( "1985-03-12T18:00:00Z" );
         TimeSeriesMetadata metadata = MetricTestDataFactory.getBoilerplateMetadataWithT0( refTime );
         return builder.addData( TimeSeries.of( metadata, values ) )
+                      .setMetadata( meta )
+                      .build();
+    }
+
+    /**
+     * Returns a set of ensemble pairs with two time-series, each containing a different number of ensemble members and
+     * no baseline.
+     *
+     * @return ensemble pairs
+     */
+
+    public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsThree()
+    {
+        SortedSet<Event<Pair<Double, Ensemble>>> valuesOne = new TreeSet<>();
+        valuesOne.add( Event.of( Instant.parse( "1985-03-13T00:00:00Z" ),
+                                 Pair.of( 22.9, Ensemble.of( new double[] { 22.8, 23.9 },
+                                                             Ensemble.Labels.of( "1", "2" ) ) ) ) );
+        valuesOne.add( Event.of( Instant.parse( "1985-03-13T12:00:00Z" ),
+                                 Pair.of( 23.2, Ensemble.of( new double[] { 16.1, 18.4 },
+                                                             Ensemble.Labels.of( "1", "2" ) ) ) ) );
+
+        SortedSet<Event<Pair<Double, Ensemble>>> valuesTwo = new TreeSet<>();
+        valuesTwo.add( Event.of( Instant.parse( "1985-03-13T06:00:00Z" ),
+                                 Pair.of( 26.4, Ensemble.of( new double[] { 23.8, 23.7, 32.5 },
+                                                             Ensemble.Labels.of( "1", "2", "3" ) ) ) ) );
+
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                           Instant.parse( SECOND_TIME ),
+                                                           Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
+
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( MM_DAY )
+                                          .build();
+
+        Pool pool = MessageFactory.getPool( featureGroup,
+                                            window,
+                                            null,
+                                            null,
+                                            false );
+
+        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
+
+        Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
+
+        Instant refTime = Instant.parse( "1985-03-12T18:00:00Z" );
+        TimeSeriesMetadata metadata = MetricTestDataFactory.getBoilerplateMetadataWithT0( refTime );
+        TimeSeries<Pair<Double, Ensemble>> seriesOne = TimeSeries.of( metadata, valuesOne );
+
+        Instant refTimeTwo = Instant.parse( "1985-03-13T18:00:00Z" );
+        TimeSeriesMetadata metadataTwo = MetricTestDataFactory.getBoilerplateMetadataWithT0( refTimeTwo );
+        TimeSeries<Pair<Double, Ensemble>> seriesTwo = TimeSeries.of( metadataTwo, valuesTwo );
+
+        return builder.addData( seriesOne )
+                      .addData( seriesTwo )
                       .setMetadata( meta )
                       .build();
     }

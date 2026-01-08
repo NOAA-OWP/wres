@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
@@ -874,6 +875,25 @@ class SlicerTest
                    () -> assertEquals( 12.0, transformerTwo.applyAsDouble( 16.0 ), 1 ),
                    () -> assertEquals( 12.0, transformerThree.applyAsDouble( 16.0 ), 1 ),
                    () -> assertEquals( 99.0, transformerThree.applyAsDouble( 24.0 ), 1 ) );
+    }
+
+    @Test
+    void testPad()
+    {
+        Labels labels = Labels.of( "2", "3" );
+        Ensemble unpadded = Ensemble.of( new double[] { 2, 3 },
+                                         labels );
+        SortedSet<String> expandedLabels = new TreeSet<>();
+        expandedLabels.add( "1" );
+        expandedLabels.add( "2" );
+        expandedLabels.add( "3" );
+        expandedLabels.add( "4" );
+
+        Ensemble actual = Slicer.pad( unpadded, expandedLabels );
+        Labels expectedLabels = Labels.of( "1", "2", "3", "4" );
+        Ensemble expected = Ensemble.of( new double[] { MissingValues.DOUBLE, 2, 3, MissingValues.DOUBLE },
+                                         expectedLabels );
+        assertEquals( expected, actual );
     }
 
 }
