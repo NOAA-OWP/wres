@@ -12,8 +12,8 @@ import wres.reading.fews.PublishedInterfaceXmlReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.netcdf.nwm.NwmGridReader;
 import wres.reading.netcdf.nwm.NwmVectorReader;
-import wres.reading.nwis.dv.NwisDvReader;
-import wres.reading.nwis.dv.response.NwisDvResponseReader;
+import wres.reading.nwis.ogc.NwisReader;
+import wres.reading.nwis.ogc.response.NwisResponseReader;
 import wres.reading.nwis.iv.response.NwisIvResponseReader;
 import wres.reading.nwis.iv.NwisIvReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
@@ -50,7 +50,7 @@ public class TimeSeriesReaderFactory
     private static final NwisIvResponseReader NWIS_IV_RESPONSE_READER = NwisIvResponseReader.of();
 
     /** NWIS DV response reader. */
-    private static final NwisDvResponseReader NWIS_DV_RESPONSE_READER = NwisDvResponseReader.of();
+    private static final NwisResponseReader NWIS_DV_RESPONSE_READER = NwisResponseReader.of();
 
     /** WRDS AHPS JSON reader. */
     private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
@@ -133,7 +133,7 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
-                    return NwisDvReader.of( this.getDeclaration(), this.systemSettings );
+                    return NwisReader.of( this.getDeclaration(), this.systemSettings );
                 }
                 // A reader for USGS-formatted GeoJSON, but not from a NWIS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted GeoJSON from a "

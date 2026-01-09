@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv.response;
+package wres.reading.nwis.ogc.response;
 
 import java.util.Objects;
 

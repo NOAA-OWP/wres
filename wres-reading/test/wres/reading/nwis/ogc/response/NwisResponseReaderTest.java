@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv.response;
+package wres.reading.nwis.ogc.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,14 +33,14 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale;
 
 /**
- * Tests the {@link NwisDvResponseReader}.
+ * Tests the {@link NwisResponseReader}.
  *
  * @author James Brown
  */
-class NwisDvResponseReaderTest
+class NwisResponseReaderTest
 {
-    /** An example response. */
-    private static final String RESPONSE = """
+    /** An example response from the daily values service. */
+    private static final String DAILY_VALUES_RESPONSE = """
             {
               "type": "FeatureCollection",
               "features": [
@@ -312,12 +312,82 @@ class NwisDvResponseReaderTest
             }
             """;
 
-    @Test
-    void testRead() throws IOException
-    {
-        try ( InputStream inputStream = new ByteArrayInputStream( RESPONSE.getBytes() ) )
-        {
+    /** An example response from the continuous values service. */
+    private static final String CONTINUOUS_VALUES_RESPONSE = """
+            {
+                "type":"FeatureCollection",
+                "features":[
+                    {
+                        "type":"Feature",
+                        "properties":{
+                            "time_series_id":"37e0d79fca1a4723a89a5670ba09f8b4",
+                            "monitoring_location_id":"USGS-09165000",
+                            "statistic_id":"00011",
+                            "value":"14.5",
+                            "parameter_code":"00060",
+                            "time":"2020-01-01T10:00:00+00:00",
+                            "unit_of_measure":"ft^3/s"
+                        },
+                        "id":"13e654ff-b239-4917-9555-10d3eb528233",
+                        "geometry":null
+                    },
+                    {
+                        "type":"Feature",
+                        "properties":{
+                            "time_series_id":"37e0d79fca1a4723a89a5670ba09f8b4",
+                            "monitoring_location_id":"USGS-09165000",
+                            "statistic_id":"00011",
+                            "value":"15.3",
+                            "parameter_code":"00060",
+                            "time":"2020-01-01T22:00:00+00:00",
+                            "unit_of_measure":"ft^3/s"
+                        },
+                        "id":"70bad181-b876-4dbf-8820-0797757ed6d9",
+                        "geometry":null
+                    }
+                ],
+                "numberReturned":2,
+                "links": [
+                  {
+                    "rel": "next",
+                    "href": "https://foo/next.link",
+                    "type": "application/geo+json",
+                    "title": "Items (next)"
+                  },
+                  {
+                    "type": "application/geo+json",
+                    "rel": "self",
+                    "title": "This document as GeoJSON",
+                    "href": "https://foo/self.link"
+                  },
+                  {
+                    "rel": "alternate",
+                    "type": "application/ld+json",
+                    "title": "This document as RDF (JSON-LD)",
+                    "href": "https://foo/alternate.link"
+                  },
+                  {
+                    "type": "text/html",
+                    "rel": "alternate",
+                    "title": "This document as HTML",
+                    "href": "foo/alternate_html.link"
+                  },
+                  {
+                    "type": "application/json",
+                    "title": "Daily values",
+                    "rel": "collection",
+                    "href": "foo/collection.link"
+                  }
+                ],
+                "timeStamp":"2026-01-08T17:02:34.732278Z"
+            }
+            """;
 
+    @Test
+    void testReadDailyValues() throws IOException
+    {
+        try ( InputStream inputStream = new ByteArrayInputStream( DAILY_VALUES_RESPONSE.getBytes() ) )
+        {
             URI fakeUri = URI.create( "http://foo" );
 
             Source fakeDeclarationSource = SourceBuilder.builder()
@@ -338,7 +408,7 @@ class NwisDvResponseReaderTest
                                               .datasetOrientation( DatasetOrientation.LEFT )
                                               .build();
 
-            NwisDvResponseReader reader = NwisDvResponseReader.of();
+            NwisResponseReader reader = NwisResponseReader.of();
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
                                                  .toList();
@@ -389,6 +459,73 @@ class NwisDvResponseReaderTest
                                                                          179.0 ) )
                                                     .addEvent( Event.of( Instant.parse( "2024-03-16T00:00:00Z" ),
                                                                          70.7 ) )
+                                                    .build();
+
+            // Make assertions about the data source and the series content
+            assertAll( () -> assertEquals( "https://foo/next.link",
+                                           series.get( 0 )
+                                                 .getDataSource()
+                                                 .nextPage()
+                                                 .toString() ),
+                       () -> assertEquals( expected, actual ) );
+        }
+    }
+
+    @Test
+    void testReadContinuousValues() throws IOException
+    {
+        try ( InputStream inputStream = new ByteArrayInputStream( CONTINUOUS_VALUES_RESPONSE.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "http://foo" );
+
+            Source fakeDeclarationSource = SourceBuilder.builder()
+                                                        .uri( fakeUri )
+                                                        .timeZoneOffset( ZoneOffset.UTC )
+                                                        .build();
+
+            Dataset dataset = DatasetBuilder.builder()
+                                            .sources( List.of( fakeDeclarationSource ) )
+                                            .build();
+
+            DataSource dataSource = DataSource.builder()
+                                              .disposition( DataSource.DataDisposition.GEOJSON )
+                                              .source( fakeDeclarationSource )
+                                              .context( dataset )
+                                              .links( Collections.emptyList() )
+                                              .uri( fakeUri )
+                                              .datasetOrientation( DatasetOrientation.LEFT )
+                                              .build();
+
+            NwisResponseReader reader = NwisResponseReader.of();
+
+            List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
+                                                 .toList();
+
+            assertEquals( 1, series.size() );
+
+            TimeSeries<Double> actual = series.get( 0 )
+                                              .getSingleValuedTimeSeries();
+
+            Geometry expectedGeometry = Geometry.newBuilder()
+                                                .setName( "09165000" )
+                                                .build();
+            Feature expectedFeature = Feature.of( expectedGeometry );
+
+            TimeScaleOuter expectedTimeScaleOuter = TimeScaleOuter.of();
+
+            TimeSeriesMetadata expectedMetadata =
+                    new TimeSeriesMetadata.Builder().setReferenceTimes( Map.of() )
+                                                    .setUnit( "ft^3/s" )
+                                                    .setVariableName( "00060" )
+                                                    .setTimeScale( expectedTimeScaleOuter )
+                                                    .setFeature( expectedFeature )
+                                                    .build();
+            TimeSeries<Double> expected =
+                    new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-01T10:00:00Z" ),
+                                                                         14.5 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-01T22:00:00Z" ),
+                                                                         15.3 ) )
                                                     .build();
 
             // Make assertions about the data source and the series content

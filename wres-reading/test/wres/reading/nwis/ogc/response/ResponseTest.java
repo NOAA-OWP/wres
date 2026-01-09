@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv.response;
+package wres.reading.nwis.ogc.response;
 
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;

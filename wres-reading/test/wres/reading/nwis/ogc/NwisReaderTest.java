@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv;
+package wres.reading.nwis.ogc;
 
 import java.net.URI;
 import java.time.Duration;
@@ -55,12 +55,12 @@ import wres.statistics.generated.TimeScale;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link NwisDvReader}.
+ * Tests the {@link NwisReader}.
  *
  * @author James Brown
  */
 
-class NwisDvReaderTest
+class NwisReaderTest
 {
     /** Mocker server instance. */
     private ClientAndServer mockServer;
@@ -869,7 +869,7 @@ class NwisDvReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisDvReader reader = NwisDvReader.of( declaration, systemSettings );
+        NwisReader reader = NwisReader.of( declaration, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -986,7 +986,7 @@ class NwisDvReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisDvReader reader = NwisDvReader.of( declaration, systemSettings );
+        NwisReader reader = NwisReader.of( declaration, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1105,7 +1105,7 @@ class NwisDvReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisDvReader reader = NwisDvReader.of( declaration, systemSettings );
+        NwisReader reader = NwisReader.of( declaration, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1240,7 +1240,7 @@ class NwisDvReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisDvReader reader = NwisDvReader.of( declaration, systemSettings );
+        NwisReader reader = NwisReader.of( declaration, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1394,7 +1394,7 @@ class NwisDvReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        NwisDvReader reader = NwisDvReader.of( declaration, systemSettings );
+        NwisReader reader = NwisReader.of( declaration, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

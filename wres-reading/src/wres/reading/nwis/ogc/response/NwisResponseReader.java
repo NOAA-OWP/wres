@@ -1,4 +1,4 @@
-package wres.reading.nwis.dv.response;
+package wres.reading.nwis.ogc.response;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +51,8 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale;
 
 /**
- * <p>Reads time-series data responses from the National Water Information System (NWIS) Daily Values (DV) web service.
+ * <p>Reads time-series data responses from the National Water Information System (NWIS) Open Geospatial Consortium
+ * (OGC) web services. Supported responses include daily values and instantaneous or continuous values.
  *
  * <p>Implementation notes:
  *
@@ -59,22 +61,22 @@ import wres.statistics.generated.TimeScale;
  * at read time should be supplied on construction. This includes any information that is obtained from a separate
  * endpoint of the web API, which could be provided as a deferred function call (i.e., {@link Supplier}), for example.
  * Currently, this reader is not embellished with any external information supplied on construction, but does require
- * the {@link DataSource} that is supplied at read time to contain a {@link ZoneOffset} or {@link TimeZone}, which may
- * be obtained externally or declared by a user. While there is no constraint, in principle, about the number of
- * geographic features represented in the data stream read by a single instance of this reader, the NWIS DV service
- * does not provide fully-qualified offset datetimes, rather dates that represent values ending at midnight in local
- * time. This, any timing information must be obtained, indirectly, and supplied via the {@link DataSource}. As such,
- * a single call to this reader is, in practice, constrained to reading information that spans a single time zone,
- * otherwise the standard times supplied in the resulting time-series will be inaccurate. This should be contrasted
- * with the timing information supplied by other NWIS services, such as the instantaneous or continues values service,
- * which provide responses with complete offset datetimes.
+ * the {@link DataSource} that is supplied at read time to contain a {@link ZoneOffset} or {@link TimeZone}.
+ * Specifically, this is required when reading daily values because the associated datetimes are local times, rather
+ * than offset times. While there is no constraint, in principle, about the number of geographic features represented
+ * in the data stream read by a single instance of this reader, any required time zone information must be obtained,
+ * indirectly, and supplied via the {@link DataSource}. As such, when reading daily values, a single call to this
+ * reader is, in practice, constrained to reading information that spans a single time zone, otherwise the standard
+ * times supplied in the resulting time-series will be inaccurate. Since this reader has no knowledge of the service
+ * that produced the response, time zone information is always required, but this information is ignored when reading
+ * the offset datetimes associated with continuous values.
  *
  * @author James Brown
  */
-public class NwisDvResponseReader implements TimeSeriesReader
+public class NwisResponseReader implements TimeSeriesReader
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( NwisDvResponseReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( NwisResponseReader.class );
 
     /** Maps GeoJSON bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
@@ -88,9 +90,9 @@ public class NwisDvResponseReader implements TimeSeriesReader
      * @return an instance
      */
 
-    public static NwisDvResponseReader of()
+    public static NwisResponseReader of()
     {
-        return new NwisDvResponseReader();
+        return new NwisResponseReader();
     }
 
     @Override
@@ -109,7 +111,8 @@ public class NwisDvResponseReader implements TimeSeriesReader
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read a GeoJSON data source.", e );
+            throw new ReadException( "Failed to read a GeoJSON data source formatted for the USGS National Water "
+                                     + "Information System.", e );
         }
     }
 
@@ -134,7 +137,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataSource.DataDisposition.GEOJSON );
 
-        // Validate the time zone offset, which is required to read from the NWIS DV service
+        // Validate the time zone offset, which is required to read data
         this.validateTimeZoneOffsetPresent( dataSource );
 
         // Get the lazy supplier of time-series data
@@ -233,11 +236,11 @@ public class NwisDvResponseReader implements TimeSeriesReader
             // Some time-series with data
             if ( response.getNumberReturned() > 0 )
             {
-                Map<String, List<wres.reading.nwis.dv.response.Feature>> bySeries =
+                Map<String, List<wres.reading.nwis.ogc.response.Feature>> bySeries =
                         Arrays.stream( response.getFeatures() )
                               .collect( Collectors.groupingBy( f -> f.getProperties()
                                                                      .getTimeSeriesId() ) );
-                for ( List<wres.reading.nwis.dv.response.Feature> nextValues : bySeries.values() )
+                for ( List<wres.reading.nwis.ogc.response.Feature> nextValues : bySeries.values() )
                 {
                     TimeSeriesTuple nextSeries = this.transform( dataSource, nextValues, response.getLinks() );
                     allTimeSeries.add( nextSeries );
@@ -255,7 +258,8 @@ public class NwisDvResponseReader implements TimeSeriesReader
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read the GeoJSON data stream.", e );
+            throw new ReadException( "Failed to read a GeoJSON data stream formatted for the USGS National Water "
+                                     + "Information System.", e );
         }
     }
 
@@ -267,7 +271,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
      * @return the internal time-series
      */
     private TimeSeriesTuple transform( DataSource dataSource,
-                                       List<wres.reading.nwis.dv.response.Feature> timeSeries,
+                                       List<wres.reading.nwis.ogc.response.Feature> timeSeries,
                                        Link[] links )
     {
         // Get the link to the next page of data
@@ -313,23 +317,9 @@ public class NwisDvResponseReader implements TimeSeriesReader
         {
             Properties properties = nextValue.getProperties();
             double value = properties.getValue();
-            LocalDate date = LocalDate.parse( properties.getTime() );
 
-            // Values are midnight in local time
-            LocalDateTime time = LocalDateTime.of( date, LocalTime.MIDNIGHT );
-            Instant instant;
-
-            // Full time zone information supplied
-            if ( Objects.nonNull( timeZone ) )
-            {
-                instant = time.atZone( timeZone.toZoneId() )
-                              .toInstant();
-            }
-            // Partial information supplied, a zone offset only
-            else
-            {
-                instant = time.toInstant( zoneOffset );
-            }
+            String time = properties.getTime();
+            Instant instant = this.getTimeInstant( time, zoneOffset, timeZone );
 
             Event<Double> nextEvent = DoubleEvent.of( instant, value );
             events.add( nextEvent );
@@ -339,15 +329,58 @@ public class NwisDvResponseReader implements TimeSeriesReader
     }
 
     /**
+     * Parses a time, which is either a local time or an offset time.
+     *
+     * @param time the raw datetime
+     * @param zoneOffset the time zone offset only
+     * @param timeZone the complete time zone information
+     * @return the instant
+     */
+
+    private Instant getTimeInstant( String time,
+                                    ZoneOffset zoneOffset,
+                                    TimeZone timeZone )
+    {
+        Instant instant;
+
+        // Offset time or local time?
+        if ( time.contains( "+" ) )
+        {
+            OffsetDateTime offsetTime = OffsetDateTime.parse( time );
+            instant = offsetTime.toInstant();
+        }
+        else
+        {
+
+            LocalDate date = LocalDate.parse( time );
+
+            // Values are midnight in local time
+            LocalDateTime localTime = LocalDateTime.of( date, LocalTime.MIDNIGHT );
+
+            // Full time zone information supplied
+            if ( Objects.nonNull( timeZone ) )
+            {
+                instant = localTime.atZone( timeZone.toZoneId() )
+                                   .toInstant();
+            }
+            // Partial information supplied, a zone offset only
+            else
+            {
+                instant = localTime.toInstant( zoneOffset );
+            }
+        }
+
+        return instant;
+    }
+
+    /**
      * Generates a {@link TimeSeriesMetadata} from the input.
      * @param feature the feature source
      * @return the time-series metadata
      */
 
-    private TimeSeriesMetadata getTimeSeriesMetadata( wres.reading.nwis.dv.response.Feature feature )
+    private TimeSeriesMetadata getTimeSeriesMetadata( wres.reading.nwis.ogc.response.Feature feature )
     {
-        String wkt = feature.getGeometry()
-                            .toText();
         Properties properties = feature.getProperties();
         String locationId = properties.getLocationId();
 
@@ -357,11 +390,20 @@ public class NwisDvResponseReader implements TimeSeriesReader
             locationId = locationId.substring( locationId.lastIndexOf( "-" ) + 1 );
         }
 
+        String wkt = "";
+        int srid = 0;
+        if ( Objects.nonNull( feature.getGeometry() ) )
+        {
+            wkt = feature.getGeometry()
+                         .toText();
+            srid = feature.getGeometry()
+                          .getSRID();
+        }
+
         Geometry geometry = Geometry.newBuilder()
                                     .setName( locationId )
                                     .setWkt( wkt )
-                                    .setSrid( feature.getGeometry()
-                                                     .getSRID() )
+                                    .setSrid( srid )
                                     .build();
         wres.datamodel.space.Feature internalFeature = wres.datamodel.space.Feature.of( geometry );
 
@@ -422,7 +464,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
             case "00006" -> TimeScale.TimeScaleFunction.TOTAL;
             default ->
             {
-                LOGGER.trace( "Encountered an unknown time-scale function when reading NWIS daily values: {}",
+                LOGGER.trace( "Encountered an unknown time-scale function when reading time-series values: {}",
                               statistic );
                 yield TimeScale.TimeScaleFunction.UNKNOWN;
             }
@@ -442,8 +484,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
                                           .timeZone() ) )
         {
             throw new ReadException( "The time zone or, minimally, the time zone offset must be supplied when reading "
-                                     + "time-series data from the National Water Information System Daily Values web "
-                                     + "service for a particular geographic feature." );
+                                     + "time-series data from the USGS National Water Information System." );
         }
     }
 
@@ -451,7 +492,7 @@ public class NwisDvResponseReader implements TimeSeriesReader
      * Hidden constructor.
      */
 
-    private NwisDvResponseReader()
+    private NwisResponseReader()
     {
     }
 }
