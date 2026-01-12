@@ -443,6 +443,7 @@ public class NwisReader implements TimeSeriesReader
 
     private List<TimeSeriesTuple> readOnePage( DataSource dataSource )
     {
+        // Unpack an HTTP 429 response code and report
         Function<WebClient.ClientResponse, String> errorUnpacker = response ->
         {
             if ( response.getStatusCode() == 429 )
@@ -459,8 +460,8 @@ public class NwisReader implements TimeSeriesReader
                 else
                 {
                     extra = " An API key (system property: nwis.wresApiKey) was discovered. As such, the rate limit "
-                            + "you have exceeded is already a boosted rate limit and no further actions can be "
-                            + "taken. The rate limit will reset after a short period.";
+                            + "you have exceeded is already a boosted rate limit and no further action can be taken. "
+                            + "The rate limit will reset after a short period.";
                 }
 
                 return "Encountered an HTTP 429 Error, which happens when you request too much data from the "
