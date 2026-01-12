@@ -105,7 +105,7 @@ public class NwisReader implements TimeSeriesReader
     private static final NwisResponseReader GEOJSON_READER = NwisResponseReader.of();
 
     /** Message string. */
-    private static final String USGS_NWIS = "USGS NWIS";
+    private static final String USGS_NWIS = "USGS National Water Information System";
 
     /** The HTTP response codes considered to represent no data. */
     private static final IntPredicate NO_DATA_PREDICATE = c -> c == 404;
@@ -173,8 +173,8 @@ public class NwisReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
 
-        LOGGER.debug( "Preparing requests for the USGS NWIS that chunk the time-series data by feature and "
-                      + "time range." );
+        LOGGER.debug( "Preparing requests for the {} that chunk the time-series data by feature and "
+                      + "time range.", USGS_NWIS );
 
         return this.read( dataSource, this.getDeclaration() );
     }
@@ -191,8 +191,8 @@ public class NwisReader implements TimeSeriesReader
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream )
     {
-        LOGGER.debug( "Discovered an existing stream, assumed to be from a USGS NWIS DV service instance. Passing "
-                      + "through to an underlying GeoJSON reader." );
+        LOGGER.debug( "Discovered an existing stream, assumed to be from the {}. Passing through to an underlying "
+                      + "GeoJSON reader.", USGS_NWIS );
 
         return GEOJSON_READER.read( dataSource, stream );
     }
@@ -417,7 +417,7 @@ public class NwisReader implements TimeSeriesReader
                 }
                 catch ( URISyntaxException e )
                 {
-                    throw new ReadException( "While reading from the USGS National Water Information System, failed to "
+                    throw new ReadException( "While reading from the " + USGS_NWIS + ", failed to "
                                              + "adjust a base URI to add the format specification.", e );
                 }
             }
@@ -459,7 +459,7 @@ public class NwisReader implements TimeSeriesReader
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read from the USGS National Water Information System.", e );
+            throw new ReadException( "Failed to read from the " + USGS_NWIS + ".", e );
         }
     }
 
@@ -490,11 +490,11 @@ public class NwisReader implements TimeSeriesReader
                 if ( remainingInt % 10 == 0
                      && ( remainingInt / ( double ) limitInt ) <= 0.1 )
                 {
-                    LOGGER.warn( "Requests to NWIS services are rate limited. The rate limit is {} and there are only "
+                    LOGGER.warn( "Requests to the {} are rate limited. The rate limit is {} and there are only "
                                  + "{} requests remaining before rate limiting begins, which will result in an HTTP "
                                  + "429 error and a failed evaluation. The rate limit resets periodically. For more "
                                  + "information on acceptable use of NWIS services, please visit: "
-                                 + "https://api.waterdata.usgs.gov/docs/ogcapi/", limitInt, remainingInt );
+                                 + "https://api.waterdata.usgs.gov/docs/ogcapi/", USGS_NWIS, limitInt, remainingInt );
                 }
             }
             catch ( NumberFormatException e )
@@ -650,9 +650,10 @@ public class NwisReader implements TimeSeriesReader
             if ( Objects.isNull( featureMetadata )
                  && Objects.nonNull( source.timeZoneOffset() ) )
             {
-                LOGGER.warn( "When reading data from the USGS National Water Information System, failed to identify "
-                             + "the time zone information for geographic feature, '{}', from {}. However, discovered a "
-                             + "declared 'time_zone_offset' of {}. This offset will be applied when reading data.",
+                LOGGER.warn( "When reading data from the {}, failed to identify the time zone information for "
+                             + "geographic feature, '{}', from {}. However, discovered a declared 'time_zone_offset' "
+                             + "of {}. This offset will be applied when reading data.",
+                             USGS_NWIS,
                              featureId,
                              uriBuilder.build(),
                              source.timeZoneOffset() );
@@ -660,14 +661,15 @@ public class NwisReader implements TimeSeriesReader
             }
             else if ( Objects.isNull( featureMetadata ) )
             {
-                throw new ReadException( "When reading data from the USGS National Water Information System, failed to "
-                                         + "identify the time zone information for geographic feature, '"
+                throw new ReadException( "When reading data from the "
+                                         + USGS_NWIS
+                                         + ", failed to identify the time zone information for geographic feature, '"
                                          + featureId
                                          + "' from "
                                          + uriBuilder.build()
-                                         + ". Furthermore, there was no declared "
-                                         + "'time_zone_offset'. Please declare the 'time_zone_offset' to clarify the "
-                                         + "timing information for this data source and try again." );
+                                         + ". Furthermore, there was no declared 'time_zone_offset'. Please declare "
+                                         + "the 'time_zone_offset' to clarify the timing information for this data "
+                                         + "source and try again." );
             }
             else
             {
@@ -719,14 +721,14 @@ public class NwisReader implements TimeSeriesReader
         {
             if ( Objects.nonNull( source.timeZoneOffset() ) )
             {
-                LOGGER.warn(
-                        "When reading data from the USGS National Water Information System for geographic feature, "
-                        + "'{}', discovered a declared 'time_zone_offset' of {}. This offset will be ignored "
-                        + "because the data declared its own time zone shorthand of '{}'. If you intended to "
-                        + "shift the times to allow for pairing, then please declare a 'time_shift' instead.",
-                        featureId,
-                        source.timeZoneOffset(),
-                        zoneId );
+                LOGGER.warn( "When reading data from the {} for geographic feature, '{}', discovered a declared "
+                             + "'time_zone_offset' of {}. This offset will be ignored because the data declared its "
+                             + "own time zone shorthand of '{}'. If you intended to shift the times to allow for "
+                             + "pairing, then please declare a 'time_shift' instead.",
+                             USGS_NWIS,
+                             featureId,
+                             source.timeZoneOffset(),
+                             zoneId );
             }
 
             // If no daylight savings, use the raw offset, else the full time zone
@@ -835,8 +837,9 @@ public class NwisReader implements TimeSeriesReader
             }
             catch ( URISyntaxException e )
             {
-                throw new ReadException( "While reading time-series data from the USGS National Water Information "
-                                         + "System, failed to adjust a base URI to add the /items path element.", e );
+                throw new ReadException( "While reading time-series data from the "
+                                         + USGS_NWIS
+                                         + ", failed to adjust a base URI to add the /items path element.", e );
             }
         }
 
@@ -898,14 +901,25 @@ public class NwisReader implements TimeSeriesReader
 
         String apiKey = System.getProperty( "wres.nwisApiKey" );
 
-        if ( Objects.nonNull( apiKey ) )
+        if ( this.hasApiKey() )
         {
-            LOGGER.debug( "Discovered a user-supplied API key for the USGS NWIS, which will be added to the request "
-                          + "using the 'api_key' parameter." );
+            LOGGER.debug( "Discovered a user-supplied API key for the {}, which will be added to the request "
+                          + "using the 'api_key' parameter.", USGS_NWIS );
             urlParameters.put( "api_key", apiKey );
         }
 
         return Collections.unmodifiableMap( urlParameters );
+    }
+
+    /**
+     * @return whether an API key has been defined
+     */
+
+    private boolean hasApiKey()
+    {
+        String apiKey = System.getProperty( "wres.nwisApiKey" );
+
+        return Objects.nonNull( apiKey );
     }
 
     /**

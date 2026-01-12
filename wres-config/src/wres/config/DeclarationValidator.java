@@ -5364,6 +5364,43 @@ public class DeclarationValidator
                 oneOf.add( event );
             }
 
+            // Warn about rating limiting with the new NWIS OGC APIs
+            if ( Objects.nonNull( source.uri() )
+                 && Objects.nonNull( source.uri()
+                                           .getHost() )
+                 && Objects.nonNull( source.uri()
+                                           .getPath() )
+                 && DeclarationValidator.isWebSource( source )
+                 && source.uri()
+                          .getHost()
+                          .contains( "usgs" )
+                 && source.uri()
+                          .getPath()
+                          .contains( "ogcapi" )
+                 && Objects.isNull( System.getProperty( "wres.nwisApiKey" ) ) )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( DISCOVERED_ONE_OR_MORE
+                                                               + orientation
+                                                               + "' data sources whose URI looks like a request to a "
+                                                               + "USGS National Water Information System OGC web "
+                                                               + "service, yet no API Key (system property: "
+                                                               + "wres.nwisApiKey) was discovered. The NWIS OGC web "
+                                                               + "services are rate limited. Without an API key to "
+                                                               + "boost your rate limit, you may reach this limit "
+                                                               + "quickly. This could lead to an HTTP 429 error when "
+                                                               + "attempting to read data from NWIS, which will, in "
+                                                               + "turn, cause your evaluation to fail. It is strongly "
+                                                               + "recommended that you acquire an API key from the USGS "
+                                                               + "(https://api.waterdata.usgs.gov/signup/) and supply "
+                                                               + "this key to the WRES using the system property, "
+                                                               + "wres.nwisApiKey." )
+                                             .build();
+                oneOf.add( event );
+            }
+
             // Warn about unit
             if ( Objects.nonNull( source.unit() ) )
             {

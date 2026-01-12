@@ -1176,6 +1176,33 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testMissingApiKeyWithNwisOgcSourceResultsInWarning()
+    {
+        Source source = SourceBuilder.builder()
+                                     .uri( URI.create( "http://foo.usgs/ogcapi/bar" ) )
+                                     .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, " looks like a request to a USGS National "
+                                                               + "Water Information System OGC web service, yet no API "
+                                                               + "Key",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testMissingFeaturesAndNwmInterfaceResultsInErrors()
     {
         Source source = SourceBuilder.builder()
