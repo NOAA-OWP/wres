@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -115,6 +116,9 @@ public class NwisReader implements TimeSeriesReader
 
     /** Number of time-series values per page. */
     private static final int DEFAULT_PAGE_SIZE = 10000;
+
+    /** Re-used string. */
+    public static final String WRES_NWIS_API_KEY = "wres.nwisApiKey";
 
     /** Cache of time zones for re-use. */
     private final Cache<@NonNull String, Pair<TimeZone, ZoneOffset>> timeZoneCache =
@@ -439,11 +443,38 @@ public class NwisReader implements TimeSeriesReader
 
     private List<TimeSeriesTuple> readOnePage( DataSource dataSource )
     {
+        Function<WebClient.ClientResponse, String> errorUnpacker = response ->
+        {
+            if ( response.getStatusCode() == 429 )
+            {
+                String extra;
+
+                if ( Objects.isNull( System.getProperty( WRES_NWIS_API_KEY ) ) )
+                {
+                    extra = " No API key (system property: nwis.wresApiKey) was discovered. It is strongly "
+                            + "recommended that you acquire an API key from the USGS "
+                            + "(https://api.waterdata.usgs.gov/signup/) and supply this key to the WRES using the "
+                            + "system property, wres.nwisApiKey, which will increase your rate limit.";
+                }
+                else
+                {
+                    extra = " An API key (system property: nwis.wresApiKey) was discovered. As such, the rate limit "
+                            + "you have exceeded is already a boosted rate limit and no further actions can be "
+                            + "taken. The rate limit will reset after a short period.";
+                }
+
+                return "Encountered an HTTP 429 Error, which happens when you request too much data from the "
+                       + USGS_NWIS + " within a short time period." + extra;
+            }
+
+            return "";
+        };
+
         // Get the input stream and read from it
         try ( WebClient.ClientResponse response = ReaderUtilities.getResponseFromWebSource( dataSource.uri(),
                                                                                             NO_DATA_PREDICATE,
                                                                                             ERROR_RESPONSE_PREDICATE,
-                                                                                            null,
+                                                                                            errorUnpacker,
                                                                                             null ) )
         {
             if ( Objects.nonNull( response ) )
@@ -899,7 +930,7 @@ public class NwisReader implements TimeSeriesReader
         String time = startDateTime + "/" + range.getRight();
         urlParameters.put( "time", time );
 
-        String apiKey = System.getProperty( "wres.nwisApiKey" );
+        String apiKey = System.getProperty( WRES_NWIS_API_KEY );
 
         if ( this.hasApiKey() )
         {
@@ -917,7 +948,7 @@ public class NwisReader implements TimeSeriesReader
 
     private boolean hasApiKey()
     {
-        String apiKey = System.getProperty( "wres.nwisApiKey" );
+        String apiKey = System.getProperty( WRES_NWIS_API_KEY );
 
         return Objects.nonNull( apiKey );
     }
