@@ -11,7 +11,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +33,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
+import wres.reading.nwis.ogc.LocationMetadata;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale;
@@ -392,7 +398,6 @@ class NwisResponseReaderTest
 
             Source fakeDeclarationSource = SourceBuilder.builder()
                                                         .uri( fakeUri )
-                                                        .timeZoneOffset( ZoneOffset.UTC )
                                                         .build();
 
             Dataset dataset = DatasetBuilder.builder()
@@ -408,7 +413,15 @@ class NwisResponseReaderTest
                                               .datasetOrientation( DatasetOrientation.LEFT )
                                               .build();
 
-            NwisResponseReader reader = NwisResponseReader.of();
+            // Supply the location metadata
+            Cache<@NonNull String, LocationMetadata> metadata = Caffeine.newBuilder()
+                                                                        .build();
+            GeometryFactory factory = new GeometryFactory();
+            org.locationtech.jts.geom.Geometry location = factory.createPoint( new Coordinate( -81.8808333333333,
+                                                                                               29.0811111111111 ) );
+            metadata.put( "USGS-02238500", new LocationMetadata( location, null, ZoneOffset.UTC ) );
+
+            NwisResponseReader reader = NwisResponseReader.of( metadata );
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
                                                  .toList();

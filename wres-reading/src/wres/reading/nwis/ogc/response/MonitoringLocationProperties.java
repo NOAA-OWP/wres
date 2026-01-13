@@ -2,6 +2,7 @@ package wres.reading.nwis.ogc.response;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -41,5 +42,23 @@ public class MonitoringLocationProperties implements Serializable
                 .append( "time_zone_abbreviation", this.getTimeZoneAbbreviation() )
                 .append( "uses_daylight_savings", this.getUsesDaylightSavings() )
                 .toString();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( !( o instanceof MonitoringLocationProperties lP ) )
+        {
+            return false;
+        }
+
+        return Objects.equals( lP.getTimeZoneAbbreviation(), this.getTimeZoneAbbreviation() )
+               && Objects.equals( lP.getUsesDaylightSavings(), this.getUsesDaylightSavings() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getTimeZoneAbbreviation(), this.getUsesDaylightSavings() );
     }
 }

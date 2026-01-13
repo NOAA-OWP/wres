@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,8 +26,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.Duration;
 import org.apache.commons.io.IOUtils;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.DeserializationFeature;
@@ -46,6 +47,7 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
+import wres.reading.nwis.ogc.LocationMetadata;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale;
@@ -60,16 +62,9 @@ import wres.statistics.generated.TimeScale;
  * the web service that originally supplied the responses. In other words, any contextual information that is required
  * at read time should be supplied on construction. This includes any information that is obtained from a separate
  * endpoint of the web API, which could be provided as a deferred function call (i.e., {@link Supplier}), for example.
- * Currently, this reader is not embellished with any external information supplied on construction, but does require
- * the {@link DataSource} that is supplied at read time to contain a {@link ZoneOffset} or {@link TimeZone}.
- * Specifically, this is required when reading daily values because the associated datetimes are local times, rather
- * than offset times. While there is no constraint, in principle, about the number of geographic features represented
- * in the data stream read by a single instance of this reader, any required time zone information must be obtained,
- * indirectly, and supplied via the {@link DataSource}. As such, when reading daily values, a single call to this
- * reader is, in practice, constrained to reading information that spans a single time zone, otherwise the standard
- * times supplied in the resulting time-series will be inaccurate. Since this reader has no knowledge of the service
- * that produced the response, time zone information is always required, but this information is ignored when reading
- * the offset datetimes associated with continuous values.
+ * This reader is (optionally) embellished with location metadata. However, when the location metadata is absent, the
+ * reader will except at read time if the time zone information contained within that metadata is required to convert
+ * local times to standard time (UTC).
  *
  * @author James Brown
  */
@@ -84,6 +79,9 @@ public class NwisResponseReader implements TimeSeriesReader
                       .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
                       .build();
 
+    /** Cache of location metadata. */
+    private final Cache<@NonNull String, LocationMetadata> locationMetadata;
+
     /**
      * Creates an instance.
      *
@@ -92,7 +90,21 @@ public class NwisResponseReader implements TimeSeriesReader
 
     public static NwisResponseReader of()
     {
-        return new NwisResponseReader();
+        Cache<@NonNull String, LocationMetadata> metadata = Caffeine.newBuilder()
+                                                                    .build();
+        return new NwisResponseReader( metadata );
+    }
+
+    /**
+     * Creates an instance with a cache of location metadata.
+     *
+     * @param locationMetadata the location metadata
+     * @return an instance
+     */
+
+    public static NwisResponseReader of( Cache<@NonNull String, LocationMetadata> locationMetadata )
+    {
+        return new NwisResponseReader( locationMetadata );
     }
 
     @Override
@@ -136,9 +148,6 @@ public class NwisResponseReader implements TimeSeriesReader
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataSource.DataDisposition.GEOJSON );
-
-        // Validate the time zone offset, which is required to read data
-        this.validateTimeZoneOffsetPresent( dataSource );
 
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
@@ -289,11 +298,7 @@ public class NwisResponseReader implements TimeSeriesReader
 
         // Get the metadata
         TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( timeSeries.get( 0 ) );
-        SortedSet<Event<Double>> events = this.getTimeSeriesEvents( timeSeries,
-                                                                    dataSource.source()
-                                                                              .timeZoneOffset(),
-                                                                    dataSource.source()
-                                                                              .timeZone() );
+        SortedSet<Event<Double>> events = this.getTimeSeriesEvents( timeSeries );
 
         TimeSeries<Double> series = TimeSeries.of( metadata, events );
 
@@ -303,14 +308,10 @@ public class NwisResponseReader implements TimeSeriesReader
     /**
      * Return the time-series events
      * @param timeSeries the raw time-series events
-     * @param zoneOffset the time zone offset only
-     * @param timeZone the complete time zone information
      * @return the composed time-series events
      */
 
-    private SortedSet<Event<Double>> getTimeSeriesEvents( List<Feature> timeSeries,
-                                                          ZoneOffset zoneOffset,
-                                                          TimeZone timeZone )
+    private SortedSet<Event<Double>> getTimeSeriesEvents( List<Feature> timeSeries )
     {
         SortedSet<Event<Double>> events = new TreeSet<>();
         for ( Feature nextValue : timeSeries )
@@ -319,7 +320,7 @@ public class NwisResponseReader implements TimeSeriesReader
             double value = properties.getValue();
 
             String time = properties.getTime();
-            Instant instant = this.getTimeInstant( time, zoneOffset, timeZone );
+            Instant instant = this.getTimeInstant( time, properties.getLocationId() );
 
             Event<Double> nextEvent = DoubleEvent.of( instant, value );
             events.add( nextEvent );
@@ -332,14 +333,12 @@ public class NwisResponseReader implements TimeSeriesReader
      * Parses a time, which is either a local time or an offset time.
      *
      * @param time the raw datetime
-     * @param zoneOffset the time zone offset only
-     * @param timeZone the complete time zone information
+     * @param locationId the location identifier
      * @return the instant
      */
 
     private Instant getTimeInstant( String time,
-                                    ZoneOffset zoneOffset,
-                                    TimeZone timeZone )
+                                    String locationId )
     {
         Instant instant;
 
@@ -351,6 +350,7 @@ public class NwisResponseReader implements TimeSeriesReader
         }
         else
         {
+            LocationMetadata metadata = this.getLocationMetadata( locationId );
 
             LocalDate date = LocalDate.parse( time );
 
@@ -358,19 +358,45 @@ public class NwisResponseReader implements TimeSeriesReader
             LocalDateTime localTime = LocalDateTime.of( date, LocalTime.MIDNIGHT );
 
             // Full time zone information supplied
-            if ( Objects.nonNull( timeZone ) )
+            if ( Objects.nonNull( metadata.timeZone() ) )
             {
-                instant = localTime.atZone( timeZone.toZoneId() )
+                instant = localTime.atZone( metadata.timeZone()
+                                                    .toZoneId() )
                                    .toInstant();
             }
             // Partial information supplied, a zone offset only
             else
             {
-                instant = localTime.toInstant( zoneOffset );
+                instant = localTime.toInstant( metadata.zoneOffset() );
             }
         }
 
         return instant;
+    }
+
+    /**
+     * Attempts to acquire the location metadata for a given location identifier.
+     *
+     * @param locationId the location identifier
+     * @return the location metadata
+     * @throws ReadException if the location could not be found
+     */
+
+
+    private LocationMetadata getLocationMetadata( String locationId )
+    {
+        LocationMetadata metadata = this.locationMetadata.getIfPresent( locationId );
+
+        if ( Objects.isNull( metadata ) )
+        {
+            throw new ReadException( "Could not convert a local datetime to UTC for a time-series associated with "
+                                     + "location, " + locationId + ", because the location metadata for "
+                                     + locationId + " was not supplied to the reader. Metadata was available for "
+                                     + "the following locations: " + this.locationMetadata.asMap()
+                                                                                          .keySet() );
+        }
+
+        return metadata;
     }
 
     /**
@@ -384,6 +410,9 @@ public class NwisResponseReader implements TimeSeriesReader
         Properties properties = feature.getProperties();
         String locationId = properties.getLocationId();
 
+        // Add the location metadata, if available
+        LocationMetadata metadata = this.locationMetadata.getIfPresent( locationId );
+
         // Format promise is a feature authority or agency code followed by a feature identifier. Remove the authority.
         if ( locationId.contains( "-" ) )
         {
@@ -392,7 +421,17 @@ public class NwisResponseReader implements TimeSeriesReader
 
         String wkt = "";
         int srid = 0;
-        if ( Objects.nonNull( feature.getGeometry() ) )
+
+        // Supplied in a cache based on a central request
+        if ( Objects.nonNull( metadata )
+             && Objects.nonNull( metadata.geometry() ) )
+        {
+            org.locationtech.jts.geom.Geometry geometry = metadata.geometry();
+            wkt = geometry.toText();
+            srid = geometry.getSRID();
+        }
+        // Supplied within the time-series response itself
+        else if ( Objects.nonNull( feature.getGeometry() ) )
         {
             wkt = feature.getGeometry()
                          .toText();
@@ -472,27 +511,13 @@ public class NwisResponseReader implements TimeSeriesReader
     }
 
     /**
-     * Checks that the time zone offset is present within the data source.
-     * @param dataSource the data source
-     */
-
-    private void validateTimeZoneOffsetPresent( DataSource dataSource )
-    {
-        if ( Objects.isNull( dataSource.source()
-                                       .timeZoneOffset() )
-             && Objects.isNull( dataSource.source()
-                                          .timeZone() ) )
-        {
-            throw new ReadException( "The time zone or, minimally, the time zone offset must be supplied when reading "
-                                     + "time-series data from the USGS National Water Information System." );
-        }
-    }
-
-    /**
      * Hidden constructor.
+     * @param locationMetadata the cache of location metadata
      */
 
-    private NwisResponseReader()
+    private NwisResponseReader( Cache<@NonNull String, LocationMetadata> locationMetadata )
     {
+        Objects.requireNonNull( locationMetadata );
+        this.locationMetadata = locationMetadata;
     }
 }

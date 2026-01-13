@@ -51,7 +51,6 @@ import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
 import wres.config.components.EvaluationDeclaration;
 import wres.config.components.Source;
-import wres.config.components.SourceBuilder;
 import wres.config.components.Variable;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -102,7 +101,7 @@ public class NwisReader implements TimeSeriesReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( NwisReader.class );
 
-    /** The underlying format reader. */
+    /** A format reader, instantiated without any location metadata. */
     private static final NwisResponseReader GEOJSON_READER = NwisResponseReader.of();
 
     /** Message string. */
@@ -120,8 +119,8 @@ public class NwisReader implements TimeSeriesReader
     /** Re-used string. */
     public static final String WRES_NWIS_API_KEY = "wres.nwisApiKey";
 
-    /** Cache of time zones for re-use. */
-    private final Cache<@NonNull String, Pair<TimeZone, ZoneOffset>> timeZoneCache =
+    /** Cache of location metadata for re-use. */
+    private final Cache<@NonNull String, LocationMetadata> locationCache =
             Caffeine.newBuilder()
                     .maximumSize( 100 ) // 100, arbitrarily
                     .build();
@@ -328,12 +327,21 @@ public class NwisReader implements TimeSeriesReader
 
                     // Create the inner data source for the chunk
                     DataSource innerSource = this.getChunkedDataSource( nextChunk, dataSource );
+                    LocationMetadata locationMetadata = this.getLocationMetadata( nextChunk.getLeft(), innerSource );
+
+                    // Log the metadata, but pass through the metadata cache, which now contains this metadata
+                    LOGGER.debug( "Acquired the following location metadata from NWIS for feature {}: {}.",
+                                  nextChunk.getLeft(),
+                                  locationMetadata );
+
+                    NwisResponseReader reader = NwisResponseReader.of( this.locationCache );
 
                     LOGGER.debug( "Submitting a reading task for chunk, {}.", innerSource );
 
                     // Get the next time-series as a future
                     Future<List<TimeSeriesTuple>> future = this.getExecutor()
-                                                               .submit( () -> this.readAllPages( innerSource ) );
+                                                               .submit( () -> this.readAllPages( innerSource,
+                                                                                                 reader ) );
 
                     results.add( future );
                 }
@@ -379,18 +387,20 @@ public class NwisReader implements TimeSeriesReader
      * time-series, as needed.
      *
      * @param dataSource the data source with one or more pages
+     * @param reader the reader
      * @return the time-series
      * @throws ReadException if the time-series could not be read for any reason
      */
 
-    private List<TimeSeriesTuple> readAllPages( DataSource dataSource )
+    private List<TimeSeriesTuple> readAllPages( DataSource dataSource,
+                                                NwisResponseReader reader )
     {
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Reading all pages of data from: {}.", dataSource.uri() );
         }
 
-        List<TimeSeriesTuple> firstPage = this.readOnePage( dataSource );
+        List<TimeSeriesTuple> firstPage = this.readOnePage( dataSource, reader );
         List<TimeSeriesTuple> allPages = new ArrayList<>( firstPage );
 
         // Another pages to read?
@@ -409,7 +419,7 @@ public class NwisReader implements TimeSeriesReader
                     DataSource newSource = dataSource.toBuilder()
                                                      .uri( builder.build() )
                                                      .build();
-                    List<TimeSeriesTuple> nextPage = this.readAllPages( newSource );
+                    List<TimeSeriesTuple> nextPage = this.readAllPages( newSource, reader );
                     allPages.addAll( nextPage );
 
                     if ( LOGGER.isDebugEnabled() )
@@ -437,11 +447,13 @@ public class NwisReader implements TimeSeriesReader
     /**
      * Reads one page from a data source.
      * @param dataSource the data source
+     * @param reader the reader
      * @return the time-series
      * @throws ReadException if the page could not be read for any reason
      */
 
-    private List<TimeSeriesTuple> readOnePage( DataSource dataSource )
+    private List<TimeSeriesTuple> readOnePage( DataSource dataSource,
+                                               NwisResponseReader reader )
     {
         // Unpack an HTTP 429 response code and report
         Function<WebClient.ClientResponse, String> errorUnpacker = response ->
@@ -483,8 +495,8 @@ public class NwisReader implements TimeSeriesReader
                 // Log rate limit info.
                 this.logRateLimits( response.getHeaders() );
 
-                return GEOJSON_READER.read( dataSource, response.getResponse() )
-                                     .toList(); // Terminal
+                return reader.read( dataSource, response.getResponse() )
+                             .toList(); // Terminal
             }
 
             return List.of();
@@ -576,12 +588,9 @@ public class NwisReader implements TimeSeriesReader
 
         LOGGER.debug( "Created a URI to request a chunk of data: {}.", nextUri );
 
-        DataSource innerSource = dataSource.toBuilder()
-                                           .uri( nextUri )
-                                           .build();
-
-        // Add the time zone information according to the location, as needed
-        return this.addTimeZoneOffset( chunk.getLeft(), innerSource );
+        return dataSource.toBuilder()
+                         .uri( nextUri )
+                         .build();
     }
 
     /**
@@ -595,43 +604,25 @@ public class NwisReader implements TimeSeriesReader
      * @throws ReadException if the required time zone offset could not be determined
      */
 
-    private DataSource addTimeZoneOffset( String featureId, DataSource dataSource )
+    private LocationMetadata getLocationMetadata( String featureId, DataSource dataSource )
     {
-        if ( dataSource.uri()
-                       .getPath()
-                       .contains( "daily" ) )
+        LocationMetadata locationMetadata = this.getLocationMetadataFromCacheOrNwis( featureId, dataSource );
+
+        if ( !dataSource.uri()
+                        .getPath()
+                        .contains( "daily" ) )
         {
-            LOGGER.debug( "Adding time zone information to support a request from the NWIS daily values web service." );
-
-            Pair<TimeZone, ZoneOffset> zoneInfo = this.getTimeZoneInfoFromCacheOrNwis( featureId, dataSource );
-
-            if ( Objects.nonNull( zoneInfo.getLeft() ) )
-            {
-                return dataSource.toBuilder()
-                                 .source( SourceBuilder.builder( dataSource.source() )
-                                                       .timeZone( zoneInfo.getLeft() )
-                                                       .build() )
-                                 .build();
-            }
-
-            return dataSource.toBuilder()
-                             .source( SourceBuilder.builder( dataSource.source() )
-                                                   .timeZoneOffset( zoneInfo.getRight() )
-                                                   .build() )
-                             .build();
+            LOGGER.debug( "Adding a default time zone of UTC." );
+            return locationMetadata.toBuilder()
+                                   .zoneOffset( ZoneOffset.UTC )
+                                   .build();
         }
 
-        LOGGER.debug( "Adding a default time zone of UTC." );
-
-        return dataSource.toBuilder()
-                         .source( SourceBuilder.builder( dataSource.source() )
-                                               .timeZoneOffset( ZoneOffset.UTC )
-                                               .build() )
-                         .build();
+        return locationMetadata;
     }
 
     /**
-     * Attempts to retrieve the time zone information from a local cache, else from NWIS.
+     * Attempts to retrieve the location metadata from a local cache, else from NWIS.
      *
      * @param featureId the feature
      * @param dataSource the data source
@@ -639,15 +630,15 @@ public class NwisReader implements TimeSeriesReader
      * @throws ReadException if the required time zone shorthand could not be determined
      */
 
-    private Pair<TimeZone, ZoneOffset> getTimeZoneInfoFromCacheOrNwis( String featureId, DataSource dataSource )
+    private LocationMetadata getLocationMetadataFromCacheOrNwis( String featureId, DataSource dataSource )
     {
-        Pair<TimeZone, ZoneOffset> zoneInfo = this.timeZoneCache.getIfPresent( featureId );
+        LocationMetadata metadata = this.locationCache.getIfPresent( featureId );
 
-        if ( Objects.nonNull( zoneInfo ) )
+        if ( Objects.nonNull( metadata ) )
         {
-            LOGGER.debug( "Returning time zone info from the cache for feature {}.", featureId );
+            LOGGER.debug( "Returning location metadata from the cache for feature {}.", featureId );
 
-            return zoneInfo;
+            return metadata;
         }
 
         // Attempt to discover the time zone information using the monitoring-locations endpoint
@@ -671,7 +662,7 @@ public class NwisReader implements TimeSeriesReader
 
         Source source = dataSource.source();
 
-        Pair<TimeZone, ZoneOffset> addMeToCache;
+        LocationMetadata addMeToCache;
 
         try ( InputStream featureMetadata = ReaderUtilities.getByteStreamFromWebSource( uriBuilder.build(),
                                                                                         NO_DATA_PREDICATE,
@@ -689,7 +680,7 @@ public class NwisReader implements TimeSeriesReader
                              featureId,
                              uriBuilder.build(),
                              source.timeZoneOffset() );
-                addMeToCache = Pair.of( null, source.timeZoneOffset() );
+                addMeToCache = new LocationMetadata( null, null, source.timeZoneOffset() );
             }
             else if ( Objects.isNull( featureMetadata ) )
             {
@@ -705,10 +696,10 @@ public class NwisReader implements TimeSeriesReader
             }
             else
             {
-                addMeToCache = this.getTimeZoneInfoFromFeatureMetadata( featureMetadata, dataSource, featureId );
+                addMeToCache = this.getLocationMetadata( featureMetadata, dataSource, featureId );
             }
 
-            this.timeZoneCache.put( featureId, addMeToCache );
+            this.locationCache.put( featureId, addMeToCache );
 
             return addMeToCache;
         }
@@ -732,9 +723,9 @@ public class NwisReader implements TimeSeriesReader
      * @throws IOException if the reading failed for any reason
      */
 
-    private Pair<TimeZone, ZoneOffset> getTimeZoneInfoFromFeatureMetadata( InputStream featureMetadata,
-                                                                           DataSource dataSource,
-                                                                           String featureId )
+    private LocationMetadata getLocationMetadata( InputStream featureMetadata,
+                                                  DataSource dataSource,
+                                                  String featureId )
             throws IOException
     {
         Source source = dataSource.source();
@@ -777,7 +768,7 @@ public class NwisReader implements TimeSeriesReader
                               featureId,
                               zoneOffset );
 
-                return Pair.of( null, zoneOffset );
+                return new LocationMetadata( feature.getGeometry(), null, zoneOffset );
             }
             else
             {
@@ -806,7 +797,7 @@ public class NwisReader implements TimeSeriesReader
                               featureId,
                               timeZone );
 
-                return Pair.of( timeZone, null );
+                return new LocationMetadata( feature.getGeometry(), timeZone, null );
             }
         }
         else
@@ -921,10 +912,13 @@ public class NwisReader implements TimeSeriesReader
         String parameterCodes = this.getParameterCodes( dataSource.getVariable() );
         urlParameters.put( "f", "json" );
         urlParameters.put( "lang", "en-US" );
+
+        // For efficiency, acquire the location metadata from the monitoring locations endpoint
+        urlParameters.put( "skipGeometry", "true" );
+
         urlParameters.put( "limit", Integer.toString( DEFAULT_PAGE_SIZE ) );
         urlParameters.put( "properties", "id,time_series_id,monitoring_location_id,parameter_code,statistic_id,time,"
                                          + "value,unit_of_measure" );
-        urlParameters.put( "skipGeometry", "false" );
         urlParameters.put( "parameter_code", parameterCodes );
         urlParameters.put( "monitoring_location_id", featureName );
 

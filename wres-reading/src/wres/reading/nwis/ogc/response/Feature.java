@@ -27,7 +27,8 @@ public class Feature implements Serializable
     /** The properties of the feature. */
     private Properties properties;
 
-    /** The geometry. */
+    /** The geometry, which is read optionally. This is unused when reading location metadata centrally, from the
+     * monitoring location endpoint, for efficiency. */
     @JsonDeserialize( using = GeometryDeserializer.class )
     private org.locationtech.jts.geom.Geometry geometry;
 
