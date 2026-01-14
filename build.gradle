@@ -1244,7 +1244,7 @@ project(':wres-worker') {
         implementation 'com.squareup.okhttp3:okhttp:5.3.2'
 
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.28.0'
+        implementation 'com.rabbitmq:amqp-client:5.26.0'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
             // Not used at runtime, bloat
@@ -1435,7 +1435,7 @@ project(':wres-tasker') {
         implementation project(':wres-statistics')
         implementation project(':wres-http')
         implementation 'org.slf4j:slf4j-api:2.0.17'
-        implementation 'com.rabbitmq:amqp-client:5.28.0'
+        implementation 'com.rabbitmq:amqp-client:5.26.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
 
         // Easy byte[] to hex conversion
