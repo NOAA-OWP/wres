@@ -26,6 +26,7 @@ import wres.config.components.DatasetBuilder;
 import wres.config.components.DatasetOrientation;
 import wres.config.components.Source;
 import wres.config.components.SourceBuilder;
+import wres.config.components.VariableBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -402,6 +403,9 @@ class NwisResponseReaderTest
 
             Dataset dataset = DatasetBuilder.builder()
                                             .sources( List.of( fakeDeclarationSource ) )
+                                            .variable( VariableBuilder.builder()
+                                                                      .name( "00060" )
+                                                                      .build() )
                                             .build();
 
             DataSource dataSource = DataSource.builder()
@@ -498,6 +502,9 @@ class NwisResponseReaderTest
 
             Dataset dataset = DatasetBuilder.builder()
                                             .sources( List.of( fakeDeclarationSource ) )
+                                            .variable( VariableBuilder.builder()
+                                                                      .name( "00060" )
+                                                                      .build() )
                                             .build();
 
             DataSource dataSource = DataSource.builder()

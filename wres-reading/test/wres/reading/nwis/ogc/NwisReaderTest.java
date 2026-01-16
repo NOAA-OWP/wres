@@ -47,6 +47,8 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.DataSource.DataDisposition;
+import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
@@ -1076,7 +1078,11 @@ class NwisReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1193,7 +1199,11 @@ class NwisReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1312,7 +1322,11 @@ class NwisReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1447,7 +1461,11 @@ class NwisReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1601,7 +1619,11 @@ class NwisReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

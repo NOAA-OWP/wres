@@ -111,6 +111,9 @@ public class NwisResponseReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getVariable() );
+        Objects.requireNonNull( dataSource.getVariable()
+                                          .name() );
 
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
@@ -144,6 +147,9 @@ public class NwisResponseReader implements TimeSeriesReader
     private Stream<TimeSeriesTuple> readFromStream( DataSource dataSource, InputStream inputStream )
     {
         Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.getVariable() );
+        Objects.requireNonNull( dataSource.getVariable()
+                                          .name() );
         Objects.requireNonNull( inputStream );
 
         // Validate the disposition of the data source
@@ -297,7 +303,8 @@ public class NwisResponseReader implements TimeSeriesReader
                                                   .build();
 
         // Get the metadata
-        TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( timeSeries.get( 0 ) );
+        TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( timeSeries.get( 0 ),
+                                                                  dataSource );
         SortedSet<Event<Double>> events = this.getTimeSeriesEvents( timeSeries );
 
         TimeSeries<Double> series = TimeSeries.of( metadata, events );
@@ -402,10 +409,12 @@ public class NwisResponseReader implements TimeSeriesReader
     /**
      * Generates a {@link TimeSeriesMetadata} from the input.
      * @param feature the feature source
+     * @param dataSource the data source
      * @return the time-series metadata
      */
 
-    private TimeSeriesMetadata getTimeSeriesMetadata( wres.reading.nwis.ogc.response.Feature feature )
+    private TimeSeriesMetadata getTimeSeriesMetadata( wres.reading.nwis.ogc.response.Feature feature,
+                                                      DataSource dataSource )
     {
         Properties properties = feature.getProperties();
         String locationId = properties.getLocationId();
@@ -450,7 +459,9 @@ public class NwisResponseReader implements TimeSeriesReader
         TimeScaleOuter timeScale = this.getTimeScale( statistic );
         TimeSeriesMetadata.Builder builder = new TimeSeriesMetadata.Builder();
         return builder.setFeature( internalFeature )
-                      .setVariableName( properties.getParameterCode() )
+                      // Obtain from data source rather than properties as properties are streamlined
+                      .setVariableName( dataSource.getVariable()
+                                                  .name() )
                       .setUnit( properties.getUnit() )
                       .setReferenceTimes( Map.of() ) // No reference time
                       .setTimeScale( timeScale )

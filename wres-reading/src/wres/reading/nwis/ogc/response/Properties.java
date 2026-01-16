@@ -31,10 +31,6 @@ public class Properties implements Serializable
     @Serial
     private static final long serialVersionUID = 2248724686268700593L;
 
-    /** The parameter code. */
-    @JsonAlias( value = "parameter_code" )
-    private String parameterCode;
-
     /** The unit. */
     @JsonAlias( value = "unit_of_measure" )
     private String unit;
@@ -64,7 +60,6 @@ public class Properties implements Serializable
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "parameter_code", this.getParameterCode() )
                 .append( "statistic", this.getStatistic() )
                 .append( "unit_of_measure", this.getUnit() )
                 .append( "monitoring_location_id", this.getLocationId() )

@@ -65,14 +65,6 @@ public class PropertiesDeserializer extends JsonDeserializer<Properties>
         Properties properties = ( Properties ) defaultDeserializer.deserialize( treeParser, context );
 
         // Now create a new one with cached content, where possible
-        String parameterCode = STRING_CACHE.getIfPresent( properties.getParameterCode() );
-
-        if ( Objects.isNull( parameterCode ) )
-        {
-            parameterCode = properties.getParameterCode();
-            STRING_CACHE.put( parameterCode, parameterCode );
-        }
-
         String unit = STRING_CACHE.getIfPresent( properties.getUnit() );
 
         if ( Objects.isNull( unit ) )
@@ -107,7 +99,6 @@ public class PropertiesDeserializer extends JsonDeserializer<Properties>
 
         return Properties.builder()
                          .locationId( locationId )
-                         .parameterCode( parameterCode )
                          .statistic( statistic )
                          .unit( unit )
                          .timeSeriesId( timeSeriesId )

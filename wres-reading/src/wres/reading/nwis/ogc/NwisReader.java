@@ -59,6 +59,7 @@ import wres.http.WebClient;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.nwis.ogc.response.MonitoringLocation;
@@ -135,6 +136,9 @@ public class NwisReader implements TimeSeriesReader
      * the NWIS DV service providing ambiguous information about time zones via abbreviated names. */
     private static final Map<String, String> TIMEZONE_MAP;
 
+    /** The time chunker. */
+    private final TimeChunker timeChunker;
+
     // Populate the timezone map for time zones supported by USGS NWIS. If some are missing, expect a runtime exception,
     // which will need to be mitigated by adding more. Most are supported out of the box, but some are not and these are
     // added below.
@@ -160,15 +164,16 @@ public class NwisReader implements TimeSeriesReader
     /**
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static NwisReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    public static NwisReader of( EvaluationDeclaration declaration,
+                                 SystemSettings systemSettings,
+                                 TimeChunker timeChunker )
     {
-        Objects.requireNonNull( declaration );
-
-        return new NwisReader( declaration, systemSettings );
+        return new NwisReader( declaration, systemSettings, timeChunker );
     }
 
     @Override
@@ -237,7 +242,7 @@ public class NwisReader implements TimeSeriesReader
         Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
+        Set<Pair<Instant, Instant>> dateRanges = this.timeChunker.get();
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -917,7 +922,7 @@ public class NwisReader implements TimeSeriesReader
         urlParameters.put( "skipGeometry", "true" );
 
         urlParameters.put( "limit", Integer.toString( DEFAULT_PAGE_SIZE ) );
-        urlParameters.put( "properties", "id,time_series_id,monitoring_location_id,parameter_code,statistic_id,time,"
+        urlParameters.put( "properties", "id,time_series_id,monitoring_location_id,statistic_id,time,"
                                          + "value,unit_of_measure" );
         urlParameters.put( "parameter_code", parameterCodes );
         urlParameters.put( "monitoring_location_id", featureName );
@@ -975,14 +980,19 @@ public class NwisReader implements TimeSeriesReader
      * @param declaration the optional declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @throws DeclarationException if the project declaration is invalid for this source type
-     * @throws NullPointerException if the systemSettings is null
+     * @throws NullPointerException if any input is null
      */
 
-    private NwisReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    private NwisReader( EvaluationDeclaration declaration,
+                        SystemSettings systemSettings,
+                        TimeChunker timeChunker )
     {
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( timeChunker );
 
         this.declaration = declaration;
+        this.timeChunker = timeChunker;
 
         ThreadFactory webClientFactory = BasicThreadFactory.builder()
                                                            .namingPattern( "USGS NWIS Reading Thread %d" )

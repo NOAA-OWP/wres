@@ -640,6 +640,32 @@ public class ReaderUtilities
     }
 
     /**
+     * Returns a {@link TimeChunker} for a prescribed {@link TimeChunker.ChunkingStrategy}.
+     * @param strategy the chunking strategy
+     * @param declaration the declaration
+     * @param dataSource the data source
+     * @return the chunker
+     * @throws NullPointerException if any input is null
+     */
+
+    public static TimeChunker getTimeChunker( TimeChunker.ChunkingStrategy strategy,
+                                              EvaluationDeclaration declaration,
+                                              DataSource dataSource )
+    {
+        Objects.requireNonNull( strategy );
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+
+        return switch ( strategy )
+        {
+            case SIMPLE_RANGE -> () -> Collections.singleton( ReaderUtilities.getSimpleRange( declaration,
+                                                                                              dataSource ) );
+            case YEAR_RANGES -> () -> ReaderUtilities.getYearRanges( declaration,
+                                                                     dataSource );
+        };
+    }
+
+    /**
      * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
      * time range.
      *
@@ -737,15 +763,15 @@ public class ReaderUtilities
 
         while ( left.isBefore( latest ) )
         {
-            // Because we chunk a year at a time, and because these will not
-            // be retrieved again if already present, we need to ensure the
-            // right hand date does not exceed "now".
+            // We need to ensure the end date does not exceed "now".
             if ( right.isAfter( nowDate ) )
             {
+                // Assign "now" if latest is future
                 if ( latest.isAfter( nowDate ) )
                 {
                     right = nowDate;
                 }
+                // Assign latest if latest is "now" or past
                 else
                 {
                     right = latest;

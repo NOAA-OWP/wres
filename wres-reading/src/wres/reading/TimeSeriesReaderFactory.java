@@ -133,7 +133,13 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
-                    return NwisReader.of( this.getDeclaration(), this.systemSettings );
+
+                    // Set the default chunking strategy
+                    TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                              declaration,
+                                                                              dataSource );
+
+                    return NwisReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
                 }
                 // A reader for USGS-formatted GeoJSON, but not from a NWIS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted GeoJSON from a "
