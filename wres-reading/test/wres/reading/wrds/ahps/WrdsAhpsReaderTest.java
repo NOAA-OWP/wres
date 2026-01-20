@@ -43,6 +43,8 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
+import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
 import wres.statistics.MessageUtilities;
@@ -828,7 +830,16 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( fakeDataset )
+                                                                        .right( fakeDataset )
+                                                                        .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -921,7 +932,14 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -985,6 +1003,8 @@ class WrdsAhpsReaderTest
                                            .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
+                                            .left( fakeDataset )
+                                            .right( fakeDataset )
                                             .validDates( interval )
                                             .features( features )
                                             .build();
@@ -995,7 +1015,11 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1099,7 +1123,11 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1192,7 +1220,11 @@ class WrdsAhpsReaderTest
                                             .features( features )
                                             .build();
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

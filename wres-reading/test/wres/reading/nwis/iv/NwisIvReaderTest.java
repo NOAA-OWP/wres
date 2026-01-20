@@ -50,6 +50,8 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
+import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
 import wres.statistics.MessageUtilities;
@@ -723,7 +725,16 @@ class NwisIvReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        NwisIvReader reader = NwisIvReader.of( systemSettings );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisIvReader reader = NwisIvReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -859,7 +870,11 @@ class NwisIvReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        NwisIvReader reader = NwisIvReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisIvReader reader = NwisIvReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1008,7 +1023,10 @@ class NwisIvReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        NwisIvReader reader = NwisIvReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+        NwisIvReader reader = NwisIvReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1100,7 +1118,11 @@ class NwisIvReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        NwisIvReader reader = NwisIvReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        NwisIvReader reader = NwisIvReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

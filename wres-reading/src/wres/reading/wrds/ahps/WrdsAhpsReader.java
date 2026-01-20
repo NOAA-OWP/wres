@@ -43,6 +43,7 @@ import wres.reading.PreReadException;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.http.WebClient;
@@ -90,6 +91,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
+    /** The time chunker. */
+    private final TimeChunker timeChunker;
+
     static
     {
         try
@@ -111,29 +115,34 @@ public class WrdsAhpsReader implements TimeSeriesReader
     }
 
     /**
-     * @see #of(EvaluationDeclaration, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings, TimeChunker)
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance that does not perform any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
      */
 
-    public static WrdsAhpsReader of( SystemSettings systemSettings )
+    public static WrdsAhpsReader of( SystemSettings systemSettings,
+                                     TimeChunker timeChunker )
     {
-        return new WrdsAhpsReader( null, systemSettings );
+        return new WrdsAhpsReader( null, systemSettings, timeChunker );
     }
 
     /**
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static WrdsAhpsReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    public static WrdsAhpsReader of( EvaluationDeclaration declaration,
+                                     SystemSettings systemSettings,
+                                     TimeChunker timeChunker )
     {
         Objects.requireNonNull( declaration );
 
-        return new WrdsAhpsReader( declaration, systemSettings );
+        return new WrdsAhpsReader( declaration, systemSettings, timeChunker );
     }
 
     @Override
@@ -218,17 +227,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges;
-        if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
-        {
-            dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
-        }
-        else
-        {
-            dateRanges = new HashSet<>();
-            Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
-            dateRanges.add( range );
-        }
+        Set<Pair<Instant, Instant>> dateRanges = this.timeChunker.get();
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -518,15 +517,20 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Hidden constructor.
      * @param declaration the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
+     * @param timeChunker the time chunker
      * @throws wres.config.DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private WrdsAhpsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    private WrdsAhpsReader( EvaluationDeclaration declaration,
+                            SystemSettings systemSettings,
+                            TimeChunker timeChunker )
     {
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( timeChunker );
 
         this.declaration = declaration;
+        this.timeChunker = timeChunker;
 
         ThreadFactory webClientFactory = BasicThreadFactory.builder()
                                                            .namingPattern( "WRDS AHPS Reading Thread %d" )

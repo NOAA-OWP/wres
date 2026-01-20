@@ -38,6 +38,7 @@ import wres.config.components.Variable;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.nwis.iv.response.NwisIvResponseReader;
@@ -87,30 +88,38 @@ public class NwisIvReader implements TimeSeriesReader
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
+    /** The time chunker. */
+    private final TimeChunker timeChunker;
+
     /**
-     * @see #of(EvaluationDeclaration, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings, TimeChunker)
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance that does not perform any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
      */
 
-    public static NwisIvReader of( SystemSettings systemSettings )
+    public static NwisIvReader of( SystemSettings systemSettings,
+                                   TimeChunker timeChunker )
     {
-        return new NwisIvReader( null, systemSettings );
+        return new NwisIvReader( null, systemSettings, timeChunker );
     }
 
     /**
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static NwisIvReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    public static NwisIvReader of( EvaluationDeclaration declaration,
+                                   SystemSettings systemSettings,
+                                   TimeChunker timeChunker )
     {
         Objects.requireNonNull( declaration );
 
-        return new NwisIvReader( declaration, systemSettings );
+        return new NwisIvReader( declaration, systemSettings, timeChunker );
     }
 
     @Override
@@ -192,7 +201,7 @@ public class NwisIvReader implements TimeSeriesReader
         Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
+        Set<Pair<Instant, Instant>> dateRanges = this.timeChunker.get();
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -476,15 +485,20 @@ public class NwisIvReader implements TimeSeriesReader
      * Hidden constructor.
      * @param declaration the optional declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @throws DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private NwisIvReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    private NwisIvReader( EvaluationDeclaration declaration,
+                          SystemSettings systemSettings,
+                          TimeChunker timeChunker )
     {
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( timeChunker );
 
         this.declaration = declaration;
+        this.timeChunker = timeChunker;
 
         ThreadFactory webClientFactory = BasicThreadFactory.builder()
                                                            .namingPattern( "USGS NWIS Reading Thread %d" )

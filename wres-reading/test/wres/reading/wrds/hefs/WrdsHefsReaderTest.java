@@ -41,6 +41,8 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.types.Ensemble;
 import wres.reading.DataSource;
+import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
@@ -187,7 +189,16 @@ class WrdsHefsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsHefsReader reader = WrdsHefsReader.of( systemSettings );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( fakeDataset )
+                                                                        .right( fakeDataset )
+                                                                        .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsHefsReader reader = WrdsHefsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -284,7 +295,12 @@ class WrdsHefsReaderTest
                                             .features( features )
                                             .build();
 
-        WrdsHefsReader reader = WrdsHefsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                  declaration,
+                                                                  fakeSource );
+
+
+        WrdsHefsReader reader = WrdsHefsReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
