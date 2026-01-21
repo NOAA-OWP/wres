@@ -32,6 +32,9 @@ public class MonitoringLocationProperties implements Serializable
     @JsonAlias( value = "uses_daylight_savings" )
     private String usesDaylightSavings;
 
+    @JsonAlias( value = "monitoring_location_name" )
+    private String monitoringLocationName;
+
     /**
      * @return a string representation
      */
@@ -41,6 +44,7 @@ public class MonitoringLocationProperties implements Serializable
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "time_zone_abbreviation", this.getTimeZoneAbbreviation() )
                 .append( "uses_daylight_savings", this.getUsesDaylightSavings() )
+                .append( "monitoring_location_name", this.getMonitoringLocationName() )
                 .toString();
     }
 
@@ -53,12 +57,15 @@ public class MonitoringLocationProperties implements Serializable
         }
 
         return Objects.equals( lP.getTimeZoneAbbreviation(), this.getTimeZoneAbbreviation() )
-               && Objects.equals( lP.getUsesDaylightSavings(), this.getUsesDaylightSavings() );
+               && Objects.equals( lP.getUsesDaylightSavings(), this.getUsesDaylightSavings() )
+               && Objects.equals( lP.getMonitoringLocationName(), this.getMonitoringLocationName() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getTimeZoneAbbreviation(), this.getUsesDaylightSavings() );
+        return Objects.hash( this.getTimeZoneAbbreviation(),
+                             this.getUsesDaylightSavings(),
+                             this.getMonitoringLocationName() );
     }
 }

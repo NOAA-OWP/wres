@@ -344,9 +344,14 @@ public class NwisReader implements TimeSeriesReader
                     LOGGER.debug( "Submitting a reading task for chunk, {}.", innerSource );
 
                     // Get the next time-series as a future
-                    Future<List<TimeSeriesTuple>> future = this.getExecutor()
-                                                               .submit( () -> this.readAllPages( innerSource,
-                                                                                                 reader ) );
+                    Future<List<TimeSeriesTuple>> future =
+                            this.getExecutor()
+                                .submit( () ->
+                                         {
+                                             List<TimeSeriesTuple> unconsolidated =
+                                                     this.readAllPages( innerSource, reader );
+                                             return this.consolidateTimeSeries( unconsolidated, dataSource );
+                                         } );
 
                     results.add( future );
                 }
@@ -408,7 +413,7 @@ public class NwisReader implements TimeSeriesReader
         List<TimeSeriesTuple> firstPage = this.readOnePage( dataSource, reader );
         List<TimeSeriesTuple> allPages = new ArrayList<>( firstPage );
 
-        // Another pages to read?
+        // Another page to read?
         for ( TimeSeriesTuple nextTuple : firstPage )
         {
             if ( nextTuple.getDataSource()
@@ -446,7 +451,7 @@ public class NwisReader implements TimeSeriesReader
             }
         }
 
-        return this.consolidateTimeSeries( allPages, dataSource );
+        return allPages;
     }
 
     /**
@@ -564,10 +569,15 @@ public class NwisReader implements TimeSeriesReader
     private List<TimeSeriesTuple> consolidateTimeSeries( List<TimeSeriesTuple> toConsolidate,
                                                          DataSource dataSource )
     {
+        LOGGER.debug( "Consolidating {} time-series.", toConsolidate.size() );
+
         Map<TimeSeriesMetadata, List<TimeSeries<Double>>> singleValuedMapped =
                 toConsolidate.stream()
                              .map( TimeSeriesTuple::getSingleValuedTimeSeries )
                              .collect( Collectors.groupingBy( TimeSeries::getMetadata ) );
+
+        LOGGER.debug( "Encountered time-series for {} different metadata description(s).",
+                      singleValuedMapped.size() );
 
         return singleValuedMapped.values()
                                  .stream()
@@ -685,7 +695,7 @@ public class NwisReader implements TimeSeriesReader
                              featureId,
                              uriBuilder.build(),
                              source.timeZoneOffset() );
-                addMeToCache = new LocationMetadata( null, null, source.timeZoneOffset() );
+                addMeToCache = new LocationMetadata( null, null, source.timeZoneOffset(), null );
             }
             else if ( Objects.isNull( featureMetadata ) )
             {
@@ -773,7 +783,11 @@ public class NwisReader implements TimeSeriesReader
                               featureId,
                               zoneOffset );
 
-                return new LocationMetadata( feature.getGeometry(), null, zoneOffset );
+                return new LocationMetadata( feature.getGeometry(),
+                                             null,
+                                             zoneOffset,
+                                             feature.getProperties()
+                                                    .getMonitoringLocationName() );
             }
             else
             {
@@ -802,7 +816,11 @@ public class NwisReader implements TimeSeriesReader
                               featureId,
                               timeZone );
 
-                return new LocationMetadata( feature.getGeometry(), timeZone, null );
+                return new LocationMetadata( feature.getGeometry(),
+                                             timeZone,
+                                             null,
+                                             feature.getProperties()
+                                                    .getMonitoringLocationName() );
             }
         }
         else

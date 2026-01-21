@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -1504,8 +1505,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             row[0] = Long.toString( sourceId );
 
             // Reference time (instant)
-            row[1] = referenceTime.getValue()
-                                  .toString();
+            Instant referenceTimeInstant = referenceTime.getValue();
+
+            // See GitHub #539 and #630. The proper fix is #630. Until then, the reference times cannot have greater
+            // precision than the lead durations because we infer valid times from the combination of the two and this
+            // can only be performed accurately if the reference times and lead durations have the same precision, i.e.,
+            // minutes.
+            Instant truncatedReferenceTimeInstant = referenceTimeInstant.truncatedTo( ChronoUnit.MINUTES );
+            row[1] = truncatedReferenceTimeInstant.toString();
 
             // Reference time type
             row[2] = referenceTime.getKey()

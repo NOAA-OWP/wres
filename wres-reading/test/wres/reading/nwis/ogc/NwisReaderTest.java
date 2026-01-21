@@ -1092,6 +1092,7 @@ class NwisReaderTest
             Geometry expectedGeometry = Geometry.newBuilder()
                                                 .setName( "02238500" )
                                                 .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .setSrid( 4326 )
                                                 .build();
             Feature expectedFeature = Feature.of( expectedGeometry );
 
@@ -1213,7 +1214,10 @@ class NwisReaderTest
             Geometry expectedGeometry = Geometry.newBuilder()
                                                 .setName( "02238500" )
                                                 .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .setDescription( "OCKLAWAHA RIVER AT MOSS BLUFF, FL" )
+                                                .setSrid( 4326 )
                                                 .build();
+
             Feature expectedFeature = Feature.of( expectedGeometry );
 
             TimeScale expectedTimeScale = TimeScale.newBuilder()
@@ -1336,7 +1340,10 @@ class NwisReaderTest
             Geometry expectedGeometry = Geometry.newBuilder()
                                                 .setName( "02238500" )
                                                 .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .setDescription( "OCKLAWAHA RIVER AT MOSS BLUFF, FL" )
+                                                .setSrid( 4326 )
                                                 .build();
+
             Feature expectedFeature = Feature.of( expectedGeometry );
 
             TimeScale expectedTimeScale = TimeScale.newBuilder()
@@ -1475,7 +1482,9 @@ class NwisReaderTest
             Geometry expectedGeometry = Geometry.newBuilder()
                                                 .setName( "02238500" )
                                                 .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .setSrid( 4326 )
                                                 .build();
+
             Feature expectedFeature = Feature.of( expectedGeometry );
 
             TimeScale expectedTimeScale = TimeScale.newBuilder()

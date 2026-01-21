@@ -423,7 +423,7 @@ class NwisResponseReaderTest
             GeometryFactory factory = new GeometryFactory();
             org.locationtech.jts.geom.Geometry location = factory.createPoint( new Coordinate( -81.8808333333333,
                                                                                                29.0811111111111 ) );
-            metadata.put( "USGS-02238500", new LocationMetadata( location, null, ZoneOffset.UTC ) );
+            metadata.put( "USGS-02238500", new LocationMetadata( location, null, ZoneOffset.UTC, null ) );
 
             NwisResponseReader reader = NwisResponseReader.of( metadata );
 
@@ -438,6 +438,7 @@ class NwisResponseReaderTest
             Geometry expectedGeometry = Geometry.newBuilder()
                                                 .setName( "02238500" )
                                                 .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .setSrid( 4326 )
                                                 .build();
             Feature expectedFeature = Feature.of( expectedGeometry );
 
@@ -528,6 +529,7 @@ class NwisResponseReaderTest
 
             Geometry expectedGeometry = Geometry.newBuilder()
                                                 .setName( "09165000" )
+                                                .setSrid( 4326 )
                                                 .build();
             Feature expectedFeature = Feature.of( expectedGeometry );
 

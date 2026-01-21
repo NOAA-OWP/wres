@@ -16,7 +16,10 @@ import org.locationtech.jts.geom.Geometry;
  */
 
 @Builder( toBuilder = true )
-public record LocationMetadata( Geometry geometry, TimeZone timeZone, ZoneOffset zoneOffset )
+public record LocationMetadata( Geometry geometry,
+                                TimeZone timeZone,
+                                ZoneOffset zoneOffset,
+                                String description )
 {
     @NotNull
     @Override
@@ -26,6 +29,7 @@ public record LocationMetadata( Geometry geometry, TimeZone timeZone, ZoneOffset
                 .append( "Geometry", this.geometry() )
                 .append( "Time zone", this.timeZone() )
                 .append( "Time zone offset", this.zoneOffset() )
+                .append( "Description", this.description() )
                 .toString();
     }
 }

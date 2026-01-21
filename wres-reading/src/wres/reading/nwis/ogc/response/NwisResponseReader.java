@@ -361,7 +361,7 @@ public class NwisResponseReader implements TimeSeriesReader
 
             LocalDate date = LocalDate.parse( time );
 
-            // Values are midnight in local time
+            // Values are assumed to be midnight in local time, which is true for the DV service, for example
             LocalDateTime localTime = LocalDateTime.of( date, LocalTime.MIDNIGHT );
 
             // Full time zone information supplied
@@ -429,7 +429,10 @@ public class NwisResponseReader implements TimeSeriesReader
         }
 
         String wkt = "";
-        int srid = 0;
+        String description = "";
+
+        // Fixed to EPSG:4326, see docs: https://api.waterdata.usgs.gov/ogcapi/v0/collections/monitoring-locations/schema
+        int srid = 4326;
 
         // Supplied in a cache based on a central request
         if ( Objects.nonNull( metadata )
@@ -437,21 +440,23 @@ public class NwisResponseReader implements TimeSeriesReader
         {
             org.locationtech.jts.geom.Geometry geometry = metadata.geometry();
             wkt = geometry.toText();
-            srid = geometry.getSRID();
+            if( Objects.nonNull( metadata.description() ) )
+            {
+                description = metadata.description();
+            }
         }
         // Supplied within the time-series response itself
         else if ( Objects.nonNull( feature.getGeometry() ) )
         {
             wkt = feature.getGeometry()
                          .toText();
-            srid = feature.getGeometry()
-                          .getSRID();
         }
 
         Geometry geometry = Geometry.newBuilder()
                                     .setName( locationId )
                                     .setWkt( wkt )
                                     .setSrid( srid )
+                                    .setDescription( description )
                                     .build();
         wres.datamodel.space.Feature internalFeature = wres.datamodel.space.Feature.of( geometry );
 

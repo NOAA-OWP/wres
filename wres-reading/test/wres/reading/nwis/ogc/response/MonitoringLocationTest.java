@@ -141,6 +141,7 @@ class MonitoringLocationTest
         MonitoringLocationProperties properties = new MonitoringLocationProperties();
         properties.setTimeZoneAbbreviation( "EST" );
         properties.setUsesDaylightSavings( "Y" );
+        properties.setMonitoringLocationName( "OCKLAWAHA RIVER AT MOSS BLUFF, FL" );
         expected.setProperties( properties );
 
         GeometryFactory factory = new GeometryFactory();
