@@ -1726,7 +1726,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void TestGetTimeScaleFromUri()
+    void testGetTimeScaleFromUri()
     {
         URI uri = URI.create( "https://foo.bar/nwis/iv" );
         URI unknown = URI.create( "https://foo.bar" );
@@ -1737,7 +1737,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void getSimpleRange()
+    void testGetSimpleRange()
     {
         Source source = SourceBuilder.builder()
                                      .build();
@@ -1782,16 +1782,23 @@ class ReaderUtilitiesTest
                                                   .datasetOrientation( DatasetOrientation.RIGHT )
                                                   .links( Collections.emptyList() )
                                                   .build();
-        Pair<Instant, Instant> expected = Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
-                                                   Instant.parse( "2023-03-01T00:00:00Z" ) );
+        Set<Pair<Instant, Instant>> expected =
+                Collections.singleton( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                                                Instant.parse( "2023-03-01T00:00:00Z" ) ) );
         assertAll( () -> assertEquals( expected,
-                                       ReaderUtilities.getSimpleRange( observedDeclaration, observedDataSource ) ),
+                                       ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                       observedDeclaration,
+                                                                       observedDataSource )
+                                                      .get() ),
                    () -> assertEquals( expected,
-                                       ReaderUtilities.getSimpleRange( forecastDeclaration, forecastDataSource ) ) );
+                                       ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                       forecastDeclaration,
+                                                                       forecastDataSource )
+                                                      .get() ) );
     }
 
     @Test
-    void getSimpleRangeThrowsReadExceptionWhenReferenceDatesMissing()
+    void testGetSimpleRangeThrowsReadExceptionWhenReferenceDatesMissing()
     {
         Source source = SourceBuilder.builder()
                                      .build();
@@ -1814,7 +1821,8 @@ class ReaderUtilitiesTest
                                                   .build();
 
         ReadException actual = assertThrows( ReadException.class,
-                                             () -> ReaderUtilities.getSimpleRange( forecastDeclaration,
+                                             () -> ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                                   forecastDeclaration,
                                                                                    forecastDataSource ) );
 
         assertTrue( actual.getMessage()
@@ -1822,7 +1830,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void getSimpleRangeThrowsReadExceptionWhenValidDatesMissing()
+    void testGetSimpleRangeThrowsReadExceptionWhenValidDatesMissing()
     {
         Source source = SourceBuilder.builder()
                                      .build();
@@ -1845,11 +1853,98 @@ class ReaderUtilitiesTest
                                                   .build();
 
         ReadException actual = assertThrows( ReadException.class,
-                                             () -> ReaderUtilities.getSimpleRange( observedDeclaration,
+                                             () -> ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                                   observedDeclaration,
                                                                                    observedDataSource ) );
 
         assertTrue( actual.getMessage()
                           .contains( "missing 'valid_dates', which is not allowed" ) );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesTenDayTimeChunks()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-03-01T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( declaration, dataSource, Duration.ofDays( 10 ) );
+
+        Set<Pair<Instant, Instant>> actual = chunker.get();
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                               Instant.parse( "2023-02-11T00:00:00Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-11T00:00:00Z" ),
+                               Instant.parse( "2023-02-21T00:00:00Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-21T00:00:00Z" ),
+                               Instant.parse( "2023-03-01T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesOneChunkWhenIntervalSpansLessThanOneChunk()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-02-07T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( declaration, dataSource, Duration.ofDays( 10 ) );
+
+        Set<Pair<Instant, Instant>> actual = chunker.get();
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                               Instant.parse( "2023-02-07T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
     }
 
     @Test

@@ -640,7 +640,9 @@ public class ReaderUtilities
     }
 
     /**
-     * Returns a {@link TimeChunker} for a prescribed {@link TimeChunker.ChunkingStrategy}.
+     * Returns a {@link TimeChunker} for a default {@link TimeChunker.ChunkingStrategy}.
+     *
+     * @see #getTimeChunker(EvaluationDeclaration, DataSource, Duration)
      * @param strategy the chunking strategy
      * @param declaration the declaration
      * @param dataSource the data source
@@ -656,138 +658,72 @@ public class ReaderUtilities
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
 
+        // Basic boundaries for any dataset
+        Pair<Instant, Instant> simpleRange = ReaderUtilities.getSimpleRange( declaration, dataSource );
+
         return switch ( strategy )
         {
-            case SIMPLE_RANGE -> () -> Collections.singleton( ReaderUtilities.getSimpleRange( declaration,
-                                                                                              dataSource ) );
-            case YEAR_RANGES -> () -> ReaderUtilities.getYearRanges( declaration,
-                                                                     dataSource );
+            case SIMPLE_RANGE ->
+                    () -> Collections.unmodifiableSortedSet( new TreeSet<>( Collections.singleton( ( simpleRange ) ) ) );
+            case YEAR_RANGES -> () -> ReaderUtilities.getYearRanges( simpleRange.getLeft(), simpleRange.getRight() );
         };
     }
 
     /**
-     * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
-     * time range.
+     * Returns a {@link TimeChunker} whose chunks span a fixed {@link Duration}.
      *
+     * @see #getTimeChunker(TimeChunker.ChunkingStrategy, EvaluationDeclaration, DataSource)
      * @param declaration the declaration
      * @param dataSource the data source
-     * @return a simple range
+     * @param interval the interval
+     * @return the chunker
+     * @throws NullPointerException if any input is null
      */
-    public static Pair<Instant, Instant> getSimpleRange( EvaluationDeclaration declaration,
-                                                         DataSource dataSource )
+
+    public static TimeChunker getTimeChunker( EvaluationDeclaration declaration,
+                                              DataSource dataSource,
+                                              Duration interval )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.context() );
+        Objects.requireNonNull( interval );
 
-        // Forecast data?
-        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
-
-        if ( ( isForecast
-               && Objects.isNull( declaration.referenceDates() ) ) )
+        return () ->
         {
-            throw new ReadException( "While attempting to read forecasts from a web service, discovered an evaluation "
-                                     + "with missing 'reference_dates', which is not allowed. Please declare "
-                                     + "'reference_dates' to constrain the evaluation to a finite amount of "
-                                     + "time-series data." );
-        }
-        else if ( !isForecast
-                  && Objects.isNull( declaration.validDates() ) )
-        {
-            throw new ReadException( "While attempting to read a non-forecast data source from a web service, "
-                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
-                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
-                                     + "time-series data. The data type was: "
-                                     + dataSource.context()
-                                                 .type()
-                                     + "." );
-        }
-
-        // When dates are present, both bookends are present because this was validated on construction of the reader
-        TimeInterval dates = declaration.validDates();
-
-        if ( isForecast )
-        {
-            dates = declaration.referenceDates();
-        }
-
-        Instant earliest = dates.minimum();
-        Instant latest = dates.maximum();
-        return Pair.of( earliest, latest );
-    }
-
-    /**
-     * Creates year ranges for requests.
-     * @param declaration the pair declaration
-     * @param dataSource the data source
-     * @return year ranges
-     */
-    public static Set<Pair<Instant, Instant>> getYearRanges( EvaluationDeclaration declaration,
-                                                             DataSource dataSource )
-    {
-        Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.context() );
-
-        SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
-
-        // Get the boundaries
-        Pair<Instant, Instant> dataInterval = ReaderUtilities.getDatasetInterval( dataSource, declaration );
-
-        LOGGER.debug( "Requesting data for the following interval: {}.", dataInterval );
-
-        Instant specifiedEarliest = dataInterval.getLeft();
-        Instant specifiedLatest = dataInterval.getRight();
-
-        ZonedDateTime earliest = specifiedEarliest.atZone( UTC )
-                                                  .with( TemporalAdjusters.firstDayOfYear() )
-                                                  .withHour( 0 )
-                                                  .withMinute( 0 )
-                                                  .withSecond( 0 )
-                                                  .withNano( 0 );
-
-        LOGGER.debug( "Given {}, calculated {} for earliest.",
-                      specifiedEarliest,
-                      earliest );
-
-        // Intentionally keep this raw, un-next-year-ified.
-        ZonedDateTime latest = specifiedLatest.atZone( UTC );
-
-        ZonedDateTime nowDate = ZonedDateTime.now( UTC );
-
-        LOGGER.debug( "Given {}, parsed {} for latest.",
-                      specifiedLatest,
-                      latest );
-
-        ZonedDateTime left = earliest;
-        ZonedDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
-
-        while ( left.isBefore( latest ) )
-        {
-            // We need to ensure the end date does not exceed "now".
-            if ( right.isAfter( nowDate ) )
+            // Minimum duration for the interval
+            if ( interval.compareTo( Duration.ofHours( 1 ) ) < 0 )
             {
-                // Assign "now" if latest is future
-                if ( latest.isAfter( nowDate ) )
-                {
-                    right = nowDate;
-                }
-                // Assign latest if latest is "now" or past
-                else
-                {
-                    right = latest;
-                }
+                throw new ReadException(
+                        "While attempting to create a time chunker, discovered that the chunking interval "
+                        + "is " + interval + ", which is less than the minimum supported time interval of "
+                        + "PT1H (1 hour)." );
             }
 
-            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
-            LOGGER.debug( "Created year range {}", range );
-            yearRanges.add( range );
-            left = left.with( TemporalAdjusters.firstDayOfNextYear() );
-            right = right.with( TemporalAdjusters.firstDayOfNextYear() );
-        }
+            Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
 
-        LOGGER.debug( "Created year ranges: {}.", yearRanges );
+            Instant start = range.getLeft();
+            Instant end = range.getRight();
 
-        return Collections.unmodifiableSet( yearRanges );
+            SortedSet<Pair<Instant, Instant>> intervals = new TreeSet<>();
+
+            while ( start.isBefore( end ) )
+            {
+                Instant startPlusPeriod = start.plus( interval );
+
+                if ( startPlusPeriod.isAfter( end ) )
+                {
+                    startPlusPeriod = end;
+                }
+
+                Pair<Instant, Instant> next = Pair.of( start, startPlusPeriod );
+                intervals.add( next );
+
+                LOGGER.debug( "Created range {}", next );
+                start = startPlusPeriod;
+            }
+
+            return Collections.unmodifiableSortedSet( intervals );
+        };
     }
 
     /**
@@ -1524,14 +1460,14 @@ public class ReaderUtilities
     }
 
     /**
-     * Returns the datetime interval required for the specified data source.
+     * Returns the valid datetime interval required for the specified data source.
      * @param dataSource the data source
      * @param declaration the evaluation declaration
      * @return the time interval required for the data source
      */
 
-    private static Pair<Instant, Instant> getDatasetInterval( DataSource dataSource,
-                                                              EvaluationDeclaration declaration )
+    private static Pair<Instant, Instant> getValidDateInterval( DataSource dataSource,
+                                                                EvaluationDeclaration declaration )
     {
         // Get the boundaries
         TimeInterval dates = declaration.validDates();
@@ -1628,6 +1564,126 @@ public class ReaderUtilities
                                   .sources() // #121751
                                   .equals( dataSource.context()
                                                      .sources() ) );
+    }
+
+    /**
+     * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
+     * time range.
+     *
+     * @param declaration the declaration
+     * @param dataSource the data source
+     * @return a simple range
+     */
+    private static Pair<Instant, Instant> getSimpleRange( EvaluationDeclaration declaration,
+                                                          DataSource dataSource )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.context() );
+
+        // Forecast data?
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
+
+        if ( ( isForecast
+               && Objects.isNull( declaration.referenceDates() ) ) )
+        {
+            throw new ReadException( "While attempting to read forecasts from a web service, discovered an evaluation "
+                                     + "with missing 'reference_dates', which is not allowed. Please declare "
+                                     + "'reference_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data." );
+        }
+        else if ( !isForecast
+                  && Objects.isNull( declaration.validDates() ) )
+        {
+            throw new ReadException( "While attempting to read a non-forecast data source from a web service, "
+                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
+                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data. The data type was: "
+                                     + dataSource.context()
+                                                 .type()
+                                     + "." );
+        }
+
+        // When dates are present, both bookends are present because this was validated on construction of the reader
+        if ( isForecast )
+        {
+            TimeInterval dates = declaration.referenceDates();
+            Instant earliest = dates.minimum();
+            Instant latest = dates.maximum();
+            return Pair.of( earliest, latest );
+        }
+        else
+        {
+            return ReaderUtilities.getValidDateInterval( dataSource, declaration );
+        }
+    }
+
+    /**
+     * Creates year ranges for requests.
+     * @param start the start datetime
+     * @param end the end datetime
+     * @return year ranges
+     */
+    private static SortedSet<Pair<Instant, Instant>> getYearRanges( Instant start,
+                                                                    Instant end )
+    {
+        Objects.requireNonNull( start );
+        Objects.requireNonNull( end );
+
+        SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
+
+        LOGGER.debug( "Requesting data for the following interval: [{},{}].", start, end );
+
+        ZonedDateTime earliest = start.atZone( UTC )
+                                      .with( TemporalAdjusters.firstDayOfYear() )
+                                      .withHour( 0 )
+                                      .withMinute( 0 )
+                                      .withSecond( 0 )
+                                      .withNano( 0 );
+
+        LOGGER.debug( "Given {}, calculated {} for earliest.",
+                      start,
+                      earliest );
+
+        // Intentionally keep this raw, un-next-year-ified.
+        ZonedDateTime latest = end.atZone( UTC );
+
+        ZonedDateTime nowDate = ZonedDateTime.now( UTC );
+
+        LOGGER.debug( "Given {}, parsed {} for latest.",
+                      end,
+                      latest );
+
+        ZonedDateTime left = earliest;
+        ZonedDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
+
+        while ( left.isBefore( latest ) )
+        {
+            // We need to ensure the end date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                // Assign "now" if latest is future
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                // Assign latest if latest is "now" or past
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created year range {}", range );
+            yearRanges.add( range );
+            left = left.with( TemporalAdjusters.firstDayOfNextYear() );
+            right = right.with( TemporalAdjusters.firstDayOfNextYear() );
+        }
+
+        LOGGER.debug( "Created year ranges: {}.", yearRanges );
+
+        return Collections.unmodifiableSortedSet( yearRanges );
     }
 
     /**

@@ -830,12 +830,17 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( fakeDataset )
-                                                                        .right( fakeDataset )
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( fakeDataset )
+                                            .right( fakeDataset )
+                                            .validDates( TimeIntervalBuilder.builder()
+                                                                            .minimum( Instant.MIN )
+                                                                            .maximum( Instant.MAX )
+                                                                            .build() )
+                                            .build();
 
-        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
                                                                   declaration,
                                                                   fakeSource );
 
@@ -932,10 +937,15 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .validDates( TimeIntervalBuilder.builder()
+                                                                            .minimum( Instant.MIN )
+                                                                            .maximum( Instant.MAX )
+                                                                            .build() )
+                                            .build();
 
-        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
                                                                   declaration,
                                                                   fakeSource );
 

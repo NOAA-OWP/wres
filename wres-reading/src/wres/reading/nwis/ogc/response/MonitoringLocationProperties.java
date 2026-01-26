@@ -32,6 +32,7 @@ public class MonitoringLocationProperties implements Serializable
     @JsonAlias( value = "uses_daylight_savings" )
     private String usesDaylightSavings;
 
+    /** The monitoring location name. */
     @JsonAlias( value = "monitoring_location_name" )
     private String monitoringLocationName;
 

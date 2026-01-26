@@ -1,7 +1,7 @@
 package wres.reading;
 
 import java.time.Instant;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -12,8 +12,12 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author James Brown
  */
 
-public interface TimeChunker extends Supplier<Set<Pair<Instant, Instant>>>
+public interface TimeChunker extends Supplier<SortedSet<Pair<Instant, Instant>>>
 {
+    /**
+     * An enumeration of fixed chunking strategies.
+     */
+
     enum ChunkingStrategy
     {
         /** Calendar years on the UTC timeline. */

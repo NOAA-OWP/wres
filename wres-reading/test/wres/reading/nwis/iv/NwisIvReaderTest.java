@@ -725,10 +725,17 @@ class NwisIvReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( dataset )
-                                                                        .right( dataset )
-                                                                        .build();
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( Instant.parse( "2018-01-01T00:00:00Z" ) )
+                                                     .maximum( Instant.parse( "2019-01-01T00:00:00Z" ) )
+                                                     .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( dataset )
+                                            .right( dataset )
+                                            .validDates( validDates )
+                                            .build();
 
         TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
                                                                   declaration,

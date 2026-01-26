@@ -115,10 +115,13 @@ public class NwisReader implements TimeSeriesReader
     private static final IntPredicate ERROR_RESPONSE_PREDICATE = c -> !( c >= 200 && c < 300 );
 
     /** Number of time-series values per page. */
-    private static final int DEFAULT_PAGE_SIZE = 10000;
+    private static final int DEFAULT_PAGE_SIZE = 50000;
 
-    /** Re-used string. */
-    public static final String WRES_NWIS_API_KEY = "wres.nwisApiKey";
+    /** API key. */
+    private static final String API_KEY = System.getProperty( "wres.nwisApiKey" );
+
+    /** Name of the API key request parameter. */
+    private static final String API_KEY_NAME = "api_key";
 
     /** Cache of location metadata for re-use. */
     private final Cache<@NonNull String, LocationMetadata> locationCache =
@@ -424,6 +427,10 @@ public class NwisReader implements TimeSeriesReader
                                            .nextPage();
                 URIBuilder builder = new URIBuilder( nextPageUri );
                 builder.addParameter( "f", "json" );
+
+                // Also, the next page must be adjusted to include the API key afresh
+                builder.addParameter( API_KEY_NAME, API_KEY );
+
                 try
                 {
                     DataSource newSource = dataSource.toBuilder()
@@ -472,7 +479,7 @@ public class NwisReader implements TimeSeriesReader
             {
                 String extra;
 
-                if ( Objects.isNull( System.getProperty( WRES_NWIS_API_KEY ) ) )
+                if ( Objects.isNull( API_KEY ) )
                 {
                     extra = " No API key (system property: nwis.wresApiKey) was discovered. It is strongly "
                             + "recommended that you acquire an API key from the USGS "
@@ -673,7 +680,8 @@ public class NwisReader implements TimeSeriesReader
         uriBuilder.setPath( pathBuilder.toString() )
                   .clearParameters()
                   .addParameter( "f", "json" )
-                  .addParameter( "lang", "en-US" );
+                  .addParameter( "lang", "en-US" )
+                  .addParameter( API_KEY_NAME, API_KEY );
 
         Source source = dataSource.source();
 
@@ -948,13 +956,11 @@ public class NwisReader implements TimeSeriesReader
         String time = startDateTime + "/" + range.getRight();
         urlParameters.put( "time", time );
 
-        String apiKey = System.getProperty( WRES_NWIS_API_KEY );
-
         if ( this.hasApiKey() )
         {
             LOGGER.debug( "Discovered a user-supplied API key for the {}, which will be added to the request "
                           + "using the 'api_key' parameter.", USGS_NWIS );
-            urlParameters.put( "api_key", apiKey );
+            urlParameters.put( API_KEY_NAME, API_KEY );
         }
 
         return Collections.unmodifiableMap( urlParameters );
@@ -966,9 +972,7 @@ public class NwisReader implements TimeSeriesReader
 
     private boolean hasApiKey()
     {
-        String apiKey = System.getProperty( WRES_NWIS_API_KEY );
-
-        return Objects.nonNull( apiKey );
+        return Objects.nonNull( API_KEY );
     }
 
     /**
