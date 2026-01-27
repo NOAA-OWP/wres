@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.components.DataType;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -58,6 +59,7 @@ import wres.io.database.caching.TimeScales;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.io.database.locking.DatabaseLockManager;
+import wres.system.DatabaseSettings;
 import wres.system.SystemSettings;
 import wres.reading.netcdf.Netcdf;
 
@@ -73,11 +75,11 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  *
  * <p>Different source types have different optimization strategies for identifying data and avoiding ingest,
  * therefore those can avoid ingest at a higher level using different strategies than this code. This class always
- * checks if an individual timeseries has been ingested prior to ingesting it, regardless of higher level checks.
+ * checks if an individual time-series has been ingested prior to ingesting it, regardless of higher level checks.
  *
  * <p>Does not link data, leaves that to higher level code to do later. In this context, link means to associate a
- * dataset with all of the sides/orientations in which it appears. For example, a left-ish dataset may be used to
- * generate a baseline time-series and, therefore, appear in two contexts, left and baseline.
+ * dataset with all sides/orientations of the evaluation in which it appears. For example, an observed or left-ish
+ * dataset may be used to generate a baseline time-series and, therefore, appear in two contexts, left and baseline.
  *
  * <p>Does not preclude the skipping of ingest at a higher level.
  *
@@ -235,11 +237,20 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     TimeSeries<Double> nextSeries =
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries(),
                                                                                    innerSource.getUri() );
+
+                    // Truncate to the precision of the lead durations we accept. See GitHub #719 and #630. This stems
+                    // from a flawed representation of time-series in our database schema whereby valid times are
+                    // represented as lead duration offsets from a reference time using truncated precision, rather
+                    // than properly representing them as timestamps (for performance reasons). This should die when
+                    // GitHub #630 is addressed. This method may emit warnings.
+                    TimeSeries<Double> truncated = TimeSeriesSlicer.truncate( nextSeries,
+                                                                              DatabaseSettings.LEAD_DURATION_UNIT );
+
                     String timeSeriesId = this.identifyTimeSeries( nextSeries );
 
                     Future<List<IngestResult>> innerResults =
                             this.getExecutor()
-                                .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
+                                .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( truncated,
                                                                                              timeSeriesId,
                                                                                              innerSource ) );
 
@@ -255,10 +266,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     TimeSeries<Ensemble> nextSeries =
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries(),
                                                                                    innerSource.getUri() );
+
+                    // See notes above
+                    TimeSeries<Ensemble> truncated = TimeSeriesSlicer.truncate( nextSeries,
+                                                                                DatabaseSettings.LEAD_DURATION_UNIT );
+
                     String timeSeriesId = this.identifyTimeSeries( nextSeries );
                     Future<List<IngestResult>> innerResults =
                             this.getExecutor()
-                                .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
+                                .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( truncated,
                                                                                          timeSeriesId,
                                                                                          innerSource ) );
 
@@ -1538,10 +1554,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             valueToAdd = null;
         }
 
+        // Get the lead duration in database units. Any risk of truncation needs to be handled at an earlier stage. We
+        // assume no truncation here
+        Number units = DataUtilities.durationToNumericUnits( leadDuration, DatabaseSettings.LEAD_DURATION_UNIT );
+        int leadDurationInteger = units.intValue();
+
         return IngestedValues.addTimeSeriesValue( systemSettings,
                                                   database,
                                                   timeSeriesId,
-                                                  ( int ) leadDuration.toMinutes(),
+                                                  leadDurationInteger,
                                                   valueToAdd );
     }
 

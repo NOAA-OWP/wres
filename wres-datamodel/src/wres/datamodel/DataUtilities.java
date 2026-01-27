@@ -274,7 +274,7 @@ public final class DataUtilities
     }
 
     /**
-     * Retrieves the specified number of fractional time units from the input duration. Accepted units include:
+     * <p>Retrieves the specified number of fractional time units from the input duration. Accepted units include:
      *
      * <ol>
      * <li>{@link ChronoUnit#DAYS}</li>
@@ -283,6 +283,8 @@ public final class DataUtilities
      * <li>{@link ChronoUnit#SECONDS}</li>
      * <li>{@link ChronoUnit#MILLIS}</li>
      * </ol>
+     *
+     * <p>Uses a 64-bit float to represent any decimal fraction, otherwise a 64-bit integer.
      *
      * @param duration the duration
      * @param durationUnits the duration units required
@@ -312,7 +314,8 @@ public final class DataUtilities
                                                .doubleValue();
 
         // Use a long for a whole number
-        if ( ( durationDouble == Math.floor( durationDouble ) ) && !Double.isInfinite( durationDouble ) )
+        if ( ( durationDouble == Math.floor( durationDouble ) )
+             && !Double.isInfinite( durationDouble ) )
         {
             return ( long ) durationDouble;
         }

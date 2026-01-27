@@ -22,7 +22,7 @@ import wres.io.retrieving.DataAccessException;
 import wres.datamodel.DataProvider;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
-import wres.system.SettingsHelper;
+import wres.system.DatabaseSettingsHelper;
 import wres.system.SystemSettings;
 
 /**
@@ -194,7 +194,7 @@ public class Database
     public Properties getConnectionProperties()
     {
         DatabaseSettings databaseConfiguration = this.systemSettings.getDatabaseConfiguration();
-        return SettingsHelper.getDatasourceProperties( databaseConfiguration );
+        return DatabaseSettingsHelper.getDatasourceProperties( databaseConfiguration );
     }
 
     /**

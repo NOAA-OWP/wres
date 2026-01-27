@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.DataProvider;
+import wres.system.DatabaseSettings;
 
 /**
  * A {@link DataProvider} that provides buffered access to the results of a database call.
@@ -624,7 +624,9 @@ public class DatabaseDataProvider implements DataProvider
             }
             else if ( resultSet.getObject( columnName ) instanceof java.sql.Timestamp )
             {
-                return this.resultSet.getTimestamp( columnName ).toLocalDateTime().toLocalTime();
+                return this.resultSet.getTimestamp( columnName )
+                                     .toLocalDateTime()
+                                     .toLocalTime();
             }
 
             Instant instant = this.getInstant( columnName );
@@ -712,10 +714,7 @@ public class DatabaseDataProvider implements DataProvider
         }
         else if ( value instanceof Number )
         {
-            // If the returned number was somewhat numerical, we're going to treat it as the number of
-            // units in our resolution. Since there's no other information to go by, we just need to
-            // assume the lead resolution of the application
-            result = Duration.of( this.getLong( columnName ), TimeSeriesSlicer.LEAD_RESOLUTION );
+            result = Duration.of( this.getLong( columnName ), DatabaseSettings.LEAD_DURATION_UNIT );
         }
         else if ( value instanceof String )
         {

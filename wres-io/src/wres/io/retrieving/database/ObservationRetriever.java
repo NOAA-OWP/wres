@@ -16,10 +16,11 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.database.ScriptBuilder;
 import wres.io.retrieving.DataAccessException;
+import wres.system.DatabaseSettingsHelper;
 
 /**
  * Retrieves an observation {@link TimeSeries} from the WRES database.
- * 
+ *
  * @author James Brown
  */
 
@@ -50,9 +51,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * <p>Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
-     * 
+     *
      * <p>TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
-     * 
+     *
      * @param identifier the <code>wres.TimeSeries.timeseries_id</code>
      * @return a possible time-series for the given identifier
      */
@@ -65,9 +66,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * <p>Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
-     * 
+     *
      * <p>TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
-     * 
+     *
      * @return a stream of<code>wres.TimeSeries.timeseries_id</code>
      */
 
@@ -80,9 +81,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     /**
      * <p>Overrides the default implementation to get all specified time-series in one pull, rather than one pull for
      * each series.
-     * 
+     *
      * <p>TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
-     * 
+     *
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
      * @throws NullPointerException if the input is null
@@ -95,7 +96,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
-     * 
+     *
      * @return the possible object
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
@@ -141,7 +142,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns a function that obtains the measured value in the existing units from a {@link DataProvider}.
-     * 
+     *
      * @return a function to obtain the measured value
      */
 
@@ -177,14 +178,16 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
-        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' "
+                                   + DatabaseSettingsHelper.getLeadDurationString()
+                                   + " * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "TSV.series_value AS trace_value," );
         scripter.addTab().addLine( "metadata.measurementunit_id," );
         scripter.addTab().addLine( "metadata.scale_period," );
         scripter.addTab().addLine( "metadata.scale_function," );
         scripter.addTab().addLine( "metadata.feature_id," );
 
-        if( aliases )
+        if ( aliases )
         {
             scripter.addTab().addLine( "metadata.variable_name," );
         }
@@ -201,7 +204,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
         scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
 
-        if( aliases )
+        if ( aliases )
         {
             scripter.addTab( 2 ).addLine( "S.variable_name," );
         }
@@ -228,7 +231,11 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
 
     private ObservationRetriever( Builder builder )
     {
-        super( builder, "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead", null );
+        super( builder,
+               "metadata.reference_time + INTERVAL '1' "
+               + DatabaseSettingsHelper.getLeadDurationString()
+               + " * TSV.lead",
+               null );
     }
 
 

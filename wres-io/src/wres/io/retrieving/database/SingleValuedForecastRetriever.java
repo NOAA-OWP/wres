@@ -18,6 +18,7 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.database.ScriptBuilder;
 import wres.io.retrieving.DataAccessException;
+import wres.system.DatabaseSettingsHelper;
 
 /**
  * Retrieves {@link TimeSeries} of single-valued forecasts from the WRES database.
@@ -271,7 +272,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
         scripter.addLine( SELECT );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
-        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
+        scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' "
+                                   + DatabaseSettingsHelper.getLeadDurationString()
+                                   + " * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "metadata.reference_time," );
         scripter.addTab().addLine( "metadata.reference_time_type," );
         scripter.addTab().addLine( "TSV.series_value AS trace_value," );
