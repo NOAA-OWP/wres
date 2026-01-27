@@ -43,10 +43,12 @@ public class DatabaseSettings
      * also. */
     public static final ChronoUnit LEAD_DURATION_UNIT = ChronoUnit.MINUTES;
 
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );
+
     // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
     // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class
     // loading contexts.
-    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );
 
     static
     {

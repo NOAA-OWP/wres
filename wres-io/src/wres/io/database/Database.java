@@ -153,7 +153,8 @@ public class Database
     {
         DatabaseSettings databaseSettings = this.getSettings();
         if ( Objects.nonNull( databaseSettings.getJdbcUrl() )
-             && !databaseSettings.getJdbcUrl().isBlank() )
+             && !databaseSettings.getJdbcUrl()
+                                 .isBlank() )
         {
             if ( LOGGER.isDebugEnabled() )
             {

@@ -68,6 +68,16 @@ public enum DatabaseType
     }
 
     /**
+     * @return a lower case string representation of the enum.
+     */
+    @Override
+    public String toString()
+    {
+        return super.toString()
+                    .toLowerCase();
+    }
+
+    /**
      * Hidden constructor.
      *
      * @param dataSourceClassName the fully qualified data source class name, to be discovered on the class path
