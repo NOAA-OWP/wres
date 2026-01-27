@@ -1493,7 +1493,7 @@ project(':wres-tasker') {
         implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.5'
         implementation 'org.eclipse.jetty:jetty-http:12.1.5'
         implementation 'org.eclipse.jetty:jetty-util:12.1.5'
-        implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
+        implementation 'org.glassfish.jersey.core:jersey-common:4.0.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
         implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
@@ -1512,7 +1512,7 @@ project(':wres-tasker') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.11'
+        runtimeOnly 'org.glassfish.jersey.core:jersey-server:4.0.1'
 
         // Needed to prevent "java.lang.IllegalStateException: InjectionManagerFactory not found."
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
@@ -2009,7 +2009,7 @@ dependencies {
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:3.1.11'
-    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.11'
+    runtimeOnly 'org.glassfish.jersey.core:jersey-server:4.0.1'
     // currently locked at this version, check this ticket for more information
     // https://vlab.***REMOVED***/redmine/issues/124200
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.11'
