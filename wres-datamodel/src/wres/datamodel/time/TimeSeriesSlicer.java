@@ -1976,7 +1976,8 @@ public final class TimeSeriesSlicer
             }
         }
 
-        if ( LOGGER.isWarnEnabled() )
+        if ( LOGGER.isWarnEnabled()
+             && !valuesRemoved.isEmpty() )
         {
             LOGGER.warn( "When inspecting a time-series, discovered that {} valid time(s) could not be represented "
                          + "precisely with units of {}, which is the maximum precision of the software for recording "

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
@@ -362,21 +364,48 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
 
         ReferenceTimeType type = ReferenceTimeType.UNKNOWN;
-        Instant value = timeSeries.getEvents()
-                                  .last()
-                                  .getTime();
+
+        // Find an arbitrary reference time that can be represented at the precision of the lead durations in the
+        // database, if possible. There is no guarantee that this will choose the best reference time for the purposes
+        // of truncating the data, but reference times that correspond to precise synoptic times are more likely to
+        // minimize the amount of data lost through formal truncation, which is a necessary step until GitHub #630 is
+        // addressed. The goal is to represent the lead durations and, hence, the valid times accurately. The reference
+        // times themselves are always represented accurately as ISO8601 timestamps, but valid times are represented as
+        // lead duration offsets from these reference times, imprecisely. Any solution other than GitHub #630 is
+        // imperfect. The next best thing is to increase the precision of the lead durations in the database. We avoid
+        // an iterative search here to choose a reference time that minimizes data loss on truncation because it is
+        // expensive.
+        Instant referenceTime = timeSeries.getEvents()
+                                          .last()
+                                          .getTime();
+
+        SortedSet<Instant> reversed =
+                timeSeries.getEvents()
+                          .stream()
+                          .map( Event::getTime )
+                          .collect( Collectors.toCollection( () -> new TreeSet<>( Collections.reverseOrder() ) ) );
+
+        for ( Instant nextInstant : reversed )
+        {
+            Instant truncated = nextInstant.truncatedTo( DatabaseSettings.LEAD_DURATION_UNIT );
+            if ( truncated.equals( nextInstant ) )
+            {
+                referenceTime = nextInstant;
+                break;
+            }
+        }
 
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Discovered a time-series with zero reference times. Adding a default reference time of type "
                           + "{} with value {} for database ingest. The time-series metadata was: {}.",
                           type,
-                          value,
+                          referenceTime,
                           timeSeries.getMetadata() );
         }
 
         // Add an arbitrary reference time of unknown type until the database schema accepts zero or more times
-        Map<ReferenceTimeType, Instant> defaultReferenceTime = Map.of( type, value );
+        Map<ReferenceTimeType, Instant> defaultReferenceTime = Map.of( type, referenceTime );
 
         TimeSeriesMetadata adjusted = timeSeries.getMetadata()
                                                 .toBuilder()
