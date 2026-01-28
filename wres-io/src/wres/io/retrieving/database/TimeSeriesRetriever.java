@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.components.DatasetOrientation;
 import wres.config.components.Variable;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 
 import wres.datamodel.space.Feature;
@@ -52,6 +53,8 @@ import wres.io.retrieving.Retriever;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.system.DatabaseSettings;
+import wres.system.DatabaseSettingsHelper;
 
 /**
  * <p>Abstract base class for retrieving {@link TimeSeries} from a database.
@@ -74,7 +77,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private static final String AND = " = ? AND ";
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
                                                                + "and data type {}, ";
-    private static final String INTERVAL_1_MINUTE = " + INTERVAL '1' MINUTE * ";
+    private static final String INTERVAL_1_LEAD_DURATION_UNIT = " + INTERVAL '1' "
+                                                                + DatabaseSettingsHelper.getLeadDurationString()
+                                                                + " * ";
     private static final String LESS_EQUAL = " <= ?";
 
     /** Logger. */
@@ -1396,15 +1401,19 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         if ( !filter.getEarliestLeadDuration()
                     .equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            lowerLead = filter.getEarliestLeadDuration()
-                              .toMinutes();
+            Duration lowerLeadDuration = filter.getEarliestLeadDuration();
+            Number lowerLeadNumber = DataUtilities.durationToNumericUnits( lowerLeadDuration,
+                                                                           DatabaseSettings.LEAD_DURATION_UNIT );
+            lowerLead = lowerLeadNumber.longValue();
         }
         // Upper bound
         if ( !filter.getLatestLeadDuration()
                     .equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            upperLead = filter.getLatestLeadDuration()
-                              .toMinutes();
+            Duration upperLeadDuration = filter.getLatestLeadDuration();
+            Number upperLeadNumber = DataUtilities.durationToNumericUnits( upperLeadDuration,
+                                                                           DatabaseSettings.LEAD_DURATION_UNIT );
+            upperLead = upperLeadNumber.longValue();
         }
 
         this.addLeadBoundsClauseToScript( script, lowerLead, upperLead, tabsIn );
@@ -1469,7 +1478,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                                  ZoneId.of( "UTC" ) );
 
             String clause = this.getTimeColumnName()
-                            + INTERVAL_1_MINUTE
+                            + INTERVAL_1_LEAD_DURATION_UNIT
                             + this.getLeadDurationColumnName()
                             + " = ?";
 
@@ -1489,7 +1498,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                                           ZoneId.of( "UTC" ) );
 
                 String clause = this.getTimeColumnName()
-                                + INTERVAL_1_MINUTE
+                                + INTERVAL_1_LEAD_DURATION_UNIT
                                 + this.getLeadDurationColumnName()
                                 + " > ?";
 
@@ -1507,7 +1516,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                                           ZoneId.of( "UTC" ) );
 
                 String clause = this.getTimeColumnName()
-                                + INTERVAL_1_MINUTE
+                                + INTERVAL_1_LEAD_DURATION_UNIT
                                 + this.getLeadDurationColumnName()
                                 + LESS_EQUAL;
 

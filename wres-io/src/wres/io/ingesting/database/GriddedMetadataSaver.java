@@ -23,7 +23,6 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.DataUtilities;
 import wres.datamodel.space.Feature;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.Downloader;
 import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
@@ -36,6 +35,7 @@ import wres.reading.DataSource;
 import wres.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.system.DatabaseSettings;
 import wres.system.SystemSettings;
 import wres.reading.netcdf.Netcdf;
 
@@ -141,7 +141,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
             SourceDetails griddedSource = new SourceDetails();
             griddedSource.setSourcePath( this.fileName );
 
-            Number leadNumeric = DataUtilities.durationToNumericUnits( lead, TimeSeriesSlicer.LEAD_RESOLUTION );
+            Number leadNumeric = DataUtilities.durationToNumericUnits( lead, DatabaseSettings.LEAD_DURATION_UNIT );
             griddedSource.setLead( leadNumeric.intValue() );
             griddedSource.setHash( this.hash );
             griddedSource.setIsPointData( false );

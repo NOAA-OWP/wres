@@ -1,6 +1,5 @@
 package wres.system;
 
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -9,14 +8,11 @@ import java.util.TreeMap;
 /**
  * Helper class for settings methods
  */
-public class SettingsHelper
+public class DatabaseSettingsHelper
 {
 
-    private SettingsHelper()
-    {
-        // Static utility helper class, disallow construction.
-    }
-
+    /** Re-used string. */
+    private static final String PASSWORD = "password";
 
     /**
      * Creates a data source Property for the passed in databaseSettings
@@ -35,21 +31,37 @@ public class SettingsHelper
         };
     }
 
+    /**
+     * Returns the standard SQL for the lead duration unit.
+     *
+     * @return the lead duration unit string for use in queries
+     */
+
+    public static String getLeadDurationString()
+    {
+        return switch ( DatabaseSettings.LEAD_DURATION_UNIT )
+        {
+            case MILLIS -> "MILLISECOND";
+            case SECONDS -> "SECOND";
+            case MINUTES -> "MINUTE";
+            case HOURS -> "HOUR";
+            default -> throw new UnsupportedOperationException( "Unrecognized lead duration unit." );
+        };
+    }
+
+    /**
+     * Generate database properties for the {@link DatabaseType#POSTGRESQL} database type.
+     * @param databaseSettings the database settings
+     * @return the database properties
+     */
+
     private static Properties createPostgresProperties( DatabaseSettings databaseSettings )
     {
-        Map<String, String> commonProperties = new TreeMap<>();
-
-        if ( Objects.nonNull( databaseSettings.getUsername() ) )
-        {
-            commonProperties.put( "user", databaseSettings.getUsername() );
-        }
-
-        if ( Objects.nonNull( databaseSettings.getPassword() ) )
-        {
-            commonProperties.put( "password", databaseSettings.getPassword() );
-        }
+        Map<String, String> commonProperties = DatabaseSettingsHelper.getCommonDatabaseProperties( databaseSettings );
 
         Properties postgresqlProperties = new Properties();
+
+        postgresqlProperties.putAll( commonProperties );
 
         postgresqlProperties.put( "ssl", Boolean.toString( databaseSettings.isUseSSL() ) );
 
@@ -101,25 +113,18 @@ public class SettingsHelper
             postgresqlProperties.put( "options", pgOptions );
         }
 
-        postgresqlProperties.putAll( commonProperties );
-
         return postgresqlProperties;
     }
 
+    /**
+     * Generate database properties for the {@link DatabaseType#H2} database type.
+     * @param databaseSettings the database settings
+     * @return the database properties
+     */
+
     private static Properties createH2Properties( DatabaseSettings databaseSettings )
     {
-        Map<DatabaseType, Properties> mapping = new EnumMap<>( DatabaseType.class );
-        Map<String, String> commonProperties = new TreeMap<>();
-
-        if ( Objects.nonNull( databaseSettings.getUsername() ) )
-        {
-            commonProperties.put( "user", databaseSettings.getUsername() );
-        }
-
-        if ( Objects.nonNull( databaseSettings.getPassword() ) )
-        {
-            commonProperties.put( "password", databaseSettings.getPassword() );
-        }
+        Map<String, String> commonProperties = DatabaseSettingsHelper.getCommonDatabaseProperties( databaseSettings );
 
         Properties h2Properties = new Properties();
 
@@ -139,27 +144,22 @@ public class SettingsHelper
             h2Properties.put( "url", h2JdbcUrl );
         }
 
-        mapping.put( DatabaseType.H2, h2Properties );
-
         return h2Properties;
     }
 
+    /**
+     * Generate database properties for the {@link DatabaseType#MARIADB} database type.
+     * @param databaseSettings the database settings
+     * @return the database properties
+     */
+
     private static Properties createMariadbProperties( DatabaseSettings databaseSettings )
     {
-        Map<DatabaseType, Properties> mapping = new EnumMap<>( DatabaseType.class );
-        Map<String, String> commonProperties = new TreeMap<>();
-
-        if ( Objects.nonNull( databaseSettings.getUsername() ) )
-        {
-            commonProperties.put( "user", databaseSettings.getUsername() );
-        }
-
-        if ( Objects.nonNull( databaseSettings.getPassword() ) )
-        {
-            commonProperties.put( "password", databaseSettings.getPassword() );
-        }
+        Map<String, String> commonProperties = DatabaseSettingsHelper.getCommonDatabaseProperties( databaseSettings );
 
         Properties mariadbProperties = new Properties();
+
+        mariadbProperties.putAll( commonProperties );
 
         mariadbProperties.put( "useSSL", Boolean.toString( databaseSettings.isUseSSL() ) );
         if ( Objects.nonNull( databaseSettings.getHost() ) )
@@ -196,24 +196,31 @@ public class SettingsHelper
         return mariadbProperties;
     }
 
+    /**
+     * Generate database properties for the {@link DatabaseType#MYSQL} database type.
+     * @param databaseSettings the database settings
+     * @return the database properties
+     */
+
     private static Properties createMysqlProperties( DatabaseSettings databaseSettings )
     {
-        Map<DatabaseType, Properties> mapping = new EnumMap<>( DatabaseType.class );
-        Map<String, String> commonProperties = new TreeMap<>();
+        Map<String, String> commonProperties = DatabaseSettingsHelper.getCommonDatabaseProperties( databaseSettings );
+
+        Properties mysqlProperties = new Properties();
+
+        mysqlProperties.putAll( commonProperties );
+
+        mysqlProperties.put( "useSSL", Boolean.toString( databaseSettings.isUseSSL() ) );
 
         if ( Objects.nonNull( databaseSettings.getUsername() ) )
         {
-            commonProperties.put( "user", databaseSettings.getUsername() );
+            mysqlProperties.put( "user", databaseSettings.getUsername() );
         }
 
         if ( Objects.nonNull( databaseSettings.getPassword() ) )
         {
-            commonProperties.put( "password", databaseSettings.getPassword() );
+            mysqlProperties.put( PASSWORD, databaseSettings.getPassword() );
         }
-
-        Properties mysqlProperties = new Properties();
-
-        mysqlProperties.put( "useSSL", Boolean.toString( databaseSettings.isUseSSL() ) );
 
         if ( Objects.nonNull( databaseSettings.getHost() ) )
         {
@@ -246,8 +253,37 @@ public class SettingsHelper
                                  databaseSettings.getQueryTimeout() * 1000 );
         }
 
-        mysqlProperties.putAll( commonProperties );
-
         return mysqlProperties;
+    }
+
+    /**
+     * Returns the properties that are common to all databases in a writable map.
+     * @param databaseSettings the database settings
+     * @return the common properties
+     */
+
+    private static Map<String, String> getCommonDatabaseProperties( DatabaseSettings databaseSettings )
+    {
+        Map<String, String> commonProperties = new TreeMap<>();
+
+        if ( Objects.nonNull( databaseSettings.getUsername() ) )
+        {
+            commonProperties.put( "user", databaseSettings.getUsername() );
+        }
+
+        if ( Objects.nonNull( databaseSettings.getPassword() ) )
+        {
+            commonProperties.put( PASSWORD, databaseSettings.getPassword() );
+        }
+
+        return commonProperties;
+    }
+
+    /**
+     * Do not construct.
+     */
+
+    private DatabaseSettingsHelper()
+    {
     }
 }

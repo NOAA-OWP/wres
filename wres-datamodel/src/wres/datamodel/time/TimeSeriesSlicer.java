@@ -922,10 +922,10 @@ public final class TimeSeriesSlicer
      *
      * <p>Reference datetimes metadata are lost but ensemble labels are preserved.
      *
-     * @param timeSeries The time-series to decompose
-     * @return A map with the trace label as key, sorted set of Events as value.
-     * @throws UnsupportedOperationException When the ensemble events contain a varying number of members and the 
-     *            ensemble labels have not been provided to distinguish between them.
+     * @param timeSeries the time-series to decompose
+     * @return a map with the trace label as key, sorted set of Events as value
+     * @throws UnsupportedOperationException when the ensemble events contain a varying number of members and the
+     *            ensemble labels have not been provided to distinguish between them
      */
 
     public static Map<Object, SortedSet<Event<Double>>> decomposeWithLabels( TimeSeries<Ensemble> timeSeries )
@@ -946,7 +946,8 @@ public final class TimeSeriesSlicer
         for ( Event<Ensemble> next : timeSeries.getEvents() )
         {
             // No labels, so check for a constant number of ensemble members
-            if ( Objects.nonNull( traceCount ) && next.getValue().size() != traceCount )
+            if ( Objects.nonNull( traceCount ) && next.getValue()
+                                                      .size() != traceCount )
             {
                 throw new UnsupportedOperationException( "Cannot determine the ensemble traces from the input "
                                                          + "time-series because the number of ensemble members "
@@ -1902,6 +1903,108 @@ public final class TimeSeriesSlicer
         sorted.sort( c );
 
         return Collections.unmodifiableList( sorted );
+    }
+
+    /**
+     * Removes any values from the time-series whose lead durations cannot be represented at the supplied precision and
+     * warns when one or more values are removed.
+     *
+     * @param <T> the time-series event value type
+     * @param timeSeries the time-series
+     * @param precision the precision
+     * @return the truncated time-series
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> TimeSeries<T> truncate( TimeSeries<T> timeSeries,
+                                              ChronoUnit precision )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( precision );
+
+        if ( timeSeries.getReferenceTimes()
+                       .isEmpty() )
+        {
+            LOGGER.debug( "No reference times discovered, so nothing to truncate." );
+            return timeSeries;
+        }
+
+        TimeSeries<T> returnMe = timeSeries;
+
+        for ( Instant nextTime : timeSeries.getReferenceTimes()
+                                           .values() )
+        {
+            returnMe = TimeSeriesSlicer.truncate( returnMe, nextTime, precision );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Removes any values from the time-series whose lead durations cannot be represented at the supplied precision and
+     * warns when one or more values are removed.
+     *
+     * @param <T> the time-series event value type
+     * @param timeSeries the time-series
+     * @param referenceTime the reference time
+     * @param precision the precision
+     * @return the truncated time-series
+     * @throws NullPointerException if any input is null
+     */
+
+    private static <T> TimeSeries<T> truncate( TimeSeries<T> timeSeries,
+                                               Instant referenceTime,
+                                               ChronoUnit precision )
+    {
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<T>()
+                .setMetadata( timeSeries.getMetadata() );
+
+        Set<Instant> valuesRemoved = new TreeSet<>();
+
+        for ( Event<T> nextEvent : timeSeries.getEvents() )
+        {
+            Instant nextTime = nextEvent.getTime();
+            boolean precise = TimeSeriesSlicer.canRepresentPrecisely( referenceTime, nextTime, precision );
+
+            if ( precise )
+            {
+                builder.addEvent( nextEvent );
+            }
+            else if ( LOGGER.isWarnEnabled() )
+            {
+                valuesRemoved.add( nextTime );
+            }
+        }
+
+        if ( LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "When inspecting a time-series, discovered that {} valid time(s) could not be represented "
+                         + "precisely with units of {}, which is the maximum precision of the software for recording "
+                         + "these times. The times were as follows: {}. They have been removed from the following "
+                         + "time-series: {}.",
+                         valuesRemoved.size(),
+                         precision.name(),
+                         valuesRemoved,
+                         timeSeries.getMetadata() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Indicates whether the lead duration or difference between the reference time and valid time can be represented
+     * with a whole number of the prescribed units.
+     * @param referenceTime the reference time
+     * @param validTime the valid time
+     * @param precision the precision or units
+     * @return whether the lead duration can be represented precisely
+     */
+
+    private static boolean canRepresentPrecisely( Instant referenceTime, Instant validTime, ChronoUnit precision )
+    {
+        Duration leadDuration = Duration.between( referenceTime, validTime );
+        Duration truncated = leadDuration.truncatedTo( precision );
+        return leadDuration.equals( truncated );
     }
 
     /**

@@ -673,14 +673,6 @@ public class ChartDataFactory
     {
         Objects.requireNonNull( statistics );
 
-        List<String> leftNames = statistics.getStatistic()
-                                           .getStatistics()
-                                           .getLeftVariableNamesList();
-
-        List<String> rightNames = statistics.getStatistic()
-                                            .getStatistics()
-                                            .getRightVariableNamesList();
-
         int seriesNumber = 1;
         List<TimeSeries> allSeries = new ArrayList<>();
         for ( Pairs.TimeSeriesOfPairs nextSeries : statistics.getStatistic()
@@ -690,6 +682,16 @@ public class ChartDataFactory
             // Add a placeholder series for each variable
             List<TimeSeries> leftSeries = new ArrayList<>();
             List<TimeSeries> rightSeries = new ArrayList<>();
+
+            // Names aer either common to all series or vary by series, determine which. See GitHub #711
+            List<String> leftNames = ChartDataFactory.getVariableNames( statistics.getStatistic()
+                                                                                  .getStatistics()
+                                                                                  .getLeftVariableNamesList(),
+                                                                        nextSeries.getLeftVariableNamesList() );
+            List<String> rightNames = ChartDataFactory.getVariableNames( statistics.getStatistic()
+                                                                                   .getStatistics()
+                                                                                   .getRightVariableNamesList(),
+                                                                         nextSeries.getRightVariableNamesList() );
 
             // Create a placeholder time-series for each variable
             for ( String nextLeftName : leftNames )
@@ -1639,6 +1641,23 @@ public class ChartDataFactory
         Number leadDuration = DataUtilities.durationToNumericUnits( duration,
                                                                     durationUnits );
         return leadDuration.toString();
+    }
+
+    /**
+     * Returns whichever variable names exist.
+     * @param commonNames the common names
+     * @param seriesNames the series names
+     * @return the names that exist
+     */
+
+    private static List<String> getVariableNames( List<String> commonNames, List<String> seriesNames )
+    {
+        if ( !commonNames.isEmpty() )
+        {
+            return commonNames;
+        }
+
+        return seriesNames;
     }
 
     /**

@@ -1,6 +1,7 @@
 package wres.system;
 
 import java.sql.DriverManager;
+import java.time.temporal.ChronoUnit;
 import javax.sql.DataSource;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
@@ -35,26 +36,34 @@ import org.slf4j.LoggerFactory;
 @Builder( toBuilder = true )
 public class DatabaseSettings
 {
-        // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
-        // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class
-        // loading contexts.
-        private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );
+    /** The precision of the lead duration units in the database. Until the database has been refactored to represent
+     * time-series values at valid times (i.e., timestamps; see GitHub #630), rather than lead durations, the precision
+     * of the lead duration units is centralized here for consistency across various database operations, such as ingest
+     * and retrieval. All lead durations in the database schema are expressed in these whole units. See GitHub #719
+     * also. */
+    public static final ChronoUnit LEAD_DURATION_UNIT = ChronoUnit.MINUTES;
 
-        static
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );
+
+    // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
+    // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class
+    // loading contexts.
+
+    static
+    {
+        for ( DatabaseType nextType : DatabaseType.values() )
         {
-            for ( DatabaseType nextType : DatabaseType.values() )
+            try
             {
-                try
-                {
-                    Class.forName( nextType.getDriverClassName() );
-                }
-                catch ( ClassNotFoundException classError )
-                {
-                    LOGGER.debug( "Failed to load the database driver class {}.", nextType.getDriverClassName() );
-                }
+                Class.forName( nextType.getDriverClassName() );
+            }
+            catch ( ClassNotFoundException classError )
+            {
+                LOGGER.debug( "Failed to load the database driver class {}.", nextType.getDriverClassName() );
             }
         }
-
+    }
 
     /**
      * When the jdbcUrl is specified, it takes precedence over the fields used
@@ -109,7 +118,7 @@ public class DatabaseSettings
     @XmlElement( name = "validate_ssl" )
     boolean validateSSL = true;
 
-    // The query timeout needs to be in seconds and we're setting the default for 5 hours (arbitrarily large)
+    // The query timeout needs to be in seconds, and we're setting the default for 5 hours (arbitrarily large)
     @Builder.Default
     @XmlElement( name = "query_timeout" )
     int queryTimeout = 18000;
@@ -118,12 +127,6 @@ public class DatabaseSettings
     @Builder.Default
     @XmlElement( name = "connectionTimeoutMs" )
     int connectionTimeoutMs = 18000000;
-
-    @XmlElement( name = "database_type" )
-    private void setDatabaseType( String databaseType )
-    {
-        this.databaseType = DatabaseType.valueOf( databaseType );
-    }
 
     /**
      * Dummy class to allow javadoc task to find the builder created by lombok

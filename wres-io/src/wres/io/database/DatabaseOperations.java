@@ -359,7 +359,8 @@ public class DatabaseOperations
             {
                 script.addTab().addLine( "inet_client_addr()," );
             }
-            else if ( database.getType().hasUserFunction() )
+            else if ( database.getType()
+                              .isUserFunctionSupported() )
             {
                 script.addTab().addLine( "user()," );
             }
@@ -493,7 +494,7 @@ public class DatabaseOperations
         final String optionalVacuum;
 
         if ( database.getType()
-                     .hasVacuumAnalyze() )
+                     .isVacuumAnalyzeSupported() )
         {
             optionalVacuum = "VACUUM ";
         }
@@ -503,7 +504,7 @@ public class DatabaseOperations
         }
 
         if ( database.getType()
-                     .hasAnalyze() )
+                     .isAnalyzeSupported() )
         {
             sql = optionalVacuum + "ANALYZE;";
             LOGGER.info( "Analyzing data for efficient execution..." );
@@ -552,7 +553,7 @@ public class DatabaseOperations
         for ( String table : tables )
         {
             if ( database.getType()
-                         .hasTruncateCascade() )
+                         .isTruncateCascadeSupported() )
             {
                 builder.add( TRUNCATE_TABLE + table + " RESTART IDENTITY CASCADE;" );
             }

@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
-import wres.system.SettingsHelper;
+import wres.system.DatabaseSettingsHelper;
 import wres.system.SystemSettings;
 
 /**
@@ -132,6 +132,6 @@ public class ConnectionSupplier
     private Properties getConnectionProperties()
     {
         DatabaseSettings databaseConfiguration = this.systemSettings.getDatabaseConfiguration();
-        return SettingsHelper.getDatasourceProperties( databaseConfiguration );
+        return DatabaseSettingsHelper.getDatasourceProperties( databaseConfiguration );
     }
 }

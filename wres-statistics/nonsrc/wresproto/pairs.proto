@@ -21,10 +21,16 @@ message Pairs
     // Zero or more time-series of pairs.
 
     repeated string left_variable_names = 2;
-    // The variable names of the left values, in order of appearance.
+    // The common variable names of the left values, in order of appearance.
+    // If the left variable names differ across time-series, then there are 
+    // no common labels and the left variable names are instead found in the 
+    // individual time-series.
 
     repeated string right_variable_names = 3;
-    // The variable names of the right values, in order of appearance.
+    // The variable names of the right values, in order of appearance. If the 
+    // right variable names differ across time-series, then there are no 
+    // common labels and the right variable names are instead found in the 
+    // individual time-series.
 
     message TimeSeriesOfPairs
     {
@@ -35,6 +41,14 @@ message Pairs
         
         repeated Pair pairs = 2;
         // One or more pairs.
+
+        repeated string left_variable_names = 3;
+        // The left variable names. Only present when they vary across 
+        // time-series.
+
+        repeated string right_variable_names = 4;
+        // The right variable names. Only present when they vary across 
+        // time-series.
     }
 
     message Pair 

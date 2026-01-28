@@ -1951,8 +1951,8 @@ class EnsembleStatisticsProcessorTest
         Pairs pairs = Pairs.newBuilder()
                            .addLeftVariableNames( DatasetOrientation.LEFT.toString()
                                                                          .toUpperCase() )
-                           .addRightVariableNames( "MEMBER 1" )
-                           .addRightVariableNames( "MEMBER 2" )
+                           .addRightVariableNames( "1" )
+                           .addRightVariableNames( "2" )
                            .addTimeSeries( timeSeries )
                            .build();
 

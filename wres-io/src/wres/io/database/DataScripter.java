@@ -119,7 +119,8 @@ public class DataScripter extends ScriptBuilder
             throw new IllegalArgumentException( "Expected > 0, got " + maxRows );
         }
 
-        if ( this.database.getType().hasLimitClause() )
+        if ( this.database.getType()
+                .isLimitClauseSupported() )
         {
             this.addLine( "LIMIT " + maxRows );
         }

@@ -2,6 +2,7 @@ package wres.metrics.timeseries;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,9 +113,107 @@ class SpaghettiPlotTest
         Pairs pairs = Pairs.newBuilder()
                            .addLeftVariableNames( DatasetOrientation.LEFT.toString()
                                                                          .toUpperCase() )
-                           .addRightVariableNames( "MEMBER 1" )
-                           .addRightVariableNames( "MEMBER 2" )
+                           .addRightVariableNames( "1" )
+                           .addRightVariableNames( "2" )
                            .addTimeSeries( timeSeries )
+                           .build();
+
+        PairsMetric metric = PairsMetric.newBuilder()
+                                        .setName( MetricName.SPAGHETTI_PLOT )
+                                        .setUnits( "MM/DAY" )
+                                        .build();
+
+        PairsStatistic expectedPairsStatistic = PairsStatistic.newBuilder()
+                                                              .setStatistics( pairs )
+                                                              .setMetric( metric )
+                                                              .build();
+
+        PairsStatisticOuter expected = PairsStatisticOuter.of( expectedPairsStatistic, expectedMetadata );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testApplyWithUnevenMembers()
+    {
+        // See GitHub #711
+
+        // Generate some data
+        Pool<TimeSeries<Pair<Double, Ensemble>>> input = MetricTestDataFactory.getTimeSeriesOfEnsemblePairsThree();
+
+        PairsStatisticOuter actual = this.plot.apply( input );
+
+        TimeWindow inner = MessageUtilities.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                           Duration.ofHours( 24 ) );
+        TimeWindowOuter window = TimeWindowOuter.of( inner );
+
+        FeatureGroup featureGroup = Boilerplate.getFeatureGroup();
+
+        Evaluation evaluation = Evaluation.newBuilder()
+                                          .setRightVariableName( "MAP" )
+                                          .setMeasurementUnit( "MM/DAY" )
+                                          .build();
+
+        wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
+                                                                      window,
+                                                                      null,
+                                                                      null,
+                                                                      false );
+
+        PoolMetadata expectedMetadata = PoolMetadata.of( evaluation, pool );
+
+
+        Timestamp firstTime = MessageUtilities.getTimestamp( Instant.parse( "1985-03-13T00:00:00Z" ) );
+        Timestamp secondTime = MessageUtilities.getTimestamp( Instant.parse( "1985-03-13T06:00:00Z" ) );
+        Timestamp thirdTime = MessageUtilities.getTimestamp( Instant.parse( "1985-03-13T12:00:00Z" ) );
+
+        Timestamp firstReferenceTime = MessageUtilities.getTimestamp( Instant.parse( "1985-03-12T18:00:00Z" ) );
+        ReferenceTime one = ReferenceTime.newBuilder()
+                                         .setReferenceTime( firstReferenceTime )
+                                         .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                         .build();
+
+        Timestamp secondReferenceTime = MessageUtilities.getTimestamp( Instant.parse( "1985-03-13T18:00:00Z" ) );
+        ReferenceTime two = ReferenceTime.newBuilder()
+                                         .setReferenceTime( secondReferenceTime )
+                                         .setReferenceTimeType( ReferenceTime.ReferenceTimeType.T0 )
+                                         .build();
+
+        Pairs.TimeSeriesOfPairs timeSeries =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 22.9 )
+                                                            .addRight( 22.8 )
+                                                            .addRight( 23.9 )
+                                                            .addRight( Double.NaN )
+                                                            .setValidTime( firstTime ) )
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 23.2 )
+                                                            .addRight( 16.1 )
+                                                            .addRight( 18.4 )
+                                                            .addRight( Double.NaN )
+                                                            .setValidTime( thirdTime ) )
+                                       .addReferenceTimes( one )
+                                       .build();
+
+        Pairs.TimeSeriesOfPairs timeSeriesTwo =
+                Pairs.TimeSeriesOfPairs.newBuilder()
+                                       .addPairs( Pairs.Pair.newBuilder()
+                                                            .addLeft( 26.4 )
+                                                            .addRight( 23.8 )
+                                                            .addRight( 23.7 )
+                                                            .addRight( 32.5 )
+                                                            .setValidTime( secondTime ) )
+                                       .addReferenceTimes( two )
+                                       .build();
+
+        Pairs pairs = Pairs.newBuilder()
+                           .addLeftVariableNames( DatasetOrientation.LEFT.toString()
+                                                                         .toUpperCase() )
+                           .addAllRightVariableNames( List.of( "1", "2", "3" ) )
+                           .addTimeSeries( timeSeries )
+                           .addTimeSeries( timeSeriesTwo )
                            .build();
 
         PairsMetric metric = PairsMetric.newBuilder()

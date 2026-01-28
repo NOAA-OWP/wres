@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Stores an array of ensemble member values as double values and, optionally, an array of ensemble member labels.
@@ -21,9 +22,9 @@ public class Ensemble implements Comparable<Ensemble>
     {
         /** A cache of ensemble names to re-use, indexed by the concatenation of the names as a unique identifier.
          * Allow one hundred; there should not be more than a handful of instances across recent evaluations. */
-        private static final Cache<String, Labels> LABELS_CACHE = Caffeine.newBuilder()
-                                                                          .maximumSize( 100 )
-                                                                          .build();
+        private static final Cache<@NonNull String, Labels> LABELS_CACHE = Caffeine.newBuilder()
+                                                                                   .maximumSize( 100 )
+                                                                                   .build();
 
         /** Empty labels. */
         private static final Labels EMPTY_LABELS = new Labels( new String[0] );
@@ -185,6 +186,36 @@ public class Ensemble implements Comparable<Ensemble>
                                Labels labels )
     {
         return new Ensemble( members, labels, false );
+    }
+
+    /**
+     * Returns a {@link Ensemble} from a primitive array of members and creates default labels for the ensemble members
+     * on request.
+     *
+     * @param members the ensemble members
+     * @param defaultLabels is true to add default labels.
+     * @return the ensemble
+     * @throws NullPointerException if the members are null
+     */
+
+    public static Ensemble of( final double[] members,
+                               boolean defaultLabels )
+    {
+        if ( !defaultLabels )
+        {
+            return Ensemble.of( members, Labels.EMPTY_LABELS, false );
+        }
+
+        Objects.requireNonNull( members );
+
+        int count = members.length;
+        String[] labels = new String[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            labels[i] = "MEMBER " + ( i + 1 );
+        }
+
+        return new Ensemble( members, Ensemble.Labels.of( labels ), false );
     }
 
     /**
@@ -412,7 +443,7 @@ public class Ensemble implements Comparable<Ensemble>
     {
         Objects.requireNonNull( members );
 
-        if( Objects.isNull( labels ) )
+        if ( Objects.isNull( labels ) )
         {
             labels = Labels.EMPTY_LABELS;
         }
