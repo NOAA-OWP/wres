@@ -1,14 +1,16 @@
 package wres.system;
 
 import javax.sql.DataSource;
-import java.sql.Driver;
+
+import lombok.Getter;
 
 /**
  * The type of relational database management system. The {@link DataSource} class names come from: 
  * <a href="https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names">...</a>.
  */
+@Getter
 public enum DatabaseType
-{   
+{
     /** Postgres is supported and recommended. */
     POSTGRESQL( "org.postgresql.ds.PGSimpleDataSource", "org.postgresql.Driver", true, false, true ),
 
@@ -31,7 +33,7 @@ public enum DatabaseType
      * exclusively.
      */
     public static final Long SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME = 1L;
-    
+
     /** The fully qualified data source class name, to be discovered on the class path. **/
     private final String dataSourceClassName;
 
@@ -39,67 +41,18 @@ public enum DatabaseType
     private final String driverClassName;
 
     /** Is {@code true} if the database supports a {@code LIMIT} clause, {@code false} otherwise. */
-    private final boolean hasLimit;
+    private final boolean limitClauseSupported;
 
     /** Is {@code true} if the database supports a user function, {@code false} otherwise. */
-    private final boolean hasUser;
+    private final boolean userFunctionSupported;
 
     /** Is {@code true} if the database supports an analyze step, {@code false} otherwise. */
-    private final boolean hasAnalyze;
-
-    /**
-     * @return a lower case string representation of the enum.
-     */
-    @Override
-    public String toString()
-    {
-        return super.toString().toLowerCase();
-    }
-
-    /**
-     * @return the fully qualified class name of the {@link DataSource}.
-     */
-    public String getDataSourceClassName()
-    {
-        return this.dataSourceClassName;
-    }
-
-    /**
-     * @return the fully qualified name of the database {@link Driver}.
-     */
-    public String getDriverClassName()
-    {
-        return this.driverClassName;
-    }
-
-    /**
-     * @return {@code true} if the database supports a user function, {@code false} otherwise.
-     */
-    public boolean hasUserFunction()
-    {
-        return this.hasUser;
-    }
-
-    /**
-     * @return {@code true} if the database supports a {@code LIMIT} clause, {@code false} otherwise.
-     */
-    public boolean hasLimitClause()
-    {
-        return this.hasLimit;
-    }
-
-    /**
-     * @return {@code true} if the database supports an analyze step, {@code false} otherwise.
-     */
-    public boolean hasAnalyze()
-    {
-        return this.hasAnalyze;
-    }
+    private final boolean analyzeSupported;
 
     /**
      * @return {@code true} if the database supports a vacuum analyze step, {@code false} otherwise.
      */
-    public boolean hasVacuumAnalyze()
+    public boolean isVacuumAnalyzeSupported()
     {
         // Promote to constructor when required
         return this == DatabaseType.POSTGRESQL;
@@ -108,32 +61,42 @@ public enum DatabaseType
     /**
      * @return {@code true} if the database supports a truncate cascade clause, {@code false} otherwise.
      */
-    public boolean hasTruncateCascade()
+    public boolean isTruncateCascadeSupported()
     {
         // Promote to constructor when required
         return this == DatabaseType.POSTGRESQL;
     }
 
     /**
+     * @return a lower case string representation of the enum.
+     */
+    @Override
+    public String toString()
+    {
+        return super.toString()
+                    .toLowerCase();
+    }
+
+    /**
      * Hidden constructor.
-     * 
+     *
      * @param dataSourceClassName the fully qualified data source class name, to be discovered on the class path
      * @param driverClassName the fully qualified driver name, to be discovered on the class path
-     * @param hasLimit is {@code true} if the database supports a {@code LIMIT} clause, {@code false} otherwise
-     * @param hasUser is {@code true} if the database supports a user function, {@code false} otherwise
-     * @param hasAnalyze is {@code true} if the database supports an analyze step, {@code false} otherwise
+     * @param limitClauseSupported is {@code true} if the database supports a {@code LIMIT} clause, {@code false} otherwise
+     * @param userFunctionSupported is {@code true} if the database supports a user function, {@code false} otherwise
+     * @param analyzeSupported is {@code true} if the database supports an analyze step, {@code false} otherwise
      */
 
-    private DatabaseType( String dataSourceClassName,
-                          String driverClassName,
-                          boolean hasLimit,
-                          boolean hasUser,
-                          boolean hasAnalyze )
+    DatabaseType( String dataSourceClassName,
+                  String driverClassName,
+                  boolean limitClauseSupported,
+                  boolean userFunctionSupported,
+                  boolean analyzeSupported )
     {
         this.dataSourceClassName = dataSourceClassName;
         this.driverClassName = driverClassName;
-        this.hasLimit = hasLimit;
-        this.hasUser = hasUser;
-        this.hasAnalyze = hasAnalyze;
+        this.limitClauseSupported = limitClauseSupported;
+        this.userFunctionSupported = userFunctionSupported;
+        this.analyzeSupported = analyzeSupported;
     }
 }

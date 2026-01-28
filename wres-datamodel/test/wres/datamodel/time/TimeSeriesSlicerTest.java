@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1712,6 +1713,58 @@ final class TimeSeriesSlicerTest
 
         assertAll( () -> assertTrue( TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( seriesOne ) ),
                    () -> assertFalse( TimeSeriesSlicer.hasNonMissingEnsembleMemberValues( seriesTwo ) ) );
+    }
+
+    @Test
+    void testTruncateRemovesLeadDurationsInSecondsThatCannotBeRepresentedAsMinutes()
+    {
+        TimeSeriesMetadata testMetadata =
+                TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( Instant.parse( "1988-10-01T17:00:12Z" ) );
+        TimeSeries<Double> testSeries =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:01:12Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:02:12Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:02:35Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:03:12Z" ), 3.0 ) )
+                        .setMetadata( testMetadata )
+                        .build();
+
+        TimeSeries<Double> actual = TimeSeriesSlicer.truncate( testSeries, ChronoUnit.MINUTES );
+
+        TimeSeries<Double> expected = new TimeSeries.Builder<Double>()
+                .addEvent( Event.of( Instant.parse( "1988-10-01T17:01:12Z" ), 1.0 ) )
+                .addEvent( Event.of( Instant.parse( "1988-10-01T17:02:12Z" ), 2.0 ) )
+                .addEvent( Event.of( Instant.parse( "1988-10-01T17:03:12Z" ), 3.0 ) )
+                .setMetadata( testMetadata )
+                .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testTruncateRemovesNegativeLeadDurationsInSecondsThatCannotBeRepresentedAsMinutes()
+    {
+        TimeSeriesMetadata testMetadata =
+                TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( Instant.parse( "1988-10-01T18:00:12Z" ) );
+        TimeSeries<Double> testSeries =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:01:12Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:02:12Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:02:35Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-01T17:03:12Z" ), 3.0 ) )
+                        .setMetadata( testMetadata )
+                        .build();
+
+        TimeSeries<Double> actual = TimeSeriesSlicer.truncate( testSeries, ChronoUnit.MINUTES );
+
+        TimeSeries<Double> expected = new TimeSeries.Builder<Double>()
+                .addEvent( Event.of( Instant.parse( "1988-10-01T17:01:12Z" ), 1.0 ) )
+                .addEvent( Event.of( Instant.parse( "1988-10-01T17:02:12Z" ), 2.0 ) )
+                .addEvent( Event.of( Instant.parse( "1988-10-01T17:03:12Z" ), 3.0 ) )
+                .setMetadata( testMetadata )
+                .build();
+
+        assertEquals( expected, actual );
     }
 
     /**
