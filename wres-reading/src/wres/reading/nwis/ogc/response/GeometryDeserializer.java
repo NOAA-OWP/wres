@@ -2,6 +2,7 @@ package wres.reading.nwis.ogc.response;
 
 import java.util.Objects;
 
+import org.locationtech.jts.io.ParseException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.ObjectReadContext;
 import tools.jackson.databind.DeserializationContext;
@@ -12,8 +13,10 @@ import lombok.NonNull;
 import org.locationtech.jts.geom.Geometry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wololo.jts2geojson.GeoJSONReader;
+import org.locationtech.jts.io.geojson.GeoJsonReader;
 import tools.jackson.databind.ValueDeserializer;
+
+import wres.reading.ReadException;
 
 /**
  * Custom deserializer for a {@link org.locationtech.jts.geom.Geometry}.
@@ -42,21 +45,28 @@ public class GeometryDeserializer extends ValueDeserializer<Geometry>
 
         LOGGER.debug( "Discovered this GeoJSON string to parse: {}", geoString );
 
-        GeoJSONReader reader = new GeoJSONReader();
+        GeoJsonReader reader = new GeoJsonReader();
 
-        Geometry geometry = reader.read( geoString );
-
-        Geometry cachedKey = GEOMETRY_CACHE.getIfPresent( geometry );
-
-        if ( Objects.nonNull( cachedKey ) )
+        try
         {
-            LOGGER.debug( "Returning geometry from cache: {}", cachedKey );
-            return cachedKey;
+            Geometry geometry = reader.read( geoString );
+
+            Geometry cachedKey = GEOMETRY_CACHE.getIfPresent( geometry );
+
+            if ( Objects.nonNull( cachedKey ) )
+            {
+                LOGGER.debug( "Returning geometry from cache: {}", cachedKey );
+                return cachedKey;
+            }
+            else
+            {
+                GEOMETRY_CACHE.put( geometry, geometry );
+                return geometry;
+            }
         }
-        else
+        catch ( ParseException e )
         {
-            GEOMETRY_CACHE.put( geometry, geometry );
-            return geometry;
+            throw new ReadException( "While attempting to parse a GeoJSON geometry string to a JTS geometry.", e );
         }
     }
 }

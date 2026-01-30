@@ -1,18 +1,12 @@
 package wres.reading.nwis.ogc.response;
 
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerFactory;
-import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.jspecify.annotations.NonNull;
@@ -23,7 +17,7 @@ import org.jspecify.annotations.NonNull;
  *
  * @author James Brown
  */
-public class PropertiesDeserializer extends JsonDeserializer<Properties>
+public class PropertiesDeserializer extends ValueDeserializer<Properties>
 {
     /** Cache of geometries for re-use. */
     private static final Cache<@NonNull String, String> STRING_CACHE =
@@ -33,79 +27,65 @@ public class PropertiesDeserializer extends JsonDeserializer<Properties>
 
     @Override
     public Properties deserialize( JsonParser jp, DeserializationContext context )
-            throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectCodec oc = jp.getCodec();
-        JsonNode node = oc.readTree( jp );
+        ObjectReadContext reader = jp.objectReadContext();
+        JsonNode node = reader.readTree( jp );
 
-        // Shenanigans to obtain a default deserializer to deserialize the contents first before caching re-usable
-        // content
-        // https://stackoverflow.com/questions/18313323/how-do-i-call-the-default-deserializer-from-a-custom-deserializer-in-jackson
-        DeserializationConfig config = context.getConfig();
-        JavaType type = TypeFactory.defaultInstance().constructType( Properties.class );
-        JsonDeserializer<Object> defaultDeserializer =
-                BeanDeserializerFactory.instance.buildBeanDeserializer( context, type, config.introspect( type ) );
+        String unit = this.getPropertyFromJsonOrCache( node, "unit_of_measure" );
+        String statisticId = this.getPropertyFromJsonOrCache( node, "statistic_id" );
+        String locationId = this.getPropertyFromJsonOrCache( node, "monitoring_location_id" );
+        String timeSeriesId = this.getPropertyFromJsonOrCache( node, "time_series_id" );
 
-        if ( defaultDeserializer instanceof ResolvableDeserializer resolvableDeserializer )
-        {
-            resolvableDeserializer.resolve( context );
-        }
+        String time = node.get( "time" )
+                          .asString();
 
-        JsonParser treeParser = oc.treeAsTokens( node );
-        config.initialize( treeParser );
-
-        if ( treeParser.getCurrentToken() == null )
-        {
-            treeParser.nextToken();
-        }
-
-        // Deserialize using the default deserializer
-        Properties properties = ( Properties ) defaultDeserializer.deserialize( treeParser, context );
-
-        // Now create a new one with cached content, where possible
-        String unit = STRING_CACHE.getIfPresent( properties.getUnit() );
-
-        if ( Objects.isNull( unit ) )
-        {
-            unit = properties.getUnit();
-            STRING_CACHE.put( unit, unit );
-        }
-
-        String statistic = STRING_CACHE.getIfPresent( properties.getStatistic() );
-
-        if ( Objects.isNull( statistic ) )
-        {
-            statistic = properties.getStatistic();
-            STRING_CACHE.put( statistic, statistic );
-        }
-
-        String locationId = STRING_CACHE.getIfPresent( properties.getLocationId() );
-
-        if ( Objects.isNull( locationId ) )
-        {
-            locationId = properties.getLocationId();
-            STRING_CACHE.put( locationId, locationId );
-        }
-
-        String timeSeriesId = STRING_CACHE.getIfPresent( properties.getTimeSeriesId() );
-
-        if ( Objects.isNull( timeSeriesId ) )
-        {
-            timeSeriesId = properties.getTimeSeriesId();
-            STRING_CACHE.put( timeSeriesId, timeSeriesId );
-        }
+        double value = node.get( "value" )
+                           .asDouble();
 
         return Properties.builder()
                          .locationId( locationId )
-                         .statistic( statistic )
+                         .statistic( statisticId )
                          .unit( unit )
                          .timeSeriesId( timeSeriesId )
-                         .time( properties.getTime() )
-                         .value( properties.getValue() )
+                         .time( time )
+                         .value( value )
                          .build();
     }
 
+    /**
+     * Returns a property from the supplied node or from the cache if it has been read before.
+     * @param node the node
+     * @param propertyName the property name
+     * @return the new property or cached property
+     */
+
+    private String getPropertyFromJsonOrCache( JsonNode node, String propertyName )
+    {
+        String property = null;
+
+        if ( node.has( propertyName ) )
+        {
+            String innerproperty = node.get( propertyName )
+                                       .asString();
+
+            // Now create a new one with cached content, where possible
+            String cachedProperty = STRING_CACHE.getIfPresent( innerproperty );
+
+            if ( Objects.isNull( cachedProperty ) )
+            {
+                STRING_CACHE.put( innerproperty, innerproperty );
+            }
+            else
+            {
+                innerproperty = cachedProperty;
+            }
+
+            property = innerproperty;
+        }
+
+        return property;
+    }
 }
 
