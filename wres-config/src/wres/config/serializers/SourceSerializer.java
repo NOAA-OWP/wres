@@ -74,6 +74,11 @@ public class SourceSerializer extends ValueSerializer<Source>
                                                                   .replace( ":", "" ) );
         }
 
+        if ( Objects.nonNull( source.daylightSavings() ) )
+        {
+            writer.writeBooleanProperty( "daylight_savings", source.daylightSavings() );
+        }
+
         if ( Objects.nonNull( source.missingValue() )
              && !source.missingValue()
                        .isEmpty() )

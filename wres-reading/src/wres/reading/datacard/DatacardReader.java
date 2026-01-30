@@ -83,7 +83,7 @@ public class DatacardReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             BufferedReader reader = Files.newBufferedReader( path, StandardCharsets.UTF_8 );
             return this.read( dataSource, reader );
         }
@@ -165,7 +165,7 @@ public class DatacardReader implements TimeSeriesReader
             }
             catch ( DeclarationException | IOException e )
             {
-                throw new ReadException( "While reading a Datacard file from " + dataSource.getUri(), e );
+                throw new ReadException( "While reading a Datacard file from " + dataSource.uri(), e );
             }
         };
     }
@@ -246,7 +246,7 @@ public class DatacardReader implements TimeSeriesReader
         else
         {
             String message = "The Datacard file at "
-                             + dataSource.getUri()
+                             + dataSource.uri()
                              + " had unexpected syntax and could not be read.";
 
             throw new ReadException( message );
@@ -276,7 +276,7 @@ public class DatacardReader implements TimeSeriesReader
         else
         {
             String message = "The Datacard file at "
-                             + dataSource.getUri()
+                             + dataSource.uri()
                              + " had unexpected syntax on line "
                              + ( lineNumber.get() + 1 )
                              + " and could not be read.";
@@ -448,7 +448,7 @@ public class DatacardReader implements TimeSeriesReader
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Parsed timeseries from '{}'", dataSource.getUri() );
+            LOGGER.debug( "Parsed timeseries from '{}'", dataSource.uri() );
         }
 
         Geometry geometry = MessageUtilities.getGeometry( basicMetadata.featureName,
@@ -468,7 +468,7 @@ public class DatacardReader implements TimeSeriesReader
                                                         lineNumber.get() );
 
         // Validate
-        ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
+        ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.uri() );
 
         return timeSeries;
     }
@@ -482,7 +482,7 @@ public class DatacardReader implements TimeSeriesReader
 
     private ZoneOffset getZoneOffset( DataSource dataSource )
     {
-        Source source = dataSource.getSource();
+        Source source = dataSource.source();
 
         // Zone offset is required configuration since datacard does not specify its time zone. The offset may be
         // declared for this source or for the overall dataset
@@ -491,7 +491,7 @@ public class DatacardReader implements TimeSeriesReader
         // Overall offset for all sources?
         if ( Objects.isNull( offset ) )
         {
-            offset = dataSource.getContext()
+            offset = dataSource.context()
                                .timeZoneOffset();
         }
 
@@ -500,7 +500,7 @@ public class DatacardReader implements TimeSeriesReader
         if ( Objects.isNull( offset ) )
         {
             String message = "While reading a Datacard data source from '"
-                             + dataSource.getUri()
+                             + dataSource.uri()
                              + "', failed to identify a 'time_zone_offset' in the project declaration, which is needed "
                              + "to correctly identify the time zone of the time-series data. Please add a "
                              + "'time_zone_offset' to the project declaration for this individual data source or "
@@ -544,7 +544,7 @@ public class DatacardReader implements TimeSeriesReader
         catch ( NumberFormatException nfe )
         {
             String message = "While reading datacard file "
-                             + dataSource.getUri()
+                             + dataSource.uri()
                              + ", could not parse the value at position "
                              + valIdxInRecord
                              + " on this line ("

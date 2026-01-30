@@ -48,6 +48,7 @@ import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
+import wres.io.retrieving.RetrievalEvent;
 import wres.io.retrieving.Retriever;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;

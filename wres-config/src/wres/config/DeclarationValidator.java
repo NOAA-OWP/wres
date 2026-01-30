@@ -1829,7 +1829,30 @@ public class DeclarationValidator
             LOGGER.debug( "When validating the time zone offset of the {} dataset, discovered that the dataset was "
                           + "missing.",
                           orientation );
-            return List.of();
+            return Collections.emptyList();
+        }
+
+        // Warn about any data sources whose interface is missing or not NWIS and daylight savings is declared to be
+        // ignored, as NWIS is currently the only data source interface that allows for the determination of whether
+        // daylight savings is enforced at a particular location
+        List<EvaluationStatusEvent> returnMe = new ArrayList<>();
+        if ( dataset.sources()
+                    .stream()
+                    .anyMatch( s -> s.sourceInterface() != SourceInterface.USGS_NWIS
+                                    && Boolean.FALSE.equals( s.daylightSavings() ) ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( DISCOVERED_ONE_OR_MORE
+                                                             + orientation
+                                                             + "' data sources whose 'interface' was not NWIS and for "
+                                                             + "which the 'daylight_savings' was 'false'. This "
+                                                             + "declaration is currently only supported by NWIS and "
+                                                             + "will be ignored. Please consider removing this "
+                                                             + "declaration for clarity." )
+                                           .build();
+            returnMe.add( event );
         }
 
         ZoneOffset universalOffset = dataset.timeZoneOffset();
@@ -1838,7 +1861,7 @@ public class DeclarationValidator
             LOGGER.debug( "The {} dataset did not contain a universal time zone offset.",
                           orientation );
 
-            return Collections.emptyList();
+            return Collections.unmodifiableList( returnMe );
         }
 
         // There is a universal time zone offset, so all the sources must have a null offset or the same offset as the
@@ -1857,7 +1880,7 @@ public class DeclarationValidator
                           orientation,
                           universalOffset );
 
-            return Collections.emptyList();
+            return Collections.unmodifiableList( returnMe );
         }
 
         String article = "the";
@@ -1887,8 +1910,9 @@ public class DeclarationValidator
                                                          + "' dataset or its individual "
                                                          + "sources or ensuring they match." )
                                        .build();
+        returnMe.add( event );
 
-        return List.of( event );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -4170,7 +4194,7 @@ public class DeclarationValidator
         String start = "No geospatial features were defined, but source interfaces that require features were declared "
                        + "for the '";
         String middle = "' dataset: ";
-        String end = "Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' or "
+        String end = ". Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' or "
                      + "'feature_service') and try again.";
 
         if ( Objects.nonNull( declaration.left() ) )
@@ -5336,6 +5360,43 @@ public class DeclarationValidator
                                                                + "you should declare this source with the 'cdms3' "
                                                                + "scheme, rather than the 'http' scheme, as this "
                                                                + "should be much more performant." )
+                                             .build();
+                oneOf.add( event );
+            }
+
+            // Warn about rating limiting with the new NWIS OGC APIs
+            if ( Objects.nonNull( source.uri() )
+                 && Objects.nonNull( source.uri()
+                                           .getHost() )
+                 && Objects.nonNull( source.uri()
+                                           .getPath() )
+                 && DeclarationValidator.isWebSource( source )
+                 && source.uri()
+                          .getHost()
+                          .contains( "usgs" )
+                 && source.uri()
+                          .getPath()
+                          .contains( "ogcapi" )
+                 && Objects.isNull( System.getProperty( "wres.nwisApiKey" ) ) )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( DISCOVERED_ONE_OR_MORE
+                                                               + orientation
+                                                               + "' data sources whose URI looks like a request to a "
+                                                               + "USGS National Water Information System OGC web "
+                                                               + "service, yet no API Key (system property: "
+                                                               + "wres.nwisApiKey) was discovered. The NWIS OGC web "
+                                                               + "services are rate limited. Without an API key to "
+                                                               + "boost your rate limit, you may reach this limit "
+                                                               + "quickly. This could lead to an HTTP 429 error when "
+                                                               + "attempting to read data from NWIS, which will, in "
+                                                               + "turn, cause your evaluation to fail. It is strongly "
+                                                               + "recommended that you acquire an API key from the USGS "
+                                                               + "(https://api.waterdata.usgs.gov/signup/) and supply "
+                                                               + "this key to the WRES using the system property, "
+                                                               + "wres.nwisApiKey." )
                                              .build();
                 oneOf.add( event );
             }

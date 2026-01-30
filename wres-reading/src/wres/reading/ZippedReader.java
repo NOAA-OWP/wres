@@ -47,11 +47,11 @@ public class ZippedReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        
+
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
 
-        Path path = Paths.get( dataSource.getUri() );
+        Path path = Paths.get( dataSource.uri() );
 
         try
         {
@@ -70,7 +70,7 @@ public class ZippedReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
-        
+
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.GZIP );
 
@@ -83,24 +83,21 @@ public class ZippedReader implements TimeSeriesReader
             this.innerSourceName = decompressedStream.getMetaData()
                                                      .getFileName();
 
-            LOGGER.debug( "Discovered a source inside {} called {}.", dataSource.getUri(), this.innerSourceName );
+            LOGGER.debug( "Discovered a source inside {} called {}.", dataSource.uri(), this.innerSourceName );
 
             // Determine the content type of the decompressed source and prepare an adapted source that qualifies it
-            URI mashupUri = URI.create( dataSource.getUri() + "/" + this.getInnerSourceName() );
+            URI mashupUri = URI.create( dataSource.uri() + "/" + this.getInnerSourceName() );
             DataDisposition disposition = DataSource.detectFormat( bufferedStream,
                                                                    mashupUri );
 
             LOGGER.debug( "Detected a decompressed source inside {} with content type {}.",
-                          dataSource.getUri(),
+                          dataSource.uri(),
                           disposition );
 
-            DataSource decompressedSource = DataSource.of( disposition,
-                                                           dataSource.getSource(),
-                                                           dataSource.getContext(),
-                                                           dataSource.getLinks(),
-                                                           mashupUri,
-                                                           dataSource.getDatasetOrientation(),
-                                                           dataSource.getCovariateFeatureOrientation() );
+            DataSource decompressedSource = dataSource.toBuilder()
+                                                      .uri( mashupUri )
+                                                      .disposition( disposition )
+                                                      .build();
 
             TimeSeriesReader reader = this.getReaderFactory()
                                           .getReader( decompressedSource );
@@ -129,8 +126,8 @@ public class ZippedReader implements TimeSeriesReader
     }
 
     /**
-    * @return the reader factory
-    */
+     * @return the reader factory
+     */
 
     private TimeSeriesReaderFactory getReaderFactory()
     {

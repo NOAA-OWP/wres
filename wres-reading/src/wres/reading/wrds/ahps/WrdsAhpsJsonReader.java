@@ -103,7 +103,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
             return this.readFromStream( dataSource, stream );
         }
@@ -153,7 +153,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -216,7 +216,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
                                                  InputStream inputStream )
     {
-        URI uri = dataSource.getUri();
+        URI uri = dataSource.uri();
 
         try
         {
@@ -304,7 +304,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                                            DataSource dataSource )
     {
         List<DataPoint> dataPointsList;
-        URI uri = dataSource.getUri();
+        URI uri = dataSource.uri();
         Member[] members = forecast.getMembers();
         if ( Objects.nonNull( members )
              && members.length > 0
@@ -411,7 +411,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                       metadata );
 
         // Validate that the time-series is not empty
-        ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
+        ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.uri() );
 
         return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
     }

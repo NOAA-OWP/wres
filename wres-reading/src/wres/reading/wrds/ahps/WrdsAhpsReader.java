@@ -43,6 +43,7 @@ import wres.reading.PreReadException;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.http.WebClient;
@@ -72,7 +73,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /** Message string. */
     private static final String WRDS_AHPS = "WRDS AHPS";
 
-    /** Custom HttpClient to use */
+    /** Custom HttpClient to use. */
     private static final WebClient CUSTOM_WEB_CLIENT;
 
     /** The HTTP response codes considered to represent no data. Is this too broad? Perhaps a 404 only, else a read
@@ -90,6 +91,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
+    /** The time chunker. */
+    private final TimeChunker timeChunker;
+
     static
     {
         try
@@ -97,7 +101,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
             Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextForWrds();
             OkHttpClient client = WebClientUtils.defaultTimeoutHttpClient()
                                                 .newBuilder()
-                                                .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                .sslSocketFactory( sslContext.getKey()
+                                                                             .getSocketFactory(),
                                                                    sslContext.getRight() )
                                                 .build();
             CUSTOM_WEB_CLIENT = new WebClient( client );
@@ -110,29 +115,34 @@ public class WrdsAhpsReader implements TimeSeriesReader
     }
 
     /**
-     * @see #of(EvaluationDeclaration, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings, TimeChunker)
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance that does not perform any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
      */
 
-    public static WrdsAhpsReader of( SystemSettings systemSettings )
+    public static WrdsAhpsReader of( SystemSettings systemSettings,
+                                     TimeChunker timeChunker )
     {
-        return new WrdsAhpsReader( null, systemSettings );
+        return new WrdsAhpsReader( null, systemSettings, timeChunker );
     }
 
     /**
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static WrdsAhpsReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    public static WrdsAhpsReader of( EvaluationDeclaration declaration,
+                                     SystemSettings systemSettings,
+                                     TimeChunker timeChunker )
     {
         Objects.requireNonNull( declaration );
 
-        return new WrdsAhpsReader( declaration, systemSettings );
+        return new WrdsAhpsReader( declaration, systemSettings, timeChunker );
     }
 
     @Override
@@ -149,7 +159,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to WRDS for AHPS time-series without any chunking of the data." );
-        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                          NO_DATA_PREDICATE,
                                                                          ERROR_RESPONSE_PREDICATE,
                                                                          null,
@@ -157,7 +167,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         if ( Objects.isNull( stream ) )
         {
-            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.uri() );
 
             return Stream.of();
         }
@@ -217,17 +227,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges;
-        if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
-        {
-            dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
-        }
-        else
-        {
-            dateRanges = new HashSet<>();
-            Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
-            dateRanges.add( range );
-        }
+        Set<Pair<Instant, Instant>> dateRanges = this.timeChunker.get();
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -310,22 +310,17 @@ public class WrdsAhpsReader implements TimeSeriesReader
                     mutableChunks.remove( nextChunk );
 
                     // Create the inner data source for the chunk
-                    URI nextUri = this.getUriForChunk( dataSource.getSource()
+                    URI nextUri = this.getUriForChunk( dataSource.source()
                                                                  .uri(),
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft(),
-                                                       dataSource.getSource()
+                                                       dataSource.source()
                                                                  .parameters(),
                                                        ReaderUtilities.isWrdsObservedSource( dataSource ) );
 
-                    DataSource innerSource =
-                            DataSource.of( dataSource.getDisposition(),
-                                           dataSource.getSource(),
-                                           dataSource.getContext(),
-                                           dataSource.getLinks(),
-                                           nextUri,
-                                           dataSource.getDatasetOrientation(),
-                                           dataSource.getCovariateFeatureOrientation() );
+                    DataSource innerSource = dataSource.toBuilder()
+                                                       .uri( nextUri )
+                                                       .build();
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
@@ -381,7 +376,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                                                    NO_DATA_PREDICATE,
                                                                                                    ERROR_RESPONSE_PREDICATE,
                                                                                                    null,
@@ -390,7 +385,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                            if ( Objects.isNull( inputStream ) )
                            {
                                LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.",
-                                            dataSource.getUri() );
+                                            dataSource.uri() );
 
                                return List.of();
                            }
@@ -522,15 +517,20 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Hidden constructor.
      * @param declaration the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
+     * @param timeChunker the time chunker
      * @throws wres.config.DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private WrdsAhpsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    private WrdsAhpsReader( EvaluationDeclaration declaration,
+                            SystemSettings systemSettings,
+                            TimeChunker timeChunker )
     {
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( timeChunker );
 
         this.declaration = declaration;
+        this.timeChunker = timeChunker;
 
         ThreadFactory webClientFactory = BasicThreadFactory.builder()
                                                            .namingPattern( "WRDS AHPS Reading Thread %d" )

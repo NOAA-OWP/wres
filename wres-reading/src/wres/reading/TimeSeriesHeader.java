@@ -5,6 +5,7 @@ import java.util.Objects;
 import lombok.Builder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Basic time-series metadata for single-valued or ensemble time-series. The {@link #ensembleMemberIndex()} is
@@ -106,6 +107,7 @@ public record TimeSeriesHeader( String locationId,
                && Objects.equals( this.locationLongName(), otherMetadata.locationLongName() );
     }
 
+    @NotNull
     @Override
     public String toString()
     {

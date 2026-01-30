@@ -58,7 +58,6 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.reading.waterml.WatermlReader;
 import wres.http.WebClient;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
@@ -191,7 +190,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         LOGGER.debug( "Preparing a request to WRDS for NWM time-series without any chunking of the data." );
         InputStream stream =
-                ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                             NO_DATA_PREDICATE,
                                                             ERROR_RESPONSE_PREDICATE,
                                                             r -> WrdsNwmReader.tryToReadError( r.getResponse() ),
@@ -199,22 +198,13 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         if ( Objects.isNull( stream ) )
         {
-            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.uri() );
 
             return Stream.of();
         }
 
         return this.read( dataSource, stream );
     }
-
-    /**
-     * This implementation is equivalent to calling {@link WatermlReader#read(DataSource, InputStream)}.
-     * @param dataSource the data source, required
-     * @param stream the input stream, required
-     * @return the stream of time-series
-     * @throws NullPointerException if the dataSource is null
-     * @throws ReadException if the reading fails for any other reason
-     */
 
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream )
@@ -354,20 +344,15 @@ public class WrdsNwmReader implements TimeSeriesReader
                     Pair<List<String>, Pair<Instant, Instant>> nextChunk = mutableChunks.remove( 0 );
 
                     // Create the inner data source for the chunk
-                    URI nextUri = this.getUriForChunk( dataSource.getSource()
+                    URI nextUri = this.getUriForChunk( dataSource.source()
                                                                  .uri(),
                                                        dataSource,
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft() );
 
-                    DataSource innerSource =
-                            DataSource.of( dataSource.getDisposition(),
-                                           dataSource.getSource(),
-                                           dataSource.getContext(),
-                                           dataSource.getLinks(),
-                                           nextUri,
-                                           dataSource.getDatasetOrientation(),
-                                           dataSource.getCovariateFeatureOrientation() );
+                    DataSource innerSource = dataSource.toBuilder()
+                                                       .uri( nextUri )
+                                                       .build();
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
@@ -424,7 +409,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                    .submit( () -> {
                        // Get the input stream and read from it
                        try ( InputStream s =
-                                     ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                                     ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                                  NO_DATA_PREDICATE,
                                                                                  ERROR_RESPONSE_PREDICATE,
                                                                                  r -> WrdsNwmReader.tryToReadError( r.getResponse() ),
@@ -453,7 +438,7 @@ public class WrdsNwmReader implements TimeSeriesReader
             throw new ReadException( "Expected a WRDS NWM data source, but got: " + dataSource + "." );
         }
 
-        if ( DeclarationUtilities.isForecast( dataSource.getContext() )
+        if ( DeclarationUtilities.isForecast( dataSource.context() )
              && Objects.nonNull( this.getDeclaration() )
              && Objects.isNull( this.getDeclaration()
                                     .referenceDates() ) )
@@ -498,9 +483,9 @@ public class WrdsNwmReader implements TimeSeriesReader
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
+        Objects.requireNonNull( dataSource.context() );
 
-        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
 
         TimeInterval dates = declaration.validDates();
 
@@ -598,12 +583,12 @@ public class WrdsNwmReader implements TimeSeriesReader
             basePath = basePath + SLASH;
         }
 
-        boolean isEnsemble = dataSource.getContext()
+        boolean isEnsemble = dataSource.context()
                                        .type() == DataType.ENSEMBLE_FORECASTS;
 
         Map<String, String> wrdsParameters = this.createWrdsNwmUrlParameters( range,
                                                                               isEnsemble,
-                                                                              dataSource.getSource()
+                                                                              dataSource.source()
                                                                                         .parameters() );
         StringJoiner joiner = new StringJoiner( "," );
 

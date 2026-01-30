@@ -83,7 +83,7 @@ public class TarredReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
             return this.read( dataSource, stream );
         }
@@ -122,7 +122,7 @@ public class TarredReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -234,7 +234,7 @@ public class TarredReader implements TimeSeriesReader
             Stream<TimeSeriesTuple> stream = this.readTarEntry( dataSource,
                                                                 archivedSource,
                                                                 archiveStream,
-                                                                dataSource.getUri() );
+                                                                dataSource.uri() );
 
             // Create the next mutable list of tuples, submitting the task to the executor for delayed execution
             Future<List<TimeSeriesTuple>> nextTuple =
@@ -324,26 +324,14 @@ public class TarredReader implements TimeSeriesReader
             return Stream.of();
         }
 
-        Source originalSource = dataSource.getSource();
-
-        if ( Objects.isNull( originalSource ) )
-        {
-            // Demote to debug or trace if null is known as being a normal,
-            // usual occurrence that has no potential impact on anything.
-            LOGGER.warn( "Archive entry '{}' is not being read because its data source is null.",
-                         archiveEntry );
-
-            return Stream.of();
-        }
+        Source originalSource = dataSource.source();
 
         // Create the inner data source and stream
-        DataSource innerDataSource = DataSource.of( disposition,
-                                                    originalSource,
-                                                    dataSource.getContext(),
-                                                    dataSource.getLinks(),
-                                                    archivedFileName,
-                                                    dataSource.getDatasetOrientation(),
-                                                    dataSource.getCovariateFeatureOrientation() );
+        DataSource innerDataSource = dataSource.toBuilder()
+                                               .source( originalSource )
+                                               .uri( archivedFileName )
+                                               .disposition( disposition )
+                                               .build();
 
         LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
 

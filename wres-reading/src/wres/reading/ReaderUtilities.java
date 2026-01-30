@@ -346,13 +346,7 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( dataSource );
 
-        if ( !dataSource.hasSourcePath() )
-        {
-            throw new ReadException( "Found a file data source with an invalid path: "
-                                     + dataSource );
-        }
-
-        Path path = Paths.get( dataSource.getUri() );
+        Path path = Paths.get( dataSource.uri() );
 
         if ( !Files.exists( path ) )
         {
@@ -392,9 +386,9 @@ public class ReaderUtilities
         Objects.requireNonNull( readerDisposition );
 
         if ( Arrays.stream( readerDisposition )
-                   .noneMatch( next -> next == dataSource.getDisposition() ) )
+                   .noneMatch( next -> next == dataSource.disposition() ) )
         {
-            throw new ReadException( "The disposition of the data source was " + dataSource.getDisposition()
+            throw new ReadException( "The disposition of the data source was " + dataSource.disposition()
                                      + ", but the reader expected "
                                      + Arrays.toString( readerDisposition )
                                      + "." );
@@ -431,32 +425,60 @@ public class ReaderUtilities
 
     /**
      * @param source the data source
-     * @return whether the source points to the USGS National Water Information System, NWIS
+     * @return whether the source points to the National Water Information System Instantaneous Values (IV) web service
      * @throws NullPointerException if the source is null
      */
 
-    public static boolean isUsgsSource( DataSource source )
+    public static boolean isNwisIvSource( DataSource source )
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
-        if ( Objects.nonNull( interfaceShortHand ) )
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand != SourceInterface.USGS_NWIS )
         {
-            return interfaceShortHand == SourceInterface.USGS_NWIS;
+            return false;
         }
 
-        // Fallback for unspecified interface.
         return ReaderUtilities.isWebSource( uri )
-               && ( ( Objects.nonNull( uri.getHost() )
-                      && uri.getHost()
-                            .toLowerCase()
-                            .contains( "usgs.gov" ) )
-                    || ( Objects.nonNull( uri.getPath() )
-                         && uri.getPath()
-                               .toLowerCase()
-                               .contains( "nwis" ) ) );
+               && Objects.nonNull( uri.getPath() )
+               && uri.getPath()
+                     .toLowerCase()
+                     .contains( "nwis/iv" );
+    }
+
+    /**
+     * Return whether the source points to a National Water Information System (NWIS) Open Geospatial Consortium (OGC)
+     * web service.
+     *
+     * @param source the data source
+     * @return whether the service is an NWIS OGC service
+     * @throws NullPointerException if the source is null
+     */
+
+    public static boolean isNwisOgcSource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
+                                                   .sourceInterface();
+        if ( Objects.nonNull( interfaceShortHand )
+             && interfaceShortHand != SourceInterface.USGS_NWIS )
+        {
+            return false;
+        }
+
+        return ReaderUtilities.isWebSource( uri )
+               && Objects.nonNull( uri.getPath() )
+               && uri.getHost()
+                     .toLowerCase()
+                     .contains( "usgs" ) // Host
+               && uri.getPath()
+                     .toLowerCase()
+                     .contains( "ogcapi" ); // API
     }
 
     /**
@@ -469,7 +491,7 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        SourceInterface interfaceShortHand = source.getSource()
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
 
         return interfaceShortHand == SourceInterface.WRDS_OBS;
@@ -485,8 +507,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -513,8 +535,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -547,8 +569,8 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
-        SourceInterface interfaceShortHand = source.getSource()
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
@@ -568,7 +590,7 @@ public class ReaderUtilities
 
     public static boolean isNwmVectorSource( DataSource dataSource )
     {
-        SourceInterface interfaceType = dataSource.getSource()
+        SourceInterface interfaceType = dataSource.source()
                                                   .sourceInterface();
 
         if ( Objects.nonNull( interfaceType )
@@ -597,7 +619,7 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        URI uri = source.getUri();
+        URI uri = source.uri();
 
         return ReaderUtilities.isWebSource( uri );
     }
@@ -618,128 +640,90 @@ public class ReaderUtilities
     }
 
     /**
-     * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
-     * time range.
+     * Returns a {@link TimeChunker} for a default {@link TimeChunker.ChunkingStrategy}.
      *
+     * @see #getTimeChunker(EvaluationDeclaration, DataSource, Duration)
+     * @param strategy the chunking strategy
      * @param declaration the declaration
      * @param dataSource the data source
-     * @return a simple range
+     * @return the chunker
+     * @throws NullPointerException if any input is null
      */
-    public static Pair<Instant, Instant> getSimpleRange( EvaluationDeclaration declaration,
-                                                         DataSource dataSource )
+
+    public static TimeChunker getTimeChunker( TimeChunker.ChunkingStrategy strategy,
+                                              EvaluationDeclaration declaration,
+                                              DataSource dataSource )
     {
+        Objects.requireNonNull( strategy );
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
 
-        // Forecast data?
-        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
+        // Basic boundaries for any dataset
+        Pair<Instant, Instant> simpleRange = ReaderUtilities.getSimpleRange( declaration, dataSource );
 
-        if ( ( isForecast
-               && Objects.isNull( declaration.referenceDates() ) ) )
+        return switch ( strategy )
         {
-            throw new ReadException( "While attempting to read forecasts from a web service, discovered an evaluation "
-                                     + "with missing 'reference_dates', which is not allowed. Please declare "
-                                     + "'reference_dates' to constrain the evaluation to a finite amount of "
-                                     + "time-series data." );
-        }
-        else if ( !isForecast
-                  && Objects.isNull( declaration.validDates() ) )
-        {
-            throw new ReadException( "While attempting to read a non-forecast data source from a web service, "
-                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
-                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
-                                     + "time-series data. The data type was: "
-                                     + dataSource.getContext()
-                                                 .type()
-                                     + "." );
-        }
-
-        // When dates are present, both bookends are present because this was validated on construction of the reader
-        TimeInterval dates = declaration.validDates();
-
-        if ( isForecast )
-        {
-            dates = declaration.referenceDates();
-        }
-
-        Instant earliest = dates.minimum();
-        Instant latest = dates.maximum();
-        return Pair.of( earliest, latest );
+            case SIMPLE_RANGE ->
+                    () -> Collections.unmodifiableSortedSet( new TreeSet<>( Collections.singleton( ( simpleRange ) ) ) );
+            case YEAR_RANGES -> () -> ReaderUtilities.getYearRanges( simpleRange.getLeft(), simpleRange.getRight() );
+        };
     }
 
     /**
-     * Creates year ranges for requests.
-     * @param declaration the pair declaration
+     * Returns a {@link TimeChunker} whose chunks span a fixed {@link Duration}.
+     *
+     * @see #getTimeChunker(TimeChunker.ChunkingStrategy, EvaluationDeclaration, DataSource)
+     * @param declaration the declaration
      * @param dataSource the data source
-     * @return year ranges
+     * @param interval the interval
+     * @return the chunker
+     * @throws NullPointerException if any input is null
      */
-    public static Set<Pair<Instant, Instant>> getYearRanges( EvaluationDeclaration declaration,
-                                                             DataSource dataSource )
+
+    public static TimeChunker getTimeChunker( EvaluationDeclaration declaration,
+                                              DataSource dataSource,
+                                              Duration interval )
     {
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getContext() );
+        Objects.requireNonNull( interval );
 
-        SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
-
-        // Get the boundaries
-        Pair<Instant, Instant> dataInterval = ReaderUtilities.getDatasetInterval( dataSource, declaration );
-
-        LOGGER.debug( "Requesting data for the following interval: {}.", dataInterval );
-
-        Instant specifiedEarliest = dataInterval.getLeft();
-        Instant specifiedLatest = dataInterval.getRight();
-
-        ZonedDateTime earliest = specifiedEarliest.atZone( UTC )
-                                                  .with( TemporalAdjusters.firstDayOfYear() )
-                                                  .withHour( 0 )
-                                                  .withMinute( 0 )
-                                                  .withSecond( 0 )
-                                                  .withNano( 0 );
-
-        LOGGER.debug( "Given {}, calculated {} for earliest.",
-                      specifiedEarliest,
-                      earliest );
-
-        // Intentionally keep this raw, un-next-year-ified.
-        ZonedDateTime latest = specifiedLatest.atZone( UTC );
-
-        ZonedDateTime nowDate = ZonedDateTime.now( UTC );
-
-        LOGGER.debug( "Given {}, parsed {} for latest.",
-                      specifiedLatest,
-                      latest );
-
-        ZonedDateTime left = earliest;
-        ZonedDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
-
-        while ( left.isBefore( latest ) )
+        return () ->
         {
-            // Because we chunk a year at a time, and because these will not
-            // be retrieved again if already present, we need to ensure the
-            // right hand date does not exceed "now".
-            if ( right.isAfter( nowDate ) )
+            // Minimum duration for the interval
+            if ( interval.compareTo( Duration.ofHours( 1 ) ) < 0 )
             {
-                if ( latest.isAfter( nowDate ) )
-                {
-                    right = nowDate;
-                }
-                else
-                {
-                    right = latest;
-                }
+                throw new ReadException(
+                        "While attempting to create a time chunker, discovered that the chunking interval "
+                        + "is " + interval + ", which is less than the minimum supported time interval of "
+                        + "PT1H (1 hour)." );
             }
 
-            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
-            LOGGER.debug( "Created year range {}", range );
-            yearRanges.add( range );
-            left = left.with( TemporalAdjusters.firstDayOfNextYear() );
-            right = right.with( TemporalAdjusters.firstDayOfNextYear() );
-        }
+            Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
 
-        LOGGER.debug( "Created year ranges: {}.", yearRanges );
+            Instant start = range.getLeft();
+            Instant end = range.getRight();
 
-        return Collections.unmodifiableSet( yearRanges );
+            SortedSet<Pair<Instant, Instant>> intervals = new TreeSet<>();
+
+            while ( start.isBefore( end ) )
+            {
+                Instant startPlusPeriod = start.plus( interval );
+
+                if ( startPlusPeriod.isAfter( end ) )
+                {
+                    startPlusPeriod = end;
+                }
+
+                Pair<Instant, Instant> next = Pair.of( start, startPlusPeriod );
+                intervals.add( next );
+
+                LOGGER.debug( "Created range {}", next );
+                start = startPlusPeriod;
+            }
+
+            return Collections.unmodifiableSortedSet( intervals );
+        };
     }
 
     /**
@@ -910,6 +894,8 @@ public class ReaderUtilities
 
     public static URI getUriWithParameters( URI uri, Map<String, String> urlParameters )
     {
+        LOGGER.debug( "Adding these parameters: {} to this URL: {}", urlParameters, uri );
+
         Objects.requireNonNull( uri );
         Objects.requireNonNull( urlParameters );
 
@@ -1018,26 +1004,26 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( geometries );
         Objects.requireNonNull( dataSource );
-        if ( dataSource.getDatasetOrientation() == DatasetOrientation.COVARIATE )
+        if ( dataSource.datasetOrientation() == DatasetOrientation.COVARIATE )
         {
             return DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                            dataSource.getCovariateFeatureOrientation() );
+                                                            dataSource.covariateFeatureOrientation() );
         }
 
         return DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                        dataSource.getDatasetOrientation() );
+                                                        dataSource.datasetOrientation() );
     }
 
     /**
-     * Returns a byte stream from a web source or null if the web source returns no data and that is considered a
-     * nominal response (see #isMissingResponse).
+     * Returns a byte stream from a web source or null if the web source returns no data and that is considered nominal.
      *
+     * @see #getResponseFromWebSource(URI, IntPredicate, IntPredicate, Function, WebClient)
      * @param uri the uri
      * @param isMissingResponse a test to determine whether the http response code indicates missing data
      * @param isErrorResponse a test to determine whether the http response code indicates an error
      * @param errorUnpacker unpacks an error message from the web client response for onward communication, optional
      * @param webClient an optional web client instance, otherwise the default will be used
-     * @return the byte stream
+     * @return the byte stream, possibly null
      * @throws ReadException if the uri does not point to a web source or the stream could not be created for any reason
      */
 
@@ -1046,6 +1032,40 @@ public class ReaderUtilities
                                                           IntPredicate isErrorResponse,
                                                           Function<WebClient.ClientResponse, String> errorUnpacker,
                                                           WebClient webClient )
+    {
+        WebClient.ClientResponse response = ReaderUtilities.getResponseFromWebSource( uri,
+                                                                                      isMissingResponse,
+                                                                                      isErrorResponse,
+                                                                                      errorUnpacker,
+                                                                                      webClient );
+
+        if ( Objects.nonNull( response ) )
+        {
+            return response.getResponse();
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns a full client response from a web source or null if the web source returns no data and that is considered
+     * nominal.
+     *
+     * @see #getByteStreamFromWebSource(URI, IntPredicate, IntPredicate, Function, WebClient)
+     * @param uri the uri
+     * @param isMissingResponse a test to determine whether the http response code indicates missing data
+     * @param isErrorResponse a test to determine whether the http response code indicates an error
+     * @param errorUnpacker unpacks an error message from the web client response for onward communication, optional
+     * @param webClient an optional web client instance, otherwise the default will be used
+     * @return the byte stream, possibly null
+     * @throws ReadException if the uri does not point to a web source or the stream could not be created for any reason
+     */
+
+    public static WebClient.ClientResponse getResponseFromWebSource( URI uri,
+                                                                     IntPredicate isMissingResponse,
+                                                                     IntPredicate isErrorResponse,
+                                                                     Function<WebClient.ClientResponse, String> errorUnpacker,
+                                                                     WebClient webClient )
     {
         Objects.requireNonNull( uri );
         Objects.requireNonNull( isMissingResponse );
@@ -1073,6 +1093,7 @@ public class ReaderUtilities
             // Stream is closed on completion of streaming data, unless there is an error response
             WebClient.ClientResponse response =
                     webClient.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+
             int httpStatus = response.getStatusCode();
 
             if ( isMissingResponse.test( httpStatus ) )
@@ -1115,7 +1136,7 @@ public class ReaderUtilities
                                          + possibleError );
             }
 
-            return response.getResponse();
+            return response;
         }
         catch ( IOException e )
         {
@@ -1439,14 +1460,14 @@ public class ReaderUtilities
     }
 
     /**
-     * Returns the datetime interval required for the specified data source.
+     * Returns the valid datetime interval required for the specified data source.
      * @param dataSource the data source
      * @param declaration the evaluation declaration
      * @return the time interval required for the data source
      */
 
-    private static Pair<Instant, Instant> getDatasetInterval( DataSource dataSource,
-                                                              EvaluationDeclaration declaration )
+    private static Pair<Instant, Instant> getValidDateInterval( DataSource dataSource,
+                                                                EvaluationDeclaration declaration )
     {
         // Get the boundaries
         TimeInterval dates = declaration.validDates();
@@ -1489,7 +1510,7 @@ public class ReaderUtilities
                               + "earlier than the 'minimum' value of the 'valid_dates', which is {}.",
                               minimumDate,
                               DatasetOrientation.BASELINE,
-                              dataSource.getDatasetOrientation(),
+                              dataSource.datasetOrientation(),
                               specifiedEarliest );
                 specifiedEarliest = minimumDate;
             }
@@ -1503,7 +1524,7 @@ public class ReaderUtilities
                               + "later than the 'maximum' value of the 'valid_dates', which is {}.",
                               maximumDate,
                               DatasetOrientation.BASELINE,
-                              dataSource.getDatasetOrientation(),
+                              dataSource.datasetOrientation(),
                               specifiedLatest );
                 specifiedLatest = maximumDate;
             }
@@ -1536,13 +1557,133 @@ public class ReaderUtilities
     private static boolean isBaselineOrHasSameDatasetAsBaseline( DataSource dataSource,
                                                                  EvaluationDeclaration declaration )
     {
-        return dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE
+        return dataSource.datasetOrientation() == DatasetOrientation.BASELINE
                || ( DeclarationUtilities.hasBaseline( declaration )
                     && declaration.baseline()
                                   .dataset()
                                   .sources() // #121751
-                                  .equals( dataSource.getContext()
+                                  .equals( dataSource.context()
                                                      .sources() ) );
+    }
+
+    /**
+     * Returns the complete datetime range from the declaration for use when forming requests. There is no chunking by
+     * time range.
+     *
+     * @param declaration the declaration
+     * @param dataSource the data source
+     * @return a simple range
+     */
+    private static Pair<Instant, Instant> getSimpleRange( EvaluationDeclaration declaration,
+                                                          DataSource dataSource )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.context() );
+
+        // Forecast data?
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
+
+        if ( ( isForecast
+               && Objects.isNull( declaration.referenceDates() ) ) )
+        {
+            throw new ReadException( "While attempting to read forecasts from a web service, discovered an evaluation "
+                                     + "with missing 'reference_dates', which is not allowed. Please declare "
+                                     + "'reference_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data." );
+        }
+        else if ( !isForecast
+                  && Objects.isNull( declaration.validDates() ) )
+        {
+            throw new ReadException( "While attempting to read a non-forecast data source from a web service, "
+                                     + "discovered an evaluation with missing 'valid_dates', which is not allowed. "
+                                     + "Please declare 'valid_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data. The data type was: "
+                                     + dataSource.context()
+                                                 .type()
+                                     + "." );
+        }
+
+        // When dates are present, both bookends are present because this was validated on construction of the reader
+        if ( isForecast )
+        {
+            TimeInterval dates = declaration.referenceDates();
+            Instant earliest = dates.minimum();
+            Instant latest = dates.maximum();
+            return Pair.of( earliest, latest );
+        }
+        else
+        {
+            return ReaderUtilities.getValidDateInterval( dataSource, declaration );
+        }
+    }
+
+    /**
+     * Creates year ranges for requests.
+     * @param start the start datetime
+     * @param end the end datetime
+     * @return year ranges
+     */
+    private static SortedSet<Pair<Instant, Instant>> getYearRanges( Instant start,
+                                                                    Instant end )
+    {
+        Objects.requireNonNull( start );
+        Objects.requireNonNull( end );
+
+        SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
+
+        LOGGER.debug( "Requesting data for the following interval: [{},{}].", start, end );
+
+        ZonedDateTime earliest = start.atZone( UTC )
+                                      .with( TemporalAdjusters.firstDayOfYear() )
+                                      .withHour( 0 )
+                                      .withMinute( 0 )
+                                      .withSecond( 0 )
+                                      .withNano( 0 );
+
+        LOGGER.debug( "Given {}, calculated {} for earliest.",
+                      start,
+                      earliest );
+
+        // Intentionally keep this raw, un-next-year-ified.
+        ZonedDateTime latest = end.atZone( UTC );
+
+        ZonedDateTime nowDate = ZonedDateTime.now( UTC );
+
+        LOGGER.debug( "Given {}, parsed {} for latest.",
+                      end,
+                      latest );
+
+        ZonedDateTime left = earliest;
+        ZonedDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
+
+        while ( left.isBefore( latest ) )
+        {
+            // We need to ensure the end date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                // Assign "now" if latest is future
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                // Assign latest if latest is "now" or past
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created year range {}", range );
+            yearRanges.add( range );
+            left = left.with( TemporalAdjusters.firstDayOfNextYear() );
+            right = right.with( TemporalAdjusters.firstDayOfNextYear() );
+        }
+
+        LOGGER.debug( "Created year ranges: {}.", yearRanges );
+
+        return Collections.unmodifiableSortedSet( yearRanges );
     }
 
     /**

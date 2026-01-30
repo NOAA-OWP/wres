@@ -1,15 +1,19 @@
 package wres.datamodel.units;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serial;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 
@@ -24,6 +28,16 @@ import javax.measure.quantity.Speed;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
 
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import com.networknt.schema.Error;
+import com.networknt.schema.serialization.NodeReader;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +52,10 @@ import systems.uom.ucum.internal.format.TokenMgrError;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.quantity.time.TemporalQuantity;
 import tech.units.indriya.unit.UnitDimension;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
+import wres.config.DeclarationFactory;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -54,26 +71,14 @@ public class Units
     public static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m3/s";
     /** [ft_i]3/s */
     public static final String OFFICIAL_CUBIC_FEET_PER_SECOND = "[ft_i]3/s";
-    /** 1000.[ft_i]3/s */
-    public static final String OFFICIAL_KILO_CUBIC_FEET_PER_SECOND = "1000.[ft_i]3/s";
     /** Cel */
     public static final String OFFICIAL_DEGREES_CELSIUS = "Cel";
     /** [degF] */
     public static final String OFFICIAL_DEGREES_FAHRENHEIT = "[degF]";
     /** [in_i] */
     public static final String OFFICIAL_INCHES = "[in_i]";
-    /** /h */
-    public static final String OFFICIAL_INCHES_PER_HOUR = OFFICIAL_INCHES + "/h";
     /** mm */
     public static final String OFFICIAL_MILLIMETERS = "mm";
-    /** kg/m2 */
-    public static final String KG_M_2 = "kg/m2";
-    /** kg/m2.h*/
-    public static final String KG_M_2_H = "kg/m2.h";
-    /** kg/m2.s*/
-    public static final String KG_M_2_S = "kg/m2.s";
-    /** kg/kg */
-    public static final String KG_KG = "kg/kg";
     /** Count. */
     public static final String COUNT = "COUNT";
 
@@ -103,18 +108,21 @@ public class Units
 
     /** A small cache of formal UCUM units against official UCUM unit name strings to avoid repeated parsing from unit 
      * strings. */
-    private static final Cache<String, Unit<?>> UNIT_CACHE = Caffeine.newBuilder()
-                                                                     .maximumSize( 10 )
-                                                                     .build();
+    private static final Cache<@NonNull String, Unit<?>> UNIT_CACHE = Caffeine.newBuilder()
+                                                                              .maximumSize( 10 )
+                                                                              .build();
+    /** The units file name on the classpath. */
+    private static final String UNITS_FILE_NAME = "units.yml";
+
+    /** The units schema file name on the classpath. */
+    private static final String SCHEMA_FILE_NAME = "units_schema.yml";
 
     /**
-     * <p>For backward compatibility, a map from weird unit names to official ones,
-     * "official ones" being those supported by the indriya implementation.
-     * Here was the table as of WRES 5.14. Here we omit "NONE", "-", "fraction"
-     * because they aren't units, and omit "%" because it's already supported.
-     * The units were case-insensitive which is why you will see upper and lower
-     * cased versions of each previously supported unit. It seemed too far to do
-     * mixed case for each and every unit. This is already too far anyway.
+     * <p>For backward compatibility and convenience, a map from weird unit names to official ones, "official ones"
+     * being those supported by the indriya implementation. Here was the table as of WRES 5.14. We omit "NONE",
+     * "-", "fraction" because they aren't units, and omit "%" because it's already supported. The units were
+     * case-insensitive which is why you will see upper and lower cased versions of each previously supported unit.
+     * It seemed too far to do mixed case for each and every unit. This is already too far anyway.
      *
      * <p>select * from wres.measurementunit;
      *  measurementunit_id | unit_name
@@ -187,148 +195,100 @@ public class Units
      *                  66 | degf
      * (66 rows)
      */
+    private static final Map<String, String> CONVENIENCE_ALIASES = new TreeMap<>();
 
-    private static final Map<String, String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
-
+    // Read the convenience aliases from a class path resource
     static
     {
-        // These are for backward compatibility with pre-5.14 units that were
-        // previously pre-loaded into the wres.measurementunit table.
-        CONVENIENCE_ALIASES.put( "CFS", OFFICIAL_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "cfs", OFFICIAL_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "CFSD", OFFICIAL_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "cfsd", OFFICIAL_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "ft3/s", OFFICIAL_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "FT3/S", OFFICIAL_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "CMS", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "cms", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "CMSD", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "cmsd", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "m3 s-1", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "M3 S-1", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "m3/s", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "M3/S", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "m3/sec", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "M3/SEC", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "meter^3 / sec", OFFICIAL_CUBIC_METERS_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "KCFS", OFFICIAL_KILO_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "kcfs", OFFICIAL_KILO_CUBIC_FEET_PER_SECOND );
-        CONVENIENCE_ALIASES.put( "C", OFFICIAL_DEGREES_CELSIUS );
-        CONVENIENCE_ALIASES.put( "c", OFFICIAL_DEGREES_CELSIUS );
-        CONVENIENCE_ALIASES.put( "DEGC", OFFICIAL_DEGREES_CELSIUS );
-        CONVENIENCE_ALIASES.put( "degc", OFFICIAL_DEGREES_CELSIUS );
-        CONVENIENCE_ALIASES.put( "F", OFFICIAL_DEGREES_FAHRENHEIT );
-        CONVENIENCE_ALIASES.put( "f", OFFICIAL_DEGREES_FAHRENHEIT );
-        CONVENIENCE_ALIASES.put( "DEGF", OFFICIAL_DEGREES_FAHRENHEIT );
-        CONVENIENCE_ALIASES.put( "degf", OFFICIAL_DEGREES_FAHRENHEIT );
-        CONVENIENCE_ALIASES.put( "FT", "[ft_i]" );
-        CONVENIENCE_ALIASES.put( "ft", "[ft_i]" );
-        CONVENIENCE_ALIASES.put( "IN", OFFICIAL_INCHES );
-        CONVENIENCE_ALIASES.put( "in", OFFICIAL_INCHES );
-        CONVENIENCE_ALIASES.put( "M", "m" );
-        CONVENIENCE_ALIASES.put( "MS", "ms" );
-        CONVENIENCE_ALIASES.put( "HR", "h" );
-        CONVENIENCE_ALIASES.put( "hr", "h" );
-        CONVENIENCE_ALIASES.put( "S", "s" );
-        CONVENIENCE_ALIASES.put( "MM", OFFICIAL_MILLIMETERS );
-        CONVENIENCE_ALIASES.put( "CM", "cm" );
-        CONVENIENCE_ALIASES.put( "kg m{-2}", KG_M_2 );
-        CONVENIENCE_ALIASES.put( "KG M{-2}", KG_M_2 );
-        CONVENIENCE_ALIASES.put( "ft/sec", "[ft_i]/s" );
-        CONVENIENCE_ALIASES.put( "FT/SEC", "[ft_i]/s" );
-        CONVENIENCE_ALIASES.put( "gal/min", "[gal_us]/min" );
-        CONVENIENCE_ALIASES.put( "GAL/MIN", "[gal_us]/min" );
-        CONVENIENCE_ALIASES.put( "mgd", "1000000.[gal_us]/d" );
-        CONVENIENCE_ALIASES.put( "MGD", "1000000.[gal_us]/d" );
-        CONVENIENCE_ALIASES.put( "m/sec", "m/s" );
-        CONVENIENCE_ALIASES.put( "M/SEC", "m/s" );
-        CONVENIENCE_ALIASES.put( "ft3/day", "[ft_i]3/d" );
-        CONVENIENCE_ALIASES.put( "FT3/DAY", "[ft_i]3/d" );
-        CONVENIENCE_ALIASES.put( "ac-ft", "[acr_us].[ft_i]" );
-        CONVENIENCE_ALIASES.put( "AC-FT", "[acr_us].[ft_i]" );
-        CONVENIENCE_ALIASES.put( "MPH", "[mi_i]/h" );
-        CONVENIENCE_ALIASES.put( "mph", "[mi_i]/h" );
-        CONVENIENCE_ALIASES.put( "l/sec", "l/s" );
-        CONVENIENCE_ALIASES.put( "L/SEC", "l/s" );
-        CONVENIENCE_ALIASES.put( "MM/S", "mm/s" );
-        CONVENIENCE_ALIASES.put( "mm s^-1", "mm/s" );
-        CONVENIENCE_ALIASES.put( "MM S^-1", "mm/s" );
-        CONVENIENCE_ALIASES.put( "mm s{-1}", "mm/s" );
-        CONVENIENCE_ALIASES.put( "MM S{-1}", "mm/s" );
-        CONVENIENCE_ALIASES.put( "mm s-1", "mm/s" );
-        CONVENIENCE_ALIASES.put( "MM S-1", "mm/s" );
-        CONVENIENCE_ALIASES.put( "mm h^-1", "mm/h" );
-        CONVENIENCE_ALIASES.put( "MM H^-1", "mm/h" );
-        CONVENIENCE_ALIASES.put( "MM/H", "mm/h" );
-        CONVENIENCE_ALIASES.put( "mm h-1", "mm/h" );
-        CONVENIENCE_ALIASES.put( "MM H-1", "mm/h" );
-        CONVENIENCE_ALIASES.put( "mm h{-1}", "mm/h" );
-        CONVENIENCE_ALIASES.put( "MM H{-1}", "mm/h" );
-        CONVENIENCE_ALIASES.put( "KG/M^2", KG_M_2 );
-        CONVENIENCE_ALIASES.put( "kg/m^2h", KG_M_2_H );
-        CONVENIENCE_ALIASES.put( "KG/M^2H", KG_M_2_H );
-        CONVENIENCE_ALIASES.put( "kg/m^2s", KG_M_2_S );
-        CONVENIENCE_ALIASES.put( "KG/M^2S", KG_M_2_S );
-        CONVENIENCE_ALIASES.put( "kg/m^2/s", KG_M_2_S );
-        CONVENIENCE_ALIASES.put( "KG/M^2/S", KG_M_2_S );
-        CONVENIENCE_ALIASES.put( "kg/m^2/h", KG_M_2_H );
-        CONVENIENCE_ALIASES.put( "KG/M^2/H", KG_M_2_H );
-        CONVENIENCE_ALIASES.put( "PA", "Pa" );
-        CONVENIENCE_ALIASES.put( "pa", "Pa" );
-        CONVENIENCE_ALIASES.put( "w/m^2", "W/m2" );
-        CONVENIENCE_ALIASES.put( "W/M^2", "W/m2" );
-        CONVENIENCE_ALIASES.put( "W m{-2}", "W/m2" );
-        CONVENIENCE_ALIASES.put( "w m{-2}", "W/m2" );
-        CONVENIENCE_ALIASES.put( "W M{-2}", "W/m2" );
-        CONVENIENCE_ALIASES.put( "W m-2", "W/m2" );
-        CONVENIENCE_ALIASES.put( "W M-2", "W/m2" );
-        CONVENIENCE_ALIASES.put( "w m-2", "W/m2" );
-        CONVENIENCE_ALIASES.put( "m s-1", "m/s" );
-        CONVENIENCE_ALIASES.put( "M S-1", "m/s" );
-        CONVENIENCE_ALIASES.put( "M/S", "m/s" );
-        CONVENIENCE_ALIASES.put( "M S{-1}", "m/s" );
-        CONVENIENCE_ALIASES.put( "m s{-1}", "m/s" );
-        CONVENIENCE_ALIASES.put( "kg kg-1", KG_KG );
-        CONVENIENCE_ALIASES.put( "KG KG-1", KG_KG );
-        CONVENIENCE_ALIASES.put( "kg kg{-1}", KG_KG );
-        CONVENIENCE_ALIASES.put( "KG KG{-1}", KG_KG );
-        CONVENIENCE_ALIASES.put( "kg m-2", KG_M_2 );
-        CONVENIENCE_ALIASES.put( "KG M-2", KG_M_2 );
-        CONVENIENCE_ALIASES.put( "k", "K" );
-        CONVENIENCE_ALIASES.put( "IN/HR", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in/hr", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in hr^-1", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "IN HR^-1", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in hr-1", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "IN HR-1", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in hr{-1}", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "IN HR{-1}", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "IN/H", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in/h", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in h-1", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "IN H-1", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "in h{-1}", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "IN H{-1}", OFFICIAL_INCHES_PER_HOUR );
-        CONVENIENCE_ALIASES.put( "M3", "m3" );
-    }
+        ObjectMapper mapper = YAMLMapper.builder()
+                                        .disable( YAMLWriteFeature.WRITE_DOC_START_MARKER )
+                                        .disable( YAMLWriteFeature.SPLIT_LINES )
+                                        .enable( YAMLWriteFeature.MINIMIZE_QUOTES )
+                                        .enable( YAMLWriteFeature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS )
+                                        .build();
 
-    /**
-     * Get the full set of known convenience alias names. Mostly for testing.
-     * @return The set of convenient alias names.
-     */
+        // Get the units from the classpath
+        URL unitsUrl = DeclarationFactory.class.getClassLoader()
+                                               .getResource( UNITS_FILE_NAME );
 
-    static Set<String> getAllConvenienceAliases()
-    {
-        return CONVENIENCE_ALIASES.keySet();
-    }
+        // Get the schema from the classpath
+        URL schemaUrl = DeclarationFactory.class.getClassLoader()
+                                                .getResource( SCHEMA_FILE_NAME );
 
-    /**
-     * Get the full set of known convenience units. Mostly for testing.
-     * @return The set of convenience indriya unit strings.
-     */
-    static Set<String> getAllConvenienceUnits()
-    {
-        return new HashSet<>( CONVENIENCE_ALIASES.values() );
+        if ( Objects.nonNull( unitsUrl ) )
+        {
+            // Read the units
+            try ( InputStream unitStream = unitsUrl.openStream() )
+            {
+                String unitsString = new String( unitStream.readAllBytes(), StandardCharsets.UTF_8 );
+                JsonNode unitsNode = mapper.readTree( unitsString );
+
+                // Validate against the schema
+                if ( Objects.nonNull( schemaUrl ) )
+                {
+                    Units.validateUnitsAgainstSchema( schemaUrl, mapper, unitsNode );
+                }
+                else
+                {
+                    LOGGER.warn( "Encountered an error while attempting to validate the default measurement "
+                                 + "units in '{}' against the schema in '{}'. The schema could not be found on the "
+                                 + "class path as '{}'. If the units are read successfully, they will be available for "
+                                 + "evaluation, but they have not been validated against the schema. It is recommended "
+                                 + "to fix this error.",
+                                 UNITS_FILE_NAME,
+                                 SCHEMA_FILE_NAME,
+                                 SCHEMA_FILE_NAME );
+                }
+
+                // Validate the UCUM units against UCUM
+                JavaType type = mapper.getTypeFactory()
+                                      .constructMapType( Map.class, String.class, String.class );
+                ObjectReader objectReader = mapper.readerFor( type );
+                Map<String, String> unitsMapped = objectReader.readValue( unitsNode );
+
+                Map<String, String> unitsFailed = new TreeMap<>();
+
+                LOGGER.debug( "Read the following default measurement units from {}: {}",
+                              UNITS_FILE_NAME,
+                              unitsMapped );
+
+                for ( Map.Entry<String, String> unitPair : unitsMapped.entrySet() )
+                {
+                    String informal = unitPair.getKey();
+                    String formal = unitPair.getValue();
+                    Units.addUnit( informal, formal, unitsFailed );
+                }
+
+                LOGGER.debug( "Read and validated the following pairs of informal and formal (UCUM) units: {}.",
+                              CONVENIENCE_ALIASES );
+
+                if ( !unitsFailed.isEmpty() )
+                {
+                    LOGGER.warn( "While reading the default measurement units from '{}', encountered {} measurement "
+                                 + "units that do not appear within the Unified Code for Units of Measure (UCUM). "
+                                 + "These units are (informal unit, invalid UCUM unit): '{}'. The informal units will "
+                                 + "be ignored and will not be available as default units at evaluation time. It is "
+                                 + "recommended to fix this error by finding a valid UCUM unit for each informal unit "
+                                 + "using the UCUM standard as a guide: https://ucum.org/ucum",
+                                 UNITS_FILE_NAME,
+                                 unitsFailed.size(),
+                                 unitsFailed );
+                }
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Encountered an error while attempting to read the default measurement units from '{}'. "
+                             + "The default units will not be available for evaluation.", UNITS_FILE_NAME );
+            }
+        }
+        else
+        {
+            LOGGER.warn( "Encountered an error while attempting to read the default measurement units in '{}'. The "
+                         + "units could not be found on the class path as '{}'. The default units will not be "
+                         + "available for evaluation.",
+                         UNITS_FILE_NAME,
+                         UNITS_FILE_NAME );
+        }
     }
 
     /**
@@ -511,6 +471,25 @@ public class Units
     }
 
     /**
+     * Get the full set of known convenience units. Supports testing.
+     * @return The set of convenience indriya unit strings.
+     */
+    static Set<String> getAllConvenienceUnits()
+    {
+        return Set.copyOf( CONVENIENCE_ALIASES.values() );
+    }
+
+    /**
+     * Get the full set of known convenience alias names.
+     * @return The set of convenient alias names.
+     */
+
+    private static Set<String> getAllConvenienceAliases()
+    {
+        return Collections.unmodifiableSet( CONVENIENCE_ALIASES.keySet() );
+    }
+
+    /**
      * @param existingUnit the existing measurement unit.
      * @param desiredUnit the desired measurement unit
      * @return whether the existing unit is a volumetric flow and the desired unit is a volume
@@ -670,6 +649,83 @@ public class Units
                    + "an explicit unit alias declaration): "
                    + unitAliases,
                    cause );
+        }
+    }
+
+    /**
+     * Adds an informal to formal (UCUM) unit pairing to the map of convenience aliases.
+     * @param informal the informal unit
+     * @param formal the formal unit
+     * @param unitsFailed a rolling map of units that failed to validate
+     */
+    private static void addUnit( String informal, String formal, Map<String, String> unitsFailed )
+    {
+        try
+        {
+            Units.getUnit( formal );
+            CONVENIENCE_ALIASES.put( informal, formal );
+            LOGGER.debug( "Discovered a valid UCUM unit, '{}', for informal unit '{}'.", formal, informal );
+        }
+        catch ( Units.UnrecognizedUnitException e )
+        {
+            LOGGER.debug( "While reading the default measurement units from '{}', encountered a measurement "
+                          + "unit that does not appear within the Unified Code for Units of Measure (UCUM): "
+                          + "'{}'. The corresponding informal unit, '{}', will be ignored and will not be "
+                          + "available as a default unit. It is recommended to fix this error by finding "
+                          + "the valid UCUM unit corresponding to the informal unit, '{}', using the UCUM "
+                          + "standard as a guide: https://ucum.org/ucum",
+                          UNITS_FILE_NAME,
+                          formal,
+                          informal,
+                          informal );
+            unitsFailed.put( informal, formal );
+        }
+    }
+
+    /**
+     * Validates the units against the schema.
+     *
+     * @param schemaUrl the schema URL
+     * @param mapper the object mapper
+     * @param unitsNode the units node to validate against the schema
+     */
+
+    private static void validateUnitsAgainstSchema( URL schemaUrl, ObjectMapper mapper, JsonNode unitsNode )
+    {
+        try ( InputStream schemaStream = schemaUrl.openStream() )
+        {
+            String schemaString = new String( schemaStream.readAllBytes(), StandardCharsets.UTF_8 );
+            JsonNode schemaNode = mapper.readTree( schemaString );
+            NodeReader nodeReader = NodeReader.builder()
+                                              .yamlMapper( mapper )
+                                              .build();
+            SchemaRegistry factory =
+                    SchemaRegistry.builder( SchemaRegistry.withDefaultDialect( SpecificationVersion.DRAFT_2019_09 ) )
+                                  .nodeReader( nodeReader )
+                                  .build();
+            Schema schema = factory.getSchema( schemaNode );
+
+            List<Error> errors = schema.validate( unitsNode );
+
+            if ( !errors.isEmpty() )
+            {
+                LOGGER.warn( "Encountered an error while attempting to validate the default measurement "
+                             + "units in '{}' against the schema in '{}'. The default units are not valid "
+                             + "against the schema. It is recommended to fix these errors. The errors "
+                             + "are: {}.",
+                             UNITS_FILE_NAME,
+                             SCHEMA_FILE_NAME,
+                             errors );
+            }
+        }
+        catch ( IOException e )
+        {
+            LOGGER.warn( "Encountered an error while attempting to validate the default measurement "
+                         + "units in '{}' against the schema in '{}'. The default units are not valid "
+                         + "against the schema. The default units will be available for evaluation, but "
+                         + "the units have not been validated against the schema.",
+                         UNITS_FILE_NAME,
+                         SCHEMA_FILE_NAME );
         }
     }
 

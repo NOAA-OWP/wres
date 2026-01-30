@@ -16,18 +16,15 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.components.Dataset;
-import wres.config.components.Source;
-import wres.config.components.Variable;
+import wres.config.components.DatasetBuilder;
+import wres.config.components.SourceBuilder;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -270,19 +267,15 @@ class PublishedInterfaceXmlReaderTest
                 writer.append( PI_STRING_ONE );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( xmlPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
-
-            Source source = Mockito.mock( Source.class );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( source );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
 
             PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
 
@@ -344,19 +337,15 @@ class PublishedInterfaceXmlReaderTest
                 writer.append( PI_STRING_ONE );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( xmlPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
-
-            Source source = Mockito.mock( Source.class );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( source );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
 
             PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
 
@@ -419,19 +408,15 @@ class PublishedInterfaceXmlReaderTest
                 writer.append( PI_STRING_TWO );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( xmlPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
-
-            Source source = Mockito.mock( Source.class );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( source );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
 
             PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
 
@@ -511,19 +496,15 @@ class PublishedInterfaceXmlReaderTest
                 writer.append( PI_STRING_THREE );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( xmlPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
-
-            Source source = Mockito.mock( Source.class );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( source );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
 
             PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
 
@@ -585,27 +566,17 @@ class PublishedInterfaceXmlReaderTest
                 writer.append( PI_STRING_FOUR );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( xmlPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
-
-            Dataset dataset = Mockito.mock( Dataset.class );
-            Mockito.when( dataset.unit() )
-                   .thenReturn( "CFS" );
-            Mockito.when( dataSource.getContext() )
-                   .thenReturn( dataset );
-
-            Source source = Mockito.mock( Source.class );
-            Mockito.when( source.timeZoneOffset() )
-                   .thenReturn( ZoneOffset.ofHours( -1 ) );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( source );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .unit( "CFS" )
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .timeZoneOffset( ZoneOffset.ofHours( -1 ) )
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
 
             PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
 
@@ -661,27 +632,17 @@ class PublishedInterfaceXmlReaderTest
                 writer.append( PI_STRING_ONE );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( xmlPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.XML_PI_TIMESERIES );
-
-            Dataset dataset = Mockito.mock( Dataset.class );
-            Mockito.when( dataset.unit() )
-                   .thenReturn( "CFS" );
-            Mockito.when( dataSource.getContext() )
-                   .thenReturn( dataset );
-
-            Source source = Mockito.mock( Source.class );
-            Mockito.when( source.timeZoneOffset() )
-                   .thenReturn( ZoneOffset.ofHours( -1 ) );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( source );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .unit( "CFS" )
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .timeZoneOffset( ZoneOffset.ofHours( -1 ) )
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
 
             PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
 

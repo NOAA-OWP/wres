@@ -53,13 +53,14 @@ class WrdsNwmJsonReaderTest
                                         .sources( List.of( fakeDeclarationSource ) )
                                         .build();
 
-        this.fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
-                                         fakeDeclarationSource,
-                                         dataset,
-                                         Collections.emptyList(),
-                                         fakeUri,
-                                         DatasetOrientation.LEFT,
-                                         null );
+        this.fakeSource = DataSource.builder()
+                                    .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                    .source( fakeDeclarationSource )
+                                    .context( dataset )
+                                    .links( Collections.emptyList() )
+                                    .uri( fakeUri )
+                                    .datasetOrientation( DatasetOrientation.LEFT )
+                                    .build();
 
         this.jsonString =
                 """

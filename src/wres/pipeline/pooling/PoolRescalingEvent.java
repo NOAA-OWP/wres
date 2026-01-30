@@ -7,18 +7,20 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
+
 import wres.config.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeriesMetadata;
 
 /**
  * A custom event for monitoring the rescaling of time-series data and exposing it to the Java Flight Recorder.
- * 
+ *
  * @author James Brown
  */
 
 @Name( "wres.pipeline.pooling.PoolRescalingEvent" )
 @Label( "Pool Rescaling Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling", "Rescaling" } )
+@SuppressWarnings( { "unused", "FieldCanBeLocal" } )
 class PoolRescalingEvent extends Event
 {
     /**

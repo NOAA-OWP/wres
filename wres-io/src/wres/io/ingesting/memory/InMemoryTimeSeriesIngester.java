@@ -14,6 +14,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.types.Ensemble;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.SourceLoadEvent;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
@@ -52,6 +53,10 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         // Whether there is non-missing data present
         boolean hasNonMissingValues = false;
 
+        // Monitor the load
+        SourceLoadEvent sourceLoad = SourceLoadEvent.of( outerSource.uri() );
+        sourceLoad.begin();
+
         // Close the stream on completion
         try ( timeSeriesTuple )
         {
@@ -66,7 +71,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 
                 DataSource innerSource = nextTuple.getDataSource();
                 DatasetOrientation innerOrientation =
-                        DatasetOrientation.valueOf( innerSource.getDatasetOrientation()
+                        DatasetOrientation.valueOf( innerSource.datasetOrientation()
                                                                .name() );
 
                 // Single-valued time-series?
@@ -79,7 +84,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                                                                        innerOrientation );
 
                     // Add in all other contexts too
-                    for ( DatasetOrientation lrb : innerSource.getLinks() )
+                    for ( DatasetOrientation lrb : innerSource.links() )
                     {
                         DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
                         this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
@@ -99,7 +104,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                                                                    innerOrientation );
 
                     // Add in all other contexts too
-                    for ( DatasetOrientation lrb : innerSource.getLinks() )
+                    for ( DatasetOrientation lrb : innerSource.links() )
                     {
                         DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
                         this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
@@ -114,6 +119,10 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 
             // Arbitrary surrogate key, since this is an in-memory ingest
             return List.of( new IngestResultInMemory( outerSource, dataType, hasNonMissingValues ) );
+        }
+        finally
+        {
+            sourceLoad.commit();
         }
     }
 
@@ -148,7 +157,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         // Special case where time-series were read as single-valued, but declared as ensemble, and should
         // be treated as declared, i.e., a one-member ensemble. See #130267.
         if ( tuple.getDataSource()
-                  .getContext()
+                  .context()
                   .type() == DataType.ENSEMBLE_FORECASTS
              && tuple.hasSingleValuedTimeSeries() )
         {

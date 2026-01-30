@@ -120,10 +120,10 @@ public class NwmVectorReader implements TimeSeriesReader
                          {
                              throw new ReadException( "Failed to read any data from the declared NetCDF resources. "
                                                       + "Please check that the base URI is correct ("
-                                                      + dataSource.getUri()
+                                                      + dataSource.uri()
                                                       + ") and that "
                                                       + "data should be expected for the declared source interfaces ("
-                                                      + dataSource.getContext()
+                                                      + dataSource.context()
                                                                   .sources()
                                                                   .stream()
                                                                   .map( Source::sourceInterface )
@@ -158,10 +158,10 @@ public class NwmVectorReader implements TimeSeriesReader
     private void validateDataSource( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getSource() );
-        Objects.requireNonNull( dataSource.getSource().sourceInterface() );
-        Objects.requireNonNull( dataSource.getSource().uri() );
-        Objects.requireNonNull( dataSource.getContext() );
+        Objects.requireNonNull( dataSource.source() );
+        Objects.requireNonNull( dataSource.source().sourceInterface() );
+        Objects.requireNonNull( dataSource.source().uri() );
+        Objects.requireNonNull( dataSource.context() );
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.NETCDF_VECTOR );
@@ -175,19 +175,19 @@ public class NwmVectorReader implements TimeSeriesReader
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {
-            DatasetOrientation lrb = dataSource.getDatasetOrientation();
+            DatasetOrientation lrb = dataSource.datasetOrientation();
 
             throw new ReadException( "A variable must be declared for an NWM source but no "
                                      + "variable was found for the "
                                      + lrb
                                      + " NWM source with URI: "
-                                     + dataSource.getUri()
+                                     + dataSource.uri()
                                      + ". Please declare a variable for all "
                                      + lrb
                                      + " NWM sources." );
         }
 
-        SourceInterface interfaceShortHand = dataSource.getSource()
+        SourceInterface interfaceShortHand = dataSource.source()
                                                        .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
@@ -263,7 +263,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                                              AtomicInteger missingCount,
                                                              AtomicInteger totalCount )
     {
-        SourceInterface interfaceShortHand = dataSource.getSource()
+        SourceInterface interfaceShortHand = dataSource.source()
                                                        .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
@@ -440,7 +440,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                                            allFeatures,
                                                            referenceTime,
                                                            referenceTimeType,
-                                                           dataSource.getUri() );
+                                                           dataSource.uri() );
 
                     LOGGER.debug( "Opened {}.", currentTimeSeries );
 
@@ -580,7 +580,7 @@ public class NwmVectorReader implements TimeSeriesReader
 
                 return values.values()
                              .stream()
-                             .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.getUri() ) )
+                             .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.uri() ) )
                              .map( next -> TimeSeriesTuple.ofSingleValued( next, dataSource ) )
                              .toList();
             }
@@ -593,7 +593,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                 unitName );
                 return values.values()
                              .stream()
-                             .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.getUri() ) )
+                             .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.uri() ) )
                              .map( next -> TimeSeriesTuple.ofEnsemble( next, dataSource ) )
                              .toList();
             }
@@ -679,7 +679,7 @@ public class NwmVectorReader implements TimeSeriesReader
     private Set<Instant> getReferenceTimes( DataSource dataSource, EvaluationDeclaration declaration )
     {
 
-        SourceInterface interfaceShortHand = dataSource.getSource()
+        SourceInterface interfaceShortHand = dataSource.source()
                                                        .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );

@@ -94,7 +94,7 @@ public class NwmGridReader implements TimeSeriesReader
 
         while ( true )
         {
-            try ( NetcdfFile source = NetcdfFiles.open( dataSource.getUri()
+            try ( NetcdfFile source = NetcdfFiles.open( dataSource.uri()
                                                                   .toString() ) )
             {
                 seriesStream = this.readNetcdf( dataSource, source );
@@ -106,7 +106,7 @@ public class NwmGridReader implements TimeSeriesReader
                      tryCount < MAXIMUM_READ_ATTEMPTS )
                 {
                     LOGGER.error( "Failed to obtain the Netcdf data source from {} after {} failed attempts.",
-                                  dataSource.getUri(),
+                                  dataSource.uri(),
                                   MAXIMUM_READ_ATTEMPTS );
                     tryCount++;
                 }
@@ -167,11 +167,11 @@ public class NwmGridReader implements TimeSeriesReader
         }
 
         // Prepare the grid data request
-        Path path = Paths.get( dataSource.getUri() );
+        Path path = Paths.get( dataSource.uri() );
         String pathString = path.toString();
         TimeScaleOuter timeScale = null;
 
-        Dataset dataset = dataSource.getContext();
+        Dataset dataset = dataSource.context();
         wres.config.components.TimeScale declaredTimeScale = dataset.timeScale();
 
         if ( Objects.nonNull( declaredTimeScale ) )
@@ -190,8 +190,8 @@ public class NwmGridReader implements TimeSeriesReader
         // For the route where grids are read at "retrieval time", a similar inspection occurs, informed by the
         // declaration. See #51232 also, which aims to promote this reader pathway in all contexts.
         boolean isForecast = DeclarationUtilities.isForecast( dataset )
-                || ( ( dataSource.getDatasetOrientation() == DatasetOrientation.RIGHT
-                             || dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE )
+                || ( ( dataSource.datasetOrientation() == DatasetOrientation.RIGHT
+                             || dataSource.datasetOrientation() == DatasetOrientation.BASELINE )
                 && DeclarationUtilities.hasForecastDeclaration( this.getDeclaration() ) );
 
         GridRequest request = new GridRequest( List.of( pathString ),
@@ -209,7 +209,7 @@ public class NwmGridReader implements TimeSeriesReader
         return timeSeries.values()
                          .stream()
                          .flatMap( s -> s )
-                         .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.getUri() ) )
+                         .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.uri() ) )
                          .map( next -> TimeSeriesTuple.ofSingleValued( next, dataSource ) );
     }
 

@@ -81,7 +81,7 @@ public class WrdsHefsJsonReader implements TimeSeriesReader
 
         try
         {
-            Path path = Paths.get( dataSource.getUri() );
+            Path path = Paths.get( dataSource.uri() );
             InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
             return this.readFromStream( dataSource, stream );
         }
@@ -131,7 +131,7 @@ public class WrdsHefsJsonReader implements TimeSeriesReader
                          catch ( IOException e )
                          {
                              LOGGER.warn( "Unable to close a stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -194,7 +194,7 @@ public class WrdsHefsJsonReader implements TimeSeriesReader
     private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
                                                  InputStream inputStream )
     {
-        URI uri = dataSource.getUri();
+        URI uri = dataSource.uri();
 
         try
         {

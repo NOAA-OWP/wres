@@ -70,7 +70,7 @@ class IngestResultCompact implements IngestResult
         short covariateCountInner = 0;
 
         Set<DatasetOrientation> innerOrientations = new HashSet<>();
-        DatasetOrientation orientation = dataSource.getDatasetOrientation();
+        DatasetOrientation orientation = dataSource.datasetOrientation();
         innerOrientations.add( orientation );
 
         switch ( orientation )
@@ -81,7 +81,7 @@ class IngestResultCompact implements IngestResult
             case COVARIATE -> covariateCountInner++;
         }
 
-        for ( DatasetOrientation linkedOrientation : dataSource.getLinks() )
+        for ( DatasetOrientation linkedOrientation : dataSource.links() )
         {
             switch ( linkedOrientation )
             {

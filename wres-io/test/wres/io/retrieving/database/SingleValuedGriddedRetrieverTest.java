@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -269,14 +270,15 @@ class SingleValuedGriddedRetrieverTest
             Long sourceId = sourceDetails.getId();
             assertNotNull( sourceId );
 
-            DataSource source = DataSource.of( DataSource.DataDisposition.NETCDF_GRIDDED,
-                                               Mockito.mock( Source.class ),
-                                               DatasetBuilder.builder()
-                                                             .build(),
-                                               List.of(),
-                                               uri,
-                                               SingleValuedGriddedRetrieverTest.ORIENTATION,
-                                               null );
+            DataSource source = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.NETCDF_GRIDDED )
+                                          .source( Mockito.mock( Source.class ) )
+                                          .context( DatasetBuilder.builder()
+                                                                  .build() )
+                                          .links( Collections.emptyList() )
+                                          .datasetOrientation( SingleValuedGriddedRetrieverTest.ORIENTATION )
+                                          .uri( uri )
+                                          .build();
             IngestResult ingestResult = new IngestResultNeedingRetry( source,
                                                                       DataType.SINGLE_VALUED_FORECASTS,
                                                                       sourceId,
@@ -308,14 +310,16 @@ class SingleValuedGriddedRetrieverTest
         }
 
         // Add a fake left source, which is needed for validation
-        DataSource leftSource = DataSource.of( DataSource.DataDisposition.NETCDF_GRIDDED,
-                                               Mockito.mock( Source.class ),
-                                               DatasetBuilder.builder()
-                                                             .build(),
-                                               List.of(),
-                                               URI.create( "http://foo" ),
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource leftSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.NETCDF_GRIDDED )
+                                          .source( Mockito.mock( Source.class ) )
+                                          .context( DatasetBuilder.builder()
+                                                                  .build() )
+                                          .links( Collections.emptyList() )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .uri( URI.create( "http://foo" ) )
+                                          .build();
+
         IngestResult leftResult = new IngestResultNeedingRetry( leftSource,
                                                                 DataType.OBSERVATIONS,
                                                                 ingestResults.get( 0 )

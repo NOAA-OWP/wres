@@ -404,9 +404,9 @@ public class SourceLoader
     {
         return () -> {
             LOGGER.debug( "Checking gridded features for {} to determine whether loading is necessary.",
-                          source.getUri() );
+                          source.uri() );
 
-            try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri()
+            try ( NetcdfFile ncf = NetcdfFiles.open( source.uri()
                                                            .toString() ) )
             {
                 this.getGriddedFeatures()
@@ -414,7 +414,7 @@ public class SourceLoader
             }
             catch ( IOException e )
             {
-                throw new IngestException( "While ingesting features for Netcdf gridded file " + source.getUri()
+                throw new IngestException( "While ingesting features for Netcdf gridded file " + source.uri()
                                            + "." );
             }
 
@@ -427,7 +427,7 @@ public class SourceLoader
      * <p>Evaluates a project and creates a {@link DataSource} for each distinct source within the project that needs
      * to be loaded, together with any additional links required. A link is required for each additional context, i.e.
      * {@link DatasetOrientation}, in which the source appears. The links are returned by
-     * {@link DataSource#getLinks()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
+     * {@link DataSource#links()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
      *
      * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link Source} points to a
      * directory of files, the tree is walked and a {@link DataSource} is returned for each one within the tree that
@@ -510,13 +510,15 @@ public class SourceLoader
             if ( Objects.nonNull( path ) )
             {
                 // Currently unknown disposition, to be unpacked/determined
-                DataSource source = DataSource.of( DataDisposition.UNKNOWN,
-                                                   nextSource.getKey(),
-                                                   dataset,
-                                                   links,
-                                                   path.toUri(),
-                                                   orientation,
-                                                   covariateFeatureOrientation );
+                DataSource source = DataSource.builder()
+                                              .disposition( DataDisposition.UNKNOWN )
+                                              .source( nextSource.getKey() )
+                                              .context( dataset )
+                                              .links( links )
+                                              .uri( path.toUri() )
+                                              .datasetOrientation( orientation )
+                                              .covariateFeatureOrientation( covariateFeatureOrientation )
+                                              .build();
 
                 Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
                 returnMe.addAll( filesources );
@@ -524,25 +526,34 @@ public class SourceLoader
             // Not a file-like source
             else
             {
-                // Create a source with unknown disposition as the basis for detection
-                DataSource sourceToEvaluate = DataSource.of( DataDisposition.UNKNOWN,
-                                                             nextSource.getKey(),
-                                                             dataset,
-                                                             links,
-                                                             nextSource.getKey()
-                                                                       .uri(),
-                                                             orientation,
-                                                             covariateFeatureOrientation );
+                // Create a source with unknown disposition
+                DataSource sourceToEvaluate = DataSource.builder()
+                                                        .disposition( DataDisposition.UNKNOWN )
+                                                        .source( nextSource.getKey() )
+                                                        .context( dataset )
+                                                        .links( links )
+                                                        .uri( nextSource.getKey()
+                                                                        .uri() )
+                                                        .datasetOrientation( orientation )
+                                                        .covariateFeatureOrientation( covariateFeatureOrientation )
+                                                        .build();
 
+                // Determine the disposition, which cannot use content type detection for a web source because the API
+                // sits at a higher level of abstraction than the response format type and the API must be determined,
+                // ideally by user declaration of the source interface, else by hints provided in the URI
                 DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
-                DataSource evaluatedSource = DataSource.of( disposition,
-                                                            nextSource.getKey(),
-                                                            dataset,
-                                                            links,
-                                                            nextSource.getKey()
-                                                                      .uri(),
-                                                            orientation,
-                                                            covariateFeatureOrientation );
+
+                // Adjust the source to include the disposition
+                DataSource evaluatedSource = DataSource.builder()
+                                                       .disposition( disposition )
+                                                       .source( nextSource.getKey() )
+                                                       .context( dataset )
+                                                       .links( links )
+                                                       .uri( nextSource.getKey()
+                                                                       .uri() )
+                                                       .datasetOrientation( orientation )
+                                                       .covariateFeatureOrientation( covariateFeatureOrientation )
+                                                       .build();
 
                 returnMe.add( evaluatedSource );
             }
@@ -560,13 +571,20 @@ public class SourceLoader
 
     private static DataDisposition getDispositionOfNonFileSource( DataSource dataSource )
     {
+        // Web sources must be positively identified. Format detection does not work for web sources because the API
+        // sits at a higher level of abstraction than the format and the API must be known to interact with it
         if ( ReaderUtilities.isWebSource( dataSource ) )
         {
             LOGGER.debug( "Identified a source as a web source: {}. Inspecting further...", dataSource );
-            if ( ReaderUtilities.isUsgsSource( dataSource ) )
+            if ( ReaderUtilities.isNwisIvSource( dataSource ) )
             {
-                LOGGER.debug( "Identified a source as a USGS source: {}.", dataSource );
+                LOGGER.debug( "Identified a source as a USGS IV source: {}.", dataSource );
                 return DataDisposition.JSON_WATERML;
+            }
+            if ( ReaderUtilities.isNwisOgcSource( dataSource ) )
+            {
+                LOGGER.debug( "Identified a source as a USGS DV source: {}.", dataSource );
+                return DataDisposition.GEOJSON;
             }
             else if ( ReaderUtilities.isWrdsAhpsSource( dataSource )
                       || ReaderUtilities.isWrdsObservedSource( dataSource ) )
@@ -592,7 +610,7 @@ public class SourceLoader
 
             String append = "";
 
-            if ( Objects.isNull( dataSource.getSource()
+            if ( Objects.isNull( dataSource.source()
                                            .sourceInterface() ) )
             {
                 append = " Please declare the interface for the source and try again.";
@@ -624,7 +642,7 @@ public class SourceLoader
         Objects.requireNonNull( dataSource );
 
         // Look at the path to see whether it maps to a directory
-        Path sourcePath = Paths.get( dataSource.getUri() );
+        Path sourcePath = Paths.get( dataSource.uri() );
 
         File file = sourcePath.toFile();
 
@@ -632,13 +650,9 @@ public class SourceLoader
         if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
         {
             LOGGER.debug( "Discovered a source with disposition {}.", DataDisposition.NETCDF_VECTOR );
-            DataSource innerSource = DataSource.of( DataDisposition.NETCDF_VECTOR,
-                                                    dataSource.getSource(),
-                                                    dataSource.getContext(),
-                                                    dataSource.getLinks(),
-                                                    dataSource.getUri(),
-                                                    dataSource.getDatasetOrientation(),
-                                                    dataSource.getCovariateFeatureOrientation() );
+            DataSource innerSource = dataSource.toBuilder()
+                                               .disposition( DataDisposition.NETCDF_VECTOR )
+                                               .build();
             return Set.of( innerSource );
         }
 
@@ -650,14 +664,11 @@ public class SourceLoader
         // Regular file, detect the format and return
         else
         {
-            DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
-            DataSource withDisposition = DataSource.of( disposition,
-                                                        dataSource.getSource(),
-                                                        dataSource.getContext(),
-                                                        dataSource.getLinks(),
-                                                        dataSource.getUri(),
-                                                        dataSource.getDatasetOrientation(),
-                                                        dataSource.getCovariateFeatureOrientation() );
+            DataDisposition disposition = DataSource.detectFormat( dataSource.uri() );
+            DataSource withDisposition = dataSource.toBuilder()
+                                                   .disposition( disposition )
+                                                   .build();
+
             return Set.of( withDisposition );
         }
     }
@@ -675,11 +686,11 @@ public class SourceLoader
     {
         Objects.requireNonNull( dataSource );
 
-        Path sourcePath = Paths.get( dataSource.getUri() );
+        Path sourcePath = Paths.get( dataSource.uri() );
 
         Set<DataSource> returnMe = new HashSet<>();
 
-        Source source = dataSource.getSource();
+        Source source = dataSource.source();
 
         // Define path matcher based on the source's pattern, if provided.
         PathMatcher matcher;
@@ -711,13 +722,11 @@ public class SourceLoader
 
                     if ( disposition != DataDisposition.UNKNOWN )
                     {
-                        returnMe.add( DataSource.of( disposition,
-                                                     dataSource.getSource(),
-                                                     dataSource.getContext(),
-                                                     dataSource.getLinks(),
-                                                     path.toUri(),
-                                                     dataSource.getDatasetOrientation(),
-                                                     dataSource.getCovariateFeatureOrientation() ) );
+                        DataSource fileSource = dataSource.toBuilder()
+                                                          .disposition( disposition )
+                                                          .uri( path.toUri() )
+                                                          .build();
+                        returnMe.add( fileSource );
                     }
                     else
                     {
@@ -741,14 +750,14 @@ public class SourceLoader
                                        e );
         }
 
-        SourceLoader.logUnmatchedSources( unmatchedByPattern, pattern, dataSource.getDatasetOrientation() );
+        SourceLoader.logUnmatchedSources( unmatchedByPattern, pattern, dataSource.datasetOrientation() );
 
         //If the results are empty, then there were either no files in the specified source or pattern matched 
         //none of the files.  
         if ( returnMe.isEmpty() )
         {
             throw new IngestException( "Could not find any valid source files within the directory '"
-                                       + dataSource.getUri()
+                                       + dataSource.uri()
                                        + "'. The following pattern filter was used (null if no filter): \""
                                        + pattern
                                        + "\"." );

@@ -527,6 +527,32 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testIgnoreDaylightSavingsForUnexpectedInterfaceProducesWarning()
+    {
+        Source source = SourceBuilder.builder()
+                                     // Warning
+                                     .daylightSavings( false )
+                                     .sourceInterface( SourceInterface.WRDS_AHPS )
+                                     .build();
+
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( this.defaultDataset )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "the 'daylight_savings' was 'false'. "
+                                                               + "This declaration is currently only supported by NWIS",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testConflictingUnitsForSourceResultsInWarningsAndError()
     {
         Source source = SourceBuilder.builder()
@@ -1150,6 +1176,33 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testMissingApiKeyWithNwisOgcSourceResultsInWarning()
+    {
+        Source source = SourceBuilder.builder()
+                                     .uri( URI.create( "http://foo.usgs/ogcapi/bar" ) )
+                                     .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, " looks like a request to a USGS National "
+                                                               + "Water Information System OGC web service, yet no API "
+                                                               + "Key",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testMissingFeaturesAndNwmInterfaceResultsInErrors()
     {
         Source source = SourceBuilder.builder()
@@ -1681,29 +1734,29 @@ class DeclarationValidatorTest
                                  .setObservedThresholdValue( 1.0 )
                                  .build();
         wres.config.components.Threshold wrappedOne = ThresholdBuilder.builder()
-                                                                           .threshold( one )
-                                                                           .feature( featureFoo )
-                                                                           .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( one )
+                                                                      .feature( featureFoo )
+                                                                      .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
         Threshold two = Threshold.newBuilder()
                                  .setObservedThresholdValue( 2.0 )
                                  .build();
         wres.config.components.Threshold wrappedTwo = ThresholdBuilder.builder()
-                                                                           .threshold( two )
-                                                                           .feature( featureBaz )
-                                                                           .featureNameFrom( DatasetOrientation.LEFT )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( two )
+                                                                      .feature( featureBaz )
+                                                                      .featureNameFrom( DatasetOrientation.LEFT )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
         Threshold three = Threshold.newBuilder()
                                    .setObservedThresholdValue( 2.0 )
                                    .build();
         wres.config.components.Threshold wrappedThree = ThresholdBuilder.builder()
-                                                                             .threshold( three )
-                                                                             .feature( featureBar )
-                                                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                                                             .type( ThresholdType.VALUE )
-                                                                             .build();
+                                                                        .threshold( three )
+                                                                        .feature( featureBar )
+                                                                        .featureNameFrom( DatasetOrientation.LEFT )
+                                                                        .type( ThresholdType.VALUE )
+                                                                        .build();
 
         Threshold four = Threshold.newBuilder()
                                   .setObservedThresholdValue( 2.0 )
@@ -1712,11 +1765,11 @@ class DeclarationValidatorTest
                                       .setName( "qux" )
                                       .build();
         wres.config.components.Threshold wrappedFour = ThresholdBuilder.builder()
-                                                                            .threshold( four )
-                                                                            .feature( featureQux )
-                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                            .type( ThresholdType.VALUE )
-                                                                            .build();
+                                                                       .threshold( four )
+                                                                       .feature( featureQux )
+                                                                       .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                       .type( ThresholdType.VALUE )
+                                                                       .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
@@ -1751,11 +1804,11 @@ class DeclarationValidatorTest
                                  .setObservedThresholdValue( 1.0 )
                                  .build();
         wres.config.components.Threshold wrappedOne = ThresholdBuilder.builder()
-                                                                           .threshold( one )
-                                                                           .feature( featureFoo )
-                                                                           .featureNameFrom( DatasetOrientation.BASELINE )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( one )
+                                                                      .feature( featureFoo )
+                                                                      .featureNameFrom( DatasetOrientation.BASELINE )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
@@ -1781,11 +1834,11 @@ class DeclarationValidatorTest
                                  .setObservedThresholdValue( 1.0 )
                                  .build();
         wres.config.components.Threshold wrappedOne = ThresholdBuilder.builder()
-                                                                           .threshold( one )
-                                                                           .feature( featureFoo )
-                                                                           .featureNameFrom( DatasetOrientation.RIGHT )
-                                                                           .type( ThresholdType.VALUE )
-                                                                           .build();
+                                                                      .threshold( one )
+                                                                      .feature( featureFoo )
+                                                                      .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                      .type( ThresholdType.VALUE )
+                                                                      .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
@@ -1838,9 +1891,9 @@ class DeclarationValidatorTest
 
         wres.config.components.Threshold wrapped =
                 wres.config.components.ThresholdBuilder.builder()
-                                                            .threshold( threshold )
-                                                            .type( ThresholdType.VALUE )
-                                                            .build();
+                                                       .threshold( threshold )
+                                                       .type( ThresholdType.VALUE )
+                                                       .build();
 
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -3661,7 +3714,8 @@ class DeclarationValidatorTest
                 </project>
                 """;
 
-        List<EvaluationStatusEvent> events = DeclarationValidator.validateAgainstLegacyXmlDeclarationString( evaluation );
+        List<EvaluationStatusEvent> events =
+                DeclarationValidator.validateAgainstLegacyXmlDeclarationString( evaluation );
 
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "XML declaration language has been removed",

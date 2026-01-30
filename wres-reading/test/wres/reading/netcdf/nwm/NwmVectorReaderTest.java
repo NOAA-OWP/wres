@@ -63,21 +63,23 @@ class NwmVectorReaderTest
                              .sourceInterface( SourceInterface.NWM_SHORT_RANGE_CHANNEL_RT_CONUS )
                              .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.NETCDF_VECTOR,
-                                               fakeDeclarationSource,
-                                               DatasetBuilder.builder()
-                                                             .type( DataType.SINGLE_VALUED_FORECASTS )
-                                                             .sources( List.of( fakeDeclarationSource ) )
-                                                             .variable( VariableBuilder.builder()
-                                                                                       .name( "streamflow" )
-                                                                                       .build() )
-                                                             .build(),
-                                               Collections.emptyList(),
-                                               // Use a fake URI with an NWIS-like string as this is used to trigger the
-                                               // identification of an instantaneous timescale
-                                               path.toUri(),
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.NETCDF_VECTOR )
+                                          .source( fakeDeclarationSource )
+                                          .context( DatasetBuilder.builder()
+                                                                  .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                                  .sources( List.of( fakeDeclarationSource ) )
+                                                                  .variable( VariableBuilder.builder()
+                                                                                            .name( "streamflow" )
+                                                                                            .build() )
+                                                                  .build() )
+                                          .links( Collections.emptyList() )
+
+                                          // Use a fake URI with an NWIS-like string as this is used to trigger the
+                                          // identification of an instantaneous timescale
+                                          .uri( path.toUri() )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )

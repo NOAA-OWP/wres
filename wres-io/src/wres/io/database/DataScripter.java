@@ -293,8 +293,10 @@ public class DataScripter extends ScriptBuilder
 
     public String toStringRunnableForDebugPurposes()
     {
+        List<String> parameters = this.getParameterStrings();
+
         // Already runnable?
-        if ( this.arguments.isEmpty() )
+        if ( parameters.isEmpty() )
         {
             return super.toString();
         }
@@ -302,8 +304,8 @@ public class DataScripter extends ScriptBuilder
         else
         {
             String script = super.toString();
-            script = script.replace( "\\?", "'%s'" );
-            return String.format( script, this.arguments.toArray() );
+            script = script.replace( "?", "'%s'" );
+            return String.format( script, parameters.toArray() );
         }
     }
 

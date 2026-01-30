@@ -11,5 +11,6 @@ module wres.http
     requires org.apache.commons.lang3;
     requires okhttp3;
     requires kotlin.stdlib;
+    requires static lombok;
     exports wres.http;
 }

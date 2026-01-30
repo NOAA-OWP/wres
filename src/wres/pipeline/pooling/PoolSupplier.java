@@ -1435,7 +1435,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Duration period = this.getPeriodFromTimeScale( timeParameters.desiredTimeScale() );
 
         TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( leftSeries, rightOrBaselineSeries, period, Duration.ZERO );
-
         TimeSeries<R> scaledRight = rightOrBaselineSeries;
 
         // No events on one or both sides? Stop here.
@@ -2011,7 +2010,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                              .getLeftForBaselineFeature( rightOrBaselineFeature );
         }
 
-        LOGGER.debug( "Correlated LEFT feature {} with {} features {}.", rightOrBaselineFeature, lrb, correlated );
+        LOGGER.debug( "Correlated OBSERVED feature {} with {} features {}.", rightOrBaselineFeature, lrb, correlated );
 
         return correlated;
     }

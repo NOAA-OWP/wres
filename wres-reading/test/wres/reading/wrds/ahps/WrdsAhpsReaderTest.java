@@ -43,6 +43,8 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
+import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.DataSource.DataDisposition;
 import wres.statistics.MessageUtilities;
@@ -781,7 +783,8 @@ class WrdsAhpsReaderTest
     @BeforeEach
     void startServer()
     {
-        System.setProperty("wres.wrdsCertificateFileToTrust", "org/mockserver/socket/CertificateAuthorityCertificate.pem");
+        System.setProperty( "wres.wrdsCertificateFileToTrust",
+                            "org/mockserver/socket/CertificateAuthorityCertificate.pem" );
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
@@ -812,13 +815,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -826,7 +830,21 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( fakeDataset )
+                                            .right( fakeDataset )
+                                            .validDates( TimeIntervalBuilder.builder()
+                                                                            .minimum( Instant.MIN )
+                                                                            .maximum( Instant.MAX )
+                                                                            .build() )
+                                            .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -904,13 +922,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -918,7 +937,19 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .validDates( TimeIntervalBuilder.builder()
+                                                                            .minimum( Instant.MIN )
+                                                                            .maximum( Instant.MAX )
+                                                                            .build() )
+                                            .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -958,13 +989,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2022-09-17T00:00:00Z" ) )
@@ -981,6 +1013,8 @@ class WrdsAhpsReaderTest
                                            .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
+                                            .left( fakeDataset )
+                                            .right( fakeDataset )
                                             .validDates( interval )
                                             .features( features )
                                             .build();
@@ -991,7 +1025,11 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1061,13 +1099,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.LEFT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
 
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2018-01-01T00:00:00Z" ) )
@@ -1094,7 +1133,11 @@ class WrdsAhpsReaderTest
         Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1153,13 +1196,14 @@ class WrdsAhpsReaderTest
                                             .sources( List.of( fakeDeclarationSource ) )
                                             .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
-                                               fakeDeclarationSource,
-                                               fakeDataset,
-                                               Collections.emptyList(),
-                                               fakeUri,
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.JSON_WRDS_AHPS )
+                                          .source( fakeDeclarationSource )
+                                          .context( fakeDataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -1186,7 +1230,11 @@ class WrdsAhpsReaderTest
                                             .features( features )
                                             .build();
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                  declaration,
+                                                                  fakeSource );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

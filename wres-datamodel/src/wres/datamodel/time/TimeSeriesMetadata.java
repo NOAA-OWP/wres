@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.jspecify.annotations.NonNull;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -36,7 +37,7 @@ public class TimeSeriesMetadata
      * Cache of commonly used strings.
      */
 
-    private static final Cache<String, String> STRING_CACHE =
+    private static final Cache<@NonNull String, String> STRING_CACHE =
             Caffeine.newBuilder()
                     .maximumSize( 6 )
                     .build();
@@ -45,7 +46,7 @@ public class TimeSeriesMetadata
      * Cache of commonly used features. Up to one hundred, arbitrarily.
      */
 
-    private static final Cache<Feature, Feature> FEATURE_KEY_CACHE =
+    private static final Cache<@NonNull Feature, Feature> FEATURE_KEY_CACHE =
             Caffeine.newBuilder()
                     .maximumSize( 100 )
                     .build();
@@ -195,8 +196,7 @@ public class TimeSeriesMetadata
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "timeScale", this.timeScale )
-                .append( "referenceTimes",
-                         this.referenceTimes )
+                .append( "referenceTimes", this.referenceTimes )
                 .append( "variableName", this.variableName )
                 .append( "feature", this.feature )
                 .append( "unit", this.unit )

@@ -1465,16 +1465,12 @@ class ProjectUtilities
     {
         Set<String> intersection = new HashSet<>();
 
-        if ( Objects.isNull( declaration.left()
-                                        .variable()
-                                        .name() ) )
+        if ( !ProjectUtilities.hasVariableName( declaration.left() ) )
         {
             intersection.addAll( left );
         }
 
-        if ( Objects.isNull( declaration.right()
-                                        .variable()
-                                        .name() ) )
+        if ( !ProjectUtilities.hasVariableName( declaration.right() ) )
         {
             if ( intersection.isEmpty() )
             {

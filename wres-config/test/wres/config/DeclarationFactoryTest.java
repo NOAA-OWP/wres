@@ -3413,11 +3413,13 @@ class DeclarationFactoryTest
                     - uri: file:/some/directory
                       pattern: '**/*.csv*'
                       time_zone_offset: "-0600"
+                      daylight_savings: true
                       missing_value: -999.0
                     - uri: https://foo.bar
                       interface: usgs nwis
                       parameters:
                         foo: bar
+                      daylight_savings: true
                   variable:
                     name: foo
                     label: fooest
@@ -3432,8 +3434,10 @@ class DeclarationFactoryTest
                     - uri: file:/some/other/directory
                       pattern: '**/*.xml*'
                       time_zone_offset: "-0600"
+                      daylight_savings: true
                     - uri: https://qux.quux
                       interface: wrds ahps
+                      daylight_savings: true
                   type: ensemble forecasts
                   time_shift:
                     period: -2

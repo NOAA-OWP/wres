@@ -1,16 +1,21 @@
 package wres.reading;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
 import jakarta.xml.bind.DatatypeConverter;
 
+import wres.config.components.DatasetBuilder;
+import wres.config.components.DatasetOrientation;
+import wres.config.components.SourceBuilder;
 import wres.reading.DataSource.DataDisposition;
 
 /**
@@ -292,6 +297,46 @@ class DataSourceTest
     }
 
     @Test
+    void testDetectGeoJSON() throws IOException
+    {
+        String formatString = """
+                {
+                  "type": "FeatureCollection",
+                  "features": [
+                    {
+                      "type": "Feature",
+                      "properties": {
+                        "time_series_id": "6dca811357944cf380f93b2ef185e59d",
+                        "value": "16.0",
+                        "approval_status": "Approved",
+                        "qualifier": null,
+                        "monitoring_location_id": "USGS-09165000",
+                        "parameter_code": "00060",
+                        "statistic_id": "00003",
+                        "time": "1978-02-07",
+                        "unit_of_measure": "ft^3/s",
+                        "last_modified": "2025-03-10T23:21:52.146967+00:00"
+                      },
+                      "id": "00008a70-237b-4efa-a7ed-2e3338d46704",
+                      "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                          -108.0603668690412,
+                          37.63888414474664
+                        ]
+                      }
+                    },
+                """;
+
+        try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "fake.json" );
+
+            assertEquals( DataDisposition.GEOJSON, DataSource.detectFormat( stream, fakeUri ) );
+        }
+    }
+
+    @Test
     void testDetectFormatIdentifiesJsonWaterMl() throws IOException
     {
         String formatString =
@@ -347,5 +392,25 @@ class DataSourceTest
 
             assertEquals( DataDisposition.XML_PI_TIMESERIES, DataSource.detectFormat( stream, fakeUri ) );
         }
+    }
+
+    @Test
+    void testValidationOnConstructionProducesExpectedException()
+    {
+        DataSource.Builder builder = DataSource.builder()
+                                               .disposition( DataDisposition.TARBALL )
+                                               .source( SourceBuilder.builder()
+                                                                     .build() )
+                                               .context( DatasetBuilder.builder()
+                                                                       .build() )
+                                               .links( Collections.emptyList() )
+                                               .uri( URI.create( "http://foo" ) )
+                                               .datasetOrientation( DatasetOrientation.COVARIATE );
+
+        NullPointerException expected = assertThrows( NullPointerException.class,
+                                                      builder::build );
+
+        assertEquals( "A covariate data source requires a feature orientation.",
+                      expected.getMessage() );
     }
 }

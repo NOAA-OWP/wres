@@ -1726,7 +1726,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void TestGetTimeScaleFromUri()
+    void testGetTimeScaleFromUri()
     {
         URI uri = URI.create( "https://foo.bar/nwis/iv" );
         URI unknown = URI.create( "https://foo.bar" );
@@ -1737,7 +1737,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void getSimpleRange()
+    void testGetSimpleRange()
     {
         Source source = SourceBuilder.builder()
                                      .build();
@@ -1765,30 +1765,40 @@ class ReaderUtilitiesTest
                                                                                 .right( forecastDataset )
                                                                                 .validDates( interval )
                                                                                 .build();
-        DataSource observedDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                                       source,
-                                                       observedDataset,
-                                                       List.of(),
-                                                       URI.create( "http://foo.bar" ),
-                                                       DatasetOrientation.LEFT,
-                                                       null );
-        DataSource forecastDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                                       source,
-                                                       forecastDataset,
-                                                       List.of(),
-                                                       URI.create( "http://foo.bar" ),
-                                                       DatasetOrientation.RIGHT,
-                                                       null );
-        Pair<Instant, Instant> expected = Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
-                                                   Instant.parse( "2023-03-01T00:00:00Z" ) );
+        DataSource observedDataSource = DataSource.builder()
+                                                  .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                                  .source( source )
+                                                  .context( observedDataset )
+                                                  .uri( URI.create( "http://foo.bar" ) )
+                                                  .datasetOrientation( DatasetOrientation.LEFT )
+                                                  .links( List.of() )
+                                                  .build();
+
+        DataSource forecastDataSource = DataSource.builder()
+                                                  .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                                  .source( source )
+                                                  .context( forecastDataset )
+                                                  .uri( URI.create( "http://foo.bar" ) )
+                                                  .datasetOrientation( DatasetOrientation.RIGHT )
+                                                  .links( Collections.emptyList() )
+                                                  .build();
+        Set<Pair<Instant, Instant>> expected =
+                Collections.singleton( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                                                Instant.parse( "2023-03-01T00:00:00Z" ) ) );
         assertAll( () -> assertEquals( expected,
-                                       ReaderUtilities.getSimpleRange( observedDeclaration, observedDataSource ) ),
+                                       ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                       observedDeclaration,
+                                                                       observedDataSource )
+                                                      .get() ),
                    () -> assertEquals( expected,
-                                       ReaderUtilities.getSimpleRange( forecastDeclaration, forecastDataSource ) ) );
+                                       ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                       forecastDeclaration,
+                                                                       forecastDataSource )
+                                                      .get() ) );
     }
 
     @Test
-    void getSimpleRangeThrowsReadExceptionWhenReferenceDatesMissing()
+    void testGetSimpleRangeThrowsReadExceptionWhenReferenceDatesMissing()
     {
         Source source = SourceBuilder.builder()
                                      .build();
@@ -1801,16 +1811,18 @@ class ReaderUtilitiesTest
                                                                                 .left( forecastDataset )
                                                                                 .right( forecastDataset )
                                                                                 .build();
-        DataSource forecastDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                                       source,
-                                                       forecastDataset,
-                                                       List.of(),
-                                                       URI.create( "http://foo.bar" ),
-                                                       DatasetOrientation.RIGHT,
-                                                       null );
+        DataSource forecastDataSource = DataSource.builder()
+                                                  .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                                  .source( source )
+                                                  .context( forecastDataset )
+                                                  .links( Collections.emptyList() )
+                                                  .uri( URI.create( "http://foo.bar" ) )
+                                                  .datasetOrientation( DatasetOrientation.RIGHT )
+                                                  .build();
 
         ReadException actual = assertThrows( ReadException.class,
-                                             () -> ReaderUtilities.getSimpleRange( forecastDeclaration,
+                                             () -> ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                                   forecastDeclaration,
                                                                                    forecastDataSource ) );
 
         assertTrue( actual.getMessage()
@@ -1818,7 +1830,7 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void getSimpleRangeThrowsReadExceptionWhenValidDatesMissing()
+    void testGetSimpleRangeThrowsReadExceptionWhenValidDatesMissing()
     {
         Source source = SourceBuilder.builder()
                                      .build();
@@ -1831,20 +1843,108 @@ class ReaderUtilitiesTest
                                                                                 .left( observedDataset )
                                                                                 .right( observedDataset )
                                                                                 .build();
-        DataSource observedDataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                                       source,
-                                                       observedDataset,
-                                                       List.of(),
-                                                       URI.create( "http://foo.bar" ),
-                                                       DatasetOrientation.LEFT,
-                                                       null );
+        DataSource observedDataSource = DataSource.builder()
+                                                  .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                                  .source( source )
+                                                  .context( observedDataset )
+                                                  .links( List.of() )
+                                                  .uri( URI.create( "http://foo.bar" ) )
+                                                  .datasetOrientation( DatasetOrientation.LEFT )
+                                                  .build();
 
         ReadException actual = assertThrows( ReadException.class,
-                                             () -> ReaderUtilities.getSimpleRange( observedDeclaration,
+                                             () -> ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                                   observedDeclaration,
                                                                                    observedDataSource ) );
 
         assertTrue( actual.getMessage()
                           .contains( "missing 'valid_dates', which is not allowed" ) );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesTenDayTimeChunks()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-03-01T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( declaration, dataSource, Duration.ofDays( 10 ) );
+
+        Set<Pair<Instant, Instant>> actual = chunker.get();
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                               Instant.parse( "2023-02-11T00:00:00Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-11T00:00:00Z" ),
+                               Instant.parse( "2023-02-21T00:00:00Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-21T00:00:00Z" ),
+                               Instant.parse( "2023-03-01T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesOneChunkWhenIntervalSpansLessThanOneChunk()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-02-07T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( declaration, dataSource, Duration.ofDays( 10 ) );
+
+        Set<Pair<Instant, Instant>> actual = chunker.get();
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                               Instant.parse( "2023-02-07T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -1858,24 +1958,26 @@ class ReaderUtilitiesTest
                                         .sources( sources )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        DataSource dataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                               source,
-                                               dataset,
-                                               List.of(),
-                                               URI.create( "http://foo.bar" ),
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         Source sourceTwo = SourceBuilder.builder()
                                         .sourceInterface( SourceInterface.WRDS_AHPS )
                                         .build();
-        DataSource dataSourceTwo = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                                  sourceTwo,
-                                                  dataset,
-                                                  List.of(),
-                                                  URI.create( "http://foo.bar" ),
-                                                  DatasetOrientation.RIGHT,
-                                                  null );
+        DataSource dataSourceTwo = DataSource.builder()
+                                             .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                             .source( sourceTwo )
+                                             .context( dataset )
+                                             .links( List.of() )
+                                             .uri( URI.create( "http://foo.bar" ) )
+                                             .datasetOrientation( DatasetOrientation.RIGHT )
+                                             .build();
 
         assertAll( () -> assertTrue( ReaderUtilities.isWrdsHefsSource( dataSource ) ),
                    () -> assertFalse( ReaderUtilities.isWrdsHefsSource( dataSourceTwo ) ) );
@@ -1891,13 +1993,14 @@ class ReaderUtilitiesTest
                                         .sources( sources )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        DataSource dataSource = DataSource.of( DataSource.DataDisposition.XML_PI_TIMESERIES,
-                                               source,
-                                               dataset,
-                                               List.of(),
-                                               URI.create( "http://foo.bar/hefs/" ),
-                                               DatasetOrientation.RIGHT,
-                                               null );
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar/hefs/" ) )
+                                          .datasetOrientation( DatasetOrientation.RIGHT )
+                                          .build();
 
         assertTrue( ReaderUtilities.isWrdsHefsSource( dataSource ) );
     }
@@ -1925,39 +2028,41 @@ class ReaderUtilitiesTest
     }
 
     @Test
-    void testIsUsgsSourceWithFileUriScheme()
+    void testIsNwisIvSourceWithFileUriScheme()
     {
         // GitHub #639
         DataSource dataSource =
-                DataSource.of( DataSource.DataDisposition.JSON_WATERML,
-                               SourceBuilder.builder()
-                                            .build(),
-                               DatasetBuilder.builder()
-                                             .build(),
-                               List.of(),
-                               URI.create( "file:///nwis/wresTestData/github_viz_20/01570500.observed.usgs.json" ),
-                               DatasetOrientation.LEFT,
-                               null );
+                DataSource.builder()
+                          .disposition( DataSource.DataDisposition.JSON_WATERML )
+                          .source( SourceBuilder.builder()
+                                                .build() )
+                          .context( DatasetBuilder.builder()
+                                                  .build() )
+                          .links( Collections.emptyList() )
+                          .uri( URI.create( "file:///nwis/wresTestData/github_viz_20/01570500.observed.usgs.json" ) )
+                          .datasetOrientation( DatasetOrientation.LEFT )
+                          .build();
 
-        assertFalse( ReaderUtilities.isUsgsSource( dataSource ) );
+        assertFalse( ReaderUtilities.isNwisIvSource( dataSource ) );
     }
 
     @Test
-    void testIsUsgsSourceWithHttpScheme()
+    void testIsNwisIvSourceWithHttpScheme()
     {
         // GitHub #639
         DataSource dataSource =
-                DataSource.of( DataSource.DataDisposition.JSON_WATERML,
-                               SourceBuilder.builder()
-                                            .build(),
-                               DatasetBuilder.builder()
-                                             .build(),
-                               List.of(),
-                               URI.create( "https:///nwis/foo" ),
-                               DatasetOrientation.LEFT,
-                               null );
+                DataSource.builder()
+                          .disposition( DataSource.DataDisposition.JSON_WATERML )
+                          .source( SourceBuilder.builder()
+                                                .build() )
+                          .context( DatasetBuilder.builder()
+                                                  .build() )
+                          .links( List.of() )
+                          .uri( URI.create( "https:///nwis/iv/foo" ) )
+                          .datasetOrientation( DatasetOrientation.LEFT )
+                          .build();
 
-        assertTrue( ReaderUtilities.isUsgsSource( dataSource ) );
+        assertTrue( ReaderUtilities.isNwisIvSource( dataSource ) );
     }
 
 }

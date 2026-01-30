@@ -1,0 +1,25 @@
+---
+"$schema": http://json-schema.org/draft/2019-09/schema#
+"$ref": "#/definitions/Units"
+definitions:
+  Units:
+    title: "A mapping between informal units and formal units within the Unified 
+    Code for Units of Measure (UCUM)."
+    description: "A mapping between the informal units that a user wants the 
+    WRES software to recognize by default and a formal unit that is actually 
+    understood by WRES within the framework of the UCUM, as described here: 
+    https://ucum.org/ucum. Allowing the WRES to understand a unit conveys 
+    several important advantages, such as the ability to perform unit 
+    transformations. Indeed, where a unit transformation is required, the unit 
+    must be understood as a formal UCUM unit. The mapping contained here 
+    satisfies two goals. First, it allows for backwards compatibility with 
+    versions of WRES prior to 5.14, which contained a hard-coded list of 
+    supported (informal) units. Second, it allows a user to expand the list of 
+    informal units that are commonly used across their evaluations without 
+    adding an explicit unit alias (i.e., a mapping between an informal and a 
+    formal unit) to each evaluation. The order of the mapping is informal unit 
+    (left side or key) to formal unit (right side or value)."
+    type: object
+    additionalProperties:
+      type: string
+      uniqueItems : true

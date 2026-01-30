@@ -97,7 +97,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         try
         {
-            Path xmlPath = Paths.get( dataSource.getUri() );
+            Path xmlPath = Paths.get( dataSource.uri() );
             InputStream inputStream = new BufferedInputStream( Files.newInputStream( xmlPath ) );
             return this.readFromStream( dataSource, inputStream );
         }
@@ -151,7 +151,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                          catch ( XMLStreamException e )
                          {
                              LOGGER.warn( "Unable to close an XML stream for data source {}.",
-                                          dataSource.getUri() );
+                                          dataSource.uri() );
                          }
                      } );
     }
@@ -208,7 +208,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
             catch ( XMLStreamException e )
             {
-                throw new ReadException( "While reading a PI-XML data source, " + dataSource.getUri() + ".", e );
+                throw new ReadException( "While reading a PI-XML data source, " + dataSource.uri() + ".", e );
             }
 
             // Create the only or final series, if it hasn't been created already
@@ -235,7 +235,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     private XMLStreamReader getXmlStreamReader( DataSource dataSource, InputStream inputStream )
     {
         // Fast-infoset encoded?
-        if ( dataSource.getDisposition() == DataDisposition.XML_FI_TIMESERIES )
+        if ( dataSource.disposition() == DataDisposition.XML_FI_TIMESERIES )
         {
             return new StAXDocumentParser( inputStream );
         }
@@ -248,7 +248,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
             catch ( XMLStreamException e )
             {
-                throw new ReadException( "While attempting to read " + dataSource.getUri() + ".", e );
+                throw new ReadException( "While attempting to read " + dataSource.uri() + ".", e );
             }
         }
     }
@@ -279,7 +279,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
             if ( localName.equalsIgnoreCase( "timeSeries" ) )
             {
-                LOGGER.debug( "Read first 'timeSeries' element of {}", dataSource.getUri() );
+                LOGGER.debug( "Read first 'timeSeries' element of {}", dataSource.uri() );
 
                 if ( !traceValues.isEmpty() )
                 {
@@ -311,7 +311,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                     throw new ReadException( message, e );
                 }
 
-                LOGGER.debug( "Read 'timeZone' element of {} as {}.", dataSource.getUri(), zoneOffset );
+                LOGGER.debug( "Read 'timeZone' element of {} as {}.", dataSource.uri(), zoneOffset );
             }
             else if ( localName.equalsIgnoreCase( "series" ) )
             {
@@ -450,22 +450,22 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         if ( Objects.isNull( ingestedOffset ) )
         {
             // The offset may be declared for this source or for the overall dataset
-            ZoneOffset offset = dataSource.getSource()
+            ZoneOffset offset = dataSource.source()
                                           .timeZoneOffset();
 
             // Overall offset for all sources?
             if ( Objects.isNull( offset ) )
             {
-                offset = dataSource.getContext()
+                offset = dataSource.context()
                                    .timeZoneOffset();
             }
 
-            LOGGER.debug( "The declared 'time_zone_offset' for {} is {}.", dataSource.getSource(), offset );
+            LOGGER.debug( "The declared 'time_zone_offset' for {} is {}.", dataSource.source(), offset );
 
             if ( Objects.isNull( offset ) )
             {
                 String message = "While reading a PI-XML data source from '"
-                                 + dataSource.getUri()
+                                 + dataSource.uri()
                                  + "', failed to identify a 'timeZone' in the time-series data and failed to discover "
                                  + "a 'time_zone_offset' in the project declaration. One of these is necessary to "
                                  + "correctly identify the time zone of the time-series data. Please add a "
@@ -478,7 +478,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
         else
         {
-            ZoneOffset configuredOffset = dataSource.getSource()
+            ZoneOffset configuredOffset = dataSource.source()
                                                     .timeZoneOffset();
 
             // Render this exceptional: GitHub 494
@@ -486,7 +486,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                  && !configuredOffset.equals( ingestedOffset ) )
             {
                 throw new ReadException( "The declared 'time_zone_offset' for the data source at '"
-                                         + dataSource.getUri()
+                                         + dataSource.uri()
                                          + "' was '"
                                          + configuredOffset
                                          + ", which does not match the 'timeZone' of '"
@@ -512,22 +512,22 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         if ( Objects.isNull( header.units() ) )
         {
             // The unit may be declared for this source or for the overall dataset
-            String unit = dataSource.getSource()
+            String unit = dataSource.source()
                                     .unit();
 
             // Overall unit for all sources?
             if ( Objects.isNull( unit ) )
             {
-                unit = dataSource.getContext()
+                unit = dataSource.context()
                                  .unit();
             }
 
-            LOGGER.debug( "The declared 'unit' for {} is {}.", dataSource.getSource(), unit );
+            LOGGER.debug( "The declared 'unit' for {} is {}.", dataSource.source(), unit );
 
             if ( Objects.isNull( unit ) )
             {
                 String message = "While reading a PI-XML data source from '"
-                                 + dataSource.getUri()
+                                 + dataSource.uri()
                                  + "', failed to identify the 'units' in the time-series data and failed to discover "
                                  + "a 'unit' in the project declaration. One of these is necessary to "
                                  + "correctly identify the measurement unit of the time-series data. Please add a "
@@ -540,7 +540,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
         else
         {
-            String declaredUnit = dataSource.getSource()
+            String declaredUnit = dataSource.source()
                                             .unit();
             if ( Objects.nonNull( declaredUnit )
                  && !declaredUnit.equals( header.units() ) )
@@ -550,7 +550,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                              + "the 'unit' for a PI-XML source in the project declaration when the "
                              + "'units' is available within the data source itself because the declaration will be "
                              + "ignored.",
-                             dataSource.getUri(),
+                             dataSource.uri(),
                              declaredUnit,
                              header.units() );
             }
@@ -621,7 +621,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             throw new ReadException( "An event for metadata '"
                                      + currentTimeSeriesMetadata
                                      + "' in "
-                                     + dataSource.getUri()
+                                     + dataSource.uri()
                                      + " did not have a trace name for the current trace. "
                                      + "Either the source is not properly formed or the "
                                      + "header was not read properly. Parsing cannot "
@@ -656,7 +656,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         {
             throw new ReadException( "An event for " + currentTimeSeriesMetadata
                                      + " in "
-                                     + dataSource.getUri()
+                                     + dataSource.uri()
                                      + " didn't have "
                                      + "information about when the value was valid. "
                                      + "The source is not properly formed and parsing "
@@ -668,7 +668,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             LOGGER.debug( "The event at {} {} in '{}' didn't have a value to save.",
                           dateText,
                           timeText,
-                          dataSource.getUri() );
+                          dataSource.uri() );
             return;
         }
 
@@ -764,7 +764,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         if ( traceValues.containsKey( traceName ) )
         {
             throw new ReadException( "Found invalid data in PI-XML source '"
-                                     + dataSource.getUri()
+                                     + dataSource.uri()
                                      + "' near line "
                                      + reader.getLocation()
                                              .getLineNumber()
@@ -825,7 +825,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
              && Objects.nonNull( header.ensembleMemberIndex() ) )
         {
             throw new ReadException( "Found invalid data in PI-XML source '"
-                                     + dataSource.getUri()
+                                     + dataSource.uri()
                                      + "' near line "
                                      + reader.getLocation().getLineNumber()
                                      + ": a trace may contain either an ensembleMemberId or an "
@@ -1124,21 +1124,21 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             singleValuedSeries = ReaderUtilities.transform( timeSeriesMetadata,
                                                             ensembleValues.get( name ),
                                                             lineNumber,
-                                                            dataSource.getUri() );
+                                                            dataSource.uri() );
 
 
             // Validate
-            ReaderUtilities.validateAgainstEmptyTimeSeries( singleValuedSeries, dataSource.getUri() );
+            ReaderUtilities.validateAgainstEmptyTimeSeries( singleValuedSeries, dataSource.uri() );
         }
         else
         {
             ensembleSeries = ReaderUtilities.transformEnsemble( timeSeriesMetadata,
                                                                 ensembleValues,
                                                                 lineNumber,
-                                                                dataSource.getUri() );
+                                                                dataSource.uri() );
 
             // Validate
-            ReaderUtilities.validateAgainstEmptyTimeSeries( ensembleSeries, dataSource.getUri() );
+            ReaderUtilities.validateAgainstEmptyTimeSeries( ensembleSeries, dataSource.uri() );
         }
 
         return TimeSeriesTuple.of( singleValuedSeries, ensembleSeries, dataSource );

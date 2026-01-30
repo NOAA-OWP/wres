@@ -18,7 +18,7 @@ import wres.config.DeclarationUtilities;
 import wres.statistics.generated.SummaryStatistic;
 
 /**
- * Serializes a {@link SummaryStatistic}.
+ * Serializes {@link SummaryStatistic}.
  * @author James Brown
  */
 public class SummaryStatisticsSerializer extends ValueSerializer<Set<SummaryStatistic>>

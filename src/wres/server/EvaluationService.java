@@ -44,6 +44,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.ws.rs.core.StreamingOutput;
 import org.glassfish.jersey.server.ChunkedOutput;
+import org.jspecify.annotations.NonNull;
 import org.redisson.Redisson;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
@@ -131,7 +132,7 @@ public class EvaluationService implements ServletContextListener
     // The cache is here for expedience, this information could be persisted
     // elsewhere, such as a database or a local file. Cleanup of outputs is a
     // related concern.
-    private static final Cache<Long, EvaluationMetadata> CAFFEINE_CACHE;
+    private static final Cache<@NonNull Long, EvaluationMetadata> CAFFEINE_CACHE;
 
     private static RedissonClient redissonClient;
     private static final int DEFAULT_REDIS_PORT = 6379;
@@ -676,7 +677,7 @@ public class EvaluationService implements ServletContextListener
         return executorService.submit( () -> {
             updateStatus( ONGOING, id );
 
-            LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
+            LOGGER.info( "Starting an evaluation with an internal ID of: {}", id );
             Set<java.nio.file.Path> outputPaths;
             Canceller canceller = Canceller.of();
             try
@@ -879,7 +880,12 @@ public class EvaluationService implements ServletContextListener
         ByteArrayInputStream byteArrayInputStream =
                 new ByteArrayInputStream( redirectStream.toByteArray() );
         // Skip the content in the message already sent
-        byteArrayInputStream.skip( offset );
+        long skipped = byteArrayInputStream.skip( offset );
+
+        if( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Skipped {} bytes.", skipped );
+        }
 
         // If there are bytes present after we skip, write it to the ChunkedOutput
         if ( byteArrayInputStream.available() > 0 )

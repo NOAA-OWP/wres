@@ -213,7 +213,7 @@ public class Evaluator
         // here too, but ingest is implementation specific (e.g., in-memory ingest is an ingest facade and does not
         // require a thread pool) and some readers, notably archive readers, have their own thread pool
         ThreadFactory poolFactory = BasicThreadFactory.builder()
-                                                      .namingPattern( "Pool Thread %d" )
+                                                      .namingPattern( "Pooling Thread %d" )
                                                       .build();
         // Use this thread pool for slicing pools and to dispatch metric tasks as ArrayBlockingQueue operates a FIFO
         // policy. If dependent tasks (slicing) are queued ahead of independent ones (metrics) in the same pool, there
@@ -222,7 +222,7 @@ public class Evaluator
 
         // Inner readers may create additional thread factories (e.g., archives).
         ThreadFactory readingFactory = BasicThreadFactory.builder()
-                                                         .namingPattern( "Outer Reading Thread %d" )
+                                                         .namingPattern( "Reading Thread %d" )
                                                          .build();
         ThreadFactory slicingFactory = BasicThreadFactory.builder()
                                                          .namingPattern( "Slicing Thread %d" )
@@ -231,7 +231,7 @@ public class Evaluator
                                                         .namingPattern( "Metric Thread %d" )
                                                         .build();
         ThreadFactory productFactory = BasicThreadFactory.builder()
-                                                         .namingPattern( "Format Writing Thread %d" )
+                                                         .namingPattern( "Writing Thread %d" )
                                                          .build();
 
         SystemSettings settings = this.getSystemSettings();

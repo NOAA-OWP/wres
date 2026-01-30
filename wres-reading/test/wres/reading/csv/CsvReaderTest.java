@@ -16,17 +16,15 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
+import wres.config.components.DatasetBuilder;
 import wres.config.components.SourceBuilder;
-import wres.config.components.Variable;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -79,13 +77,15 @@ class CsvReaderTest
                       .append( "1985-06-01T15:00:00Z,QINE,DRRC2,CFS,3" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( csvPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.CSV_WRES );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( csvPath.toUri() )
+                                              .disposition( DataDisposition.CSV_WRES )
+                                              .build();
 
             CsvReader reader = CsvReader.of();
 
@@ -147,13 +147,15 @@ class CsvReaderTest
                       .append( "1985-06-01T15:00:00Z,QINE,DRRC3,CFS,6" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( csvPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.CSV_WRES );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( csvPath.toUri() )
+                                              .disposition( DataDisposition.CSV_WRES )
+                                              .build();
 
             CsvReader reader = CsvReader.of();
 
@@ -232,13 +234,15 @@ class CsvReaderTest
                       .append( "1985-06-01T15:00:00Z,QINE,DRRC3,CFS,6" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( csvPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.CSV_WRES );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( csvPath.toUri() )
+                                              .disposition( DataDisposition.CSV_WRES )
+                                              .build();
 
             CsvReader reader = CsvReader.of();
 
@@ -313,13 +317,15 @@ class CsvReaderTest
                       .append( "1985-06-01T15:00:00Z,QINE,DRRC3,CFS,6\n" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( csvPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.CSV_WRES );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( csvPath.toUri() )
+                                              .disposition( DataDisposition.CSV_WRES )
+                                              .build();
 
             CsvReader reader = CsvReader.of();
 
@@ -395,13 +401,15 @@ class CsvReaderTest
                       .append( "1985-06-01T12:00:00Z,1985-06-01T14:00:00Z,QINE,DRRC3,CFS,6\n" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( csvPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.CSV_WRES );
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( csvPath.toUri() )
+                                              .disposition( DataDisposition.CSV_WRES )
+                                              .build();
 
             CsvReader reader = CsvReader.of();
 
@@ -484,17 +492,17 @@ class CsvReaderTest
                       .append( "1985-06-01T15:00:00Z,QINE,DRRC2,CFS,3" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( csvPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null, Set.of() ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.CSV_WRES );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( SourceBuilder.builder()
-                                             .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
-                                             .build() );
+            DataSource dataSource =
+                    DataSource.builder()
+                              .context( DatasetBuilder.builder()
+                                                      .build() )
+                              .source( SourceBuilder.builder()
+                                                    .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
+                                                    .build() )
+                              .links( Collections.emptyList() )
+                              .uri( csvPath.toUri() )
+                              .disposition( DataDisposition.CSV_WRES )
+                              .build();
 
             CsvReader reader = CsvReader.of();
 

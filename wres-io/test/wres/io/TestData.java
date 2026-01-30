@@ -174,13 +174,15 @@ public class TestData
                                                                   .build() )
                                         .build();
 
-        return DataSource.of( DataSource.DataDisposition.CSV_WRES,
-                              fakeDeclarationSource,
-                              dataset,
-                              Collections.emptyList(),
-                              FAKE_URI,
-                              orientation,
-                              orientation );
+        return DataSource.builder()
+                         .uri( FAKE_URI )
+                         .context( dataset )
+                         .source( fakeDeclarationSource )
+                         .datasetOrientation( orientation )
+                         .disposition( DataSource.DataDisposition.CSV_WRES )
+                         .covariateFeatureOrientation( orientation )
+                         .links( Collections.emptyList() )
+                         .build();
     }
 
     public static DataSource generateBaselineDataSource( DataType type )
@@ -197,12 +199,13 @@ public class TestData
                                                                   .build() )
                                         .build();
 
-        return DataSource.of( DataSource.DataDisposition.CSV_WRES,
-                              fakeDeclarationSource,
-                              dataset,
-                              Collections.emptyList(),
-                              FAKE_URI,
-                              DatasetOrientation.BASELINE,
-                              null );
+        return DataSource.builder()
+                         .uri( FAKE_URI )
+                         .context( dataset )
+                         .source( fakeDeclarationSource )
+                         .links( Collections.emptyList() )
+                         .datasetOrientation( DatasetOrientation.BASELINE )
+                         .disposition( DataSource.DataDisposition.CSV_WRES )
+                         .build();
     }
 }

@@ -472,7 +472,7 @@ definitions:
         description: "Specifies the time zone offset for the data. This is 
         required for the datacard format, which does not include time zone 
         information in the file. It should be unnecessary for most/all other 
-        formats. An example of a valid offset is 'CST'."
+        formats. Examples of valid offsets are 'CST' or '-6'."
         anyOf:
           # Allowing both an integer and a string is a workaround because the
           # networknt validator sometimes sees these strings as integers, but
@@ -481,6 +481,16 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
+      daylight_savings:
+          description: "For data sources that contain local times at locations 
+          where daylight savings is enforced, ignore the daylight saving 
+          component of the time zone offset and apply the fixed/raw offset 
+          instead. For example, when the time zone is America/New_York or the 
+          time zone short-hand is EST, assume a constant offset of -PT5H from 
+          UTC. This option is only respected when the use of daylight savings 
+          can be determined from the data source."
+          type: boolean
+          default: true
       interface:
         "$ref": "#/definitions/SourceInterfaceEnum"
       # Parameters form a dictionary with any pair of strings allowed

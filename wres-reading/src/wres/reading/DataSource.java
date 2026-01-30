@@ -7,7 +7,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -16,7 +15,9 @@ import java.util.Set;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import lombok.Getter;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,9 +40,27 @@ import wres.config.components.Variable;
 
 /**
  * A data source.
+ *
+ * @param disposition  The disposition of the data for this source. Used to determine the reader for simple sources or
+ *                     whether more decomposition or recomposition is needed
+ * @param context  The context in which this source is declared
+ * @param source  The source to load and link
+ * @param links  Additional links; may be empty, in which case, link only to its own {@link #context ()}
+ * @param uri  URI of the source
+ * @param nextPage  The URI of the next page of data if this is a paginated source from a web service
+ * @param datasetOrientation  Whether the source originates from the left, right or baseline side of the evaluation
+ * @param covariateFeatureOrientation  The covariate feature orientation, if defined
  */
 
-public class DataSource
+@Builder( toBuilder = true, builderClassName = "Builder" )
+public record DataSource( @NonNull DataDisposition disposition,
+                          @NonNull Dataset context,
+                          @NonNull Source source,
+                          @Singular // To allow for immutability
+                          @NonNull List<DatasetOrientation> links,
+                          @NonNull URI uri,
+                          URI nextPage, DatasetOrientation datasetOrientation,
+                          DatasetOrientation covariateFeatureOrientation )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DataSource.class );
@@ -63,7 +82,7 @@ public class DataSource
         TARBALL,
         /** The data has been detected as a pi-xml timeseries stream. */
         XML_PI_TIMESERIES,
-        /** The data has been detected as a fast-infoset encoded pi-xml 
+        /** The data has been detected as a fast-infoset encoded pi-xml
          * timeseries stream. */
         XML_FI_TIMESERIES,
         /** The data has been detected as a datacard stream. */
@@ -80,12 +99,14 @@ public class DataSource
         JSON_WRDS_HEFS,
         /** The data has been detected as a json response from the wrds threshold service. */
         JSON_WRDS_THRESHOLDS,
-        /** The data has been detected as a csv, wres stream. */
+        /** The data has been detected as JSON WaterML. */
         JSON_WATERML,
         /** The data has been detected as a csv, wres stream. */
         CSV_WRES,
         /** The data has been detected as a csv thresholds in the wres csv format. */
         CSV_WRES_THRESHOLDS,
+        /** The data has been detected as GeoJSON. */
+        GEOJSON,
         /** The data type is unknown or to be determined. */
         UNKNOWN;
 
@@ -99,103 +120,32 @@ public class DataSource
     /** The count of bytes to use for detecting WRES-compatible type. */
     private static final int DETECTION_BYTES = 1024;
 
-    /** The disposition of the data for this source. Used to determine the reader for simple sources or whether more
-     * decomposition or recomposition is needed. */
-    @Getter
-    private final DataDisposition disposition;
-
-    /** The context in which this source is declared. */
-    @Getter
-    private final Dataset context;
-
-    /** The source to load and link. */
-    @Getter
-    private final Source source;
-
-    // Rendered immutable on construction
-    /** Additional links; may be empty, in which case, link only to its own {@link #getContext()}. */
-    @Getter
-    private final List<DatasetOrientation> links;
-
-    /** URI of the source.*/
-    @Getter
-    private final URI uri;
-
-    /** Whether the source originates from the left, right or baseline side of the evaluation. */
-    private final DatasetOrientation orientation;
-
-    /** The covariate feature orientation, if defined. */
-    @Getter
-    private final DatasetOrientation covariateFeatureOrientation;
-
     /**
-     * Create a data source to load, with optional links to the multiple other contexts in which it appears. If the
-     * source is used only once in the declaration, there will be no additional links and the set of links should be
-     * empty. The evaluated path to the source may not match the URI within the source, because the path has been
-     * evaluated. For example, evaluation means to decompose a source directory into separate paths to each file that
-     * must be loaded. Each file has a separate {@link DataSource}. For each of those decomposed paths, there is only
-     * one {@link Source}.
-     *
-     * @param disposition the disposition of the data source or data inside, required
-     * @param source the source to load, required
-     * @param context the context in which the source appears, required
-     * @param links the links to other contexts in which the same source appears, not null
-     * @param uri the uri for the source, required
-     * @param orientation the orientation of the dataset to which the source belongs, optional
-     * @param covariateFeatureOrientation the covariate feature orientation, optional
-     * @throws NullPointerException if any required input is null
-     * @return The newly created DataSource.
+     * Override builder and perform validation.
      */
 
-    public static DataSource of( DataDisposition disposition,
-                                 Source source,
-                                 Dataset context,
-                                 List<DatasetOrientation> links,
-                                 URI uri,
-                                 DatasetOrientation orientation,
-                                 DatasetOrientation covariateFeatureOrientation )
+    public static class Builder
     {
-        Objects.requireNonNull( disposition );
-        Objects.requireNonNull( source );
-        Objects.requireNonNull( uri );
-        Objects.requireNonNull( context );
-        Objects.requireNonNull( links );
-
-        if ( orientation == DatasetOrientation.COVARIATE )
+        /**
+         * @return an instance
+         */
+        public DataSource build()
         {
-            Objects.requireNonNull( covariateFeatureOrientation,
-                                    "A covariate data source requires a feature orientation." );
+            if ( datasetOrientation == DatasetOrientation.COVARIATE )
+            {
+                Objects.requireNonNull( covariateFeatureOrientation,
+                                        "A covariate data source requires a feature orientation." );
+            }
+
+            return new DataSource( disposition,
+                                   context,
+                                   source,
+                                   links,
+                                   uri,
+                                   nextPage,
+                                   datasetOrientation,
+                                   covariateFeatureOrientation );
         }
-
-        return new DataSource( disposition,
-                               source,
-                               context,
-                               links,
-                               uri,
-                               orientation,
-                               covariateFeatureOrientation );
-    }
-
-    /**
-     * Returns <code>true</code> if the data source path is not null, otherwise
-     * <code>false</code>. The path may not be available for some services,
-     * for which the system knows the path.
-     *
-     * @return true if the path is available, otherwise false
-     */
-
-    public boolean hasSourcePath()
-    {
-        return Objects.nonNull( this.getUri() );
-    }
-
-    /**
-     * @return whether the data source originates from the left, right or baseline side of the evaluation
-     */
-
-    public DatasetOrientation getDatasetOrientation()
-    {
-        return orientation;
     }
 
     /**
@@ -204,8 +154,16 @@ public class DataSource
      */
     public Variable getVariable()
     {
-        return this.getContext()
+        return this.context()
                    .variable();
+    }
+
+    /**
+     * @return whether this is a paginated data source from a web service with a next page available
+     */
+    public boolean hasNextPage()
+    {
+        return Objects.nonNull( this.nextPage() );
     }
 
     /**
@@ -214,7 +172,7 @@ public class DataSource
 
     public boolean isGridded()
     {
-        return this.getDisposition() == DataDisposition.NETCDF_GRIDDED;
+        return this.disposition() == DataDisposition.NETCDF_GRIDDED;
     }
 
     @Override
@@ -236,7 +194,7 @@ public class DataSource
                && this.links.equals( that.links )
                && Objects.equals( this.context, that.context )
                && Objects.equals( this.uri, that.uri )
-               && Objects.equals( this.orientation, that.orientation )
+               && Objects.equals( this.datasetOrientation, that.datasetOrientation )
                && Objects.equals( this.covariateFeatureOrientation, that.covariateFeatureOrientation );
     }
 
@@ -248,10 +206,11 @@ public class DataSource
                              this.source,
                              this.links,
                              this.uri,
-                             this.orientation,
+                             this.datasetOrientation,
                              this.covariateFeatureOrientation );
     }
 
+    @NonNull
     @Override
     public String toString()
     {
@@ -260,7 +219,7 @@ public class DataSource
                 .append( "Disposition", this.disposition )
                 .append( "URI", this.uri )
                 .append( "Type", this.context.type() )
-                .append( "Orientation", this.orientation )
+                .append( "Orientation", this.datasetOrientation )
                 .append( "Links", this.links )
                 .toString();
     }
@@ -487,6 +446,10 @@ public class DataSource
         else if ( start.contains( "\"threshold" ) )
         {
             innerDisposition = DataDisposition.JSON_WRDS_THRESHOLDS;
+        }
+        else if ( start.contains( "\"FeatureCollection\"" ) )
+        {
+            innerDisposition = DataDisposition.GEOJSON;
         }
         else
         {
@@ -1082,42 +1045,5 @@ public class DataSource
         LOGGER.debug( "Data source {} was identified as Datacard.", uri );
 
         return true;
-    }
-
-    /**
-     * Create a source.
-     * @param disposition the disposition of the data source or data inside
-     * @param source the source
-     * @param context the context in which the source appears
-     * @param links the links
-     * @param uri the uri
-     * @param orientation the dataset orientation
-     * @param covariateFeatureOrientation the covariate feature orientation
-     */
-
-    private DataSource( DataDisposition disposition,
-                        Source source,
-                        Dataset context,
-                        List<DatasetOrientation> links,
-                        URI uri,
-                        DatasetOrientation orientation,
-                        DatasetOrientation covariateFeatureOrientation )
-    {
-        this.disposition = disposition;
-        this.source = source;
-        this.context = context;
-        this.covariateFeatureOrientation = covariateFeatureOrientation;
-
-        if ( links.equals( Collections.emptyList() ) )
-        {
-            this.links = links;
-        }
-        else
-        {
-            this.links = Collections.unmodifiableList( links );
-        }
-
-        this.uri = uri;
-        this.orientation = orientation;
     }
 }

@@ -34,9 +34,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.DeclarationUtilities;
 import wres.config.components.EvaluationDeclaration;
+import wres.config.DeclarationException;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.statistics.generated.GeometryTuple;
@@ -78,30 +80,38 @@ public class WrdsHefsReader implements TimeSeriesReader
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
+    /** The time chunker. */
+    private final TimeChunker timeChunker;
+
     /**
-     * @see #of(EvaluationDeclaration, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings, TimeChunker)
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance that does not perform any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
      */
 
-    public static WrdsHefsReader of( SystemSettings systemSettings )
+    public static WrdsHefsReader of( SystemSettings systemSettings,
+                                     TimeChunker timeChunker )
     {
-        return new WrdsHefsReader( null, systemSettings );
+        return new WrdsHefsReader( null, systemSettings, timeChunker );
     }
 
     /**
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param timeChunker the time chunker
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static WrdsHefsReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    public static WrdsHefsReader of( EvaluationDeclaration declaration,
+                                     SystemSettings systemSettings,
+                                     TimeChunker timeChunker )
     {
         Objects.requireNonNull( declaration );
 
-        return new WrdsHefsReader( declaration, systemSettings );
+        return new WrdsHefsReader( declaration, systemSettings, timeChunker );
     }
 
     @Override
@@ -118,7 +128,7 @@ public class WrdsHefsReader implements TimeSeriesReader
         }
 
         LOGGER.debug( "Preparing a request to WRDS for HEFS time-series without any chunking of the data." );
-        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+        InputStream stream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                          NO_DATA_PREDICATE,
                                                                          ERROR_RESPONSE_PREDICATE,
                                                                          null,
@@ -126,7 +136,7 @@ public class WrdsHefsReader implements TimeSeriesReader
 
         if ( Objects.isNull( stream ) )
         {
-            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.uri() );
 
             return Stream.of();
         }
@@ -186,9 +196,7 @@ public class WrdsHefsReader implements TimeSeriesReader
         Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = new HashSet<>();
-        Pair<Instant, Instant> range = ReaderUtilities.getSimpleRange( declaration, dataSource );
-        dateRanges.add( range );
+        Set<Pair<Instant, Instant>> dateRanges = this.timeChunker.get();
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -275,14 +283,9 @@ public class WrdsHefsReader implements TimeSeriesReader
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft() );
 
-                    DataSource innerSource =
-                            DataSource.of( dataSource.getDisposition(),
-                                           dataSource.getSource(),
-                                           dataSource.getContext(),
-                                           dataSource.getLinks(),
-                                           nextUri,
-                                           dataSource.getDatasetOrientation(),
-                                           dataSource.getCovariateFeatureOrientation() );
+                    DataSource innerSource = dataSource.toBuilder()
+                                                       .uri( nextUri )
+                                                       .build();
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
@@ -338,7 +341,7 @@ public class WrdsHefsReader implements TimeSeriesReader
         return this.getExecutor()
                    .submit( () -> {
                        // Get the input stream and read from it
-                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.getUri(),
+                       try ( InputStream inputStream = ReaderUtilities.getByteStreamFromWebSource( dataSource.uri(),
                                                                                                    NO_DATA_PREDICATE,
                                                                                                    ERROR_RESPONSE_PREDICATE,
                                                                                                    null,
@@ -347,7 +350,7 @@ public class WrdsHefsReader implements TimeSeriesReader
                            if ( Objects.isNull( inputStream ) )
                            {
                                LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.",
-                                            dataSource.getUri() );
+                                            dataSource.uri() );
 
                                return List.of();
                            }
@@ -389,7 +392,7 @@ public class WrdsHefsReader implements TimeSeriesReader
                                 Pair<Instant, Instant> range,
                                 String nwsLocationId )
     {
-        URI baseUri = dataSource.getUri();
+        URI baseUri = dataSource.uri();
         String basePath = baseUri.getPath();
 
         // Tolerate either a slash at end or not.
@@ -398,7 +401,7 @@ public class WrdsHefsReader implements TimeSeriesReader
             basePath = basePath + SLASH;
         }
 
-        Map<String, String> additionalParameters = dataSource.getSource()
+        Map<String, String> additionalParameters = dataSource.source()
                                                              .parameters();
         Map<String, String> wrdsParameters = this.createWrdsHefsUrlParameters( nwsLocationId,
                                                                                dataSource.getVariable()
@@ -458,15 +461,18 @@ public class WrdsHefsReader implements TimeSeriesReader
      * Hidden constructor.
      * @param declaration the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
-     * @throws wres.config.DeclarationException if the project declaration is invalid for this source type
+     * @param timeChunker the time chunker
+     * @throws DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private WrdsHefsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
+    private WrdsHefsReader( EvaluationDeclaration declaration, SystemSettings systemSettings, TimeChunker timeChunker )
     {
         Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( timeChunker );
 
         this.declaration = declaration;
+        this.timeChunker = timeChunker;
 
         ThreadFactory webClientFactory = BasicThreadFactory.builder()
                                                            .namingPattern( "WRDS AHPS Reading Thread %d" )
