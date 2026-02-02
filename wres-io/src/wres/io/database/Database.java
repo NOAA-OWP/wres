@@ -205,7 +205,8 @@ public class Database
     public boolean getAttemptToMigrate()
     {
         // Stop-gap measure between always-migrate and never-migrate.
-        boolean migrate = this.systemSettings.getDatabaseConfiguration().isAttemptToMigrate();
+        boolean migrate = this.systemSettings.getDatabaseConfiguration()
+                                             .isAttemptToMigrate();
         String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
 
         if ( attemptToMigrateSetting != null

@@ -36,6 +36,18 @@
         <dropColumn tableName="TimeSeries" schemaName="wres"
                     columnName="feature_id" />
     </changeSet>
+    <changeSet id="Drop timeseries_source_fk before dropping timeseries_source_index."
+               author="James Brown"
+               dbms="h2">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists foreignKeyTableName="TimeSeries"
+                         foreignKeyName="timeseries_source_fk"
+                         schemaName="wres" />
+        </preConditions>
+        <dropForeignKeyConstraint baseTableName="TimeSeries"
+                   baseTableSchemaName="wres"
+                   constraintName="timeseries_source_fk" />
+    </changeSet>
     <changeSet id="Drop separate source_id index on wres.TimeSeries v2."
                author="Jesse Bickel">
         <preConditions onFail="MARK_RAN">
@@ -47,6 +59,24 @@
         <dropIndex tableName="TimeSeries"
                    schemaName="wres"
                    indexName="timeseries_source_index" />
+    </changeSet>
+    <changeSet id="Add back timeseries_source_fk, if it does not exist."
+               author="James Brown"
+               dbms="h2">
+        <preConditions onFail="MARK_RAN">
+            <not>
+              <foreignKeyConstraintExists foreignKeyTableName="TimeSeries"
+                           foreignKeyName="timeseries_source_fk"
+                           schemaName="wres" />
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="TimeSeries"
+                   baseColumnNames="source_id"
+                   baseTableSchemaName="wres"
+                   referencedTableSchemaName="wres"
+                   referencedTableName="Source"
+                   referencedColumnNames="source_id"
+                   constraintName="timeseries_source_fk" />
     </changeSet>
     <changeSet id="Add unique constraint to wres.TimeSeries"
                author="Jesse Bickel">
