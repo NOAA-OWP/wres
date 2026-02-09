@@ -126,7 +126,7 @@ class ProjectUtilities
                                                                                        groupedFeaturesWithData );
         innerGroups.addAll( multiFeatureGroups );
 
-        LOGGER.info( "Discovered {} feature groups with data on both the left and right sides (statistics "
+        LOGGER.info( "Discovered {} feature groups with data on both the 'observed' and 'predicted' sides (statistics "
                      + "should be expected for this many feature groups at most).",
                      innerGroups.size() );
 

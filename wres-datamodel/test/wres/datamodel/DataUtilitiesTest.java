@@ -394,4 +394,14 @@ final class DataUtilitiesTest
         String expected = "1_HOURS";
         assertEquals( expected, actual );
     }
+
+    @Test
+    void testDurationToNumericUnits()
+    {
+        Instant referenceDatetime = Instant.parse( "2018-01-01T00:00:00Z" );
+        Instant validDatetime = Instant.parse( "1949-01-01T12:00:00Z" );
+        Duration leadDuration = Duration.between( referenceDatetime, validDatetime );
+        Number numericDuration = DataUtilities.durationToNumericUnits( leadDuration, ChronoUnit.SECONDS );
+        assertEquals( -2177409600L, numericDuration );
+    }
 }

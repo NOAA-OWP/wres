@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.time.ZoneOffset.UTC;
 
+import wres.datamodel.DataProvider;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.database.IncompleteIngest;
 import wres.io.database.locking.DatabaseLockManager;
@@ -157,17 +158,25 @@ public class DatabaseOperations
     {
         Objects.requireNonNull( database );
 
-        LOGGER.info( "Cleaning and refreshing the database. This may take some time..." );
+        if ( DatabaseOperations.hasBeenMigrated( database ) )
+        {
+            LOGGER.info( "Cleaning and refreshing the database. This may take some time..." );
 
-        Instant start = Instant.now();
+            Instant start = Instant.now();
 
-        DatabaseOperations.clean( database );
-        DatabaseOperations.refreshStatistics( database );
+            DatabaseOperations.clean( database );
+            DatabaseOperations.refreshStatistics( database );
 
-        Instant stop = Instant.now();
-        Duration elapsed = Duration.between( start, stop );
+            Instant stop = Instant.now();
+            Duration elapsed = Duration.between( start, stop );
 
-        LOGGER.info( "Finished cleaning and refreshing the database in {}.", elapsed );
+            LOGGER.info( "Finished cleaning and refreshing the database in {}.", elapsed );
+        }
+        else
+        {
+            LOGGER.warn( "No database clean was attempted because the database has not been migrated. Upon migrating "
+                         + "the database, it will also be cleaned." );
+        }
     }
 
     /**
@@ -321,6 +330,14 @@ public class DatabaseOperations
 
         try
         {
+            if ( !DatabaseOperations.hasBeenMigrated( database ) )
+            {
+                LOGGER.warn( "Could not log the database operation because the execution log does not exist. The "
+                             + "database must be migrated before database operations can be logged." );
+
+                return;
+            }
+
             LocalDateTime startedAtZulu = LocalDateTime.ofInstant( logParameters.startTime(), UTC );
             LocalDateTime endedAtZulu = LocalDateTime.ofInstant( logParameters.endTime(), UTC );
 
@@ -533,13 +550,18 @@ public class DatabaseOperations
 
     /**
      * Removes all user data from the database. Assumes that locking has already been done at a higher level by
-     * caller(s)
+     * caller(s).
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
     private static void clean( Database database ) throws SQLException
     {
         StringJoiner builder = DatabaseOperations.getStartOfCleanScript( database );
+
+        // Create a transaction to allow for the unique constraint on wres.TimeSeriesValue to be deferred as this is
+        // significantly more performant, #722
+        builder.add( "BEGIN;" );
+        builder.add( "SET CONSTRAINTS wres.timeseriesvalue_timeseries_id_lead_key DEFERRED;" );
 
         List<String> tables = List.of( "wres.Source",
                                        "wres.TimeSeries",
@@ -564,6 +586,9 @@ public class DatabaseOperations
         }
 
         builder.add( "INSERT INTO wres.Ensemble ( ensemble_name ) VALUES ('default');" );
+
+        // Finish the transaction
+        builder.add( "COMMIT;" );
 
         Query query = new Query( database.getSystemSettings(), builder.toString() );
 
@@ -810,6 +835,30 @@ public class DatabaseOperations
         copyIn.writeToCopy( valueRowDelimiterBytes,
                             0,
                             valueDelimiterBytes.length );
+    }
+
+    /**
+     * Tests whether a database contains one or more tables underneath the WRES schema, i.e., that the database has been
+     * migrated.
+     *
+     * @param database the database
+     * @return whether the database has been migrated
+     */
+
+    private static boolean hasBeenMigrated( Database database ) throws SQLException
+    {
+        String script = "SELECT COUNT (*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'wres'";
+        Query query = new Query( database.getSystemSettings(), script );
+
+        try ( DataProvider data = database.buffer( database.getConnection(), query ) )
+        {
+            int count = data.getInt( "count" );
+            return count > 0;
+        }
+        catch ( final SQLException e )
+        {
+            throw new SQLException( "While attempting to determine whether the database has been migrated.", e );
+        }
     }
 
     /**

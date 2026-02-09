@@ -121,6 +121,10 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
         dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
+        // GitHub 722. Exploits an implementation detail of observati0on-like time-series whereby the reference time is
+        // the latest valid time in the series, arbitrarily. Allows for pruning of partitions in postgres, for example,
+        // and dramatically improves the performance of a query.
+        dataScripter.addLine( "WHERE TSV.lead <= 0" );
         this.addTimeWindowClause( dataScripter );
         this.addSeasonClause( dataScripter, 1 );
 

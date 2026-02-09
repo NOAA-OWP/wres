@@ -1577,9 +1577,11 @@ public class DeclarationValidator
                                                              + ". Care should be exercised when performing lenient "
                                                              + "rescaling, as it implies that a rescaled value will "
                                                              + "be computed even when a majority of data is missing. "
-                                                             + "Care is especially needed when performing lenient "
-                                                             + "rescaling of model predictions because the missing "
-                                                             + "data is unlikely to be missing at random." )
+                                                             + "Care is especially needed when the missing data has a"
+                                                             + "systematic cause (i.e., is not missing at random), "
+                                                             + "such as model failure or instrument failure, because "
+                                                             + "the rescaled value is unlikely to be representative in "
+                                                             + "that situation." )
                                            .build();
             events.add( event );
         }

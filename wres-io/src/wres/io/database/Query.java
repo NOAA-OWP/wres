@@ -188,12 +188,12 @@ public class Query
      * @param forceTransaction Whether or not the query should run within a transaction
      * @return The updated {@link Query}
      */
-    Query inTransaction(final boolean forceTransaction)
+    Query inTransaction( final boolean forceTransaction )
     {
         this.forceTransaction = forceTransaction;
         return this;
     }
-    
+
     Query useCursor( boolean useCursor )
     {
         this.useCursor = useCursor;
@@ -206,9 +206,9 @@ public class Query
      * @return The updated {@link Query}
      * @throws IllegalArgumentException Thrown when batch parameters have already been set; the two are not compatible
      */
-    public Query setParameters(final Object... parameters)
+    public Query setParameters( final Object... parameters )
     {
-        if (this.batchParameters != null)
+        if ( this.batchParameters != null )
         {
             throw new IllegalArgumentException(
                     "A single set of parameters cannot be set if there are already parameters to run in batch"
@@ -230,9 +230,9 @@ public class Query
      * @return The updated {@link Query}
      * @throws IllegalArgumentException Thrown if standard parameters have already been set; the two are not compatible
      */
-    Query setBatchParameters(final List<Object[]> batchParameters)
+    Query setBatchParameters( final List<Object[]> batchParameters )
     {
-        if (this.parameters != null)
+        if ( this.parameters != null )
         {
             throw new IllegalArgumentException(
                     "Batch parameters cannot be set if there is already a single set of parameters to use."
@@ -334,7 +334,7 @@ public class Query
      * @return The ResultSet of the query
      * @throws SQLException Thrown if an interaction with the database produced an unrecoverable error
      */
-    ResultSet call(final Connection connection) throws SQLException
+    ResultSet call( final Connection connection ) throws SQLException
     {
         // Avoid recording the initial state of connection: reduces round trips.
         final boolean disableAutoCommit = this.forceTransaction || this.useCursor;
@@ -471,7 +471,7 @@ public class Query
      * @return the count of rows modified by this query's execution
      */
 
-    public int execute(final Connection connection) throws SQLException
+    public int execute( final Connection connection ) throws SQLException
     {
         if ( this.useCursor )
         {
@@ -591,15 +591,15 @@ public class Query
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
-    private int batchExecute(final Connection connection) throws SQLException
+    private int batchExecute( final Connection connection ) throws SQLException
     {
         int rowsModified = 0;
         // We need to make sure that the statement is cleaned up after execution
-        try(PreparedStatement statement = this.prepareStatement( connection ))
+        try ( PreparedStatement statement = this.prepareStatement( connection ) )
         {
             int[] updates = statement.executeBatch();
 
-            for (int update : updates)
+            for ( int update : updates )
             {
                 rowsModified += update;
             }
@@ -616,16 +616,16 @@ public class Query
      * @throws UnsupportedOperationException when a ResultSet is generated
      * @return the count of rows modified by this query's execution
      */
-    private int executeWithParameters(final Connection connection) throws SQLException
+    private int executeWithParameters( final Connection connection ) throws SQLException
     {
         int modifiedRows;
 
         // We need to make sure that the statement is cleaned up after execution
-        try(PreparedStatement preparedStatement = this.prepareStatement( connection ))
+        try ( PreparedStatement preparedStatement = this.prepareStatement( connection ) )
         {
             boolean generatedResultSet = preparedStatement.execute();
 
-            if (generatedResultSet)
+            if ( generatedResultSet )
             {
                 throw new UnsupportedOperationException(
                         "Results from queries may not be formed through execute statements. Use call instead."
@@ -670,15 +670,15 @@ public class Query
      * @throws UnsupportedOperationException when a ResultSet is generated
      * @return the count of rows modified by this query's execution
      */
-    private int executeQuery(final Connection connection) throws SQLException
+    private int executeQuery( final Connection connection ) throws SQLException
     {
         int modifiedRows = 0;
         // We need to make sure that the statement is cleaned up after execution
-        try (Statement statement = this.createStatement( connection ))
+        try ( Statement statement = this.createStatement( connection ) )
         {
             boolean generatedResultSet = statement.execute( this.script );
 
-            if (generatedResultSet)
+            if ( generatedResultSet )
             {
                 throw new UnsupportedOperationException(
                         "Results from queries may not be formed through execute statements. Use call instead."
@@ -703,7 +703,7 @@ public class Query
      * @throws SQLException Thrown if the prepared statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
-    private ResultSet callWithParameters(final Connection connection) throws SQLException
+    private ResultSet callWithParameters( final Connection connection ) throws SQLException
     {
         PreparedStatement statement = this.prepareStatement( connection );
         return statement.executeQuery();
@@ -719,7 +719,7 @@ public class Query
      * @throws SQLException Thrown if the statement required to run the script could not be created
      * @throws SQLException Thrown if an error was encountered when running the script in the database
      */
-    private ResultSet simpleCall(final Connection connection) throws SQLException
+    private ResultSet simpleCall( final Connection connection ) throws SQLException
     {
         return this.createStatement( connection ).executeQuery( this.script );
     }
@@ -763,7 +763,7 @@ public class Query
      * @return A simple statement object to run the script on
      * @throws SQLException Thrown if a statement couldn't be created on the connection
      */
-    private Statement createStatement(final Connection connection) throws SQLException
+    private Statement createStatement( final Connection connection ) throws SQLException
     {
         Statement statement = connection.createStatement();
         // In versions prior to 5.12, a timeout was set here, but now it is set
@@ -781,21 +781,21 @@ public class Query
      * @throws SQLException Thrown if the prepared statement could not be created
      * @throws SQLException Thrown if the parameters could not be added to the prepared statement
      */
-    private PreparedStatement prepareStatement(final Connection connection) throws SQLException
+    private PreparedStatement prepareStatement( final Connection connection ) throws SQLException
     {
         PreparedStatement statement = connection.prepareStatement( this.script, RETURN_GENERATED_KEYS );
-        
+
         // In versions prior to 5.12, a timeout was set here, but now it is set
         // on the session/connection. See DatabaseSettings and issue #94484.
 
         this.setMaxRowsAndFetchSize( statement );
 
         // If we have a basic array of parameters, we can just add them directly to the statement
-        if (this.parameters != null)
+        if ( this.parameters != null )
         {
             this.addParametersToStatement( statement, this.parameters );
         }
-        else if (this.batchParameters != null)
+        else if ( this.batchParameters != null )
         {
             // If we have batch parameters, we'll need to add them set by set and add the combinations to the
             // statement to be run separately
@@ -816,11 +816,11 @@ public class Query
      * @throws SQLException if the maximum rows or fetch size could not be set
      * @throws NullPointerException if the statement is null
      */
-    
+
     private void setMaxRowsAndFetchSize( Statement statement ) throws SQLException
     {
         Objects.requireNonNull( statement );
-        
+
         if ( this.maxRows > 0 )
         {
             statement.setMaxRows( this.maxRows );
@@ -829,7 +829,7 @@ public class Query
         if ( this.useCursor )
         {
             int fetchSize = this.systemSettings.getFetchSize();
-            
+
             // #103431
             if ( fetchSize > this.maxRows )
             {
@@ -837,14 +837,14 @@ public class Query
                               + "of {} is greater than the maximum rows of {}, which is not allowed.",
                               fetchSize,
                               this.maxRows );
-                
+
                 statement.setMaxRows( 0 ); // 0 = no limit
             }
-            
+
             statement.setFetchSize( fetchSize );
         }
     }
-    
+
     /**
      * Adds the passed in collection of parameters to the given statement
      * @param statement The statement that needs the set of parameters
@@ -852,7 +852,7 @@ public class Query
      * @throws SQLException Thrown if a parameter could not be added to the query
      * @throws SQLException Thrown if the number of parameters in the script could not be detected
      */
-    private void addParametersToStatement(final PreparedStatement statement, final Object[] parameters)
+    private void addParametersToStatement( final PreparedStatement statement, final Object[] parameters )
             throws SQLException
     {
         // We need to keep track of the number of parameters added outside of the loop
@@ -883,19 +883,19 @@ public class Query
      */
     private TimerTask getTimerTask()
     {
-        return new TimerTask() {
+        return new TimerTask()
+        {
             @Override
             public void run()
             {
-                LOGGER.debug(
-                        "A long running query has been encountered:{}{}",
-                        NEWLINE,
-                        this.query
+                LOGGER.debug( "A long running query has been encountered:{}{}",
+                              NEWLINE,
+                              this.query
                 );
                 this.cancel();
             }
 
-            TimerTask init(final String query)
+            TimerTask init( final String query )
             {
                 this.query = query;
                 return this;
@@ -914,13 +914,13 @@ public class Query
     public String toString()
     {
         return new ToStringBuilder( this )
-                .append( "script", script )
-                .append( "forceTransaction", forceTransaction )
-                .append( "useCursor", useCursor )
-                .append( "parameters", parameters )
-                .append( "batchParameters", batchParameters )
-                .append( "sqlStatesToRetry", sqlStatesToRetry )
-                .append( "insertedIds", insertedIds )
+                .append( "script", this.script )
+                .append( "forceTransaction", this.forceTransaction )
+                .append( "useCursor", this.useCursor )
+                .append( "parameters", this.parameters )
+                .append( "batchParameters", this.batchParameters )
+                .append( "sqlStatesToRetry", this.sqlStatesToRetry )
+                .append( "insertedIds", this.insertedIds )
                 .toString();
     }
 }
