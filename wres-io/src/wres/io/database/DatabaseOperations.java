@@ -158,7 +158,7 @@ public class DatabaseOperations
     {
         Objects.requireNonNull( database );
 
-        if ( DatabaseOperations.hasBeenMigrated( database ) )
+        if ( DatabaseOperations.hasSomeTables( database ) )
         {
             LOGGER.info( "Cleaning and refreshing the database. This may take some time..." );
 
@@ -174,8 +174,8 @@ public class DatabaseOperations
         }
         else
         {
-            LOGGER.warn( "No database clean was attempted because the database has not been migrated. Upon migrating "
-                         + "the database, it will also be cleaned." );
+            LOGGER.warn( "No database clean was attempted because no tables were found. The database should be "
+                         + "migrated before any other database operations are attempted." );
         }
     }
 
@@ -330,7 +330,7 @@ public class DatabaseOperations
 
         try
         {
-            if ( !DatabaseOperations.hasBeenMigrated( database ) )
+            if ( !DatabaseOperations.hasSomeTables( database ) )
             {
                 LOGGER.warn( "Could not log the database operation because the execution log does not exist. The "
                              + "database must be migrated before database operations can be logged." );
@@ -845,7 +845,7 @@ public class DatabaseOperations
      * @return whether the database has been migrated
      */
 
-    private static boolean hasBeenMigrated( Database database ) throws SQLException
+    private static boolean hasSomeTables( Database database ) throws SQLException
     {
         String script = "SELECT COUNT (*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'wres'";
         Query query = new Query( database.getSystemSettings(), script );
