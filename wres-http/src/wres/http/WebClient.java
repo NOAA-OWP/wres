@@ -141,7 +141,8 @@ public class WebClient
     {
         Objects.requireNonNull( uri );
 
-        if ( !uri.getScheme().startsWith( "http" ) )
+        if ( !uri.getScheme()
+                 .startsWith( "http" ) )
         {
             throw new IllegalArgumentException( MUST_PASS_AN_HTTP_URI_GOT + uri );
         }

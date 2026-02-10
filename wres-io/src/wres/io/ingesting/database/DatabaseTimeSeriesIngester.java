@@ -531,7 +531,20 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         long sleepMillis = 1000;
         for ( int i = 0; i <= DatabaseTimeSeriesIngester.MAXIMUM_RETRIES; i++ )
         {
+            // Monitor
+            DatabaseIngestEvent event = DatabaseIngestEvent.of( dataSource.datasetOrientation(),
+                                                                timeSeries.getMetadata()
+                                                                          .getFeature(),
+                                                                timeSeries.getMetadata()
+                                                                          .getVariableName(),
+                                                                dataSource.uri(),
+                                                                i );
+
+            event.begin();
             List<IngestResult> results = this.ingestSingleValuedTimeSeries( timeSeries, timeSeriesId, dataSource );
+
+            event.end();
+            event.commit();
 
             // Success
             if ( this.isIngestComplete( results ) )
@@ -704,7 +717,21 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         long sleepMillis = 1000;
         for ( int i = 0; i <= DatabaseTimeSeriesIngester.MAXIMUM_RETRIES; i++ )
         {
+            // Monitor
+            DatabaseIngestEvent event = DatabaseIngestEvent.of( dataSource.datasetOrientation(),
+                                                                timeSeries.getMetadata()
+                                                                          .getFeature(),
+                                                                timeSeries.getMetadata()
+                                                                          .getVariableName(),
+                                                                dataSource.uri(),
+                                                                i );
+
+            event.begin();
+
             List<IngestResult> result = this.ingestEnsembleTimeSeries( timeSeries, timeSeriesId, dataSource );
+
+            event.end();
+            event.commit();
 
             // Success
             if ( this.isIngestComplete( result ) )
@@ -1685,12 +1712,12 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         // Get the lead duration in database units. Any risk of truncation needs to be handled at an earlier stage. We
         // assume no truncation here
         Number units = DataUtilities.durationToNumericUnits( leadDuration, DatabaseSettings.LEAD_DURATION_UNIT );
-        int leadDurationInteger = units.intValue();
+        long leadDurationNumber = units.longValue();
 
         return IngestedValues.addTimeSeriesValue( systemSettings,
                                                   database,
                                                   timeSeriesId,
-                                                  leadDurationInteger,
+                                                  leadDurationNumber,
                                                   valueToAdd );
     }
 

@@ -111,17 +111,27 @@ public class SystemTestSuite
         if ( systemSettings.isUseDatabase() )
         {
             String dbName = System.getProperty( "wres.databaseName" );
-            LOGGER.info( "Cleaning the test database instance {}...", dbName );
             Database database = new Database( new ConnectionSupplier( systemSettings ) );
             Instant started = Instant.now();
-            DatabaseOperations.cleanDatabase( database );
+            LOGGER.info( "Migrating the test database instance {}...", dbName );
+            DatabaseOperations.migrateDatabase( database );
             Instant stopped = Instant.now();
             Duration duration = Duration.between( started, stopped );
-            database.shutdown( 5, TimeUnit.SECONDS );
+            LOGGER.info( "Finished migrating the test database instance {}, which took {}.",
+                         dbName,
+                         duration );
+
+            LOGGER.info( "Cleaning the test database instance {}...", dbName );
+            Instant anotherStarted = Instant.now();
+            DatabaseOperations.cleanDatabase( database );
+            Instant anotherStopped = Instant.now();
+            Duration anotherDuration = Duration.between( anotherStarted, anotherStopped );
 
             LOGGER.info( "Finished cleaning the test database instance {}, which took {}.",
                          dbName,
-                         duration );
+                         anotherDuration );
+
+            database.shutdown( 5, TimeUnit.SECONDS );
         }
     }
 }

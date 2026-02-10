@@ -61,11 +61,12 @@ public final class IngestedValues
     public static Pair<CountDownLatch, CountDownLatch> addTimeSeriesValue( SystemSettings systemSettings,
                                                                            Database database,
                                                                            long timeSeriesID,
-                                                                           int lead,
+                                                                           long lead,
                                                                            Double value )
             throws IngestException
     {
-        DefaultDataProvider freshDefaultDataProvider = DefaultDataProvider.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
+        DefaultDataProvider freshDefaultDataProvider =
+                DefaultDataProvider.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
 
         // The data builder to add to, whether existing or fresh.
         DefaultDataProvider defaultDataProviderToUse;

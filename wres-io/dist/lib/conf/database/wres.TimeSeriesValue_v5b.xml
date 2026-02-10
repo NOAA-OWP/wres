@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="wres.TimeSeriesValue - Migrate the data."
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp" schemaName="wres" />
+            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+        </preConditions>
+        <sql>
+            INSERT INTO wres.TimeSeriesValueTemp (timeseries_id, lead, series_value)
+            SELECT timeseries_id, CAST(lead AS bigint)*60, series_value
+            FROM wres.TimeSeriesValue
+        </sql>
+    </changeSet>
+
+    <changeSet id="wres.TimeSeriesValue - DROP the old table in preparation to rename the migrated table."
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp" schemaName="wres" />
+            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+        </preConditions>
+        <sql>
+            DROP TABLE wres.TimeSeriesValue CASCADE;
+        </sql>
+    </changeSet>
+
+    <changeSet id="wres.TimeSeriesValue - Rename the migrated table."
+               author="James Brown">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp" schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValueTemp RENAME TO TimeSeriesValue;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

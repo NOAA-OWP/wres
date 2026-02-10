@@ -41,7 +41,7 @@ public class DatabaseSettings
      * of the lead duration units is centralized here for consistency across various database operations, such as ingest
      * and retrieval. All lead durations in the database schema are expressed in these whole units. See GitHub #719
      * also. */
-    public static final ChronoUnit LEAD_DURATION_UNIT = ChronoUnit.MINUTES;
+    public static final ChronoUnit LEAD_DURATION_UNIT = ChronoUnit.SECONDS;
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );

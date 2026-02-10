@@ -9,6 +9,7 @@ import java.util.StringJoiner;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,6 +217,7 @@ public final class MainUtilities
                                  String description,
                                  boolean isSimpleOperation )
     {
+        @NotNull
         @Override
         public String toString()
         {

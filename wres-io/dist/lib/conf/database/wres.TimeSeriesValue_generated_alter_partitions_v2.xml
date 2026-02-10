@@ -1,0 +1,2386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValue_lead_p0s_to_p43200s - Set lead_p0s_to_p43200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p0s_to_p43200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p0s_to_p43200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 0 ) to ( 43200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p43200s_to_p86400s - Set lead_p43200s_to_p86400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p43200s_to_p86400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p43200s_to_p86400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 43200 ) to ( 86400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p86400s_to_p129600s - Set lead_p86400s_to_p129600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p86400s_to_p129600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p86400s_to_p129600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 86400 ) to ( 129600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p129600s_to_p172800s - Set lead_p129600s_to_p172800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p129600s_to_p172800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p129600s_to_p172800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 129600 ) to ( 172800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p172800s_to_p216000s - Set lead_p172800s_to_p216000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p172800s_to_p216000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p172800s_to_p216000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 172800 ) to ( 216000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p216000s_to_p259200s - Set lead_p216000s_to_p259200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p216000s_to_p259200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p216000s_to_p259200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 216000 ) to ( 259200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p259200s_to_p302400s - Set lead_p259200s_to_p302400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p259200s_to_p302400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p259200s_to_p302400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 259200 ) to ( 302400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p302400s_to_p345600s - Set lead_p302400s_to_p345600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p302400s_to_p345600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p302400s_to_p345600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 302400 ) to ( 345600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p345600s_to_p388800s - Set lead_p345600s_to_p388800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p345600s_to_p388800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p345600s_to_p388800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 345600 ) to ( 388800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p388800s_to_p432000s - Set lead_p388800s_to_p432000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p388800s_to_p432000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p388800s_to_p432000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 388800 ) to ( 432000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p432000s_to_p475200s - Set lead_p432000s_to_p475200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p432000s_to_p475200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p432000s_to_p475200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 432000 ) to ( 475200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p475200s_to_p518400s - Set lead_p475200s_to_p518400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p475200s_to_p518400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p475200s_to_p518400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 475200 ) to ( 518400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p518400s_to_p561600s - Set lead_p518400s_to_p561600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p518400s_to_p561600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p518400s_to_p561600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 518400 ) to ( 561600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p561600s_to_p604800s - Set lead_p561600s_to_p604800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p561600s_to_p604800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p561600s_to_p604800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 561600 ) to ( 604800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p604800s_to_p648000s - Set lead_p604800s_to_p648000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p604800s_to_p648000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p604800s_to_p648000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 604800 ) to ( 648000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p648000s_to_p691200s - Set lead_p648000s_to_p691200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p648000s_to_p691200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p648000s_to_p691200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 648000 ) to ( 691200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p691200s_to_p734400s - Set lead_p691200s_to_p734400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p691200s_to_p734400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p691200s_to_p734400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 691200 ) to ( 734400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p734400s_to_p777600s - Set lead_p734400s_to_p777600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p734400s_to_p777600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p734400s_to_p777600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 734400 ) to ( 777600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p777600s_to_p820800s - Set lead_p777600s_to_p820800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p777600s_to_p820800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p777600s_to_p820800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 777600 ) to ( 820800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p820800s_to_p864000s - Set lead_p820800s_to_p864000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p820800s_to_p864000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p820800s_to_p864000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 820800 ) to ( 864000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p864000s_to_p907200s - Set lead_p864000s_to_p907200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p864000s_to_p907200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p864000s_to_p907200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 864000 ) to ( 907200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p907200s_to_p950400s - Set lead_p907200s_to_p950400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p907200s_to_p950400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p907200s_to_p950400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 907200 ) to ( 950400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p950400s_to_p993600s - Set lead_p950400s_to_p993600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p950400s_to_p993600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p950400s_to_p993600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 950400 ) to ( 993600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p993600s_to_p1036800s - Set lead_p993600s_to_p1036800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p993600s_to_p1036800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p993600s_to_p1036800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 993600 ) to ( 1036800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1036800s_to_p1080000s - Set lead_p1036800s_to_p1080000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1036800s_to_p1080000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1036800s_to_p1080000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1036800 ) to ( 1080000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1080000s_to_p1123200s - Set lead_p1080000s_to_p1123200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1080000s_to_p1123200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1080000s_to_p1123200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1080000 ) to ( 1123200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1123200s_to_p1166400s - Set lead_p1123200s_to_p1166400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1123200s_to_p1166400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1123200s_to_p1166400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1123200 ) to ( 1166400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1166400s_to_p1209600s - Set lead_p1166400s_to_p1209600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1166400s_to_p1209600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1166400s_to_p1209600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1166400 ) to ( 1209600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1209600s_to_p1252800s - Set lead_p1209600s_to_p1252800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1209600s_to_p1252800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1209600s_to_p1252800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1209600 ) to ( 1252800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1252800s_to_p1296000s - Set lead_p1252800s_to_p1296000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1252800s_to_p1296000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1252800s_to_p1296000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1252800 ) to ( 1296000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1296000s_to_p1382400s - Set lead_p1296000s_to_p1382400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1296000s_to_p1382400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1296000s_to_p1382400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1296000 ) to ( 1382400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1382400s_to_p1468800s - Set lead_p1382400s_to_p1468800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1382400s_to_p1468800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1382400s_to_p1468800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1382400 ) to ( 1468800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1468800s_to_p1555200s - Set lead_p1468800s_to_p1555200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1468800s_to_p1555200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1468800s_to_p1555200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1468800 ) to ( 1555200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1555200s_to_p1641600s - Set lead_p1555200s_to_p1641600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1555200s_to_p1641600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1555200s_to_p1641600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1555200 ) to ( 1641600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1641600s_to_p1728000s - Set lead_p1641600s_to_p1728000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1641600s_to_p1728000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1641600s_to_p1728000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1641600 ) to ( 1728000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1728000s_to_p1814400s - Set lead_p1728000s_to_p1814400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1728000s_to_p1814400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1728000s_to_p1814400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1728000 ) to ( 1814400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1814400s_to_p1900800s - Set lead_p1814400s_to_p1900800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1814400s_to_p1900800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1814400s_to_p1900800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1814400 ) to ( 1900800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1900800s_to_p1987200s - Set lead_p1900800s_to_p1987200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1900800s_to_p1987200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1900800s_to_p1987200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1900800 ) to ( 1987200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p1987200s_to_p2073600s - Set lead_p1987200s_to_p2073600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p1987200s_to_p2073600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p1987200s_to_p2073600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 1987200 ) to ( 2073600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2073600s_to_p2160000s - Set lead_p2073600s_to_p2160000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2073600s_to_p2160000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2073600s_to_p2160000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2073600 ) to ( 2160000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2160000s_to_p2246400s - Set lead_p2160000s_to_p2246400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2160000s_to_p2246400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2160000s_to_p2246400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2160000 ) to ( 2246400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2246400s_to_p2332800s - Set lead_p2246400s_to_p2332800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2246400s_to_p2332800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2246400s_to_p2332800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2246400 ) to ( 2332800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2332800s_to_p2419200s - Set lead_p2332800s_to_p2419200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2332800s_to_p2419200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2332800s_to_p2419200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2332800 ) to ( 2419200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2419200s_to_p2505600s - Set lead_p2419200s_to_p2505600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2419200s_to_p2505600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2419200s_to_p2505600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2419200 ) to ( 2505600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2505600s_to_p2592000s - Set lead_p2505600s_to_p2592000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2505600s_to_p2592000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2505600s_to_p2592000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2505600 ) to ( 2592000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p2592000s_to_p3024000s - Set lead_p2592000s_to_p3024000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p2592000s_to_p3024000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p2592000s_to_p3024000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 2592000 ) to ( 3024000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p3024000s_to_p3456000s - Set lead_p3024000s_to_p3456000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p3024000s_to_p3456000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p3024000s_to_p3456000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 3024000 ) to ( 3456000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p3456000s_to_p3888000s - Set lead_p3456000s_to_p3888000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p3456000s_to_p3888000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p3456000s_to_p3888000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 3456000 ) to ( 3888000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p3888000s_to_p4320000s - Set lead_p3888000s_to_p4320000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p3888000s_to_p4320000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p3888000s_to_p4320000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 3888000 ) to ( 4320000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p4320000s_to_p4752000s - Set lead_p4320000s_to_p4752000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p4320000s_to_p4752000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p4320000s_to_p4752000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 4320000 ) to ( 4752000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p4752000s_to_p5184000s - Set lead_p4752000s_to_p5184000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p4752000s_to_p5184000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p4752000s_to_p5184000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 4752000 ) to ( 5184000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p5184000s_to_p5616000s - Set lead_p5184000s_to_p5616000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p5184000s_to_p5616000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p5184000s_to_p5616000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 5184000 ) to ( 5616000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p5616000s_to_p6048000s - Set lead_p5616000s_to_p6048000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p5616000s_to_p6048000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p5616000s_to_p6048000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 5616000 ) to ( 6048000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p6048000s_to_p6480000s - Set lead_p6048000s_to_p6480000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p6048000s_to_p6480000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p6048000s_to_p6480000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 6048000 ) to ( 6480000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p6480000s_to_p6912000s - Set lead_p6480000s_to_p6912000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p6480000s_to_p6912000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p6480000s_to_p6912000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 6480000 ) to ( 6912000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p6912000s_to_p7344000s - Set lead_p6912000s_to_p7344000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p6912000s_to_p7344000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p6912000s_to_p7344000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 6912000 ) to ( 7344000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p7344000s_to_p7776000s - Set lead_p7344000s_to_p7776000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p7344000s_to_p7776000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p7344000s_to_p7776000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 7344000 ) to ( 7776000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p7776000s_to_p8208000s - Set lead_p7776000s_to_p8208000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p7776000s_to_p8208000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p7776000s_to_p8208000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 7776000 ) to ( 8208000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p8208000s_to_p8640000s - Set lead_p8208000s_to_p8640000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p8208000s_to_p8640000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p8208000s_to_p8640000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 8208000 ) to ( 8640000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p8640000s_to_p9072000s - Set lead_p8640000s_to_p9072000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p8640000s_to_p9072000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p8640000s_to_p9072000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 8640000 ) to ( 9072000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p9072000s_to_p9504000s - Set lead_p9072000s_to_p9504000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p9072000s_to_p9504000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p9072000s_to_p9504000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 9072000 ) to ( 9504000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p9504000s_to_p9936000s - Set lead_p9504000s_to_p9936000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p9504000s_to_p9936000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p9504000s_to_p9936000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 9504000 ) to ( 9936000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p9936000s_to_p10368000s - Set lead_p9936000s_to_p10368000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p9936000s_to_p10368000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p9936000s_to_p10368000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 9936000 ) to ( 10368000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p10368000s_to_p10800000s - Set lead_p10368000s_to_p10800000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p10368000s_to_p10800000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p10368000s_to_p10800000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 10368000 ) to ( 10800000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p10800000s_to_p11232000s - Set lead_p10800000s_to_p11232000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p10800000s_to_p11232000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p10800000s_to_p11232000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 10800000 ) to ( 11232000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p11232000s_to_p11664000s - Set lead_p11232000s_to_p11664000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p11232000s_to_p11664000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p11232000s_to_p11664000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 11232000 ) to ( 11664000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p11664000s_to_p12096000s - Set lead_p11664000s_to_p12096000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p11664000s_to_p12096000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p11664000s_to_p12096000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 11664000 ) to ( 12096000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p12096000s_to_p12528000s - Set lead_p12096000s_to_p12528000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p12096000s_to_p12528000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p12096000s_to_p12528000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 12096000 ) to ( 12528000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p12528000s_to_p12960000s - Set lead_p12528000s_to_p12960000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p12528000s_to_p12960000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p12528000s_to_p12960000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 12528000 ) to ( 12960000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p12960000s_to_p13392000s - Set lead_p12960000s_to_p13392000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p12960000s_to_p13392000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p12960000s_to_p13392000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 12960000 ) to ( 13392000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p13392000s_to_p13824000s - Set lead_p13392000s_to_p13824000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p13392000s_to_p13824000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p13392000s_to_p13824000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 13392000 ) to ( 13824000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p13824000s_to_p14256000s - Set lead_p13824000s_to_p14256000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p13824000s_to_p14256000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p13824000s_to_p14256000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 13824000 ) to ( 14256000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p14256000s_to_p14688000s - Set lead_p14256000s_to_p14688000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p14256000s_to_p14688000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p14256000s_to_p14688000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 14256000 ) to ( 14688000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p14688000s_to_p15120000s - Set lead_p14688000s_to_p15120000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p14688000s_to_p15120000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p14688000s_to_p15120000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 14688000 ) to ( 15120000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p15120000s_to_p15552000s - Set lead_p15120000s_to_p15552000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p15120000s_to_p15552000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p15120000s_to_p15552000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 15120000 ) to ( 15552000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p15552000s_to_p16243200s - Set lead_p15552000s_to_p16243200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p15552000s_to_p16243200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p15552000s_to_p16243200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 15552000 ) to ( 16243200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p16243200s_to_p16934400s - Set lead_p16243200s_to_p16934400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p16243200s_to_p16934400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p16243200s_to_p16934400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 16243200 ) to ( 16934400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p16934400s_to_p17625600s - Set lead_p16934400s_to_p17625600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p16934400s_to_p17625600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p16934400s_to_p17625600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 16934400 ) to ( 17625600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p17625600s_to_p18316800s - Set lead_p17625600s_to_p18316800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p17625600s_to_p18316800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p17625600s_to_p18316800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 17625600 ) to ( 18316800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p18316800s_to_p19008000s - Set lead_p18316800s_to_p19008000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p18316800s_to_p19008000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p18316800s_to_p19008000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 18316800 ) to ( 19008000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p19008000s_to_p19699200s - Set lead_p19008000s_to_p19699200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p19008000s_to_p19699200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p19008000s_to_p19699200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 19008000 ) to ( 19699200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p19699200s_to_p20390400s - Set lead_p19699200s_to_p20390400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p19699200s_to_p20390400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p19699200s_to_p20390400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 19699200 ) to ( 20390400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p20390400s_to_p21081600s - Set lead_p20390400s_to_p21081600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p20390400s_to_p21081600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p20390400s_to_p21081600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 20390400 ) to ( 21081600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p21081600s_to_p21772800s - Set lead_p21081600s_to_p21772800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p21081600s_to_p21772800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p21081600s_to_p21772800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 21081600 ) to ( 21772800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p21772800s_to_p22464000s - Set lead_p21772800s_to_p22464000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p21772800s_to_p22464000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p21772800s_to_p22464000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 21772800 ) to ( 22464000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p22464000s_to_p23155200s - Set lead_p22464000s_to_p23155200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p22464000s_to_p23155200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p22464000s_to_p23155200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 22464000 ) to ( 23155200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p23155200s_to_p23846400s - Set lead_p23155200s_to_p23846400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p23155200s_to_p23846400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p23155200s_to_p23846400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 23155200 ) to ( 23846400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p23846400s_to_p24537600s - Set lead_p23846400s_to_p24537600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p23846400s_to_p24537600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p23846400s_to_p24537600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 23846400 ) to ( 24537600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p24537600s_to_p25228800s - Set lead_p24537600s_to_p25228800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p24537600s_to_p25228800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p24537600s_to_p25228800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 24537600 ) to ( 25228800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p25228800s_to_p25920000s - Set lead_p25228800s_to_p25920000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p25228800s_to_p25920000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p25228800s_to_p25920000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 25228800 ) to ( 25920000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p25920000s_to_p26611200s - Set lead_p25920000s_to_p26611200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p25920000s_to_p26611200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p25920000s_to_p26611200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 25920000 ) to ( 26611200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p26611200s_to_p27302400s - Set lead_p26611200s_to_p27302400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p26611200s_to_p27302400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p26611200s_to_p27302400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 26611200 ) to ( 27302400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p27302400s_to_p27993600s - Set lead_p27302400s_to_p27993600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p27302400s_to_p27993600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p27302400s_to_p27993600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 27302400 ) to ( 27993600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p27993600s_to_p28684800s - Set lead_p27993600s_to_p28684800s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p27993600s_to_p28684800s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p27993600s_to_p28684800s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 27993600 ) to ( 28684800 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p28684800s_to_p29376000s - Set lead_p28684800s_to_p29376000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p28684800s_to_p29376000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p28684800s_to_p29376000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 28684800 ) to ( 29376000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p29376000s_to_p30067200s - Set lead_p29376000s_to_p30067200s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p29376000s_to_p30067200s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p29376000s_to_p30067200s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 29376000 ) to ( 30067200 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p30067200s_to_p30758400s - Set lead_p30067200s_to_p30758400s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p30067200s_to_p30758400s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p30067200s_to_p30758400s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 30067200 ) to ( 30758400 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p30758400s_to_p31449600s - Set lead_p30758400s_to_p31449600s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p30758400s_to_p31449600s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p30758400s_to_p31449600s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 30758400 ) to ( 31449600 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_p31449600s_to_max - Set lead_p31449600s_to_max as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_p31449600s_to_max"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_p31449600s_to_max
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( 31449600 ) to ( 9223372036854775807 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n31536000s_to_n0s - Set lead_n31536000s_to_n0s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n31536000s_to_n0s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n31536000s_to_n0s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -31536000 ) to ( 0 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n63072000s_to_n31536000s - Set lead_n63072000s_to_n31536000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n63072000s_to_n31536000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n63072000s_to_n31536000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -63072000 ) to ( -31536000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n94608000s_to_n63072000s - Set lead_n94608000s_to_n63072000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n94608000s_to_n63072000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n94608000s_to_n63072000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -94608000 ) to ( -63072000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n126144000s_to_n94608000s - Set lead_n126144000s_to_n94608000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n126144000s_to_n94608000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n126144000s_to_n94608000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -126144000 ) to ( -94608000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n157680000s_to_n126144000s - Set lead_n157680000s_to_n126144000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n157680000s_to_n126144000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n157680000s_to_n126144000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -157680000 ) to ( -126144000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n189216000s_to_n157680000s - Set lead_n189216000s_to_n157680000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n189216000s_to_n157680000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n189216000s_to_n157680000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -189216000 ) to ( -157680000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n220752000s_to_n189216000s - Set lead_n220752000s_to_n189216000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n220752000s_to_n189216000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n220752000s_to_n189216000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -220752000 ) to ( -189216000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n252288000s_to_n220752000s - Set lead_n252288000s_to_n220752000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n252288000s_to_n220752000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n252288000s_to_n220752000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -252288000 ) to ( -220752000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n283824000s_to_n252288000s - Set lead_n283824000s_to_n252288000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n283824000s_to_n252288000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n283824000s_to_n252288000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -283824000 ) to ( -252288000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n315360000s_to_n283824000s - Set lead_n315360000s_to_n283824000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n315360000s_to_n283824000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n315360000s_to_n283824000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -315360000 ) to ( -283824000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n346896000s_to_n315360000s - Set lead_n346896000s_to_n315360000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n346896000s_to_n315360000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n346896000s_to_n315360000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -346896000 ) to ( -315360000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n378432000s_to_n346896000s - Set lead_n378432000s_to_n346896000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n378432000s_to_n346896000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n378432000s_to_n346896000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -378432000 ) to ( -346896000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n409968000s_to_n378432000s - Set lead_n409968000s_to_n378432000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n409968000s_to_n378432000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n409968000s_to_n378432000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -409968000 ) to ( -378432000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n441504000s_to_n409968000s - Set lead_n441504000s_to_n409968000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n441504000s_to_n409968000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n441504000s_to_n409968000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -441504000 ) to ( -409968000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n473040000s_to_n441504000s - Set lead_n473040000s_to_n441504000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n473040000s_to_n441504000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n473040000s_to_n441504000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -473040000 ) to ( -441504000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n504576000s_to_n473040000s - Set lead_n504576000s_to_n473040000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n504576000s_to_n473040000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n504576000s_to_n473040000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -504576000 ) to ( -473040000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n536112000s_to_n504576000s - Set lead_n536112000s_to_n504576000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n536112000s_to_n504576000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n536112000s_to_n504576000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -536112000 ) to ( -504576000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n567648000s_to_n536112000s - Set lead_n567648000s_to_n536112000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n567648000s_to_n536112000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n567648000s_to_n536112000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -567648000 ) to ( -536112000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n599184000s_to_n567648000s - Set lead_n599184000s_to_n567648000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n599184000s_to_n567648000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n599184000s_to_n567648000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -599184000 ) to ( -567648000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n630720000s_to_n599184000s - Set lead_n630720000s_to_n599184000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n630720000s_to_n599184000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n630720000s_to_n599184000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -630720000 ) to ( -599184000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n662256000s_to_n630720000s - Set lead_n662256000s_to_n630720000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n662256000s_to_n630720000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n662256000s_to_n630720000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -662256000 ) to ( -630720000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n693792000s_to_n662256000s - Set lead_n693792000s_to_n662256000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n693792000s_to_n662256000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n693792000s_to_n662256000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -693792000 ) to ( -662256000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n725328000s_to_n693792000s - Set lead_n725328000s_to_n693792000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n725328000s_to_n693792000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n725328000s_to_n693792000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -725328000 ) to ( -693792000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n756864000s_to_n725328000s - Set lead_n756864000s_to_n725328000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n756864000s_to_n725328000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n756864000s_to_n725328000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -756864000 ) to ( -725328000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n788400000s_to_n756864000s - Set lead_n788400000s_to_n756864000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n788400000s_to_n756864000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n788400000s_to_n756864000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -788400000 ) to ( -756864000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n819936000s_to_n788400000s - Set lead_n819936000s_to_n788400000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n819936000s_to_n788400000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n819936000s_to_n788400000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -819936000 ) to ( -788400000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n851472000s_to_n819936000s - Set lead_n851472000s_to_n819936000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n851472000s_to_n819936000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n851472000s_to_n819936000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -851472000 ) to ( -819936000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n883008000s_to_n851472000s - Set lead_n883008000s_to_n851472000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n883008000s_to_n851472000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n883008000s_to_n851472000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -883008000 ) to ( -851472000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n914544000s_to_n883008000s - Set lead_n914544000s_to_n883008000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n914544000s_to_n883008000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n914544000s_to_n883008000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -914544000 ) to ( -883008000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n946080000s_to_n914544000s - Set lead_n946080000s_to_n914544000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n946080000s_to_n914544000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n946080000s_to_n914544000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -946080000 ) to ( -914544000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n977616000s_to_n946080000s - Set lead_n977616000s_to_n946080000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n977616000s_to_n946080000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n977616000s_to_n946080000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -977616000 ) to ( -946080000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1009152000s_to_n977616000s - Set lead_n1009152000s_to_n977616000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1009152000s_to_n977616000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1009152000s_to_n977616000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1009152000 ) to ( -977616000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1040688000s_to_n1009152000s - Set lead_n1040688000s_to_n1009152000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1040688000s_to_n1009152000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1040688000s_to_n1009152000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1040688000 ) to ( -1009152000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1072224000s_to_n1040688000s - Set lead_n1072224000s_to_n1040688000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1072224000s_to_n1040688000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1072224000s_to_n1040688000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1072224000 ) to ( -1040688000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1103760000s_to_n1072224000s - Set lead_n1103760000s_to_n1072224000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1103760000s_to_n1072224000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1103760000s_to_n1072224000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1103760000 ) to ( -1072224000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1135296000s_to_n1103760000s - Set lead_n1135296000s_to_n1103760000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1135296000s_to_n1103760000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1135296000s_to_n1103760000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1135296000 ) to ( -1103760000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1166832000s_to_n1135296000s - Set lead_n1166832000s_to_n1135296000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1166832000s_to_n1135296000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1166832000s_to_n1135296000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1166832000 ) to ( -1135296000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1198368000s_to_n1166832000s - Set lead_n1198368000s_to_n1166832000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1198368000s_to_n1166832000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1198368000s_to_n1166832000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1198368000 ) to ( -1166832000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1229904000s_to_n1198368000s - Set lead_n1229904000s_to_n1198368000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1229904000s_to_n1198368000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1229904000s_to_n1198368000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1229904000 ) to ( -1198368000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_n1261440000s_to_n1229904000s - Set lead_n1261440000s_to_n1229904000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_n1261440000s_to_n1229904000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_n1261440000s_to_n1229904000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -1261440000 ) to ( -1229904000 );            
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_min_to_n1261440000s - Set lead_min_to_n1261440000s as a partition of wres.TimeSeriesValueTemp"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValueTemp"
+                         schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue_lead_min_to_n1261440000s"
+                             schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValue_lead_min_to_n1261440000s
+            PARTITION OF wres.TimeSeriesValueTemp
+            FOR VALUES FROM ( -9223372036854775808 ) to ( -1261440000 );            
+        </sql>
+    </changeSet>
+</databaseChangeLog>

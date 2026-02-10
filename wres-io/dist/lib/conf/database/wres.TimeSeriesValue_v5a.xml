@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="wres.TimeSeriesValue - Create a temporary copy of the partitioned table to migrate the lead data type."
+               author="James Brown"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+            <columnExists columnName="lead" tableName="TimeSeriesValue"
+                          schemaName="wres" />
+        </preConditions>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValueTemp (
+                timeseries_id integer not null,
+                lead bigint not null,
+                series_value double precision,
+                CONSTRAINT timeseriesvalue_timeseries_id_lead_key UNIQUE (timeseries_id,lead) DEFERRABLE INITIALLY IMMEDIATE
+            ) PARTITION BY RANGE ( lead );
+            COMMENT ON TABLE wres.TimeSeriesValueTemp IS 'Each row represents a value in a single time-series.';
+            COMMENT ON COLUMN wres.TimeSeriesValueTemp.lead IS 'The count of seconds between a chosen reference datetime and the valid datetime of this value, which is known as a lead time or lead duration. In principle, a time-series could include several types of reference time, but this schema supports only one type. ';
+            COMMENT ON COLUMN wres.TimeSeriesValueTemp.series_value IS 'The time-series value.';
+        </sql>
+    </changeSet>
+</databaseChangeLog>
