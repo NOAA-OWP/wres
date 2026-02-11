@@ -1,4 +1,4 @@
-![commitChecks](https://github.com/NOAA-OWP/wres/actions/workflows/commitChecks.yml/badge.svg)
+![commitChecks](https://github.com/NOAA-OWP/wres/actions/workflows/commitChecks.yml/badge.svg) [![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NOAA-OWP/wres)
 
 # Water Resources Evaluation Service (WRES)
 
