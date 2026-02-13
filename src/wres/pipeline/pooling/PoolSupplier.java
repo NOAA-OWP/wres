@@ -3,9 +3,9 @@ package wres.pipeline.pooling;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -56,6 +57,7 @@ import wres.pipeline.pooling.PoolRescalingEvent.RescalingType;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.ReferenceTime;
 
 /**
  * <p>Supplies a {@link Pool}, which is used to compute one or more verification statistics. The overall 
@@ -1191,8 +1193,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                     .collect( Collectors.groupingBy( next -> next.getMetadata()
                                                                  .getFeature() ) );
 
-        int rightOrBaselineSeriesCount = 0;
-
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pairsPerFeature = new HashMap<>();
 
         // Generated baseline, if needed
@@ -1214,62 +1214,62 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                           rightOrBaselineMissingFilter,
                                                                           baselineGeneratorFunction );
 
-        Iterator<TimeSeries<R>> rightOrBaselineIterator = rightOrBaseline.iterator();
-
         // Loop over the right or baseline series
-        while ( rightOrBaselineIterator.hasNext() )
-        {
-            TimeSeries<R> nextRightOrBaselineSeries = rightOrBaselineIterator.next();
+        AtomicInteger rightOrBaselineSeriesCount = new AtomicInteger();
+        rightOrBaseline.filter( rightOrBaselineFilter ) // Meets the filter?
+                       .forEach( nextRightOrBaselineSeries ->
+                                 {
+                                     // Pre-rescaling transformations
+                                     TimeSeries<R> transformedRightOrBaseline =
+                                             rightOrBaselineTransformerPre.apply( nextRightOrBaselineSeries );
+                                     transformedRightOrBaseline =
+                                             this.applyValidTimeOffset( transformedRightOrBaseline,
+                                                                        timeParameters.timeShift(),
+                                                                        rightOrBaselineOrientation );
 
-            // Meets the filter?
-            if ( !rightOrBaselineFilter.test( nextRightOrBaselineSeries ) )
-            {
-                LOGGER.debug( "Ignoring time-series {} because it was not selected by a filter.",
-                              nextRightOrBaselineSeries.getMetadata() );
-                continue;
-            }
+                                     Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
+                                                                                                    .getFeature();
 
-            // Pre-rescaling transformations
-            TimeSeries<R> transformedRightOrBaseline = rightOrBaselineTransformerPre.apply( nextRightOrBaselineSeries );
-            transformedRightOrBaseline = this.applyValidTimeOffset( transformedRightOrBaseline,
-                                                                    timeParameters.timeShift(),
-                                                                    rightOrBaselineOrientation );
+                                     Set<Feature> nextLeftFeatures =
+                                             this.getLeftFeaturesForRightOrBaseline( nextRightOrBaselineFeature,
+                                                                                     rightOrBaselineOrientation );
 
-            Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
-                                                                           .getFeature();
+                                     // Add the pairs for each left feature
+                                     for ( Feature nextLeftFeature : nextLeftFeatures )
+                                     {
+                                         List<TimeSeries<L>> nextLeftSeries = leftSeries.get( nextLeftFeature );
 
-            Set<Feature> nextLeftFeatures = this.getLeftFeaturesForRightOrBaseline( nextRightOrBaselineFeature,
-                                                                                    rightOrBaselineOrientation );
+                                         // Consolidate the left-ish time-series for improved performance if they do not
+                                         // have reference times. See GitHub #723 and Redmine #95488 for the checkered
+                                         // history of this one
+                                         nextLeftSeries =
+                                                 this.consolidateTimeSeriesWithZeroReferenceTimes( nextLeftSeries );
 
-            // Add the pairs for each left feature
-            for ( Feature nextLeftFeature : nextLeftFeatures )
-            {
-                List<TimeSeries<L>> nextLeftSeries = leftSeries.get( nextLeftFeature );
+                                         List<TimeSeriesPlusValidation<L, R>> nextPairedSeries =
+                                                 this.createPairsPerLeftSeries( nextLeftSeries,
+                                                                                transformedRightOrBaseline,
+                                                                                timeParameters,
+                                                                                rightOrBaselineOrientation,
+                                                                                rightOrBaselineTransformers );
 
-                List<TimeSeriesPlusValidation<L, R>> nextPairedSeries =
-                        this.createPairsPerLeftSeries( nextLeftSeries,
-                                                       transformedRightOrBaseline,
-                                                       timeParameters,
-                                                       rightOrBaselineOrientation,
-                                                       rightOrBaselineTransformers );
+                                         this.addPairsForFeature( pairsPerFeature,
+                                                                  nextPairedSeries,
+                                                                  TimeSeriesPlusValidation::getTimeSeries,
+                                                                  validation );
 
-                this.addPairsForFeature( pairsPerFeature,
-                                         nextPairedSeries,
-                                         TimeSeriesPlusValidation::getTimeSeries,
-                                         validation );
+                                         // Bubble up the rescaled/filtered right time-series for baseline generation,
+                                         // if needed
+                                         if ( this.hasBaselineGenerator() )
+                                         {
+                                             this.addPairsForFeature( generatedBaseline,
+                                                                      nextPairedSeries,
+                                                                      TimeSeriesPlusValidation::getGeneratedBaselineTimeSeries,
+                                                                      validation );
+                                         }
+                                     }
 
-                // Bubble up the rescaled/filtered right time-series for baseline generation, if needed
-                if ( this.hasBaselineGenerator() )
-                {
-                    this.addPairsForFeature( generatedBaseline,
-                                             nextPairedSeries,
-                                             TimeSeriesPlusValidation::getGeneratedBaselineTimeSeries,
-                                             validation );
-                }
-            }
-
-            rightOrBaselineSeriesCount++;
-        }
+                                     rightOrBaselineSeriesCount.getAndIncrement();
+                                 } );
 
         // Log the number of time-series available for pairing and the number of paired time-series created
         if ( LOGGER.isDebugEnabled() )
@@ -1645,6 +1645,76 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         return new TimeSeriesPlusValidation<>( pairsToSave,
                                                generatedBaseline,
                                                statusEvents );
+    }
+
+    /**
+     * Looks for time-series without reference times and consolidates them. Values within observation-like time-series
+     * may be combined when rescaling. Thus, it is convenient to place them into one time-series. Values within
+     * forecast-like time-series cannot be combined across time-series.
+     *
+     * @param <T> the type of event values
+     * @param timeSeries the time-series to consolidate, if possible
+     * @return any time-series that were consolidated plus any time-series that were not consolidated
+     */
+
+    private <T> List<TimeSeries<T>> consolidateTimeSeriesWithZeroReferenceTimes( List<TimeSeries<T>> timeSeries )
+    {
+        List<TimeSeries<T>> returnMe = new ArrayList<>();
+
+        // Tolerate null input (e.g., for a baseline)
+        if ( Objects.nonNull( timeSeries ) )
+        {
+            // Separate into time-series that have reference times and those that do not. Those with reference times
+            // are not consolidated. Those without should be index by their common metadata.
+            Map<TimeSeriesMetadata, List<TimeSeries<T>>> withoutReferenceTimes = new HashMap<>();
+            for ( TimeSeries<T> next : timeSeries )
+            {
+                Set<ReferenceTime.ReferenceTimeType> referenceTimes = next.getReferenceTimes()
+                                                                          .keySet();
+
+                // One or more reference times
+                if ( !referenceTimes.isEmpty() )
+                {
+                    returnMe.add( next );
+                }
+                else
+                {
+                    // Remove any observation-like reference times
+                    TimeSeriesMetadata meta = next.getMetadata();
+
+                    if ( withoutReferenceTimes.containsKey( meta ) )
+                    {
+                        List<TimeSeries<T>> seriesList = withoutReferenceTimes.get( meta );
+                        seriesList.add( next );
+                    }
+                    else
+                    {
+                        List<TimeSeries<T>> newList = new ArrayList<>();
+                        newList.add( next );
+                        withoutReferenceTimes.put( meta, newList );
+                    }
+                }
+            }
+
+            LOGGER.debug( "Discovered {} collections of observation-like time-series to consolidate, one for each of "
+                          + "these metadatas: {}.",
+                          withoutReferenceTimes.size(),
+                          withoutReferenceTimes.keySet() );
+
+            // Consolidate the time-series without reference times
+            for ( List<TimeSeries<T>> nextList : withoutReferenceTimes.values() )
+            {
+                List<TimeSeries<T>> withoutReferenceTimesUnmodifiable =
+                        Collections.unmodifiableList( nextList );
+
+                Collection<TimeSeries<T>> consolidated =
+                        TimeSeriesSlicer.consolidateObservationLikeSeries( withoutReferenceTimesUnmodifiable );
+
+                returnMe.addAll( consolidated );
+            }
+        }
+
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**

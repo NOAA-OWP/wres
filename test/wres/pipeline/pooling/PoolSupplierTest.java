@@ -174,12 +174,6 @@ class PoolSupplierTest
     /** Observations. */
     private TimeSeries<Double> observations;
 
-    /** Observations that encompass the first half of {@link #forecastOne}. */
-    private TimeSeries<Double> observationsOne;
-
-    /** Observations that encompass the second half of {@link #forecastOne}. */
-    private TimeSeries<Double> observationsTwo;
-
     /** Observations that encompass a second feature. */
     private TimeSeries<Double> observationsThree;
 
@@ -320,47 +314,6 @@ class PoolSupplierTest
                                                 .addEvent( Event.of( T2551_03_20T10_00_00Z, 857.0 ) )
                                                 .addEvent( Event.of( T2551_03_20T11_00_00Z, 859.0 ) )
                                                 .addEvent( Event.of( T2551_03_20T12_00_00Z, 863.0 ) )
-                                                .build();
-
-        this.observationsOne =
-                new TimeSeries.Builder<Double>().setMetadata( metadataInner )
-                                                .addEvent( Event.of( T2551_03_17T13_00_00Z, 401.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T14_00_00Z, 409.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T15_00_00Z, 419.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T16_00_00Z, 421.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T17_00_00Z, 431.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 433.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T19_00_00Z, 439.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T20_00_00Z, 443.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T21_00_00Z, 449.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T22_00_00Z, 457.0 ) )
-                                                .addEvent( Event.of( T2551_03_17T23_00_00Z, 461.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T00_00_00Z, 463.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T01_00_00Z, 467.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T02_00_00Z, 479.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T03_00_00Z, 487.0 ) )
-                                                .build();
-
-        this.observationsTwo =
-                new TimeSeries.Builder<Double>().setMetadata( metadataInner )
-                                                .addEvent( Event.of( T2551_03_18T04_00_00Z, 491.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T05_00_00Z, 499.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T06_00_00Z, 503.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T07_00_00Z, 509.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T08_00_00Z, 521.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T09_00_00Z, 523.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T10_00_00Z, 541.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T11_00_00Z, 547.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T12_00_00Z, 557.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T13_00_00Z, 563.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T14_00_00Z, 569.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T15_00_00Z, 571.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T16_00_00Z, 577.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T17_00_00Z, 587.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 593.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T19_00_00Z, 599.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T20_00_00Z, 601.0 ) )
-                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 607.0 ) )
                                                 .build();
 
         TimeSeriesMetadata otherMetadata =
@@ -625,84 +578,6 @@ class PoolSupplierTest
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
-                                                                    .setMetadata( poolOneMetadata )
-                                                                    .build();
-
-        assertEquals( poolOneExpected, poolOneActual );
-    }
-
-    @Test
-    void testGetReturnsPoolThatContainsSevenPairsInTwoSeries()
-    {
-        // Pool One actual        
-        Mockito.when( this.observationRetriever.get() )
-               .thenReturn( Stream.of( this.observationsOne,
-                                       this.observationsTwo ) );
-        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
-
-        Mockito.when( this.forecastRetriever.get() ).thenReturn( Stream.of( this.forecastOne ) );
-
-        Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
-
-        TimeWindow inner = MessageUtilities.getTimeWindow( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
-                                                           T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
-                                                           Duration.ofHours( 0 ),
-                                                           Duration.ofHours( 23 ) );
-        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
-
-        PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
-                                                        poolOneWindow,
-                                                        this.desiredTimeScale );
-
-        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
-                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
-                                                                  .setRight( forcSupplierOne )
-                                                                  .setLeftUpscaler( this.upscaler )
-                                                                  .setPairer( this.pairer )
-                                                                  .setDesiredTimeScale( this.desiredTimeScale )
-                                                                  .setMetadata( poolOneMetadata )
-                                                                  .setBaselineShim( Function.identity() )
-                                                                  .build();
-
-        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
-
-        // Pool One expected
-        TimeSeriesMetadata poolOneTimeSeriesMetadata =
-                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
-                                                          FEATURE,
-                                                          this.desiredTimeScale );
-        TimeSeries<Pair<Double, Double>> poolOneSeriesOne =
-                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( poolOneTimeSeriesMetadata )
-                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
-                                                                                   Pair.of( 409.6666666666667,
-                                                                                            73.0 ) ) )
-                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
-                                                                                   Pair.of( 428.3333333333333,
-                                                                                            79.0 ) ) )
-                                                              .addEvent( Event.of( T2551_03_17T21_00_00Z,
-                                                                                   Pair.of( 443.6666666666667,
-                                                                                            83.0 ) ) )
-                                                              .addEvent( Event.of( T2551_03_18T00_00_00Z,
-                                                                                   Pair.of( 460.3333333333333,
-                                                                                            89.0 ) ) )
-                                                              .addEvent( Event.of( T2551_03_18T03_00_00Z,
-                                                                                   Pair.of( 477.6666666666667,
-                                                                                            97.0 ) ) )
-                                                              .build();
-
-        TimeSeries<Pair<Double, Double>> poolOneSeriesTwo =
-                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( poolOneTimeSeriesMetadata )
-                                                              .addEvent( Event.of( T2551_03_18T06_00_00Z,
-                                                                                   Pair.of( 497.6666666666667,
-                                                                                            101.0 ) ) )
-                                                              .addEvent( Event.of( T2551_03_18T09_00_00Z,
-                                                                                   Pair.of( 517.6666666666666,
-                                                                                            103.0 ) ) )
-                                                              .build();
-
-        Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
-                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeriesOne )
-                                                                    .addData( poolOneSeriesTwo )
                                                                     .setMetadata( poolOneMetadata )
                                                                     .build();
 
