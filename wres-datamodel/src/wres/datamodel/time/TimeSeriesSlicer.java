@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -1257,6 +1258,7 @@ public final class TimeSeriesSlicer
      * Consolidates the input collection of time-series into one time-series. Requires that none of the valid datetimes 
      * are duplicates.
      *
+     * @see #consolidateObservationLikeSeries(Collection)
      * @param <T> the time-series event value type
      * @param collectedSeries the collected series
      * @return the consolidated series
@@ -1274,7 +1276,7 @@ public final class TimeSeriesSlicer
             // TODO: restore empty timeseries capability after weeding out spots
             // where some kind of metadata can be put in. Then return an empty 
             // time-series with metadata.
-            throw new IllegalStateException( "Cannot consolidate an empty collection of timeseries." );
+            throw new IllegalStateException( "Cannot consolidate an empty collection of time-series." );
         }
         // Singleton series
         else if ( collectedSeries.size() == 1 )
@@ -1292,6 +1294,91 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Consolidates the input collection time-series into as few time-series as necessary, such that events with
+     * duplicate valid times belong to different time-series. Only accepts time-series that do not have reference
+     * times, aka "observation-like" time-series. Unlike {@link #consolidate(Collection)}, this method accepts
+     * duplicate valid times across multiple series.
+     *
+     * @see #consolidate(Collection)
+     * @param <T> the time-series event value type
+     * @param collectedSeries the collected series
+     * @return the consolidated series
+     * @throws NullPointerException if the consolidatedSeries is null
+     * @throws IllegalArgumentException if any of the input series contain reference times or unequal metadata
+     */
+
+    public static <T> Collection<TimeSeries<T>> consolidateObservationLikeSeries( Collection<TimeSeries<T>> collectedSeries )
+    {
+        Objects.requireNonNull( collectedSeries );
+
+        // Empty series
+        if ( collectedSeries.isEmpty() )
+        {
+            // TODO: restore empty timeseries capability after weeding out spots
+            // where some kind of metadata can be put in. Then return an empty
+            // time-series with metadata.
+            throw new IllegalStateException( "Cannot consolidate an empty collection of time-series." );
+        }
+        // Singleton series
+        else if ( collectedSeries.size() == 1 )
+        {
+            LOGGER.debug( "Discovered a collection with a single time-series: no consolidation necessary." );
+
+            return collectedSeries;
+        }
+
+        // Validate metadata
+        TimeSeriesSlicer.validateForZeroReferenceTimesAndCommonMetadata( collectedSeries );
+
+        // The time-series builders
+        Collection<SortedSet<Event<T>>> eventSets = new ArrayList<>();
+
+        // Iterate through the series and their events. Add the events to the first set that does not contain an
+        // event at the same valid datetime. If all sets are exhausted, add a new one and place the event in that
+        for ( TimeSeries<T> nextSeries : collectedSeries )
+        {
+            for ( Event<T> nextEvent : nextSeries.getEvents() )
+            {
+                boolean added = false;
+
+                for ( SortedSet<Event<T>> nextSet : eventSets )
+                {
+                    // Does this builder already contain this valid time? No, so add it
+                    if ( !nextSet.contains( nextEvent ) )
+                    {
+                        nextSet.add( nextEvent );
+                        added = true;
+
+                        // Only add to one set
+                        break;
+                    }
+                }
+
+                // Event not added to any existing builders, so create a new one and add the event to that
+                if ( !added )
+                {
+                    // Essential to map by valid time only
+                    SortedSet<Event<T>> newSet = new TreeSet<>( Comparator.comparing( Event::getTime ) );
+                    newSet.add( nextEvent );
+                    eventSets.add( newSet );
+                }
+            }
+        }
+
+        // Find any metadata - it is all the same by earlier assertion
+        Optional<TimeSeries<T>> metadataSeries = collectedSeries.stream()
+                                                                .findAny();
+
+        return eventSets.stream()
+                        .map( n -> new TimeSeries.Builder<T>()
+                                .addEvents( n )
+                                .setMetadata( metadataSeries.orElseThrow()  // Must exist for events to exist
+                                                            .getMetadata() )
+                                .build() )
+                        .toList();
     }
 
     /**
@@ -1938,6 +2025,45 @@ public final class TimeSeriesSlicer
         }
 
         return returnMe;
+    }
+
+    /**
+     * Throws an exception if any time-series has one or more reference times or metadata that is inconsistent with
+     * another time-series
+     *
+     * @param <T> the time-series event value type
+     * @param collectedSeries the collected series
+     * @throws IllegalArgumentException if one or more time-series have reference times or inconsistent metadata
+     */
+
+    private static <T> void validateForZeroReferenceTimesAndCommonMetadata( Collection<TimeSeries<T>> collectedSeries )
+    {
+        TimeSeriesMetadata first = null;
+
+        for ( TimeSeries<T> next : collectedSeries )
+        {
+            if ( Objects.isNull( first ) )
+            {
+                first = next.getMetadata();
+            }
+            // Compare to last
+            else if ( !next.getMetadata()
+                           .equals( first ) )
+            {
+                throw new IllegalArgumentException( "Cannot consolidate time-series that contain unequal metadata. "
+                                                    + "The unequal metadata instances are "
+                                                    + first
+                                                    + " and "
+                                                    + next.getMetadata()
+                                                    + "." );
+            }
+
+            // Zero reference times of current
+            if ( !next.getReferenceTimes().isEmpty() )
+            {
+                throw new IllegalArgumentException( "Cannot consolidate time-series that contain reference times." );
+            }
+        }
     }
 
     /**

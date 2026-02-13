@@ -12,6 +12,7 @@ import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -259,7 +260,7 @@ final class TimeSeriesSlicerTest
                 assertEquals( Pair.of( nextValue, nextValue ), nextPair.getValue() );
             }
 
-            nextValue++;
+            nextValue += 1.0;
         }
 
         //Check the regular duration of a time-series with one duration
@@ -1765,6 +1766,105 @@ final class TimeSeriesSlicerTest
                 .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testConsolidateObservationLikeSeries()
+    {
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ),
+                                                                     5.812511 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ),
+                                                                     6.759735 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ),
+                                                                     7.3409863 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ),
+                                                                     7.9222374 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ),
+                                                                     8.503489 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T04:00:00Z" ),
+                                                                     9.08474 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T05:00:00Z" ),
+                                                                     9.665991 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                     10.247243 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                     9.52606 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                     8.804878 ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        TimeSeries<Double> two =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                     10.247243 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                     9.52606 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                     8.804878 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T09:00:00Z" ),
+                                                                     8.083696 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T10:00:00Z" ),
+                                                                     7.3517504 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T11:00:00Z" ),
+                                                                     6.6305685 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T12:00:00Z" ),
+                                                                     5.9093866 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T13:00:00Z" ),
+                                                                     5.489594 ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        Collection<TimeSeries<Double>> actual =
+                TimeSeriesSlicer.consolidateObservationLikeSeries( List.of( one, two ) );
+
+        assertEquals( 2, actual.size() );
+
+        TimeSeries<Double> expectedOne =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ),
+                                                                     5.812511 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ),
+                                                                     6.759735 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ),
+                                                                     7.3409863 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ),
+                                                                     7.9222374 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T03:00:00Z" ),
+                                                                     8.503489 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T04:00:00Z" ),
+                                                                     9.08474 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T05:00:00Z" ),
+                                                                     9.665991 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                     10.247243 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                     9.52606 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                     8.804878 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T09:00:00Z" ),
+                                                                     8.083696 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T10:00:00Z" ),
+                                                                     7.3517504 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T11:00:00Z" ),
+                                                                     6.6305685 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T12:00:00Z" ),
+                                                                     5.9093866 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T13:00:00Z" ),
+                                                                     5.489594 ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        TimeSeries<Double> expectedTwo =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
+                                                                     10.247243 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
+                                                                     9.52606 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
+                                                                     8.804878 ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
+        assertEquals( List.of( expectedOne, expectedTwo ), actual );
     }
 
     /**

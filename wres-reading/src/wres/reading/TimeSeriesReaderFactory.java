@@ -269,7 +269,8 @@ public class TimeSeriesReaderFactory
         this.systemSettings = systemSettings;
         this.features = features;
 
-        if ( LOGGER.isWarnEnabled() && Objects.isNull( declaration ) )
+        if ( LOGGER.isWarnEnabled()
+             && Objects.isNull( declaration ) )
         {
             LOGGER.warn( "Creating a reader factory with missing declaration. If a reader is subsequently "
                          + "requested that depends on this declaration, you can expect an error at that time." );
