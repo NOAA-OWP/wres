@@ -1491,7 +1491,7 @@ project(':wres-tasker') {
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
+        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:4.0.2'
 
         // To handle multipart post
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
@@ -2011,7 +2011,7 @@ dependencies {
 
     // Needed at compile-time to reference ServletContainer.class and
     // DefaultServlet.class
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:4.0.2'
 
     // Jetty server
     implementation 'org.eclipse.jetty:jetty-server:12.1.5'
@@ -2041,11 +2041,11 @@ dependencies {
     // JCIP annotations
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:3.1.11'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:4.0.2'
     runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.11'
     // currently locked at this version, check this ticket for more information
     // https://vlab.***REMOVED***/redmine/issues/124200
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.11'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:4.0.2'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.11'
 
     // Support HTTP/2
