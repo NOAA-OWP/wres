@@ -1,0 +1,28 @@
+[build-system]
+requires = [
+    "wheel",
+    "setuptools",
+    "setuptools-scm"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wresproto"
+authors = [ { name="wres" } ]
+requires-python = ">=3.6"
+description = "Python bindings for working with WRES Protocol Buffers."
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dynamic = ["version"]
+
+[project.scripts]
+# Entrypoint
+my-package = "wresproto.__main__:main"
+
+# Use SCM to determine the version dynamically. However, the primary source 
+# for versioning is the SETUPTOOLS_SCM_PRETEND_VERSION environment variable.
+# See: https://setuptools-scm.readthedocs.io/en/latest/config/
+[tool.setuptools_scm]

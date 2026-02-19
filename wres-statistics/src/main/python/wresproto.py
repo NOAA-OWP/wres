@@ -7,15 +7,20 @@ import subprocess
 f = open( 'wresproto/__init__.py', 'w' )
 
 # Build a wheel in a subprocess
-subprocess.check_call( [sys.executable, 'setup.py', 'bdist_wheel', '-d', '../../../dist/wresproto'] )
+subprocess.check_call( [sys.executable, '-m' 'build', '--wheel', '--no-isolation', '--outdir', '../../../dist/wresproto'] )
 
 # Clean-up
 try:
     shutil.rmtree( 'build' )
 except OSError as e:
-    print ( "Error: %s - %s." % ( e.filename, e.strerror ) )
+    print ( "Warn: %s - %s." % ( e.filename, e.strerror ) )
+
+try:
+    shutil.rmtree( '__pycache__' )
+except OSError as e:
+    print ( "Warn: %s - %s." % ( e.filename, e.strerror ) )
 
 try:
     shutil.rmtree( 'wresproto.egg-info' )
 except OSError as e:
-    print ( "Error: %s - %s." % ( e.filename, e.strerror ) )
+    print ( "Warn: %s - %s." % ( e.filename, e.strerror ) )
