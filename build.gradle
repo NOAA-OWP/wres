@@ -8,16 +8,14 @@ import java.nio.file.StandardOpenOption
 import java.nio.file.StandardCopyOption
 import java.time.ZoneId
 
-// TODO: Enable miniconda for python build tasks once supported in build
-// environment
-//import com.pswidersk.gradle.python.VenvTask
+import com.pswidersk.gradle.python.VenvTask
 
 /* Used by gradle plugins outside the official gradle plugins repository */
 buildscript {
 
     // Workaround for missing transitive dependency for plugin org.kordamp.gradle.markdown
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy.dependencySubstitution {
             substitute module('com.overzealous:remark:1.1.0') using module('com.wavefront:remark:2023-07.07') because "not available on maven central anymore"
         }
@@ -78,9 +76,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.53.0'
 
     // Run python scripts
-    // TODO: cannot install miniconda in current build environment
-    // Enable this when we have more control over the build environment
-    //id 'com.pswidersk.python-plugin' version '1.2.1'
+    id 'com.pswidersk.python-plugin' version '3.1.13'
 
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
@@ -149,7 +145,7 @@ subprojects {
         def gitCommitId = gitCommit.id
         def gitCommitDate = gitCommit.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+        version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId.take(7)
     }
 
     // Whenever there are local changes, flag the version with a "-dev" suffix.
@@ -229,8 +225,8 @@ subprojects {
         }
     }
 
-    tasks.withType(AbstractArchiveTask) {
-        archiveVersion = project.version
+    tasks.withType(AbstractArchiveTask).configureEach {
+        archiveVersion = project.version.toString()
 
         // Make bit-for-bit reproducible jars, zips, and tars.
         preserveFileTimestamps = false
@@ -534,7 +530,7 @@ project(':wres-writing') {
         def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
         def versionOfDependencies =
-                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies.take(7)
 
         if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
@@ -872,9 +868,7 @@ project(':wres-statistics') {
     apply plugin: 'com.google.protobuf'
 
     // Python bindings and wheel from python script
-    // TODO: cannot install miniconda in current build environment
-    // Enable this when we have more control over the build environment
-    //apply plugin: 'com.pswidersk.python-plugin'
+    apply plugin: 'com.pswidersk.python-plugin'
 
     // Html from markdown
     apply plugin: 'org.kordamp.gradle.markdown'
@@ -883,8 +877,8 @@ project(':wres-statistics') {
 
     // Workaround to set duplicate strategy for all copy tasks.
     // See: https://github.com/gradle/gradle/issues/17236
-    tasks.withType(Copy).all {
-        duplicatesStrategy 'exclude'
+    tasks.withType(Copy).configureEach {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 
     protobuf {
@@ -912,28 +906,59 @@ project(':wres-statistics') {
         main {
             // Tell protobuf plugin where to find .proto schema files:
             proto {
-                srcDirs = ['nonsrc']
+                proto.srcDirs = ['nonsrc']
             }
         }
     }
 
     // Set the python version to use
-    // TODO: cannot install miniconda in current build environment
-    // Enable this when we have more control over the build environment
-    //pythonPlugin {
-    //    pythonVersion = "3.8.2"
-    //}
+    pythonPlugin {
+        pythonVersion = "3.14.0"
+    }
 
-    // Generate a python wheel artifact for the wres protobuf bindings for use in python applications
-    // Also generate an html document from markdown
-    // TODO: cannot install miniconda in current build environment
-    // Enable this when we have more control over the build environment
-    //task (buildProtobufBindingsForPython, type: VenvTask, dependsOn: ['generateProto'] ) {
-    //    workingDir = file( "src/main/python" )
-    //    args = ["wresproto.py"]
-    //}
+    // Generate a python wheel artifact for the wres protobuf bindings for use in python applications. Python enforces
+    // strict semantic versioning. Currently, the WRES versioning scheme does not conform to this, except at deployment
+    // time where a deployed version is tagged retrospectively with a semantic version, like "7.3". Instead, we use the
+    // latest git tag to obtain a semantic version that is the last known version (one behand the deployed version) and
+    // add the current project version (date and first 7 chars of the sha-1 commit hash of the wres-statistics artifact)
+    // as a build tag. More importantly than correct versioning, the wheel artifact is now built integrally to the
+    // overall build, with which it is tightly coupled.
+    def lastGitTag = grgit.describe(tags: true)
 
-    task copyProtoSchemaToDist(type: Copy, dependsOn: markdownToHtml) {
+    def matcher = lastGitTag =~ /(\d+)\.(\d+)/
+
+    // Default version
+    int majorVersion = 1
+    int minorVersion = 0
+
+    if (matcher)
+    {
+        List match = matcher[0] as List
+        majorVersion = match[1] as int
+        minorVersion = match[2] as int
+    }
+
+    // Install the required Python modules to build the Python Wheel artifact
+    tasks.register('pipInstall', VenvTask) {
+        venvExec = "pip"
+        args = ["install", "setuptools", "setuptools-scm", "build", "wheel"]
+    }
+
+    // Build the Python Wheel artifact
+    tasks.register('buildProtobufBindingsForPython', VenvTask) {
+        // Dependencies are now declared inside the closure
+        dependsOn 'generateProto', 'pipInstall'
+
+        workingDir = file("src/main/python")
+        args = ["wresproto.py"]
+        environment = [
+                "SETUPTOOLS_SCM_PRETEND_VERSION": "${majorVersion}.${minorVersion}+${project.version}"
+        ]
+    }
+
+    // Copy the protobuf schema to the /dist directory
+    tasks.register('copyProtoSchemaToDist', Copy) {
+        dependsOn markdownToHtml
         description = 'Copies the Protobuf schema from nonsrc to dist/src.'
         destinationDir = file("${project.projectDir}/dist/wresproto/src/wresproto")
         delete fileTree(dir: destinationDir)
@@ -950,7 +975,7 @@ project(':wres-statistics') {
     }
 
     // Clean the generated java bindings before regenerating them: #86722
-    task cleanProtoGeneratedDir() {
+    tasks.register('cleanProtoGeneratedDir') {
         def javaBindingsDir = file("${project.projectDir}/src/main/java/wres")
         delete fileTree(dir: javaBindingsDir).include('**/generated/*.java')
     }
@@ -962,9 +987,7 @@ project(':wres-statistics') {
     compileJava.dependsOn cleanProtoGeneratedDir
 
     // Tie the python wheel generation into the java compile task for convenience
-    // TODO: cannot install miniconda in current build environment
-    // Enable this when we have more control over the build environment
-    //compileJava.dependsOn buildProtobufBindingsForPython
+    compileJava.dependsOn buildProtobufBindingsForPython
 
     dependencies {
         api 'com.google.protobuf:protobuf-java:3.25.8'
@@ -1026,7 +1049,7 @@ project(':wres-vis') {
         def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
         def versionOfDependencies =
-                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies.take(7)
 
         if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
@@ -1201,8 +1224,8 @@ project(':wres-messages') {
 
     // Workaround to set duplicate strategy for all copy tasks.
     // See: https://github.com/gradle/gradle/issues/17236
-    tasks.withType(Copy).all {
-        duplicatesStrategy 'exclude'
+    tasks.withType(Copy).configureEach {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 
     protobuf {
@@ -1218,7 +1241,7 @@ project(':wres-messages') {
         main {
             // Tell protobuf plugin where to find .proto schema files:
             proto {
-                srcDirs = ['nonsrc']
+                proto.srcDirs = ['nonsrc']
             }
         }
     }
@@ -1251,7 +1274,7 @@ project(':wres-worker') {
         def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
         def versionOfDependencies =
-                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies.take(7)
 
         if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
@@ -1434,7 +1457,7 @@ project(':wres-tasker') {
         def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
         def versionOfDependencies =
-                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies.take(7)
 
         if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
@@ -1609,7 +1632,7 @@ project(':wres-tasker') {
             println("Writing the API documentation to: " + outputDir)
         }
         outputFileName = 'wres_openapi'
-        outputFormat = 'yaml'
+        outputFormat = 'YAML'
         prettyPrint = 'true'
         openApiFile = sourceFile
         classpath = sourceSets.main.runtimeClasspath
@@ -1624,7 +1647,8 @@ project(':wres-tasker') {
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
-    task(swaggerDocs, dependsOn: resolve, type: Copy) {
+    tasks.register('swaggerDocs', Copy) {
+        dependsOn resolve
         from(fileTree(swaggerDocsBaseDir))
         into new File(buildDir, "swaggerDist")
     }
@@ -1854,7 +1878,7 @@ project(':wres-external-services-tests') {
  * Task to compile markdown to html.
  *
  * TODO: replace with plugin 'org.kordamp.gradle.markdown'*/
-task(buildHtmlFromMarkdown, group: 'Documentation') {
+tasks.register('buildHtmlFromMarkdown') {
     description = 'Compiles markdown documentation into html'
     def srcDir = "${project.projectDir}/documentation/src"
     // seems odd that we have to do this
@@ -1883,7 +1907,6 @@ task(buildHtmlFromMarkdown, group: 'Documentation') {
             if (it.path.endsWith(".md"))
             {
                 // yuck, but I haven't found the better way yet
-                def srcIdx = it.path.indexOf(srcDir)
                 def baseFileName = basePath.substring(0, basePath.length() - 3)
 
                 // The meat - using commonmark to transform md to html
@@ -1914,7 +1937,8 @@ task(buildHtmlFromMarkdown, group: 'Documentation') {
 /**
  * Kind of like xjc, there is an intermediate location in the build directory
  * so that gradle clean will remove these files.*/
-task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkdown) {
+tasks.register('copyDocs', Copy) {
+    dependsOn buildHtmlFromMarkdown
     description = 'Copies documentation source to distribution directory.'
 
     destinationDir = file("${project.projectDir}/dist/doc")
@@ -2132,7 +2156,7 @@ distributions {
             }
 
             // Place the default measurement units and associated schema onto the runtime class path
-            from( 'wres-datamodel/nonsrc' ) {
+            from('wres-datamodel/nonsrc') {
                 into 'lib/conf'
             }
 
@@ -2229,8 +2253,8 @@ jar {
     }
 }
 
-tasks.withType(AbstractArchiveTask) {
-    archiveVersion = project.version
+tasks.withType(AbstractArchiveTask).configureEach {
+    archiveVersion = project.version.toString()
 
     // Make bit-for-bit reproducible jars, zips, and tars.
     preserveFileTimestamps = false

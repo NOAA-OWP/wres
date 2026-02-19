@@ -1,3 +1,4 @@
 # Ignore generated files
 
 src/**/generated/**
+dist/wresproto/wresproto*.whl
