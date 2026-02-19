@@ -1014,20 +1014,6 @@ project(':wres-statistics') {
     java.modularity.inferModulePath.set(true)
 }
 
-// Return /etc/system-release file as a string if readable, else empty string.
-static String readElInfo()
-{
-    def elInfoPath = Paths.get('/etc/system-release')
-    def elInfoReadable = Files.isReadable(elInfoPath)
-
-    if (elInfoReadable)
-    {
-        return Files.readString(elInfoPath)
-    }
-
-    return ''
-}
-
 project(':wres-vis') {
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
