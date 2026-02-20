@@ -94,7 +94,7 @@ plugins {
     id 'jacoco-report-aggregation'
 
     // Check for unused dependencies and transitive dependencies in the build file ./gradlew buildHealth
-    id 'com.autonomousapps.dependency-analysis' version '2.19.0'
+    id 'com.autonomousapps.dependency-analysis' version '3.5.1'
 }
 
 //Add CSV output to eh Jacoco report.
