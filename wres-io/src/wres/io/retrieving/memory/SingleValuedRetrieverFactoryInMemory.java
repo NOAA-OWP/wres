@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import wres.config.DeclarationUtilities;
+import wres.config.components.CovariateDataset;
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetOrientation;
@@ -59,13 +60,6 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                            TimeSeriesStore timeSeriesStore )
     {
         return new SingleValuedRetrieverFactoryInMemory( project, timeSeriesStore );
-    }
-
-    @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
-    {
-        // No distinction between climatology and left for now
-        return this.getLeftRetriever( features );
     }
 
     @Override
@@ -190,7 +184,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
     {
         // Wrap in a caching retriever
-        Dataset data = this.project.getCovariateDataset( variableName );
+        CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
+        Dataset data = covariateData.dataset();
         Variable variable = data.variable();
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.COVARIATE,
@@ -216,7 +211,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                 RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
                                                                             this.project.getDesiredTimeScale() );
 
-        Dataset data = this.project.getCovariateDataset( variableName );
+        CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
+        Dataset data = covariateData.dataset();
         Variable variable = data.variable();
 
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
@@ -234,7 +230,6 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                             DatasetOrientation.LEFT,
                                                                                                             data ) ) );
-
     }
 
     /**

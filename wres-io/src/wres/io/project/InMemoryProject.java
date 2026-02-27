@@ -277,9 +277,9 @@ public class InMemoryProject implements Project
     }
 
     @Override
-    public Dataset getCovariateDataset( String variableName )
+    public CovariateDataset getCovariateDataset( String variableName )
     {
-        return ProjectUtilities.getCovariateDatset( this.declaration, variableName );
+        return ProjectUtilities.getCovariateDataset( this.declaration, variableName );
     }
 
     @Override

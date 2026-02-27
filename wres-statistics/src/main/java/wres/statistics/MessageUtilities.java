@@ -101,8 +101,8 @@ public class MessageUtilities
 
         // Covariates with an explicit purpose of filtering
         return covariates.stream()
-                         .filter( n -> n.hasMinimumInclusiveValue()
-                                       || n.hasMaximumInclusiveValue() )
+                         .filter( n -> n.getPurposesList()
+                                        .contains( Covariate.Purpose.FILTER ) )
                          .toList();
     }
 
@@ -428,7 +428,7 @@ public class MessageUtilities
     {
         Objects.requireNonNull( dimensions );
 
-        if( dimensions.isEmpty() )
+        if ( dimensions.isEmpty() )
         {
             throw new IllegalArgumentException( "Cannot create a summary statistic without one or more dimensions." );
         }

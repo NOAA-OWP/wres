@@ -214,7 +214,8 @@ public class Pool<T> implements Supplier<List<T>>
         // Check the actual data        
         if ( this.hasClimatology() )
         {
-            returnMe = input.getClimatology().equals( this.getClimatology() );
+            returnMe = input.getClimatology()
+                            .equals( this.getClimatology() );
         }
 
         if ( this.hasBaseline() )
@@ -519,13 +520,14 @@ public class Pool<T> implements Supplier<List<T>>
         {
             throw new PoolException( "Specify a non-null baseline input and associated metadata or leave both "
                                      + "null. The null status of the data and metadata, respectively, is: ["
-                                     + Objects.isNull( this.baselineSampleData )
+                                     + false
                                      + ","
-                                     + Objects.isNull( this.baselineMeta )
+                                     + true
                                      + "]" );
         }
 
-        if ( Objects.nonNull( this.baselineMeta ) && !this.baselineMeta.getPoolDescription().getIsBaselinePool() )
+        if ( Objects.nonNull( this.baselineMeta )
+             && !this.baselineMeta.getPoolDescription().getIsBaselinePool() )
         {
             throw new PoolException( "The baseline metadata has status of isBaselinePool=\"false\", which is not "
                                      + "allowed. The complete baseline metadata is: "

@@ -336,8 +336,7 @@ public class Climatology
         {
             LOGGER.warn( "When attempting to create a climatological dataset for {} feature(s), discovered that "
                          + "time-series data was missing for {} of these feature(s), as follows: {}",
-                         climatology.keySet()
-                                    .size(),
+                         climatology.size(),
                          invalid.size(),
                          invalid );
         }

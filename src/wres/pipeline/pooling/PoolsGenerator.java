@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.DeclarationException;
 import wres.config.components.CovariateDataset;
+import wres.config.components.CovariatePurpose;
 import wres.config.components.DataType;
 import wres.config.components.DatasetOrientation;
 import wres.config.components.Variable;
@@ -31,7 +33,6 @@ import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -619,9 +620,6 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                           .size(),
                       this.getPoolRequests() );
 
-        TimeScaleOuter desiredTimeScale = this.getProject()
-                                              .getDesiredTimeScale();
-
         // Create the common builder
         PoolSupplier.Builder<L, R, B> builder =
                 new PoolSupplier.Builder<L, R, B>()
@@ -650,7 +648,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                         .setBaselineMissingFilter( this.getBaselineMissingFilter() )
                         .setPairFrequency( this.getPairFrequency() )
                         .setBaselineShim( this.getBaselineShim() )
-                        .setDesiredTimeScale( desiredTimeScale );
+                        .setDesiredTimeScale( this.getProject()
+                                                  .getDesiredTimeScale() );
 
         // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
         // doing this for other sides of data in future, but left-ish data is the priority because this is very 
@@ -661,38 +660,26 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         try
         {
             // Climatological data required? If there are probability thresholds, yes.
+            // Break out the raw data supplier here. This will be re-used as the left-ish data source, where possible
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
+
+            // Climatological dataset needed
             if ( this.getProject()
                      .hasProbabilityThresholds() )
             {
-                Set<Feature> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
-                climatologySupplier = this.getRetrieverFactory()
-                                          .getClimatologyRetriever( leftFeatures );
+                ClimatologySupplier<L> supplier = this.getClimatologySupplier();
 
-                // Get the climatology at an appropriate scale and with any transformations required and add to the 
-                // builder, but retain the existing scale for the main supplier, as that may be re-used for left data, 
-                // and left data is rescaled with respect to right data
-                Supplier<Stream<TimeSeries<L>>> climatologyAtScale =
-                        this.getClimatologyAtDesiredTimeScale( climatologySupplier,
-                                                               this.getLeftUpscaler(),
-                                                               desiredTimeScale,
-                                                               this.getLeftTransformerPostRescaling(),
-                                                               this.getClimateAdmissibleValue() );
+                // Climatological dataset corresponds to the left-ish dataset, so re-use it for the left-ish data
+                if ( !supplier.climatologyFromCovariateDataset() )
+                {
+                    climatologySupplier = supplier.rawClimatology();
+                }
 
-                // Cache the upscaled climatology, even if the raw climatology is itself cached because the upscaling
-                // is potentially expensive and there is no need to repeat it on every call to the supplier.
-                climatologyAtScale = CachingRetriever.of( climatologyAtScale );
-
-                // Create the climatology abstraction from the left-ish data
-                Supplier<Climatology> climatology = this.createClimatology( climatologyAtScale,
-                                                                            this.getClimateMapper() );
-
-                // Create a caching supplier to re-use the result once the data has been pulled
-                Supplier<Climatology> cachedClimatology = CachingSupplier.of( climatology );
-                builder.setClimatology( cachedClimatology );
+                // Set the rescaled climatology
+                builder.setClimatology( supplier.climatologyAtScale() );
             }
             // No climatology, so populate the collection of per-pool left-ish retrievers
-            else
+            if ( Objects.isNull( climatologySupplier ) )
             {
                 leftRetrievers = this.getLeftRetrievers( this.getPoolRequests(),
                                                          this.getProject()
@@ -709,7 +696,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                 TimeWindowOuter nextWindow = nextPool.getMetadata()
                                                      .getTimeWindow();
 
-                Set<Feature> rightFeatures = this.getFeatures( nextPool.getMetadata(),
+                Set<FeatureTuple> features = nextPool.getMetadata()
+                                                     .getFeatureTuples();
+
+                Set<Feature> rightFeatures = this.getFeatures( features,
                                                                FeatureTuple::getRight );
 
                 Supplier<Stream<TimeSeries<R>>> rightSupplier = this.getRetrieverFactory()
@@ -743,7 +733,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                     // Data-source baseline
                     else
                     {
-                        Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadataForBaseline(),
+                        Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadataForBaseline()
+                                                                                  .getFeatureTuples(),
                                                                           FeatureTuple::getBaseline );
 
                         Supplier<Stream<TimeSeries<B>>> baselineSupplier = this.getRetrieverFactory()
@@ -756,7 +747,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
                 // Add the covariate datasets
                 Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariatesInner =
-                        this.getCovariateFilters( nextPool );
+                        this.getCovariateFilters( features, nextWindow );
                 builder.setCovariateFilters( covariatesInner );
 
                 returnMe.add( builder.build() );
@@ -839,6 +830,70 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
             return Collections.unmodifiableMap( returnMe );
         }
+    }
+
+    /**
+     * @return the supplier for climatological data
+     */
+
+    private ClimatologySupplier<L> getClimatologySupplier()
+    {
+        Set<Feature> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
+
+        // Is there a special source of climatology, defined as a covariate? If so, use that. Otherwise, use the
+        // left-ish data. There is, at most, one covariate that is a climatological dataset.
+        Optional<CovariateDataset> climatologyCovariate = this.getProject()
+                                                              .getDeclaration()
+                                                              .covariates()
+                                                              .stream()
+                                                              .filter( c -> c.purposes()
+                                                                             .contains( CovariatePurpose.CLIMATOLOGY ) )
+                                                              .findFirst();
+
+        Supplier<Stream<TimeSeries<L>>> climatologySupplier;
+        // If the climatology originates from a covariate dataset, then any filter should be part of the admissible
+        // value filter, which is composed at a higher level
+        if ( climatologyCovariate.isPresent() )
+        {
+            CovariateDataset climatologyCovariateConcrete = climatologyCovariate.get();
+            String variableName = climatologyCovariateConcrete.dataset()
+                                                              .variable()
+                                                              .name();
+            Set<Feature> covariateFeatures = this.getProject()
+                                                 .getCovariateFeatures( variableName );
+            climatologySupplier = this.getRetrieverFactory()
+                                      .getCovariateRetriever( covariateFeatures, variableName );
+
+        }
+        else
+        {
+            climatologySupplier = this.getRetrieverFactory()
+                                      .getLeftRetriever( leftFeatures );
+        }
+
+        // Get the climatology at an appropriate scale and with any transformations required and add to the
+        // builder, but retain the existing scale for the main supplier, as that may be re-used for left data,
+        // and left data is rescaled with respect to right data
+        Supplier<Stream<TimeSeries<L>>> climatologyAtScale =
+                this.getClimatologyAtDesiredTimeScale( climatologySupplier,
+                                                       this.getLeftUpscaler(),
+                                                       this.getProject()
+                                                           .getDesiredTimeScale(),
+                                                       this.getLeftTransformerPostRescaling(),
+                                                       this.getClimateAdmissibleValue() );
+
+        // Cache the upscaled climatology, even if the raw climatology is itself cached because the upscaling
+        // is potentially expensive and there is no need to repeat it on every call to the supplier.
+        climatologyAtScale = CachingRetriever.of( climatologyAtScale );
+
+        // Create the climatology abstraction from the climatology data
+        Supplier<Climatology> climatology = this.createClimatology( climatologyAtScale,
+                                                                    this.getClimateMapper() );
+
+        // Create a caching supplier to re-use the result once the data has been pulled
+        return new ClimatologySupplier<>( climatologySupplier,
+                                          CachingSupplier.of( climatology ),
+                                          climatologyCovariate.isPresent() );
     }
 
     /**
@@ -1118,20 +1173,19 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * @param metadata the metadata
+     * @param features the feature tuples
      * @param featureGetter the feature-getter
      * @return the features from the metadata using the prescribed feature-getter
      * @throws NullPointerException if the metadata is null
      */
 
-    private Set<Feature> getFeatures( PoolMetadata metadata,
+    private Set<Feature> getFeatures( Set<FeatureTuple> features,
                                       Function<FeatureTuple, Feature> featureGetter )
     {
-        Objects.requireNonNull( metadata );
+        Objects.requireNonNull( features );
         Objects.requireNonNull( featureGetter );
 
-        return metadata.getFeatureTuples()
-                       .stream()
+        return features.stream()
                        .map( featureGetter )
                        .collect( Collectors.toUnmodifiableSet() );
     }
@@ -1362,20 +1416,20 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * Generates the suppliers or covariate datasets.
-     * @param nextPool the pool request
+     * Generates the suppliers for covariate datasets.
+     * @param features the features
+     * @param timeWindow the time window
      * @return the covariate dataset suppliers
      */
 
-    private Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> getCovariateFilters( PoolRequest nextPool )
+    private Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> getCovariateFilters( Set<FeatureTuple> features,
+                                                                                    TimeWindowOuter timeWindow )
     {
         Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> innerCovariates = new HashMap<>();
-        TimeWindowOuter timeWindow = nextPool.getMetadata()
-                                             .getTimeWindow();
         for ( Covariate<L> covariate : this.getCovariateFilters() )
         {
-            Set<Feature> features = this.getCovariateFeatures( covariate.datasetDescription(),
-                                                               nextPool.getMetadata() );
+            Set<Feature> covariateFeatures = this.getCovariateFeatures( covariate.datasetDescription(),
+                                                                        features );
 
             Variable variable = covariate.datasetDescription()
                                          .dataset()
@@ -1383,7 +1437,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
             String variableName = variable.name();
             Supplier<Stream<TimeSeries<L>>> supplier = this.getRetrieverFactory()
-                                                           .getCovariateRetriever( features, variableName, timeWindow );
+                                                           .getCovariateRetriever( covariateFeatures,
+                                                                                   variableName,
+                                                                                   timeWindow );
+
             innerCovariates.put( covariate, supplier );
         }
 
@@ -1393,37 +1450,37 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /**
      * Generates the features for the prescribed covariate dataset and pool.
      * @param dataset the dataset
-     * @param metadata the pool metadata
+     * @param features the features
      * @return the covariate features
      */
     private Set<Feature> getCovariateFeatures( CovariateDataset dataset,
-                                               PoolMetadata metadata )
+                                               Set<FeatureTuple> features )
     {
         // Find the covariate features whose names match the declared names for the covariate feature orientation.
         // It is important to perform this matching as the covariate datasets may have different metadata from
         // ingested sources for the same feature name
 
         // First, find the features whose orientation matches the covariate feature orientation. These features have the
-        // same names as covariate features, but not necessarily the same metadata otherwise
+        // same names as covariate features, but not necessarily the same metadata
         Set<Feature> nonCovariateFeaturesWithCovariateOrientation;
         switch ( dataset.featureNameOrientation() )
         {
             case LEFT ->
-                    nonCovariateFeaturesWithCovariateOrientation = this.getFeatures( metadata, FeatureTuple::getLeft );
+                    nonCovariateFeaturesWithCovariateOrientation = this.getFeatures( features, FeatureTuple::getLeft );
             case RIGHT ->
-                    nonCovariateFeaturesWithCovariateOrientation = this.getFeatures( metadata, FeatureTuple::getRight );
+                    nonCovariateFeaturesWithCovariateOrientation = this.getFeatures( features, FeatureTuple::getRight );
             case BASELINE -> nonCovariateFeaturesWithCovariateOrientation =
-                    this.getFeatures( metadata, FeatureTuple::getBaseline );
+                    this.getFeatures( features, FeatureTuple::getBaseline );
             default -> throw new IllegalArgumentException( "Encountered an unexpected feature orientation for a "
                                                            + "covariate dataset: " + dataset.featureNameOrientation() );
         }
 
         // Next, filter the feature names associated with the covariate dataset that have a corresponding feature name
         // as one of the non-covariate datasets whose features compose this pool
-        Predicate<Feature> contained = feature -> nonCovariateFeaturesWithCovariateOrientation.stream()
-                                                                                              .anyMatch( f -> Objects.equals(
-                                                                                                      f.getName(),
-                                                                                                      feature.getName() ) );
+        Predicate<Feature> contained = feature ->
+                nonCovariateFeaturesWithCovariateOrientation.stream()
+                                                            .anyMatch( f -> Objects.equals( f.getName(),
+                                                                                            feature.getName() ) );
 
         return this.getProject()
                    .getCovariateFeatures( dataset.dataset()
@@ -1432,6 +1489,20 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                    .stream()
                    .filter( contained )
                    .collect( Collectors.toUnmodifiableSet() );
+    }
+
+    /**
+     * Small value-class for storing climatology abstractions for re-use.
+     * @param rawClimatology the raw climatology
+     * @param climatologyAtScale the rescaled climatology
+     * @param climatologyFromCovariateDataset is true if the climatology is declared explicitly as a covariate dataset
+     * @param <L> the type of climatological event values
+     */
+
+    private record ClimatologySupplier<L>( Supplier<Stream<TimeSeries<L>>> rawClimatology,
+                                           Supplier<Climatology> climatologyAtScale,
+                                           boolean climatologyFromCovariateDataset )
+    {
     }
 
     /**

@@ -454,6 +454,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> covariateVariables
                 = DeclarationValidator.covariateVariableNamesAreUnique( declaration );
         events.addAll( covariateVariables );
+
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -565,6 +566,10 @@ public class DeclarationValidator
         // Covariate filters must be logical
         List<EvaluationStatusEvent> covariateFilters = DeclarationValidator.covariateFiltersAreValid( declaration );
         events.addAll( covariateFilters );
+        // Covariate purposes are valid
+        List<EvaluationStatusEvent> covariatePurposes
+                = DeclarationValidator.covariatePurposesAreValid( declaration );
+        events.addAll( covariatePurposes );
         // When obtaining data from web services, dates must be defined
         List<EvaluationStatusEvent> services = DeclarationValidator.declarationValidForWebServices( declaration );
         events.addAll( services );
@@ -1220,6 +1225,46 @@ public class DeclarationValidator
                                                              + "were: "
                                                              + duplicates
                                                              + "." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that all covariates purposes are valid.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> covariatePurposesAreValid( EvaluationDeclaration declaration )
+    {
+        if ( declaration.covariates()
+                        .isEmpty() )
+        {
+            LOGGER.debug( "Not checking covariate filters because no covariates were declared." );
+
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Only one covariate whose purpose is to define the climatological data
+        long count = declaration.covariates()
+                                .stream()
+                                .filter( c -> c.purposes()
+                                               .contains( CovariatePurpose.CLIMATOLOGY ) )
+                                .count();
+
+        if ( count > 1 )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered multiple 'covariates' with a 'purpose' of "
+                                                             + "'climatology', which is not allowed. Please remove the "
+                                                             + ( "'purpose' of 'climatology' from all but one of the "
+                                                                 + "'covariates' and try again." ) )
                                            .build();
             events.add( event );
         }

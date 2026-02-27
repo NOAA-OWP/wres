@@ -140,7 +140,7 @@ public class PoolSlicer
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
-     * Does not modify the metadata associated with the input. Additionally transforms the metadata to reflect the 
+     * Does not modify the metadata associated with the input. Additionally, transforms the metadata to reflect the
      * filtering of the pool.
      *
      * @param <T> the type of data

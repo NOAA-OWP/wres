@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.components.AnalysisTimes;
 import wres.config.components.BaselineDataset;
 import wres.config.components.BaselineDatasetBuilder;
+import wres.config.components.CovariateDataset;
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetBuilder;
@@ -1123,6 +1124,22 @@ public class DeclarationUtilities
     }
 
     /**
+     * Returns a covariate filter.
+     * @param covariate the covariate
+     * @return the predicate that filters values according to the covariate
+     */
+
+    public static Predicate<Double> getCovariateFilter( CovariateDataset covariate )
+    {
+        Objects.requireNonNull( covariate );
+
+        return d -> ( Objects.isNull( covariate.minimum() )
+                      || d >= covariate.minimum() )
+                    && ( Objects.isNull( covariate.maximum() )
+                         || d <= covariate.maximum() );
+    }
+
+    /**
      * @param builder the builder
      * @return whether a baseline dataset has been declared
      * @throws NullPointerException if the input is null
@@ -1888,7 +1905,7 @@ public class DeclarationUtilities
                     last.threshold()
                         .toBuilder()
                         .setPredictedThresholdProbability( current.threshold()
-                                                              .getObservedThresholdProbability() )
+                                                                  .getObservedThresholdProbability() )
                         .setName( mergedName )
                         .build();
             return ThresholdBuilder.builder( last )
@@ -1901,7 +1918,7 @@ public class DeclarationUtilities
                     last.threshold()
                         .toBuilder()
                         .setPredictedThresholdValue( current.threshold()
-                                                        .getObservedThresholdValue() )
+                                                            .getObservedThresholdValue() )
                         .setName( mergedName )
                         .build();
             return ThresholdBuilder.builder( last )

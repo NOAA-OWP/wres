@@ -49,7 +49,6 @@ import wres.config.components.GeneratedBaseline;
 import wres.config.components.GeneratedBaselines;
 import wres.config.components.Offset;
 import wres.config.components.Season;
-import wres.config.components.Source;
 import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -226,8 +225,6 @@ public class PoolFactory
 
         Project innerProject = this.getProject();
 
-        boolean hasEqualBaselineAndClimatology = this.hasEqualBaselineAndClimatology();
-
         for ( Map.Entry<FeatureGroup, OptimizedPoolRequests> nextEntry : optimizedGroups.entrySet() )
         {
             FeatureGroup featureGroup = nextEntry.getKey();
@@ -238,8 +235,7 @@ public class PoolFactory
                           featureGroup,
                           nextPoolRequests.size() );
 
-            // Create a retriever factory that caches the climatological and generated baseline data for all pool 
-            // requests associated with the feature group (as required)
+            // Create a retriever factory that caches re-usable datasets for a given feature group
             RetrieverFactory<Double, Double, Double> cachingFactory = retrieverFactory;
             if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
             {
@@ -248,8 +244,7 @@ public class PoolFactory
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
-                                                                innerProject.hasGeneratedBaseline(),
-                                                                hasEqualBaselineAndClimatology,
+                                                                innerProject,
                                                                 Function.identity() );
             }
 
@@ -318,8 +313,7 @@ public class PoolFactory
                           featureGroup,
                           nextPoolRequests.size() );
 
-            // Create a retriever factory that caches the climatological and generated baseline data for all pool 
-            // requests associated with the feature group (as required)
+            // Create a retriever factory that caches re-usable datasets for a given feature group
             RetrieverFactory<Double, Ensemble, Ensemble> cachingFactory = retrieverFactory;
             if ( innerProject.hasProbabilityThresholds()
                  || innerProject.hasGeneratedBaseline() )
@@ -329,8 +323,7 @@ public class PoolFactory
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
-                                                                innerProject.hasGeneratedBaseline(),
-                                                                false,
+                                                                innerProject,
                                                                 null );
             }
 
@@ -398,18 +391,17 @@ public class PoolFactory
                           featureGroup,
                           nextPoolRequests.size() );
 
-            // Create a retriever factory that caches the climatological and generated baseline data for all pool
-            // requests associated with the feature group (as required)
+            // Create a retriever factory that caches re-usable datasets for a given feature group
             RetrieverFactory<Double, Ensemble, Double> cachingFactory = retrieverFactory;
-            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
+            if ( innerProject.hasProbabilityThresholds()
+                 || innerProject.hasGeneratedBaseline() )
             {
                 LOGGER.debug( BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND
                               + GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP,
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
-                                                                innerProject.hasGeneratedBaseline(),
-                                                                false,
+                                                                innerProject,
                                                                 null );
             }
 
@@ -740,6 +732,9 @@ public class PoolFactory
 
         Duration pairFrequency = this.getPairFrequency( declaration );
 
+        // Get the climatology filter
+        Predicate<Double> climateAdmissibleValue = this.getClimatologyFilter( declaration );
+
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> rawSuppliers =
                 new PoolsGenerator.Builder<Double, Double, Double>()
@@ -770,7 +765,7 @@ public class PoolFactory
                         .setPairFrequency( pairFrequency )
                         .setCrossPairer( crossPairer )
                         .setClimateMapper( Double::doubleValue )
-                        .setClimateAdmissibleValue( Double::isFinite )
+                        .setClimateAdmissibleValue( climateAdmissibleValue )
                         .setBaselineShim( Function.identity() )
                         .build()
                         .get();
@@ -936,6 +931,9 @@ public class PoolFactory
 
         Duration pairFrequency = this.getPairFrequency( declaration );
 
+        // Get the climatology filter
+        Predicate<Double> climateAdmissibleValue = this.getClimatologyFilter( declaration );
+
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
                 new PoolsGenerator.Builder<Double, Ensemble, Ensemble>()
@@ -965,7 +963,7 @@ public class PoolFactory
                         .setPairFrequency( pairFrequency )
                         .setCrossPairer( crossPairer )
                         .setClimateMapper( Double::doubleValue )
-                        .setClimateAdmissibleValue( Double::isFinite )
+                        .setClimateAdmissibleValue( climateAdmissibleValue )
                         .setBaselineShim( Function.identity() )
                         .build()
                         .get();
@@ -1101,6 +1099,9 @@ public class PoolFactory
 
         Duration pairFrequency = this.getPairFrequency( declaration );
 
+        // Get the climatology filter
+        Predicate<Double> climateAdmissibleValue = this.getClimatologyFilter( declaration );
+
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<Feature>, BaselineGenerator<Ensemble>> baselineGenerator;
 
@@ -1152,7 +1153,7 @@ public class PoolFactory
                         .setPairFrequency( pairFrequency )
                         .setCrossPairer( crossPairer )
                         .setClimateMapper( Double::doubleValue )
-                        .setClimateAdmissibleValue( Double::isFinite )
+                        .setClimateAdmissibleValue( climateAdmissibleValue )
                         .setBaselineGenerator( baselineGenerator )
                         .build()
                         .get();
@@ -2595,10 +2596,7 @@ public class PoolFactory
             }
 
             // Create a filter
-            Predicate<Double> filter = d -> ( Objects.isNull( nextFilter.minimum() )
-                                              || d >= nextFilter.minimum() )
-                                            && ( Objects.isNull( nextFilter.maximum() )
-                                                 || d <= nextFilter.maximum() );
+            Predicate<Double> filter = DeclarationUtilities.getCovariateFilter( nextFilter );
             Covariate<Double> covariate = new Covariate<>( nextFilter, filter, covariateTimeScale, upscaler );
             covariates.add( covariate );
         }
@@ -2696,37 +2694,26 @@ public class PoolFactory
     }
 
     /**
-     * @return whether the climatological and baseline data sources are equal and can be de-duplicated on retrieval
+     * Creates a climatology filter from the declaration.
+     * @param declaration the declaration
+     * @return the filter
      */
 
-    private boolean hasEqualBaselineAndClimatology()
+    private Predicate<Double> getClimatologyFilter( EvaluationDeclaration declaration )
     {
-        Project localProject = this.getProject();
-        if ( !localProject.hasGeneratedBaseline() )
+        // Basic filter
+        Predicate<Double> filter = Double::isFinite;
+
+        // If the climatology is sourced from a covariate dataset, compose any filters connected to that
+        for ( CovariateDataset c : declaration.covariates() )
         {
-            return false;
+            if ( c.purposes().contains( CovariatePurpose.CLIMATOLOGY ) )
+            {
+                filter = filter.and( DeclarationUtilities.getCovariateFilter( c ) );
+            }
         }
 
-        if ( !Objects.equals( localProject.getLeftVariable(),
-                              localProject.getBaselineVariable() ) )
-        {
-            return false;
-        }
-
-        // Are the declared data sources equal?
-        // A common assumption throughout WRES is that sources can be de-duplicated on the basis of declaration and that
-        // any runtime differences, based on when reading/ingest calls an external source for a snapshot, should be 
-        // ignored - in other words, the first snapshot wins, because this allows for de-duplication
-        Dataset left = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
-                                                                DatasetOrientation.LEFT );
-        List<Source> baselineSources = null;
-        if ( this.project.hasBaseline() )
-        {
-            baselineSources = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
-                                                                       DatasetOrientation.BASELINE )
-                                                  .sources();
-        }
-        return Objects.equals( left.sources(), baselineSources );
+        return filter;
     }
 
     /**

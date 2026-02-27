@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import wres.config.DeclarationUtilities;
+import wres.config.components.CovariateDataset;
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetOrientation;
@@ -198,13 +199,6 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
                                                                                data ) );
     }
 
-    @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
-    {
-        // No distinction between climatology and left for now
-        return this.getLeftRetriever( features );
-    }
-
     /**
      * Throws {@link UnsupportedOperationException} always.
      * @param features the spatial features
@@ -218,7 +212,8 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( variableName );
 
-        Dataset data = this.project.getCovariateDataset( variableName );
+        CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
+        Dataset data = covariateData.dataset();
         Variable variable = data.variable();
 
         Function<String, Stream<TimeSeries<Double>>> variableSupplier = name ->
@@ -260,7 +255,8 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
                 RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
                                                                             this.project.getDesiredTimeScale() );
 
-        Dataset data = this.project.getCovariateDataset( variableName );
+        CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
+        Dataset data = covariateData.dataset();
         Variable variable = data.variable();
 
         Function<String, Stream<TimeSeries<Double>>> variableSupplier = name ->

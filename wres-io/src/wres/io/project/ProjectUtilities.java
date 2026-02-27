@@ -1006,18 +1006,20 @@ class ProjectUtilities
      * @throws IllegalArgumentException if the covariate dataset does not exist
      * @throws NullPointerException if any input is null
      */
-    static Dataset getCovariateDatset( EvaluationDeclaration declaration, String variableName )
+    static CovariateDataset getCovariateDataset( EvaluationDeclaration declaration, String variableName )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( variableName );
 
         return declaration.covariates()
                           .stream()
-                          .map( CovariateDataset::dataset )
-                          .filter( c -> Objects.nonNull( c.variable() )
-                                        && Objects.nonNull( c.variable()
+                          .filter( c -> Objects.nonNull( c.dataset()
+                                                          .variable() )
+                                        && Objects.nonNull( c.dataset()
+                                                             .variable()
                                                              .name() )
-                                        && c.variable()
+                                        && c.dataset()
+                                            .variable()
                                             .name()
                                             .equals( variableName ) )
                           .findFirst()
