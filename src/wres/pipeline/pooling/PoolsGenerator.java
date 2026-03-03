@@ -85,6 +85,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /** A function to upscale baseline data. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
 
+    /** A function to upscale the climatological data. */
+    private final TimeSeriesUpscaler<L> climatologyUpscaler;
+
     /** The covariates with a filtering role. */
     private final Set<Covariate<L>> covariateFilters;
 
@@ -111,6 +114,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
     /** A transformer of baseline-ish values post-rescaling. */
     private final UnaryOperator<TimeSeries<R>> baselineTransformerPostRescaling;
+
+    /** A transformer of climatological values post-rescaling. */
+    private final UnaryOperator<TimeSeries<L>> climatologyTransformerPostRescaling;
 
     /** A function that filters left-ish time-series. */
     private final Predicate<TimeSeries<L>> leftFilter;
@@ -194,26 +200,32 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         /** A function to upscale baseline data. */
         private TimeSeriesUpscaler<R> baselineUpscaler;
 
+        /** A function to upscale climatological data. */
+        private TimeSeriesUpscaler<L> climatologyUpscaler;
+
         /** The covariates with a filtering role. */
         private final Set<Covariate<L>> covariateFilters = new HashSet<>();
 
-        /** A transformer that applies value constraints to left-ish values before rescaling. */
+        /** A transformer that applies to left-ish values before rescaling. */
         private UnaryOperator<TimeSeries<L>> leftTransformerPreRescaling = in -> in;
 
-        /** A transformer that applies value constraints to right-ish values before rescaling. */
+        /** A transformer that applies to right-ish values before rescaling. */
         private UnaryOperator<TimeSeries<R>> rightTransformerPreRescaling = in -> in;
 
-        /** A transformer that applies value constraints to baseline-ish values before rescaling. */
+        /** A transformer that applies to baseline-ish values before rescaling. */
         private UnaryOperator<TimeSeries<R>> baselineTransformerPreRescaling = in -> in;
 
-        /** A transformer that applies value constraints to left-ish values after rescaling. */
+        /** A transformer that applies to left-ish values after rescaling. */
         private UnaryOperator<TimeSeries<L>> leftTransformerPostRescaling = in -> in;
 
-        /** A transformer that applies value constraints to right-ish values after rescaling. */
+        /** A transformer that applies to right-ish values after rescaling. */
         private UnaryOperator<TimeSeries<R>> rightTransformerPostRescaling = in -> in;
 
-        /** A transformer that applies value constraints to baseline-ish values after rescaling. */
+        /** A transformer that applies to baseline-ish values after rescaling. */
         private UnaryOperator<TimeSeries<R>> baselineTransformerPostRescaling = in -> in;
+
+        /** A transformer that applies to climatological values after rescaling. */
+        private UnaryOperator<TimeSeries<L>> climatologyTransformerPostRescaling = in -> in;
 
         /** A function that filters left-ish time-series. */
         private Predicate<TimeSeries<L>> leftFilter = in -> true;
@@ -349,6 +361,17 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         }
 
         /**
+         * @param climatologyUpscaler the upscaler for climatological values
+         * @return the builder
+         */
+        Builder<L, R, B> setClimatologyUpscaler( TimeSeriesUpscaler<L> climatologyUpscaler )
+        {
+            this.climatologyUpscaler = climatologyUpscaler;
+
+            return this;
+        }
+
+        /**
          * @param covariateFilters the covariates with a filtering role
          * @return the builder
          */
@@ -435,6 +458,18 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         Builder<L, R, B> setBaselineTransformerPostRescaling( UnaryOperator<TimeSeries<R>> baselineTransformerPostRescaling )
         {
             this.baselineTransformerPostRescaling = baselineTransformerPostRescaling;
+
+            return this;
+        }
+
+        /**
+         * @param climatologyTransformerPostRescaling the climatology transformer, which may consider the encapsulating
+         *                                            event
+         * @return the builder
+         */
+        Builder<L, R, B> setClimatologyTransformerPostRescaling( UnaryOperator<TimeSeries<L>> climatologyTransformerPostRescaling )
+        {
+            this.climatologyTransformerPostRescaling = climatologyTransformerPostRescaling;
 
             return this;
         }
@@ -795,7 +830,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                             .collect( Collectors.toSet() );
 
         // Observations or simulations? Then de-duplicate if possible.
-        if ( type == DataType.OBSERVATIONS || type == DataType.SIMULATIONS )
+        if ( type == DataType.OBSERVATIONS
+             || type == DataType.SIMULATIONS )
         {
             // Find the union of the time windows, bearing in mind that lead durations can influence the valid 
             // datetimes for observation selection
@@ -851,8 +887,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                                               .findFirst();
 
         Supplier<Stream<TimeSeries<L>>> climatologySupplier;
-        // If the climatology originates from a covariate dataset, then any filter should be part of the admissible
-        // value filter, which is composed at a higher level
+        DatasetOrientation climatologicalFeatureAuthority;
+
+        // Does the climatology originate from a covariate dataset?
         if ( climatologyCovariate.isPresent() )
         {
             CovariateDataset climatologyCovariateConcrete = climatologyCovariate.get();
@@ -861,14 +898,17 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                                               .name();
             Set<Feature> covariateFeatures = this.getProject()
                                                  .getCovariateFeatures( variableName );
+
             climatologySupplier = this.getRetrieverFactory()
                                       .getCovariateRetriever( covariateFeatures, variableName );
-
+            climatologicalFeatureAuthority = climatologyCovariateConcrete.featureNameOrientation();
         }
+        // No, then it's a left-ish dataset
         else
         {
             climatologySupplier = this.getRetrieverFactory()
                                       .getLeftRetriever( leftFeatures );
+            climatologicalFeatureAuthority = DatasetOrientation.LEFT;
         }
 
         // Get the climatology at an appropriate scale and with any transformations required and add to the
@@ -876,10 +916,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         // and left data is rescaled with respect to right data
         Supplier<Stream<TimeSeries<L>>> climatologyAtScale =
                 this.getClimatologyAtDesiredTimeScale( climatologySupplier,
-                                                       this.getLeftUpscaler(),
+                                                       this.getClimatologyUpscaler(),
                                                        this.getProject()
                                                            .getDesiredTimeScale(),
-                                                       this.getLeftTransformerPostRescaling(),
+                                                       this.getClimatologyTransformerPostRescaling(),
                                                        this.getClimateAdmissibleValue() );
 
         // Cache the upscaled climatology, even if the raw climatology is itself cached because the upscaling
@@ -888,7 +928,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
         // Create the climatology abstraction from the climatology data
         Supplier<Climatology> climatology = this.createClimatology( climatologyAtScale,
-                                                                    this.getClimateMapper() );
+                                                                    this.getClimateMapper(),
+                                                                    climatologicalFeatureAuthority );
 
         // Create a caching supplier to re-use the result once the data has been pulled
         return new ClimatologySupplier<>( climatologySupplier,
@@ -927,6 +968,17 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private TimeSeriesUpscaler<R> getBaselineUpscaler()
     {
         return this.baselineUpscaler;
+    }
+
+    /**
+     * Returns the upscaler for climatological data.
+     *
+     * @return the upscaler for climatological data
+     */
+
+    private TimeSeriesUpscaler<L> getClimatologyUpscaler()
+    {
+        return this.climatologyUpscaler;
     }
 
     /**
@@ -1025,6 +1077,15 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private UnaryOperator<TimeSeries<R>> getBaselineTransformerPostRescaling()
     {
         return this.baselineTransformerPostRescaling;
+    }
+
+    /**
+     * @return the transformer for climatological time-series
+     */
+
+    private UnaryOperator<TimeSeries<L>> getClimatologyTransformerPostRescaling()
+    {
+        return this.climatologyTransformerPostRescaling;
     }
 
     /**
@@ -1227,7 +1288,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                       UnaryOperator<TimeSeries<L>> transformer,
                                       Predicate<L> admissibleValue )
     {
-        // Defer rescaling until retrieval time
+        // Defer rescaling
         return () -> {
             List<TimeSeries<L>> climData = climatologySupplier.get()
                                                               .toList();
@@ -1372,12 +1433,14 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      *
      * @param climatology the time-series supplier for the climatological data
      * @param climatologyMapper the mapper to transform the climatology from left-ish data to double values
+     * @param featureAuthorityDataset the orientation of the main dataset used for the climatological feature names
      * @return the climatological data or null if no climatology is defined
      * @throws NullPointerException if the climatology is not null and the climateMapper is null
      */
 
     private Supplier<Climatology> createClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
-                                                     ToDoubleFunction<L> climatologyMapper )
+                                                     ToDoubleFunction<L> climatologyMapper,
+                                                     DatasetOrientation featureAuthorityDataset )
     {
         return () -> {
             // Null if no climatology
@@ -1401,7 +1464,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                               climData.size() );
             }
 
-            return Climatology.of( climData );
+            return new Climatology.Builder().addTimeSeries( climData )
+                                            .setFeatureAuthorityOrientation( featureAuthorityDataset )
+                                            .build();
         };
     }
 
@@ -1524,6 +1589,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
         this.baselineUpscaler = builder.baselineUpscaler;
+        this.climatologyUpscaler = builder.climatologyUpscaler;
         this.covariateFilters = Set.copyOf( builder.covariateFilters );
         this.climateAdmissibleValue = builder.climateAdmissibleValue;
         this.leftTransformerPreRescaling = builder.leftTransformerPreRescaling;
@@ -1532,6 +1598,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         this.leftTransformerPostRescaling = builder.leftTransformerPostRescaling;
         this.rightTransformerPostRescaling = builder.rightTransformerPostRescaling;
         this.baselineTransformerPostRescaling = builder.baselineTransformerPostRescaling;
+        this.climatologyTransformerPostRescaling = builder.climatologyTransformerPostRescaling;
         this.leftFilter = builder.leftFilter;
         this.rightFilter = builder.rightFilter;
         this.baselineFilter = builder.baselineFilter;
@@ -1556,6 +1623,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
         Objects.requireNonNull( this.baselineUpscaler, messageStart + "the upscaler for baseline values is "
                                                        + "missing." );
+        Objects.requireNonNull( this.climatologyUpscaler, messageStart + "the upscaler for climatological "
+                                                          + "values is missing." );
         Objects.requireNonNull( this.leftTransformerPreRescaling,
                                 messageStart + "add a pre-rescaling transformer for the left data." );
         Objects.requireNonNull( this.rightTransformerPreRescaling,

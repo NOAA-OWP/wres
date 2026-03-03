@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 
+import wres.config.components.DatasetOrientation;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -25,7 +26,11 @@ import wres.datamodel.time.TimeSeries;
 /**
  * Abstraction of a climatological dataset for one or more geographic features. The climatological data is sorted on 
  * construction in order of increasing size. Missing data is tolerated, including zero time-series events for one or
- * more features.
+ * more features. Features must use the feature authority of one of the main evaluation datasets and hence the feature
+ * authority is designated by {@link DatasetOrientation}. The default orientation is {@link DatasetOrientation#LEFT}.
+ * In other words, if the climatological dataset originates from a source with a unique feature authority, it must be
+ * cross-walked to one of the main datasets first. This allows for simpler treatment where the climatological data is
+ * used alongside the other evaluation datasets.
  *
  * @author James Brown
  */
@@ -41,6 +46,9 @@ public class Climatology
 
     /** The measurement unit. */
     private final String measurementUnit;
+
+    /** The orientation of the dataset whose feature authority corresponds to the climatological features. */
+    private final DatasetOrientation featureAuthorityOrientation;
 
     /**
      * Returns an instance.
@@ -93,6 +101,15 @@ public class Climatology
     public Set<Feature> getFeatures()
     {
         return Collections.unmodifiableSet( this.climateData.keySet() );
+    }
+
+    /**
+     * @return the orientation of the feature authority used to qualify the features associated with the climatology
+     */
+
+    public DatasetOrientation getFeatureAuthorityOrientation()
+    {
+        return this.featureAuthorityOrientation;
     }
 
     /**
@@ -183,6 +200,9 @@ public class Climatology
         /** The measurement unit. */
         private String measurementUnit;
 
+        /** The dataset orientation. */
+        private DatasetOrientation featureAuthorityOrientation;
+
         /**
          * Adds a list of time-series to the climatology.
          *
@@ -249,6 +269,18 @@ public class Climatology
         }
 
         /**
+         * Sets the orientation of the feature authority.
+         * @param featureAuthorityOrientation the orientation of the feature authority
+         * @return the builder
+         */
+
+        public Builder setFeatureAuthorityOrientation( DatasetOrientation featureAuthorityOrientation )
+        {
+            this.featureAuthorityOrientation = featureAuthorityOrientation;
+            return this;
+        }
+
+        /**
          * Builds an instance
          *
          * @return a climatology
@@ -306,6 +338,12 @@ public class Climatology
 
         this.climateData = Collections.unmodifiableMap( climatologyInner );
         this.measurementUnit = builder.measurementUnit;
+        DatasetOrientation innerOrientation = builder.featureAuthorityOrientation;
+        if ( Objects.isNull( innerOrientation ) )
+        {
+            innerOrientation = DatasetOrientation.LEFT;
+        }
+        this.featureAuthorityOrientation = innerOrientation;
 
         // Validate
         this.validate( this.climateData, this.measurementUnit );

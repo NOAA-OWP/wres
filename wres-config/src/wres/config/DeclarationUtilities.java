@@ -219,6 +219,36 @@ public class DeclarationUtilities
     }
 
     /**
+     * Returns a mapper from a geometry tuple to a geometry based on dataset orientation.
+     *
+     * @param orientation the dataset orientation
+     * @return the geometry mapper
+     * @throws IllegalArgumentException if the dataset orientation is unsupported
+     */
+
+    public static Function<GeometryTuple, Geometry> getGeometryOrientationMapper( DatasetOrientation orientation )
+    {
+        return g -> {
+            switch ( orientation )
+            {
+                case LEFT ->
+                {
+                    return g.getLeft();
+                }
+                case RIGHT ->
+                {
+                    return g.getRight();
+                }
+                case BASELINE ->
+                {
+                    return g.getBaseline();
+                }
+                default -> throw new IllegalArgumentException( "Unexpected dataset orientation. " );
+            }
+        };
+    }
+
+    /**
      * Returns the thresholds from all declared contexts, except from external sources.
      * @param declaration the declaration
      * @return the features from all contexts

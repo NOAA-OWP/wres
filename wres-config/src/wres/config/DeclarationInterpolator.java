@@ -163,6 +163,7 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateFeatureAuthorities( adjustedBuilder );
         // Interpolate geospatial features when required, but without using a feature service
         DeclarationInterpolator.interpolateFeaturesWithoutFeatureService( adjustedBuilder );
+
         // Interpolate the covariate feature name orientations
         List<EvaluationStatusEvent> events =
                 new ArrayList<>( DeclarationInterpolator.interpolateCovariateFeatureOrientations( adjustedBuilder ) );
@@ -171,6 +172,7 @@ public class DeclarationInterpolator
         // ingest, but some reading/ingest (e.g., from web services that support several data types) requires the type
         // to be declared or interpolated upfront
         events.addAll( DeclarationInterpolator.interpolateDataTypesPreIngest( adjustedBuilder ) );
+
         DeclarationInterpolator.interpolateCovariatePurpose( adjustedBuilder );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedBuilder );
@@ -299,14 +301,9 @@ public class DeclarationInterpolator
         }
 
         // Find sparse singletons
-        Set<GeometryTuple> sparseFeatures = new HashSet<>();
-        if ( Objects.nonNull( evaluation.features() ) )
-        {
-            Set<GeometryTuple> sparseSingletons = features.stream()
-                                                          .filter( filter )
-                                                          .collect( Collectors.toSet() );
-            sparseFeatures.addAll( sparseSingletons );
-        }
+        Set<GeometryTuple> sparseFeatures = features.stream()
+                                                    .filter( filter )
+                                                    .collect( Collectors.toCollection( HashSet::new ) );
 
         // Find sparse grouped features
         if ( Objects.nonNull( evaluation.featureGroups() ) )
@@ -500,17 +497,17 @@ public class DeclarationInterpolator
 
                 if ( DeclarationInterpolator.isSpecialCaseForDataTypeInterpolation( covariate ) )
                 {
+                    SourceInterface sourceInterface = datasetBuilder.sources()
+                                                                    .stream()
+                                                                    .findFirst()
+                                                                    .orElse( SourceBuilder.builder()
+                                                                                          .build() )
+                                                                    .sourceInterface();
                     List<EvaluationStatusEvent> interpolationEvents =
                             DeclarationInterpolator.interpolateDataTypeForSpecialCase( builder,
                                                                                        datasetBuilder,
                                                                                        DatasetOrientation.COVARIATE,
-                                                                                       datasetBuilder.sources()
-                                                                                                     .stream()
-                                                                                                     .findFirst()
-                                                                                                     .orElse(
-                                                                                                             SourceBuilder.builder()
-                                                                                                                          .build() )
-                                                                                                     .sourceInterface() );
+                                                                                       sourceInterface );
                     events.addAll( interpolationEvents );
                 }
 
@@ -2137,23 +2134,23 @@ public class DeclarationInterpolator
                                                                   .featureAuthority();
             DatasetOrientation orientation;
 
+            String extra = "";
+
+            if ( Objects.nonNull( covariateDataset.dataset()
+                                                  .variable() )
+                 && Objects.nonNull( covariateDataset.dataset()
+                                                     .variable()
+                                                     .name() ) )
+            {
+                extra = "for variable '" + covariateDataset.dataset()
+                                                           .variable()
+                                                           .name() + "' ";
+            }
+
             // Default to LEFT and warn
             if ( Objects.isNull( covariateAuthority ) )
             {
                 orientation = DatasetOrientation.LEFT;
-
-                String extra = "";
-
-                if ( Objects.nonNull( covariateDataset.dataset()
-                                                      .variable() )
-                     && Objects.nonNull( covariateDataset.dataset()
-                                                         .variable()
-                                                         .name() ) )
-                {
-                    extra = "for variable '" + covariateDataset.dataset()
-                                                               .variable()
-                                                               .name() + "' ";
-                }
 
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -2180,6 +2177,22 @@ public class DeclarationInterpolator
             {
                 orientation = DeclarationInterpolator.getCovariateFeatureOrientation( builder.build(),
                                                                                       covariateDataset );
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( "Discovered a covariate dataset "
+                                                                 + extra
+                                                                 + " with an explicit 'feature_authority' of '"
+                                                                 + covariateDataset.dataset()
+                                                                                   .featureAuthority()
+                                                                 + "'. This was compared to the 'feature_authority' of "
+                                                                 + "the other datasets and found to match the "
+                                                                 + "authority of the '" + orientation + "' dataset. "
+                                                                 + "It is assumed that the features associated with "
+                                                                 + "the covariate dataset match those associated with "
+                                                                 + "the '" + orientation + "' dataset." )
+                                               .build();
+                events.add( event );
             }
 
             LOGGER.debug( "Interpolated a dataset orientation of {} for the covariate dataset {}.",

@@ -1650,16 +1650,14 @@ public class DeclarationValidator
         {
             String extra = "";
 
-            if ( Objects.nonNull( dataset.dataset() )
-                 && Objects.nonNull( dataset.dataset()
-                                            .variable() )
-                 && Objects.nonNull( dataset.dataset()
-                                            .variable()
-                                            .name() ) )
+            Dataset innerDataset = dataset.dataset();
+            if ( Objects.nonNull( innerDataset )
+                 && Objects.nonNull( innerDataset.variable() )
+                 && Objects.nonNull( innerDataset.variable()
+                                                 .name() ) )
             {
-                extra = "for variable '" + dataset.dataset()
-                                                  .variable()
-                                                  .name() + "' ";
+                extra = "for variable '" + innerDataset.variable()
+                                                       .name() + "' ";
             }
 
             EvaluationStatusEvent event
@@ -4460,14 +4458,15 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "Discovered one or more covariates whose feature "
                                                              + "authorities were declared explicitly, but did not "
-                                                             + "match a feature authority associated with any other "
-                                                             + "dataset ('observed', 'predicted' or, where applicable, "
-                                                             + "'baseline'). Each 'covariate' dataset must have the "
-                                                             + "same feature authority as one of these other datasets. "
-                                                             + "Please fix the declaration or use a 'covariate' "
-                                                             + "dataset that has the same feature authority as an "
-                                                             + "existing dataset. The unrecognized feature authorities "
-                                                             + "associated with 'covariate' datasets were: "
+                                                             + "match a feature authority associated with one of the "
+                                                             + "main datasets ('observed', 'predicted' or, where "
+                                                             + "applicable, 'baseline'). Each 'covariate' dataset must "
+                                                             + "have the same feature authority as one of the main "
+                                                             + "datasets. Please use a 'covariate' dataset that has "
+                                                             + "the same feature authority as one of the main "
+                                                             + "datasets, qualifying the feature authority of the main "
+                                                             + "dataset, as needed. The unrecognized feature "
+                                                             + "authorities associated with 'covariate' datasets were: "
                                                              + missing
                                                              + "." )
                                            .build();

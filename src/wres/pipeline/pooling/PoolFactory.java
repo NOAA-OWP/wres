@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -168,6 +169,9 @@ public class PoolFactory
 
     /** Upscaler for single-valued time-series with a covariate orientation. */
     private final TimeSeriesUpscaler<Double> covariateSingleValuedUpscaler;
+
+    /** Upscaler for single-valued climatological time-series with a left-ish data type. */
+    private final TimeSeriesUpscaler<Double> climatologySingleValuedUpscaler;
 
     /** Upscaler for ensemble time-series with a right-ish orientation. */
     private final TimeSeriesUpscaler<Ensemble> rightEnsembleUpscaler;
@@ -612,6 +616,7 @@ public class PoolFactory
         TimeSeriesUpscaler<Double> rightUpscaler = this.getRightSingleValuedUpscaler();
         TimeSeriesUpscaler<Double> baselineUpscaler = this.getBaselineSingleValuedUpscaler();
         TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
+        TimeSeriesUpscaler<Double> climatologyUpscaler = this.getClimatologySingleValuedUpscaler();
 
         Set<Covariate<Double>> covariateFilters = this.getCovariateFilters( declaration,
                                                                             covariateUpscaler, this.getProject()
@@ -656,57 +661,24 @@ public class PoolFactory
             }
         }
 
-        // Left value transformer, which is a composition of several transformations
-        Map<GeometryTuple, Offset> offsets = project.getOffsets();
-        Map<Geometry, Offset> leftOffsets = offsets.entrySet()
-                                                   .stream()
-                                                   .collect( Collectors.toMap( f -> f.getKey()
-                                                                                     .getLeft(),
-                                                                               Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
-                this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
-        DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( declaration.values() );
-        UnaryOperator<TimeSeries<Double>> leftValueTransformer =
-                this.getValueTransformer( leftOffsetGenerator, valueTransformer );
-
         // Generate a transformer to filter periods of data to ignore, which is applied before rescaling
         UnaryOperator<TimeSeries<Double>> preRescalingTransformer =
                 TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
 
-        // Apply any valid time season transformer based on the right-ish data type
-        UnaryOperator<TimeSeries<Double>> validTimeSeasonTransformer =
-                this.getValidTimeSeasonTransformer( declaration.season(),
-                                                    declaration.right()
-                                                               .type() );
+        // Get a post-rescaling transformer for left-ish values, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingLeftTransformer =
+                this.getPostRescalingSingleValuedTransformer( DatasetOrientation.LEFT );
 
-        UnaryOperator<TimeSeries<Double>> composedLeftTransformer =
-                t -> leftValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+        // Get a post-rescaling transformer for climatological values, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingClimatologyTransformer =
+                this.getPostRescalingClimatologyTransformer();
 
-        // Right transformer, which is a composition of several transformations
-        Map<Geometry, Offset> rightOffsets = offsets.entrySet()
-                                                    .stream()
-                                                    .collect( Collectors.toMap( f -> f.getKey()
-                                                                                      .getRight(),
-                                                                                Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> rightOffsetGenerator =
-                this.getOffsetTransformer( rightOffsets, DatasetOrientation.RIGHT );
-        UnaryOperator<TimeSeries<Double>> rightValueTransformer =
-                this.getValueTransformer( rightOffsetGenerator, valueTransformer );
-        UnaryOperator<TimeSeries<Double>> composedRightTransformer =
-                t -> rightValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+        // Get a post-rescaling right transformer, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingRightTransformer =
+                this.getPostRescalingSingleValuedTransformer( DatasetOrientation.RIGHT );
 
-        // Baseline transformer, which is a composition of several transformations
-        Map<Geometry, Offset> baselineOffsets = offsets.entrySet()
-                                                       .stream()
-                                                       .collect( Collectors.toMap( f -> f.getKey()
-                                                                                         .getBaseline(),
-                                                                                   Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> baselineOffsetGenerator =
-                this.getOffsetTransformer( baselineOffsets, DatasetOrientation.BASELINE );
-        UnaryOperator<TimeSeries<Double>> baselineValueTransformer =
-                this.getValueTransformer( baselineOffsetGenerator, valueTransformer );
-        UnaryOperator<TimeSeries<Double>> composedBaselineTransformer =
-                t -> baselineValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+        // Get a post-rescaling baseline transformer, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingBaselineTransformer = in -> in;
 
         // Currently only a seasonal filter for reference times, which applies equally to all sides
         Predicate<TimeSeries<Double>> filter = this.getReferenceTimeSeasonFilter( declaration.season() );
@@ -726,6 +698,8 @@ public class PoolFactory
         {
             baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
+            postRescalingBaselineTransformer =
+                    this.getPostRescalingSingleValuedTransformer( DatasetOrientation.BASELINE );
         }
 
         Duration baselineTimeShift = this.getTimeShift( baseline );
@@ -745,9 +719,10 @@ public class PoolFactory
                         .setLeftTransformerPreRescaling( preRescalingTransformer )
                         .setRightTransformerPreRescaling( preRescalingTransformer )
                         .setBaselineTransformerPreRescaling( preRescalingTransformer )
-                        .setLeftTransformerPostRescaling( composedLeftTransformer )
-                        .setRightTransformerPostRescaling( composedRightTransformer )
-                        .setBaselineTransformerPostRescaling( composedBaselineTransformer )
+                        .setLeftTransformerPostRescaling( postRescalingLeftTransformer )
+                        .setRightTransformerPostRescaling( postRescalingRightTransformer )
+                        .setBaselineTransformerPostRescaling( postRescalingBaselineTransformer )
+                        .setClimatologyTransformerPostRescaling( postRescalingClimatologyTransformer )
                         .setLeftFilter( filter )
                         .setRightFilter( filter )
                         .setBaselineFilter( filter )
@@ -756,8 +731,9 @@ public class PoolFactory
                         .setBaselineMissingFilter( missingFilter )
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
-                        .setCovariateFilters( covariateFilters )
                         .setBaselineUpscaler( baselineUpscaler )
+                        .setClimatologyUpscaler( climatologyUpscaler )
+                        .setCovariateFilters( covariateFilters )
                         .setLeftTimeShift( leftTimeShift )
                         .setRightTimeShift( rightTimeShift )
                         .setBaselineTimeShift( baselineTimeShift )
@@ -823,20 +799,11 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> rightUpscaler = this.getRightEnsembleUpscaler();
         TimeSeriesUpscaler<Ensemble> baselineUpscaler = this.getBaselineEnsembleUpscaler();
         TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
+        TimeSeriesUpscaler<Double> climatologyUpscaler = this.getClimatologySingleValuedUpscaler();
 
         Set<Covariate<Double>> covariateFilters = this.getCovariateFilters( declaration,
                                                                             covariateUpscaler, this.getProject()
                                                                                                    .getDesiredTimeScale() );
-
-        // Left transformer, which is a composition of several transformations
-        Map<GeometryTuple, Offset> offsets = project.getOffsets();
-        Map<Geometry, Offset> leftOffsets = offsets.entrySet()
-                                                   .stream()
-                                                   .collect( Collectors.toMap( f -> f.getKey()
-                                                                                     .getLeft(),
-                                                                               Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
-                this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
 
         // Generate a transformer to filter periods of data to ignore, which is applied before rescaling
         UnaryOperator<TimeSeries<Ensemble>> preRescalingTransformer =
@@ -844,75 +811,25 @@ public class PoolFactory
         UnaryOperator<TimeSeries<Double>> preRescalingTransformerSingleValued =
                 TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
 
-        DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
-        UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
+        // Get a post-rescaling transformer for left-ish values, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingLeftTransformer =
+                this.getPostRescalingSingleValuedTransformer( DatasetOrientation.LEFT );
 
-        // Apply any valid time season transformer based on the right-ish data type
-        UnaryOperator<TimeSeries<Double>> leftValidTimeSeasonTransformer =
-                this.getValidTimeSeasonTransformer( declaration.season(),
-                                                    declaration.right()
-                                                               .type() );
-
-        UnaryOperator<TimeSeries<Double>> composedLeftTransformer =
-                t -> leftValueAndUnitTransformer.apply( leftValidTimeSeasonTransformer.apply( t ) );
+        // Get a post-rescaling transformer for climatological values, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingClimatologyTransformer =
+                this.getPostRescalingClimatologyTransformer();
 
         // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
         // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
         // the ensemble members themselves are not resampled
         boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
 
-        // Right transformer, which is a composition of several transformations
-        Map<Geometry, Offset> rightOffsets = offsets.entrySet()
-                                                    .stream()
-                                                    .collect( Collectors.toMap( f -> f.getKey()
-                                                                                      .getRight(),
-                                                                                Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> rightOffsetGenerator =
-                this.getOffsetTransformer( rightOffsets, DatasetOrientation.RIGHT );
-        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
-        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleValueTransformer( leftValueTransformer,
-                                                                                                 right,
-                                                                                                 cacheSorted );
+        // Get a post-rescaling right transformer, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Ensemble>> postRescalingRightTransformer =
+                this.getPostRescalingEnsembleTransformer( DatasetOrientation.RIGHT, cacheSorted );
 
-        UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
-                this.getEnsembleValueTransformer( rightOffsetGenerator, rightValueTransformer );
-
-        UnaryOperator<TimeSeries<Ensemble>> rightValidTimeSeasonTransformer =
-                this.getValidTimeSeasonTransformer( declaration.season(),
-                                                    declaration.right()
-                                                               .type() );
-
-        UnaryOperator<TimeSeries<Ensemble>> composedRightTransformer =
-                t -> rightValueAndUnitTransformer.apply( rightValidTimeSeasonTransformer.apply( t ) );
-
-        // Baseline transformer, which is a composition of several transformations
-        Dataset baseline = null;
-        Map<Geometry, Offset> baselineOffsets = offsets.entrySet()
-                                                       .stream()
-                                                       .collect( Collectors.toMap( f -> f.getKey()
-                                                                                         .getBaseline(),
-                                                                                   Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> baselineOffsetGenerator =
-                this.getOffsetTransformer( baselineOffsets, DatasetOrientation.BASELINE );
-
-        if ( project.hasBaseline() )
-        {
-            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
-                                                                DatasetOrientation.BASELINE );
-        }
-
-        UnaryOperator<Event<Ensemble>> baselineValueTransformer =
-                this.getEnsembleValueTransformer( leftValueTransformer,
-                                                  baseline,
-                                                  cacheSorted );
-
-        UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
-                this.getEnsembleValueTransformer( baselineOffsetGenerator, baselineValueTransformer );
-
-        // Re-use the right season transformer
-        UnaryOperator<TimeSeries<Ensemble>> composedBaselineTransformer =
-                t -> baselineValueAndUnitTransformer.apply( rightValidTimeSeasonTransformer.apply( t ) );
+        // Get a post-rescaling baseline transformer, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Ensemble>> postRescalingBaselineTransformer = in -> in;
 
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> singleValuedFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
@@ -925,6 +842,18 @@ public class PoolFactory
 
         // Get the time shifts
         Dataset left = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.LEFT );
+        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
+        Dataset baseline = null;
+
+        if ( project.hasBaseline() )
+        {
+            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                DatasetOrientation.BASELINE );
+
+            postRescalingBaselineTransformer = this.getPostRescalingEnsembleTransformer( DatasetOrientation.BASELINE,
+                                                                                         cacheSorted );
+        }
+
         Duration leftTimeShift = this.getTimeShift( left );
         Duration rightTimeShift = this.getTimeShift( right );
         Duration baselineTimeShift = this.getTimeShift( baseline );
@@ -943,12 +872,14 @@ public class PoolFactory
                         .setLeftTransformerPreRescaling( preRescalingTransformerSingleValued )
                         .setRightTransformerPreRescaling( preRescalingTransformer )
                         .setBaselineTransformerPreRescaling( preRescalingTransformer )
-                        .setLeftTransformerPostRescaling( composedLeftTransformer )
-                        .setRightTransformerPostRescaling( composedRightTransformer )
-                        .setBaselineTransformerPostRescaling( composedBaselineTransformer )
+                        .setLeftTransformerPostRescaling( postRescalingLeftTransformer )
+                        .setRightTransformerPostRescaling( postRescalingRightTransformer )
+                        .setBaselineTransformerPostRescaling( postRescalingBaselineTransformer )
+                        .setClimatologyTransformerPostRescaling( postRescalingClimatologyTransformer )
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
+                        .setClimatologyUpscaler( climatologyUpscaler )
                         .setCovariateFilters( covariateFilters )
                         .setLeftFilter( singleValuedFilter )
                         .setRightFilter( ensembleFilter )
@@ -1019,68 +950,37 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> rightUpscaler = this.getRightEnsembleUpscaler();
         TimeSeriesUpscaler<Ensemble> baselineUpscaler = this.getBaselineEnsembleUpscaler();
         TimeSeriesUpscaler<Double> covariateUpscaler = this.getCovariateSingleValuedUpscaler();
+        TimeSeriesUpscaler<Double> climatologyUpscaler = this.getClimatologySingleValuedUpscaler();
 
         Set<Covariate<Double>> covariateFilters = this.getCovariateFilters( declaration,
                                                                             covariateUpscaler, this.getProject()
                                                                                                    .getDesiredTimeScale() );
 
-        // Left transformer, which is a composition of several transformations
-        Map<GeometryTuple, Offset> offsets = project.getOffsets();
-        Map<Geometry, Offset> leftOffsets = offsets.entrySet()
-                                                   .stream()
-                                                   .collect( Collectors.toMap( f -> f.getKey()
-                                                                                     .getLeft(),
-                                                                               Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
-                this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
+        // Generate a transformer to filter periods of data to ignore, which is applied before rescaling
+        UnaryOperator<TimeSeries<Ensemble>> preRescalingTransformer =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
+        UnaryOperator<TimeSeries<Double>> preRescalingTransformerSingleValued =
+                TimeSeriesSlicer.getIgnoredValidDatesTransformer( declaration.ignoredValidDates() );
 
-        DoubleUnaryOperator leftValueTransformer = Slicer.getValueTransformer( declaration.values() );
-        UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
+        // Get a post-rescaling transformer for left-ish values, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingLeftTransformer =
+                this.getPostRescalingSingleValuedTransformer( DatasetOrientation.LEFT );
+
+        // Get a post-rescaling transformer for climatological values, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Double>> postRescalingClimatologyTransformer =
+                this.getPostRescalingClimatologyTransformer();
 
         // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
         // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
         // the ensemble members themselves are not resampled
         boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
 
-        // Right transformer, which is a composition of several transformations
-        Map<Geometry, Offset> rightOffsets = offsets.entrySet()
-                                                    .stream()
-                                                    .collect( Collectors.toMap( f -> f.getKey()
-                                                                                      .getRight(),
-                                                                                Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> rightOffsetGenerator =
-                this.getOffsetTransformer( rightOffsets, DatasetOrientation.RIGHT );
+        // Get a post-rescaling right transformer, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Ensemble>> postRescalingRightTransformer =
+                this.getPostRescalingEnsembleTransformer( DatasetOrientation.RIGHT, cacheSorted );
 
-        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
-        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleValueTransformer( leftValueTransformer,
-                                                                                                 right,
-                                                                                                 cacheSorted );
-        UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
-                this.getEnsembleValueTransformer( rightOffsetGenerator, rightValueTransformer );
-
-        // Baseline transformer, which is a composition of several transformations
-        Dataset baseline = null;
-        if ( project.hasBaseline() )
-        {
-            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
-                                                                DatasetOrientation.BASELINE );
-        }
-        Map<Geometry, Offset> baselineOffsets = offsets.entrySet()
-                                                       .stream()
-                                                       .collect( Collectors.toMap( f -> f.getKey()
-                                                                                         .getBaseline(),
-                                                                                   Map.Entry::getValue ) );
-        Function<Geometry, DoubleUnaryOperator> baselineOffsetGenerator =
-                this.getOffsetTransformer( baselineOffsets, DatasetOrientation.BASELINE );
-
-        UnaryOperator<Event<Ensemble>> baselineValueTransformer =
-                this.getEnsembleValueTransformer( leftValueTransformer,
-                                                  baseline,
-                                                  cacheSorted );
-
-        UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
-                this.getEnsembleValueTransformer( baselineOffsetGenerator, baselineValueTransformer );
+        // Get a post-rescaling baseline transformer, which is a composition of several transformations
+        UnaryOperator<TimeSeries<Ensemble>> postRescalingBaselineTransformer = in -> in;
 
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> singleValuedFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
@@ -1093,6 +993,17 @@ public class PoolFactory
 
         // Get the time shifts
         Dataset left = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.LEFT );
+        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
+        Dataset baseline = null;
+
+        if ( project.hasBaseline() )
+        {
+            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                DatasetOrientation.BASELINE );
+            postRescalingBaselineTransformer = this.getPostRescalingEnsembleTransformer( DatasetOrientation.BASELINE,
+                                                                                         cacheSorted );
+        }
+
         Duration leftTimeShift = this.getTimeShift( left );
         Duration rightTimeShift = this.getTimeShift( right );
         Duration baselineTimeShift = this.getTimeShift( baseline );
@@ -1133,12 +1044,17 @@ public class PoolFactory
                         .setProject( project )
                         .setRetrieverFactory( retrieverFactory )
                         .setPoolRequests( poolRequests )
-                        .setLeftTransformerPostRescaling( leftValueAndUnitTransformer )
-                        .setRightTransformerPostRescaling( rightValueAndUnitTransformer )
-                        .setBaselineTransformerPostRescaling( baselineValueAndUnitTransformer )
+                        .setLeftTransformerPreRescaling( preRescalingTransformerSingleValued )
+                        .setRightTransformerPreRescaling( preRescalingTransformer )
+                        .setBaselineTransformerPreRescaling( preRescalingTransformer )
+                        .setLeftTransformerPostRescaling( postRescalingLeftTransformer )
+                        .setRightTransformerPostRescaling( postRescalingRightTransformer )
+                        .setBaselineTransformerPostRescaling( postRescalingBaselineTransformer )
+                        .setClimatologyTransformerPostRescaling( postRescalingClimatologyTransformer )
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
+                        .setClimatologyUpscaler( climatologyUpscaler )
                         .setCovariateFilters( covariateFilters )
                         .setLeftFilter( singleValuedFilter )
                         .setRightFilter( ensembleFilter )
@@ -2605,6 +2521,120 @@ public class PoolFactory
     }
 
     /**
+     * Returns a single-valued transformer to be applied after rescaling.
+     * @param datasetOrientation the dataset orientation
+     * @return the value transformer
+     */
+
+    private UnaryOperator<TimeSeries<Double>> getPostRescalingSingleValuedTransformer( DatasetOrientation datasetOrientation )
+    {
+        Project innerProject = this.getProject();
+        EvaluationDeclaration declaration = innerProject.getDeclaration();
+
+        // Value transformer, which is a composition of several transformations
+        Map<GeometryTuple, Offset> offsets = innerProject.getOffsets();
+
+        // Geometry orientation mapper
+        Function<GeometryTuple, Geometry> mapper =
+                DeclarationUtilities.getGeometryOrientationMapper( datasetOrientation );
+
+        Map<Geometry, Offset> orientedOffsets =
+                offsets.entrySet()
+                       .stream()
+                       .collect( Collectors.toMap( f -> mapper.apply( f.getKey() ),
+                                                   Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> offsetGenerator =
+                this.getOffsetTransformer( orientedOffsets, datasetOrientation );
+        DoubleUnaryOperator valueTransformer = Slicer.getValueTransformer( declaration.values() );
+        UnaryOperator<TimeSeries<Double>> composedValueTransformer =
+                this.getValueTransformer( offsetGenerator, valueTransformer );
+
+        // Apply any valid time season transformer based on the **right-ish** data type
+        UnaryOperator<TimeSeries<Double>> validTimeSeasonTransformer =
+                this.getValidTimeSeasonTransformer( declaration.season(),
+                                                    declaration.right()
+                                                               .type() );
+
+        return t -> composedValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+    }
+
+    /**
+     * Returns an ensemble transformer to be applied after rescaling.
+     * @param datasetOrientation the dataset orientation
+     * @param cacheSorted is true to cache the sorted ensemble members, trading increased memory for reduced CPU
+     * @return the value transformer
+     */
+
+    private UnaryOperator<TimeSeries<Ensemble>> getPostRescalingEnsembleTransformer( DatasetOrientation datasetOrientation,
+                                                                                     boolean cacheSorted )
+    {
+        Project innerProject = this.getProject();
+        EvaluationDeclaration declaration = innerProject.getDeclaration();
+
+        // Value transformer, which is a composition of several transformations
+        Map<GeometryTuple, Offset> offsets = innerProject.getOffsets();
+
+        // Geometry orientation mapper
+        Function<GeometryTuple, Geometry> mapper =
+                DeclarationUtilities.getGeometryOrientationMapper( datasetOrientation );
+
+        Map<Geometry, Offset> orientedOffsets =
+                offsets.entrySet()
+                       .stream()
+                       .collect( Collectors.toMap( f -> mapper.apply( f.getKey() ),
+                                                   Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> offsetGenerator =
+                this.getOffsetTransformer( orientedOffsets, datasetOrientation );
+        DoubleUnaryOperator singleValuedValueTransformer = Slicer.getValueTransformer( declaration.values() );
+        Dataset dataset = DeclarationUtilities.getDeclaredDataset( declaration, datasetOrientation );
+
+        UnaryOperator<Event<Ensemble>> valueTransformer =
+                this.getEnsembleValueTransformer( singleValuedValueTransformer,
+                                                  dataset,
+                                                  cacheSorted );
+
+        UnaryOperator<TimeSeries<Ensemble>> composedValueTransformer =
+                this.getEnsembleValueTransformer( offsetGenerator, valueTransformer );
+
+        // Apply any valid time season transformer based on the **right-ish** data type
+        UnaryOperator<TimeSeries<Ensemble>> validTimeSeasonTransformer =
+                this.getValidTimeSeasonTransformer( declaration.season(),
+                                                    declaration.right()
+                                                               .type() );
+
+        return t -> composedValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+    }
+
+    /**
+     * Returns a single-valued transformer for the climatological data to be applied after rescaling.
+     * @return the value transformer
+     */
+
+    private UnaryOperator<TimeSeries<Double>> getPostRescalingClimatologyTransformer()
+    {
+        Project innerProject = this.getProject();
+        EvaluationDeclaration declaration = innerProject.getDeclaration();
+
+        // Is there a covariate data source with the climatology?
+        Optional<CovariateDataset> climatologyCovariate =
+                declaration.covariates()
+                           .stream()
+                           .filter( c -> c.purposes()
+                                          .contains( CovariatePurpose.CLIMATOLOGY ) )
+                           .findFirst();
+
+        if ( climatologyCovariate.isPresent() )
+        {
+            CovariateDataset covariate = climatologyCovariate.get();
+            return this.getPostRescalingSingleValuedTransformer( covariate.featureNameOrientation() );
+        }
+        else
+        {
+            return this.getPostRescalingSingleValuedTransformer( DatasetOrientation.LEFT );
+        }
+    }
+
+    /**
      * @return the project instance
      */
 
@@ -2629,6 +2659,15 @@ public class PoolFactory
     private TimeSeriesUpscaler<Double> getLeftSingleValuedUpscaler()
     {
         return this.leftSingleValuedUpscaler;
+    }
+
+    /**
+     * @return the upscaler for climatological time-series with a left orientation
+     */
+
+    private TimeSeriesUpscaler<Double> getClimatologySingleValuedUpscaler()
+    {
+        return this.climatologySingleValuedUpscaler;
     }
 
     /**
@@ -2925,6 +2964,9 @@ public class PoolFactory
         this.baselineEnsembleUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
                                                                          this.getUnitMapper()
                                                                              .getUnitAliases() );
+        this.climatologySingleValuedUpscaler = TimeSeriesOfDoubleUpscaler.of( false,  // No lenience
+                                                                              this.getUnitMapper()
+                                                                                  .getUnitAliases() );
 
         if ( Objects.nonNull( this.project.getDeclaration()
                                           .eventDetection() ) )

@@ -89,7 +89,8 @@ public class CovariateDatasetDeserializer extends ValueDeserializer<CovariateDat
             }
         }
 
-        return CovariateDatasetBuilder.builder().dataset( basicDataset )
+        return CovariateDatasetBuilder.builder()
+                                      .dataset( basicDataset )
                                       .minimum( minimum )
                                       .maximum( maximum )
                                       .rescaleFunction( rescaleFunction )
