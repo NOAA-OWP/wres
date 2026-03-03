@@ -828,7 +828,6 @@ public class DeclarationValidator
                                                   .collect( Collectors.toSet() );
 
         // Different observation-like types are allowed
-
         if ( covariateTypes.contains( DataType.ENSEMBLE_FORECASTS )
              || covariateTypes.contains( DataType.SINGLE_VALUED_FORECASTS ) )
         {
@@ -837,7 +836,10 @@ public class DeclarationValidator
                                          .setStatusLevel( StatusLevel.ERROR )
                                          .setEventMessage( "Discovered a forecast data 'type' for one or more "
                                                            + "'covariate' datasets, which is not allowed. The "
-                                                           + "'covariate' datasets must all be observation-like." )
+                                                           + "'covariate' datasets must all be observation-like. The "
+                                                           + "ineligible covariate data types were: "
+                                                           + covariateTypes
+                                                           + "." )
                                          .build();
             events.add( event );
         }

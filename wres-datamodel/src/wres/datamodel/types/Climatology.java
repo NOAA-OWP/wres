@@ -2,11 +2,12 @@ package wres.datamodel.types;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -24,13 +25,23 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Abstraction of a climatological dataset for one or more geographic features. The climatological data is sorted on 
+ * <p>Abstraction of a climatological dataset for one or more geographic features. The climatological data is sorted on
  * construction in order of increasing size. Missing data is tolerated, including zero time-series events for one or
  * more features. Features must use the feature authority of one of the main evaluation datasets and hence the feature
  * authority is designated by {@link DatasetOrientation}. The default orientation is {@link DatasetOrientation#LEFT}.
  * In other words, if the climatological dataset originates from a source with a unique feature authority, it must be
  * cross-walked to one of the main datasets first. This allows for simpler treatment where the climatological data is
  * used alongside the other evaluation datasets.
+ *
+ * <p>Implementation notes:
+ *
+ * <p>The comparison of features within this implementation is lenient. Specifically, the features are mapped and
+ * compared using only the {@link Feature#getName()} component of the feature. This helps, for example, when the
+ * climatological data originates from a covariate data source whose feature authority must match the feature authority
+ * of a main evaluation dataset, but whose feature-specific details (other than the feature name, which is dictated by
+ * the naming authority) could vary depending on the amount or precision of the geospatial information in the data
+ * source. In short, without this lenience, all feature details (not just the name) would need to match when retrieving
+ * the climatology by feature.
  *
  * @author James Brown
  */
@@ -194,8 +205,8 @@ public class Climatology
 
     public static class Builder
     {
-        /** The climatological data. */
-        private final Map<Feature, double[]> climateData = new HashMap<>();
+        /** The climatological data with a lenient comparator based on name only. */
+        private final Map<Feature, double[]> climateData = new TreeMap<>( Comparator.comparing( Feature::getName ) );
 
         /** The measurement unit. */
         private String measurementUnit;
@@ -249,7 +260,8 @@ public class Climatology
 
         public Builder addClimatology( Feature feature, double[] climatology, String measurementUnit )
         {
-            if ( Objects.nonNull( feature ) && Objects.nonNull( climatology ) )
+            if ( Objects.nonNull( feature )
+                 && Objects.nonNull( climatology ) )
             {
                 if ( this.climateData.containsKey( feature ) )
                 {
@@ -322,7 +334,9 @@ public class Climatology
     private Climatology( Builder builder )
     {
         // No need to clone in this context because the builder clones
-        Map<Feature, double[]> climatologyInner = new HashMap<>( builder.climateData );
+        // Use a lenient comparison based on feature name only
+        Map<Feature, double[]> climatologyInner = new TreeMap<>( Comparator.comparing( Feature::getName ) );
+        climatologyInner.putAll( builder.climateData );
 
         // Filter and sort
         for ( Map.Entry<Feature, double[]> nextEntry : climatologyInner.entrySet() )
