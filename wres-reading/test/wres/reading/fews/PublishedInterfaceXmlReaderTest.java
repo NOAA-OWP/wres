@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
@@ -65,190 +66,221 @@ class PublishedInterfaceXmlReaderTest
 
     // An observation-like pi-xml string with two time-series
     private static final String PI_STRING_ONE = """
-            <?xml version="1.0" encoding="UTF-8"?>\r
-            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">\r
-                <timeZone>0.0</timeZone>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="15:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>\r
-                    <event date="1985-06-01" time="15:00:00" value="3" flag="0"/>\r
-                </series>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="15:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="4" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="5" flag="0"/>\r
-                    <event date="1985-06-01" time="15:00:00" value="6" flag="0"/>\r
-                </series>\r
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">
+                <timeZone>0.0</timeZone>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="15:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>
+                    <event date="1985-06-01" time="15:00:00" value="3" flag="0"/>
+                </series>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="15:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="4" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="5" flag="0"/>
+                    <event date="1985-06-01" time="15:00:00" value="6" flag="0"/>
+                </series>
             </TimeSeries>""";
 
     // A forecast-like pi-xml string with three single-valued forecasts
     private static final String PI_STRING_TWO = """
-            <?xml version="1.0" encoding="UTF-8"?>\r
-            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">\r
-                <timeZone>0.0</timeZone>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="14:00:00"/>\r
-                        <forecastDate date="1985-06-01" time="12:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>\r
-                </series>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="14:00:00"/>\r
-                        <forecastDate date="1985-06-02" time="12:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-02" time="13:00:00" value="3" flag="0"/>\r
-                    <event date="1985-06-02" time="14:00:00" value="4" flag="0"/>\r
-                </series>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC3</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="14:00:00"/>\r
-                        <forecastDate date="1985-06-01" time="12:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="5" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="6" flag="0"/>\r
-                </series>\r
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">
+                <timeZone>0.0</timeZone>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="14:00:00"/>
+                        <forecastDate date="1985-06-01" time="12:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>
+                </series>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="14:00:00"/>
+                        <forecastDate date="1985-06-02" time="12:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-02" time="13:00:00" value="3" flag="0"/>
+                    <event date="1985-06-02" time="14:00:00" value="4" flag="0"/>
+                </series>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC3</locationId>
+                        <parameterId>QINE</parameterId>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="14:00:00"/>
+                        <forecastDate date="1985-06-01" time="12:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="5" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="6" flag="0"/>
+                </series>
             </TimeSeries>""";
 
     // An ensemble-forecast-like pi-xml string with one forecast that contains three ensemble members
     private static final String PI_STRING_THREE = """
-            <?xml version="1.0" encoding="UTF-8"?>\r
-            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">\r
-                <timeZone>0.0</timeZone>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <ensembleMemberIndex>1961</ensembleMemberIndex>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="14:00:00"/>\r
-                        <forecastDate date="1985-06-01" time="12:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>\r
-                </series>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <ensembleMemberIndex>1962</ensembleMemberIndex>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="14:00:00"/>\r
-                        <forecastDate date="1985-06-01" time="12:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="3" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="4" flag="0"/>\r
-                </series>\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <ensembleMemberIndex>1963</ensembleMemberIndex>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="14:00:00"/>\r
-                        <forecastDate date="1985-06-01" time="12:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
-                    </header>\r
-                    <event date="1985-06-01" time="13:00:00" value="5" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="6" flag="0"/>\r
-                </series>\r
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">
+                <timeZone>0.0</timeZone>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <ensembleMemberIndex>1961</ensembleMemberIndex>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="14:00:00"/>
+                        <forecastDate date="1985-06-01" time="12:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>
+                </series>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <ensembleMemberIndex>1962</ensembleMemberIndex>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="14:00:00"/>
+                        <forecastDate date="1985-06-01" time="12:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="3" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="4" flag="0"/>
+                </series>
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <ensembleMemberIndex>1963</ensembleMemberIndex>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="14:00:00"/>
+                        <forecastDate date="1985-06-01" time="12:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                        <units>CFS</units>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="5" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="6" flag="0"/>
+                </series>
             </TimeSeries>""";
 
     // An observation-like pi-xml string with one time-series and no timeZone
     private static final String PI_STRING_FOUR = """
-            <?xml version="1.0" encoding="UTF-8"?>\r
-            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">\r
-                <series>\r
-                    <header>\r
-                        <type>instantaneous</type>\r
-                        <locationId>DRRC2</locationId>\r
-                        <parameterId>QINE</parameterId>\r
-                        <timeStep unit="second" multiplier="3600"/>\r
-                        <startDate date="1985-06-01" time="13:00:00"/>\r
-                        <endDate date="1985-06-01" time="15:00:00"/>\r
-                        <missVal>-999.0</missVal>\r
-                        <stationName>DOLORES, CO</stationName>\r
-                        <lat>37.4739</lat>\r
-                        <lon>108.5045</lon>\r
-                    </header>\r
-                    <event date="1985-06-01" time="12:00:00" value="1" flag="0"/>\r
-                    <event date="1985-06-01" time="13:00:00" value="2" flag="0"/>\r
-                    <event date="1985-06-01" time="14:00:00" value="3" flag="0"/>\r
-                </series>\r
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">
+                <series>
+                    <header>
+                        <type>instantaneous</type>
+                        <locationId>DRRC2</locationId>
+                        <parameterId>QINE</parameterId>
+                        <timeStep unit="second" multiplier="3600"/>
+                        <startDate date="1985-06-01" time="13:00:00"/>
+                        <endDate date="1985-06-01" time="15:00:00"/>
+                        <missVal>-999.0</missVal>
+                        <stationName>DOLORES, CO</stationName>
+                        <lat>37.4739</lat>
+                        <lon>108.5045</lon>
+                    </header>
+                    <event date="1985-06-01" time="12:00:00" value="1" flag="0"/>
+                    <event date="1985-06-01" time="13:00:00" value="2" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="3" flag="0"/>
+                </series>
+            </TimeSeries>""";
+
+    private static final String PI_STRING_FIVE = """
+            <?xml version="1.0" standalone="yes" ?>
+            <TimeSeries
+                version="1.2"
+                xmlns="http://www.wldelft.nl/fews/PI"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd">
+                <timeZone>0.0</timeZone>
+                <series>
+                    <header>
+                        <type>accumulative</type>
+                        <locationId>DRRC2HSF</locationId>
+                        <parameterId>QME</parameterId>
+                        <timeStep multiplier="24" unit="hour" />
+                        <startDate date="1951-01-02" time="00:00:00" />
+                        <endDate date="2006-10-01" time="00:00:00" />
+                        <missVal>-999.0</missVal>
+                        <longName> </longName>
+                        <stationName>DOLORES - RICO, BLO</stationName>
+                        <units>CFS</units>
+                        <sourceOrganisation>OHD</sourceOrganisation>
+                        <sourceSystem>Fews</sourceSystem>
+                        <fileDescription>DATACARD</fileDescription>
+                        <creationDate>2012-05-08</creationDate>
+                        <creationTime>15:38:35</creationTime>
+                    </header>
+                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>
+                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>
+                </series>
             </TimeSeries>""";
 
     @Test
@@ -655,6 +687,73 @@ class PublishedInterfaceXmlReaderTest
                                                      tupleStream::toList );
                 assertTrue( actual.getMessage()
                                   .contains( "does not match the 'timeZone'" ) );
+            }
+
+            // Clean up
+            if ( Files.exists( xmlPath ) )
+            {
+                Files.delete( xmlPath );
+            }
+        }
+    }
+
+    @Test
+    void testReadObservationsResultsInCorrectLocationDescription() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new pi-xml file to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_XML );
+            Path xmlPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( xmlPath ) )
+            {
+                writer.append( PI_STRING_FIVE );
+            }
+
+            DataSource dataSource = DataSource.builder()
+                                              .context( DatasetBuilder.builder()
+                                                                      .build() )
+                                              .source( SourceBuilder.builder()
+                                                                    .build() )
+                                              .links( Collections.emptyList() )
+                                              .uri( xmlPath.toUri() )
+                                              .disposition( DataDisposition.XML_PI_TIMESERIES )
+                                              .build();
+
+            PublishedInterfaceXmlReader reader = PublishedInterfaceXmlReader.of();
+
+            Geometry expectedGeometry = MessageUtilities.getGeometry( "DRRC2HSF",
+                                                                      "DOLORES - RICO, BLO",
+                                                                      null,
+                                                                      null );
+
+            // No reading yet, we are just opening a pipe to the file here
+            try ( Stream<TimeSeriesTuple> tupleStream = reader.read( dataSource ) )
+            {
+                // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series
+                // creates as many reads from the file system as necessary to read that time-series into memory
+                List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                             .toList();
+
+                TimeSeriesMetadata expectedMetadata =
+                        TimeSeriesMetadata.of( Collections.emptyMap(),
+                                               TimeScaleOuter.of( Duration.ofHours( 24 ) ),
+                                               "QME",
+                                               Feature.of( expectedGeometry ),
+                                               CFS );
+
+                TimeSeries<Double> expectedOne =
+                        new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
+                                                        .addEvent( Event.of( T1985_06_01T13_00_00Z, 1.0 ) )
+                                                        .addEvent( Event.of( T1985_06_01T14_00_00Z, 2.0 ) )
+                                                        .build();
+
+                List<TimeSeries<Double>> expected = List.of( expectedOne );
+
+                assertEquals( expected, actual );
             }
 
             // Clean up

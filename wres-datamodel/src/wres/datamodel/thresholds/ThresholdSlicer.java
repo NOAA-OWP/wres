@@ -401,19 +401,31 @@ public class ThresholdSlicer
                                                                  .anyMatch( ThresholdOuter::hasProbabilities );
             if ( hasProbabilityThreshold )
             {
-                Feature leftFeature = nextFeature.getLeft();
-
-                if ( Objects.isNull( climatology )
-                     || climatology.hasNoClimatology( leftFeature ) )
+                if ( Objects.isNull( climatology ) )
                 {
-                    throw new ThresholdException( "Quantiles were required for feature tuple '"
-                                                  + nextFeature.toStringShort()
-                                                  + "' but no climatological data was found for the left feature, '"
-                                                  + leftFeature.getName()
-                                                  + "'." );
+                    throw new ThresholdException( "Quantiles were required, but no climatological data was provided." );
                 }
 
-                double[] sorted = climatology.get( leftFeature );
+                DatasetOrientation orientation = climatology.getFeatureAuthorityOrientation();
+                Function<GeometryTuple, Geometry> mapper =
+                        DeclarationUtilities.getGeometryOrientationMapper( orientation );
+                Geometry geometry = mapper.apply( nextFeature.getGeometryTuple() );
+                Feature feature = Feature.of( geometry );
+
+                if ( climatology.hasNoClimatology( feature ) )
+                {
+                    throw new ThresholdException( "Quantiles were required for feature tuple '"
+                                                  + nextFeature
+                                                  + "' but no climatological data was found for feature, '"
+                                                  + feature
+                                                  + " with the dataset orientation of '" + orientation + "'. If this "
+                                                  + "dataset orientation is incorrect, please explicitly declare the "
+                                                  + "orientation of the feature names associated with the climatology. "
+                                                  + "The climatology was available for the following features: "
+                                                  + climatology.getFeatures() );
+                }
+
+                double[] sorted = climatology.get( feature );
 
                 // Quantile mapper
                 UnaryOperator<ThresholdOuter> quantileMapper =
@@ -900,7 +912,7 @@ public class ThresholdSlicer
      * @return the thresholds with adjusted units
      */
     private static Set<wres.config.components.Threshold> convertUnits( Set<wres.config.components.Threshold> thresholds,
-                                                                            UnitMapper unitMapper )
+                                                                       UnitMapper unitMapper )
     {
         if ( Objects.isNull( unitMapper ) )
         {

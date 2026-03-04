@@ -564,7 +564,6 @@ project(':wres-writing') {
 
     distributions {
         main {
-            println(project.version)
             contents {
                 from {
                     // Note: see lengthy note in main application below

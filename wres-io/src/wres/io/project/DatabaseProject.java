@@ -409,9 +409,9 @@ public class DatabaseProject implements Project
     }
 
     @Override
-    public Dataset getCovariateDataset( String variableName )
+    public CovariateDataset getCovariateDataset( String variableName )
     {
-        return ProjectUtilities.getCovariateDatset( this.declaration, variableName );
+        return ProjectUtilities.getCovariateDataset( this.declaration, variableName );
     }
 
     @Override
@@ -808,7 +808,7 @@ public class DatabaseProject implements Project
                                               IngestIds ingestIds )
             throws SQLException
     {
-        if ( Boolean.TRUE.equals( inserted ) )
+        if ( inserted )
         {
             String projectIdString = Long.toString( projectId );
             LOGGER.debug( "Found that this Thread is responsible for "

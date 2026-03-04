@@ -11,6 +11,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.jspecify.annotations.NonNull;
 
+import wres.datamodel.MissingValues;
+
 /**
  * Custom deserializer for a {@link Properties}. Has a reduced footprint when many similar instances are constructed.
  * This is achieved by caching and re-using strings that are repeated across many instances.
@@ -41,8 +43,14 @@ public class PropertiesDeserializer extends ValueDeserializer<Properties>
         String time = node.get( "time" )
                           .asString();
 
-        double value = node.get( "value" )
-                           .asDouble();
+        JsonNode valueNode = node.get( "value" );
+        double value = MissingValues.DOUBLE;
+
+        // GitHub #735
+        if ( !valueNode.isNull() )
+        {
+            value = valueNode.asDouble();
+        }
 
         return Properties.builder()
                          .locationId( locationId )

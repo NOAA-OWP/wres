@@ -131,14 +131,14 @@ class SingleValuedRetrieverFactoryInMemoryTest
         Project project = Mockito.mock( Project.class );
 
 
-        Dataset left = DatasetBuilder.builder()
+        Dataset leftInner = DatasetBuilder.builder()
                                      .type( DataType.OBSERVATIONS )
                                      .variable( VariableBuilder.builder()
                                                                .name( "left" )
                                                                .build() )
                                      .build();
 
-        Dataset right = DatasetBuilder.builder()
+        Dataset rightInner = DatasetBuilder.builder()
                                       .type( DataType.SINGLE_VALUED_FORECASTS )
                                       .variable( VariableBuilder.builder()
                                                                 .name( "right" )
@@ -152,11 +152,11 @@ class SingleValuedRetrieverFactoryInMemoryTest
                                                                           .build() )
                                                 .build();
 
-        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+        BaselineDataset baselineInner = BaselineDatasetBuilder.builder()
                                                          .dataset( baselineDataset )
                                                          .build();
 
-        Dataset covariate = DatasetBuilder.builder()
+        Dataset covariateInner = DatasetBuilder.builder()
                                           .type( DataType.OBSERVATIONS )
                                           .variable( VariableBuilder.builder()
                                                                     .name( VARIABLE_NAME )
@@ -164,22 +164,22 @@ class SingleValuedRetrieverFactoryInMemoryTest
                                           .build();
 
         CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
-                                                                   .dataset( covariate )
+                                                                   .dataset( covariateInner )
                                                                    .featureNameOrientation( DatasetOrientation.LEFT )
                                                                    .build();
 
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
-                                            .left( left )
-                                            .right( right )
-                                            .baseline( baseline )
+                                            .left( leftInner )
+                                            .right( rightInner )
+                                            .baseline( baselineInner )
                                             .covariates( List.of( covariateDataset ) )
                                             .build();
 
         Mockito.when( project.getDeclaration() )
                .thenReturn( declaration );
         Mockito.when( project.getCovariateDataset( VARIABLE_NAME ) )
-               .thenReturn( covariate );
+               .thenReturn( covariateDataset );
 
         this.tester = SingleValuedRetrieverFactoryInMemory.of( project, store );
     }

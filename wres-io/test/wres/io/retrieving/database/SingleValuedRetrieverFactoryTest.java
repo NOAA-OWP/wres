@@ -417,6 +417,12 @@ public class SingleValuedRetrieverFactoryTest
                                                                     .name( VARIABLE_NAME )
                                                                     .build() )
                                           .build();
+        CovariateDataset covariateDataset = new CovariateDataset( covariate,
+                                                                  null,
+                                                                  null,
+                                                                  DatasetOrientation.LEFT,
+                                                                  null,
+                                                                  Set.of() );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
@@ -449,7 +455,7 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.hasProbabilityThresholds() )
                .thenReturn( false );
         Mockito.when( project.getCovariateDataset( VARIABLE_NAME ) )
-               .thenReturn( covariate );
+               .thenReturn( covariateDataset );
 
         // Create the factory instance
         this.factoryToTest = SingleValuedRetrieverFactory.of( project, this.wresDatabase, this.caches );

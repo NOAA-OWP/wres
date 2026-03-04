@@ -572,23 +572,32 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     {
         TimeSeriesHeader.TimeSeriesHeaderBuilder builder = header.toBuilder();
 
-        if ( header.locationName() != null )
+        // The TimeSeriesHeader::locationDescription is not populated in a PI-XML context, so create from other info.
+        String locationDescription = null;
+
+        if ( Objects.nonNull( header.locationName() )
+             && !header.locationName()
+                       .isBlank() )
         {
-            builder.locationDescription( header.locationName() );
+            locationDescription = header.locationName();
         }
 
-        if ( header.locationLongName() != null )
+        if ( Objects.nonNull( header.locationLongName() )
+             && !header.locationLongName()
+                       .isBlank() )
         {
             // Append the long name to description when already set with station
-            if ( header.locationDescription() != null )
+            if ( Objects.nonNull( locationDescription ) )
             {
-                builder.locationDescription( header.locationDescription() + " " + header.locationLongName() );
+                locationDescription = locationDescription + " " + header.locationLongName();
             }
             else
             {
-                builder.locationDescription( header.locationLongName() );
+                locationDescription = header.locationLongName();
             }
         }
+
+        builder.locationDescription( locationDescription );
 
         return builder.build();
     }

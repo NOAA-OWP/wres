@@ -8,10 +8,8 @@ option java_multiple_files = true;
 
 message Covariate
 {
-    /*A message that encapsulates a covariate, which is used to filter the
-      verification pairs within a pool. Only those pairs are selected that have
-      a valid time whose corresponding covariate value is greater than or equal
-      to a minimum and/or less than or equal to a maximum.*/
+    /*A message that encapsulates a covariate dataset, which is an ancillary or
+      supporting dataset within an evaluation.*/
 
     string variable_name = 1;
     // The name of the covariate variable.
@@ -21,4 +19,21 @@ message Covariate
 
     optional double maximum_inclusive_value = 3;
     // The maximum value of the covariate.
+
+    enum Purpose
+    {
+        // The purpose of the covariate within an evaluation.
+        
+        FILTER = 0;
+        // The covariate is used to filter data.
+        
+        DETECT = 1;
+        // The covariate is used to detect events for evaluation.
+        
+        CLIMATOLOGY = 2;
+        // The covariate represents a climatological dataset.
+    }
+
+    repeated Purpose purposes = 4;
+    // The purposes of the covariate.
 }

@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -1466,5 +1467,36 @@ class DeclarationUtilitiesTest
                    () -> assertTrue( DeclarationUtilities.hasFeatureGroups( declarationTwo ) ),
                    () -> assertFalse( DeclarationUtilities.hasFeatureGroups( EvaluationDeclarationBuilder.builder()
                                                                                                          .build() ) ) );
+    }
+
+    @Test
+    void testGetGeometryOrientationMapper()
+    {
+        Function<GeometryTuple, Geometry> leftMapper =
+                DeclarationUtilities.getGeometryOrientationMapper( DatasetOrientation.LEFT );
+        Function<GeometryTuple, Geometry> rightMapper =
+                DeclarationUtilities.getGeometryOrientationMapper( DatasetOrientation.RIGHT );
+        Function<GeometryTuple, Geometry> baselineMapper =
+                DeclarationUtilities.getGeometryOrientationMapper( DatasetOrientation.BASELINE );
+
+        Geometry left = Geometry.newBuilder()
+                                .setName( "foo" )
+                                .build();
+        Geometry right = Geometry.newBuilder()
+                                 .setName( "bar" )
+                                 .build();
+        Geometry baseline = Geometry.newBuilder()
+                                    .setName( "baz" )
+                                    .build();
+
+        GeometryTuple geometryTuple = GeometryTuple.newBuilder()
+                                         .setLeft( left )
+                                         .setRight( right )
+                                         .setBaseline( baseline )
+                                         .build();
+
+        assertAll( () -> assertEquals( left, leftMapper.apply( geometryTuple ) ),
+                   () -> assertEquals( right, rightMapper.apply( geometryTuple ) ),
+                   () -> assertEquals( baseline, baselineMapper.apply( geometryTuple ) ) );
     }
 }

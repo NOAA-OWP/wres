@@ -240,7 +240,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         PoolCreationEvent poolMonitor = PoolCreationEvent.of( this.getMetadata() ); // Monitor
         poolMonitor.begin();
 
-        // Left data provided or is climatology the left data?
+        // Left data
         Stream<TimeSeries<L>> leftData = this.left.get();
 
         LOGGER.debug( "Preparing to retrieve time-series data." );
@@ -946,7 +946,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : mainPairs.entrySet() )
         {
             FeatureTuple nextFeature = nextEntry.getKey();
-
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
 
             // If there are no pairs for this feature, warn

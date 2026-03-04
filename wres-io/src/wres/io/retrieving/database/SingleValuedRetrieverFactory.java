@@ -2,6 +2,7 @@ package wres.io.retrieving.database;
 
 import java.time.Duration;
 import java.time.MonthDay;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -11,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.DeclarationUtilities;
+import wres.config.components.CovariateDataset;
+import wres.config.components.CovariatePurpose;
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetOrientation;
@@ -93,19 +96,13 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
-    {
-        // No distinction between climatology and left for now
-        return this.getLeftRetriever( features );
-    }
-
-    @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
         return this.get( this.leftDataset,
                          DatasetOrientation.LEFT,
                          features,
-                         null );
+                         null,
+                         Collections.emptySet() );
     }
 
     @Override
@@ -115,7 +112,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         return this.get( this.leftDataset,
                          DatasetOrientation.LEFT,
                          features,
-                         timeWindow );
+                         timeWindow,
+                         Collections.emptySet() );
     }
 
     @Override
@@ -125,7 +123,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         return this.get( this.rightDataset,
                          DatasetOrientation.RIGHT,
                          features,
-                         timeWindow );
+                         timeWindow,
+                         Collections.emptySet() );
     }
 
     @Override
@@ -134,7 +133,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         return this.get( this.baselineDataset,
                          DatasetOrientation.BASELINE,
                          features,
-                         null );
+                         null,
+                         Collections.emptySet() );
     }
 
     @Override
@@ -144,17 +144,20 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         return this.get( this.baselineDataset,
                          DatasetOrientation.BASELINE,
                          features,
-                         timeWindow );
+                         timeWindow,
+                         Collections.emptySet() );
     }
 
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
     {
-        return this.get( this.getProject()
-                             .getCovariateDataset( variableName ),
+        CovariateDataset covariate = this.getProject()
+                                         .getCovariateDataset( variableName );
+        return this.get( covariate.dataset(),
                          DatasetOrientation.COVARIATE,
                          features,
-                         null );
+                         null,
+                         covariate.purposes() );
 
     }
 
@@ -163,11 +166,13 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                                                        String variableName,
                                                                        TimeWindowOuter timeWindow )
     {
-        return this.get( this.getProject()
-                             .getCovariateDataset( variableName ),
+        CovariateDataset covariate = this.getProject()
+                                         .getCovariateDataset( variableName );
+        return this.get( covariate.dataset(),
                          DatasetOrientation.COVARIATE,
                          features,
-                         timeWindow );
+                         timeWindow,
+                         covariate.purposes() );
     }
 
     /**
@@ -177,13 +182,15 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @param orientation the orientation of the data source
      * @param features the features
      * @param timeWindow the time window
+     * @param covariatePurposes the possibly empty set of covariate purposes for retrieval of a covariate
      * @return the supplier
      */
 
     private Supplier<Stream<TimeSeries<Double>>> get( Dataset dataset,
                                                       DatasetOrientation orientation,
                                                       Set<Feature> features,
-                                                      TimeWindowOuter timeWindow )
+                                                      TimeWindowOuter timeWindow,
+                                                      Set<CovariatePurpose> covariatePurposes )
     {
         Objects.requireNonNull( dataset );
         Objects.requireNonNull( orientation );
@@ -247,17 +254,36 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             builder.setTimeWindow( timeWindow );
         }
 
-        // TODO: reconsider how seasons are applied. For now, do not apply to
-        // left-ish data because the current interpretation of right-ish data
-        // with a forecast type is to use reference time, not valid time. See #40405
-
-        if ( orientation != DatasetOrientation.LEFT )
+        // TODO: reconsider how seasons are applied. For now, do not apply to left-ish data because the current
+        //  interpretation of right-ish data with a forecast type is to use reference time, not valid time. See #40405
+        // More importantly, the application of seasonal filtering here is an implicit optimization, not part of the
+        // explicit API. In general, filtering is performed post-retrieval, but for database retrieval, we minimize the
+        // amount of data moving. This inevitably introduces some complexity/brittleness in determining when a seasonal
+        // filter applies.
+        if ( this.shouldApplySeasonalConstraint( orientation, covariatePurposes ) )
         {
             builder.setSeasonStart( this.seasonStart )
                    .setSeasonEnd( this.seasonEnd );
         }
 
         return builder.build();
+    }
+
+    /**
+     * Determines whether the optimization step of applying any seasonal constraint upfront should be adopted. In
+     * general, filtering of datasets, other than the filters that are explicitly part of the retrieval API, happens
+     * post-retrieval, but this is an optimization for database retrieval.
+     *
+     * @param orientation the dataset orientation
+     * @param covariatePurposes the purposes of the covariate, where applicable
+     * @return whether to apply seasonal constraints during database retrieval
+     */
+
+    private boolean shouldApplySeasonalConstraint( DatasetOrientation orientation,
+                                                   Set<CovariatePurpose> covariatePurposes )
+    {
+        return orientation != DatasetOrientation.LEFT
+               && !covariatePurposes.contains( CovariatePurpose.CLIMATOLOGY );
     }
 
     /**

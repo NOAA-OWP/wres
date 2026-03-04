@@ -30,6 +30,10 @@ import wres.config.components.TimePools;
 import wres.config.components.TimePoolsBuilder;
 import wres.config.components.Variable;
 import wres.config.components.VariableBuilder;
+import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
+import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
+import wres.datamodel.time.TimeSeriesPairerByExactTime;
+import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -137,8 +141,6 @@ class PoolsGeneratorTest
         Mockito.when( project.getMeasurementUnit() )
                .thenReturn( CFS );
 
-        Evaluation evaluationDescription = MessageFactory.parse( declaration );
-
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
@@ -146,16 +148,37 @@ class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( Stream::of );
 
+        Evaluation evaluationDescription = MessageFactory.parse( declaration );
         PoolFactory poolFactory = PoolFactory.of( project );
-
-        PoolParameters poolParameters = new PoolParameters.Builder().build();
         List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
 
-        // Create the actual output
-        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> actual =
-                poolFactory.getSingleValuedPools( poolRequests,
-                                                  retrieverFactory,
-                                                  poolParameters );
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        PoolsGenerator<Double, Double, Double> generator = new PoolsGenerator.Builder<Double, Double, Double>()
+                .setProject( project )
+                .setPoolRequests( poolRequests )
+                .setRetrieverFactory( retrieverFactory )
+                .setPairer( TimeSeriesPairerByExactTime.of() )
+                .setLeftUpscaler( upscaler )
+                .setRightUpscaler( upscaler )
+                .setBaselineUpscaler( upscaler )
+                .setClimatologyUpscaler( upscaler )
+                .setLeftTransformerPreRescaling( a -> a )
+                .setRightTransformerPreRescaling( a -> a )
+                .setBaselineTransformerPreRescaling( a -> a )
+                .setLeftTransformerPostRescaling( a -> a )
+                .setRightTransformerPostRescaling( a -> a )
+                .setBaselineTransformerPostRescaling( a -> a )
+                .setClimatologyTransformerPostRescaling( a -> a )
+                .setLeftFilter( a -> true )
+                .setRightFilter( a -> true )
+                .setBaselineFilter( a -> true )
+                .setLeftMissingFilter( a -> false )
+                .setRightMissingFilter( a -> false )
+                .setBaselineMissingFilter( a -> false )
+                .setBaselineShim( a -> a )
+                .build();
+
+        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual = generator.get();
 
         // Assert expected number of suppliers
         Assertions.assertEquals( 18, actual.size() );
@@ -248,12 +271,34 @@ class PoolsGeneratorTest
 
         List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
 
-        // Create the actual output
-        PoolParameters poolParameters = new PoolParameters.Builder().build();
-        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> actual =
-                poolFactory.getEnsemblePools( poolRequests,
-                                              retrieverFactory,
-                                              poolParameters );
+        TimeSeriesUpscaler<Double> singleValuedUpscaler = TimeSeriesOfDoubleUpscaler.of();
+        TimeSeriesUpscaler<Ensemble> upscaler = TimeSeriesOfEnsembleUpscaler.of();
+        PoolsGenerator<Double, Ensemble, Ensemble> generator = new PoolsGenerator.Builder<Double, Ensemble, Ensemble>()
+                .setProject( project )
+                .setPoolRequests( poolRequests )
+                .setRetrieverFactory( retrieverFactory )
+                .setPairer( TimeSeriesPairerByExactTime.of() )
+                .setLeftUpscaler( singleValuedUpscaler )
+                .setRightUpscaler( upscaler )
+                .setBaselineUpscaler( upscaler )
+                .setClimatologyUpscaler( singleValuedUpscaler )
+                .setLeftTransformerPreRescaling( a -> a )
+                .setRightTransformerPreRescaling( a -> a )
+                .setBaselineTransformerPreRescaling( a -> a )
+                .setLeftTransformerPostRescaling( a -> a )
+                .setRightTransformerPostRescaling( a -> a )
+                .setBaselineTransformerPostRescaling( a -> a )
+                .setClimatologyTransformerPostRescaling( a -> a )
+                .setLeftFilter( a -> true )
+                .setRightFilter( a -> true )
+                .setBaselineFilter( a -> true )
+                .setLeftMissingFilter( a -> false )
+                .setRightMissingFilter( a -> false )
+                .setBaselineMissingFilter( a -> false )
+                .setBaselineShim( a -> a )
+                .build();
+
+        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> actual = generator.get();
 
         // Assert expected number of suppliers
         Assertions.assertEquals( 18, actual.size() );

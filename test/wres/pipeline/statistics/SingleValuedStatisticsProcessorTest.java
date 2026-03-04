@@ -1072,7 +1072,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                   () -> processor.apply( pairs ) );
 
         assertTrue( actual.getMessage()
-                          .startsWith( "Quantiles were required for feature tuple" ) );
+                          .startsWith( "Quantiles were required" ) );
     }
 
     @Test
