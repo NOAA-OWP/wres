@@ -325,6 +325,30 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEvaluationWithTwoClimatologyCovariatesResultsInError()
+    {
+        Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataOne )
+                                                            .purposes( Set.of( CovariatePurpose.CLIMATOLOGY ) )
+                                                            .build();
+
+        List<CovariateDataset> covariates = List.of( covariate, covariate );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "multiple 'covariates' with a 'purpose' of "
+                                                               + "'climatology'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testDatesAreDeclaredForWebServiceSourcesResultsInErrors()
     {
         Source source = SourceBuilder.builder()

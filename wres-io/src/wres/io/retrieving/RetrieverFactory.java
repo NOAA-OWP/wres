@@ -85,18 +85,6 @@ public interface RetrieverFactory<L, R, B>
     Supplier<Stream<TimeSeries<B>>> getBaselineRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
 
     /**
-     * Creates a retriever for all climatological data.
-     *
-     * @param features the spatial features
-     * @return a retriever for climatological data
-     * @throws DataAccessException if the retriever could not be created for any reason
-     * @throws IllegalArgumentException if the set of features is empty
-     * @throws NullPointerException if the set of features is null
-     */
-
-    Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<Feature> features );
-
-    /**
      * Creates a retriever for all covariate time-series with a prescribed variable name and without any pool
      * boundaries.
      *

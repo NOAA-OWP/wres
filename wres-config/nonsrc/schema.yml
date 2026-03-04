@@ -1635,6 +1635,7 @@ definitions:
     enum:
       - filter
       - detect
+      - climatology
 
   DatasetEnum:
     type: string

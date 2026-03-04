@@ -837,7 +837,8 @@ class RescalingHelper
         if ( desiredScale.getFunction() == TimeScaleFunction.UNKNOWN )
         {
             String message = MessageFormat.format( "The desired time scale is ''{0}'', but the function must be known "
-                                                   + "to conduct rescaling.",
+                                                   + "to conduct rescaling. Please declare the evaluation 'time_scale' "
+                                                   + "to clarify.",
                                                    desiredScale );
 
             return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
@@ -1167,9 +1168,7 @@ class RescalingHelper
                                                     + "should instead check that the desired measurement unit is "
                                                     + "correct.",
                                                     TimeScaleFunction.TOTAL,
-                                                    existingFunction,
-                                                    existingUnit,
-                                                    desiredUnit );
+                                                    existingFunction );
 
                 }
                 return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );

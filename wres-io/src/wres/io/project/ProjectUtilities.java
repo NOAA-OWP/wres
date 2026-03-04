@@ -364,7 +364,8 @@ class ProjectUtilities
                                .isBlank() )
         {
             throw new DeclarationException( "The declared variable names are inconsistent with the ingested data "
-                                            + "sources in one or more contexts: "
+                                            + "sources in one or more contexts. Please note that variable names are "
+                                            + "case-sensitive: "
                                             + leftError
                                             + rightError
                                             + baselineError
@@ -1006,18 +1007,20 @@ class ProjectUtilities
      * @throws IllegalArgumentException if the covariate dataset does not exist
      * @throws NullPointerException if any input is null
      */
-    static Dataset getCovariateDatset( EvaluationDeclaration declaration, String variableName )
+    static CovariateDataset getCovariateDataset( EvaluationDeclaration declaration, String variableName )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( variableName );
 
         return declaration.covariates()
                           .stream()
-                          .map( CovariateDataset::dataset )
-                          .filter( c -> Objects.nonNull( c.variable() )
-                                        && Objects.nonNull( c.variable()
+                          .filter( c -> Objects.nonNull( c.dataset()
+                                                          .variable() )
+                                        && Objects.nonNull( c.dataset()
+                                                             .variable()
                                                              .name() )
-                                        && c.variable()
+                                        && c.dataset()
+                                            .variable()
                                             .name()
                                             .equals( variableName ) )
                           .findFirst()
@@ -1259,7 +1262,7 @@ class ProjectUtilities
 
         }
 
-        // Multiple cpvariates declared, but some variable names not declared. This should be validated at declaration
+        // Multiple covariates declared, but some variable names not declared. This should be validated at declaration
         // time also, but is reinforced here
         if ( declaration.covariates()
                         .size() > 1

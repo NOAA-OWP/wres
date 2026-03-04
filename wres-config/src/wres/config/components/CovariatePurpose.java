@@ -11,5 +11,7 @@ public enum CovariatePurpose
     /** Use the covariate dataset to filter the pairs. */
     @JsonProperty( "filter" ) FILTER,
     /** Use the covariate dataset to detect events for evaluation. */
-    @JsonProperty( "detect" ) DETECT
+    @JsonProperty( "detect" ) DETECT,
+    /** Use the covariate dataset as a source of climatological data. */
+    @JsonProperty( "climatology" ) CLIMATOLOGY
 }

@@ -454,6 +454,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> covariateVariables
                 = DeclarationValidator.covariateVariableNamesAreUnique( declaration );
         events.addAll( covariateVariables );
+
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -565,6 +566,10 @@ public class DeclarationValidator
         // Covariate filters must be logical
         List<EvaluationStatusEvent> covariateFilters = DeclarationValidator.covariateFiltersAreValid( declaration );
         events.addAll( covariateFilters );
+        // Covariate purposes are valid
+        List<EvaluationStatusEvent> covariatePurposes
+                = DeclarationValidator.covariatePurposesAreValid( declaration );
+        events.addAll( covariatePurposes );
         // When obtaining data from web services, dates must be defined
         List<EvaluationStatusEvent> services = DeclarationValidator.declarationValidForWebServices( declaration );
         events.addAll( services );
@@ -823,7 +828,6 @@ public class DeclarationValidator
                                                   .collect( Collectors.toSet() );
 
         // Different observation-like types are allowed
-
         if ( covariateTypes.contains( DataType.ENSEMBLE_FORECASTS )
              || covariateTypes.contains( DataType.SINGLE_VALUED_FORECASTS ) )
         {
@@ -832,7 +836,10 @@ public class DeclarationValidator
                                          .setStatusLevel( StatusLevel.ERROR )
                                          .setEventMessage( "Discovered a forecast data 'type' for one or more "
                                                            + "'covariate' datasets, which is not allowed. The "
-                                                           + "'covariate' datasets must all be observation-like." )
+                                                           + "'covariate' datasets must all be observation-like. The "
+                                                           + "ineligible covariate data types were: "
+                                                           + covariateTypes
+                                                           + "." )
                                          .build();
             events.add( event );
         }
@@ -1088,15 +1095,16 @@ public class DeclarationValidator
 
         // Variable names are additionally required for every covariate when there are two or more as this helps to
         // disambiguate the time-series to which the covariate conditions apply, post-ingest
-        if ( declaration.covariates()
-                        .size() > 1
-             && declaration.covariates()
-                           .stream()
-                           .anyMatch( c -> Objects.isNull( c.dataset()
-                                                            .variable() )
-                                           || Objects.isNull( c.dataset()
-                                                               .variable()
-                                                               .name() ) ) )
+
+        // Filter out covariates whose only purpose is climatology, as the variable is the evaluation variable
+        List<CovariateDataset> covariates = declaration.covariates();
+        if ( covariates.size() > 1
+             && covariates.stream()
+                          .anyMatch( c -> Objects.isNull( c.dataset()
+                                                           .variable() )
+                                          || Objects.isNull( c.dataset()
+                                                              .variable()
+                                                              .name() ) ) )
         {
             EvaluationStatusEvent error =
                     EvaluationStatusEvent.newBuilder()
@@ -1220,6 +1228,46 @@ public class DeclarationValidator
                                                              + "were: "
                                                              + duplicates
                                                              + "." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that all covariates purposes are valid.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> covariatePurposesAreValid( EvaluationDeclaration declaration )
+    {
+        if ( declaration.covariates()
+                        .isEmpty() )
+        {
+            LOGGER.debug( "Not checking covariate filters because no covariates were declared." );
+
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Only one covariate whose purpose is to define the climatological data
+        long count = declaration.covariates()
+                                .stream()
+                                .filter( c -> c.purposes()
+                                               .contains( CovariatePurpose.CLIMATOLOGY ) )
+                                .count();
+
+        if ( count > 1 )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered multiple 'covariates' with a 'purpose' of "
+                                                             + "'climatology', which is not allowed. Please remove the "
+                                                             + ( "'purpose' of 'climatology' from all but one of the "
+                                                                 + "'covariates' and try again." ) )
                                            .build();
             events.add( event );
         }
@@ -1605,16 +1653,14 @@ public class DeclarationValidator
         {
             String extra = "";
 
-            if ( Objects.nonNull( dataset.dataset() )
-                 && Objects.nonNull( dataset.dataset()
-                                            .variable() )
-                 && Objects.nonNull( dataset.dataset()
-                                            .variable()
-                                            .name() ) )
+            Dataset innerDataset = dataset.dataset();
+            if ( Objects.nonNull( innerDataset )
+                 && Objects.nonNull( innerDataset.variable() )
+                 && Objects.nonNull( innerDataset.variable()
+                                                 .name() ) )
             {
-                extra = "for variable '" + dataset.dataset()
-                                                  .variable()
-                                                  .name() + "' ";
+                extra = "for variable '" + innerDataset.variable()
+                                                       .name() + "' ";
             }
 
             EvaluationStatusEvent event
@@ -4415,14 +4461,15 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "Discovered one or more covariates whose feature "
                                                              + "authorities were declared explicitly, but did not "
-                                                             + "match a feature authority associated with any other "
-                                                             + "dataset ('observed', 'predicted' or, where applicable, "
-                                                             + "'baseline'). Each 'covariate' dataset must have the "
-                                                             + "same feature authority as one of these other datasets. "
-                                                             + "Please fix the declaration or use a 'covariate' "
-                                                             + "dataset that has the same feature authority as an "
-                                                             + "existing dataset. The unrecognized feature authorities "
-                                                             + "associated with 'covariate' datasets were: "
+                                                             + "match a feature authority associated with one of the "
+                                                             + "main datasets ('observed', 'predicted' or, where "
+                                                             + "applicable, 'baseline'). Each 'covariate' dataset must "
+                                                             + "have the same feature authority as one of the main "
+                                                             + "datasets. Please use a 'covariate' dataset that has "
+                                                             + "the same feature authority as one of the main "
+                                                             + "datasets, qualifying the feature authority of the main "
+                                                             + "dataset, as needed. The unrecognized feature "
+                                                             + "authorities associated with 'covariate' datasets were: "
                                                              + missing
                                                              + "." )
                                            .build();

@@ -20,7 +20,8 @@ import wres.config.serializers.VariableSerializer;
 import wres.config.serializers.ZoneOffsetSerializer;
 
 /**
- * Observed or predicted dataset.
+ * A declared dataset.
+ *
  * @param label the label
  * @param sources the sources
  * @param variable the variable

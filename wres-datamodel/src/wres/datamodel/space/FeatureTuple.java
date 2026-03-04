@@ -103,8 +103,8 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "left", this.getLeft() )
-                .append( "right", this.getRight() )
+                .append( "observed", this.getLeft() )
+                .append( "predicted", this.getRight() )
                 .append( "baseline", this.getBaseline() )
                 .toString();
     }

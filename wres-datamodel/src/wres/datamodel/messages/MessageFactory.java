@@ -730,6 +730,9 @@ public class MessageFactory
                                                           .setVariableName( covariate.dataset()
                                                                                      .variable()
                                                                                      .name() );
+            // Add the purposes
+            covariate.purposes()
+                     .forEach( p -> covariateBuilder.addPurposes( Covariate.Purpose.valueOf( p.name() ) ) );
 
             if ( Objects.nonNull( covariate.minimum() ) )
             {

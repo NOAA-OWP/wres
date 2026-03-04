@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 
-import wres.config.components.Dataset;
+import wres.config.components.CovariateDataset;
 import wres.config.components.DatasetOrientation;
 import wres.config.components.EvaluationDeclaration;
 import wres.config.components.Offset;
@@ -121,14 +121,14 @@ public interface Project
     Variable getBaselineVariable();
 
     /**
-     * Returns the covarariate dataset for the named variable.
+     * Returns the covariate dataset for the named variable.
      * @param variableName the variable name
      * @return the covariate dataset
      * @throws IllegalArgumentException if the named covariate does not exist
      * @throws NullPointerException if the variable name is null
      */
 
-    Dataset getCovariateDataset( String variableName );
+    CovariateDataset getCovariateDataset( String variableName );
 
     /**
      * @param orientation the side of data for which the ensemble labels are required
