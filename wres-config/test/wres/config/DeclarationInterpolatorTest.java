@@ -1874,6 +1874,38 @@ class DeclarationInterpolatorTest
     }
 
     @Test
+    void testInterpolateCovariatePurposeWhenOneCovariateHasPurpose()
+    {
+        // GitHub #732
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
+        CovariateDataset anotherCovariate =
+                CovariateDatasetBuilder.builder()
+                                       .dataset( this.observedDataset )
+                                       .purposes( Collections.singleton( CovariatePurpose.CLIMATOLOGY ) )
+                                       .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .covariates( List.of( covariate,
+                                                                                              anotherCovariate ) )
+                                                                        .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration,
+                                                                                  false );
+        Set<CovariatePurpose> expectedPurposes = Set.of( CovariatePurpose.FILTER, CovariatePurpose.CLIMATOLOGY );
+        Set<CovariatePurpose> actualPurposes = interpolated.covariates()
+                                                           .stream()
+                                                           .flatMap( c -> c.purposes()
+                                                                           .stream() )
+                                                           .collect( Collectors.toSet() );
+
+        assertEquals( expectedPurposes, actualPurposes );
+    }
+
+    @Test
     void testInterpolateForecastDataTypeForWrdsSourceWhenForecastDeclarationIncluded()
     {
         Instant validOne = Instant.parse( "2033-12-01T09:15:23Z" );

@@ -132,8 +132,10 @@ public class DeclarationInterpolator
     /** Re-used string. */
     private static final String TYPE = "'type'.";
     /** Re-used string. */
-    public static final String INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF =
+    private static final String INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF =
             "Interpolated the covariate dataset {} to have a purpose of {}.";
+    /** Re-used string. */
+    private static final String DISCOVERED_A_COVARIATE_DATASET = "Discovered a covariate dataset ";
 
     /**
      * Performs pre-ingest interpolation of "missing" declaration from the available declaration. Currently, this
@@ -172,8 +174,8 @@ public class DeclarationInterpolator
         // ingest, but some reading/ingest (e.g., from web services that support several data types) requires the type
         // to be declared or interpolated upfront
         events.addAll( DeclarationInterpolator.interpolateDataTypesPreIngest( adjustedBuilder ) );
+        events.addAll( DeclarationInterpolator.interpolateCovariatePurpose( adjustedBuilder ) );
 
-        DeclarationInterpolator.interpolateCovariatePurpose( adjustedBuilder );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedBuilder );
         // Interpolate summary statistics when required
@@ -751,9 +753,12 @@ public class DeclarationInterpolator
      * Interpolates the purpose of a covariate dataset from the context in which it is declared.
      *
      * @param builder the declaration builder to adjust
+     * @return the status events
      */
-    private static void interpolateCovariatePurpose( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolateCovariatePurpose( EvaluationDeclarationBuilder builder )
     {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
         if ( builder.covariates()
                     .stream()
                     .anyMatch( s -> s.purposes()
@@ -768,30 +773,74 @@ public class DeclarationInterpolator
                                                                       .isEmpty() )
                                                        .toList();
             List<CovariateDataset> adjusted = new ArrayList<>();
+
+            // Add the covariates with a declared purpose
+            builder.covariates()
+                   .stream()
+                   .filter( n -> !n.purposes()
+                                   .isEmpty() )
+                   .forEach( adjusted::add );
+
             for ( CovariateDataset next : covariates )
             {
                 CovariateDatasetBuilder adjustedBuilder = CovariateDatasetBuilder.builder( next );
-                if ( Objects.nonNull( next.minimum() )
-                     || Objects.nonNull( next.maximum() ) )
+
+                String extra = "";
+
+                if ( Objects.nonNull( next.dataset()
+                                          .variable() )
+                     && Objects.nonNull( next.dataset()
+                                             .variable()
+                                             .name() ) )
                 {
-                    adjustedBuilder.purposes( Set.of( CovariatePurpose.FILTER ) );
-                    LOGGER.debug( INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF,
-                                  next.dataset(),
-                                  CovariatePurpose.FILTER );
+                    extra = "for variable '" + next.dataset()
+                                                   .variable()
+                                                   .name() + "' ";
                 }
-                else
+
+                CovariatePurpose purpose;
+
+                if ( Objects.nonNull( builder.eventDetection() )
+                     && Objects.isNull( next.minimum() )
+                     && Objects.isNull( next.maximum() ) )
                 {
+                    purpose = CovariatePurpose.DETECT;
                     adjustedBuilder.purposes( Set.of( CovariatePurpose.DETECT ) );
                     LOGGER.debug( INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF,
                                   next.dataset(),
                                   CovariatePurpose.DETECT );
                 }
+                // Default to filter
+                else
+                {
+                    purpose = CovariatePurpose.FILTER;
+                    adjustedBuilder.purposes( Set.of( CovariatePurpose.FILTER ) );
+                    LOGGER.debug( INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF,
+                                  next.dataset(),
+                                  CovariatePurpose.FILTER );
+                }
+
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( DISCOVERED_A_COVARIATE_DATASET
+                                                                 + extra
+                                                                 + "without an explicit 'purpose' declared."
+                                                                 + " Based on the other declaration present, "
+                                                                 + "the 'purpose' was interpolated as '"
+                                                                 + purpose
+                                                                 + "'. If this is incorrect, please declare the "
+                                                                 + "'purpose' of this covariate explicitly." )
+                                               .build();
+                events.add( event );
 
                 adjusted.add( adjustedBuilder.build() );
             }
 
             builder.covariates( adjusted );
         }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -2155,7 +2204,7 @@ public class DeclarationInterpolator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                               .setEventMessage( "Discovered a covariate dataset "
+                                               .setEventMessage( DISCOVERED_A_COVARIATE_DATASET
                                                                  + extra
                                                                  + "without an explicit 'feature_authority' declared."
                                                                  + " It is assumed that this covariate dataset uses "
@@ -2180,7 +2229,7 @@ public class DeclarationInterpolator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                               .setEventMessage( "Discovered a covariate dataset "
+                                               .setEventMessage( DISCOVERED_A_COVARIATE_DATASET
                                                                  + extra
                                                                  + " with an explicit 'feature_authority' of '"
                                                                  + covariateDataset.dataset()

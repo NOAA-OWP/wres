@@ -364,7 +364,8 @@ class ProjectUtilities
                                .isBlank() )
         {
             throw new DeclarationException( "The declared variable names are inconsistent with the ingested data "
-                                            + "sources in one or more contexts: "
+                                            + "sources in one or more contexts. Please note that variable names are "
+                                            + "case-sensitive: "
                                             + leftError
                                             + rightError
                                             + baselineError
@@ -1261,7 +1262,7 @@ class ProjectUtilities
 
         }
 
-        // Multiple cpvariates declared, but some variable names not declared. This should be validated at declaration
+        // Multiple covariates declared, but some variable names not declared. This should be validated at declaration
         // time also, but is reinforced here
         if ( declaration.covariates()
                         .size() > 1

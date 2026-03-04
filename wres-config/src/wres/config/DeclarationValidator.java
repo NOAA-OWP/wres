@@ -1095,15 +1095,16 @@ public class DeclarationValidator
 
         // Variable names are additionally required for every covariate when there are two or more as this helps to
         // disambiguate the time-series to which the covariate conditions apply, post-ingest
-        if ( declaration.covariates()
-                        .size() > 1
-             && declaration.covariates()
-                           .stream()
-                           .anyMatch( c -> Objects.isNull( c.dataset()
-                                                            .variable() )
-                                           || Objects.isNull( c.dataset()
-                                                               .variable()
-                                                               .name() ) ) )
+
+        // Filter out covariates whose only purpose is climatology, as the variable is the evaluation variable
+        List<CovariateDataset> covariates = declaration.covariates();
+        if ( covariates.size() > 1
+             && covariates.stream()
+                          .anyMatch( c -> Objects.isNull( c.dataset()
+                                                           .variable() )
+                                          || Objects.isNull( c.dataset()
+                                                              .variable()
+                                                              .name() ) ) )
         {
             EvaluationStatusEvent error =
                     EvaluationStatusEvent.newBuilder()
