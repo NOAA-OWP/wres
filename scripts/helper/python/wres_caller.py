@@ -140,11 +140,11 @@ def obtain_output(job_location, job_id, output_folder):
     # writes it to files in awips.
     if not args.silent:
         print("Creating the directory " + output_folder + "/" + job_id + " to store output")
-    os.mkdir("./" + output_folder + "/" + job_id)
+    os.mkdir(output_folder + "/" + job_id)
 
     for result in results:
        output_link = job_location + "/" + result[0]
-       filename = "./" + output_folder + "/" + job_id + "/" + result[1]
+       filename = output_folder + "/" + job_id + "/" + result[1]
        r = requests.get(output_link, allow_redirects = True, verify = wres_ca_file,
                             headers = { 'Accept': 'text/html' })
        with open(filename, "wb") as f:
@@ -166,7 +166,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-f', '--filename',   help='Declaration filename')
 parser.add_argument('-u', '--host',       help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
 parser.add_argument('-c', '--cert',       help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FILE environment variable.')
-parser.add_argument('-o', '--output',     help='Relative directory where output is to be written.', default=".")
+parser.add_argument('-o', '--output',     help='Absolute path used to store output to. If non provided will be relative to scripts location.', default="./")
 parser.add_argument('-l', '--observed',   help='Data to post for the observed sources either one file or a directory.')
 parser.add_argument('-p', '--predicted',  help='Data to post for the predicted sources either one file or a directory.')
 parser.add_argument('-b', '--baseline',   help='Data to post for the baseline sources either one file or a directory.')
