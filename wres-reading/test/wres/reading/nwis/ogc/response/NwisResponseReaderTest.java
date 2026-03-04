@@ -27,6 +27,7 @@ import wres.config.components.DatasetOrientation;
 import wres.config.components.Source;
 import wres.config.components.SourceBuilder;
 import wres.config.components.VariableBuilder;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -390,6 +391,77 @@ class NwisResponseReaderTest
             }
             """;
 
+    /** An example response from the continuous values service with missing values. */
+    private static final String CONTINUOUS_VALUES_RESPONSE_WITH_MISSINGS = """
+            {
+                "type":"FeatureCollection",
+                "features":[
+                    {
+                        "type":"Feature",
+                        "properties":{
+                            "time_series_id":"37e0d79fca1a4723a89a5670ba09f8b4",
+                            "monitoring_location_id":"USGS-09165000",
+                            "statistic_id":"00011",
+                            "value":null,
+                            "parameter_code":"00060",
+                            "time":"2020-01-01T10:00:00+00:00",
+                            "unit_of_measure":"ft^3/s"
+                        },
+                        "id":"13e654ff-b239-4917-9555-10d3eb528233",
+                        "geometry":null
+                    },
+                    {
+                        "type":"Feature",
+                        "properties":{
+                            "time_series_id":"37e0d79fca1a4723a89a5670ba09f8b4",
+                            "monitoring_location_id":"USGS-09165000",
+                            "statistic_id":"00011",
+                            "value":"15.3",
+                            "parameter_code":"00060",
+                            "time":"2020-01-01T22:00:00+00:00",
+                            "unit_of_measure":"ft^3/s"
+                        },
+                        "id":"70bad181-b876-4dbf-8820-0797757ed6d9",
+                        "geometry":null
+                    }
+                ],
+                "numberReturned":2,
+                "links": [
+                  {
+                    "rel": "next",
+                    "href": "https://foo/next.link",
+                    "type": "application/geo+json",
+                    "title": "Items (next)"
+                  },
+                  {
+                    "type": "application/geo+json",
+                    "rel": "self",
+                    "title": "This document as GeoJSON",
+                    "href": "https://foo/self.link"
+                  },
+                  {
+                    "rel": "alternate",
+                    "type": "application/ld+json",
+                    "title": "This document as RDF (JSON-LD)",
+                    "href": "https://foo/alternate.link"
+                  },
+                  {
+                    "type": "text/html",
+                    "rel": "alternate",
+                    "title": "This document as HTML",
+                    "href": "foo/alternate_html.link"
+                  },
+                  {
+                    "type": "application/json",
+                    "title": "Daily values",
+                    "rel": "collection",
+                    "href": "foo/collection.link"
+                  }
+                ],
+                "timeStamp":"2026-01-08T17:02:34.732278Z"
+            }
+            """;
+
     @Test
     void testReadDailyValues() throws IOException
     {
@@ -546,6 +618,78 @@ class NwisResponseReaderTest
                     new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
                                                     .addEvent( Event.of( Instant.parse( "2020-01-01T10:00:00Z" ),
                                                                          14.5 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-01T22:00:00Z" ),
+                                                                         15.3 ) )
+                                                    .build();
+
+            // Make assertions about the data source and the series content
+            assertAll( () -> assertEquals( "https://foo/next.link",
+                                           series.get( 0 )
+                                                 .getDataSource()
+                                                 .nextPage()
+                                                 .toString() ),
+                       () -> assertEquals( expected, actual ) );
+        }
+    }
+
+    @Test
+    void testReadContinuousValuesWithMissings() throws IOException
+    {
+        // GitHub #735
+        try ( InputStream inputStream = new ByteArrayInputStream( CONTINUOUS_VALUES_RESPONSE_WITH_MISSINGS.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "http://foo" );
+
+            Source fakeDeclarationSource = SourceBuilder.builder()
+                                                        .uri( fakeUri )
+                                                        .timeZoneOffset( ZoneOffset.UTC )
+                                                        .build();
+
+            Dataset dataset = DatasetBuilder.builder()
+                                            .sources( List.of( fakeDeclarationSource ) )
+                                            .variable( VariableBuilder.builder()
+                                                                      .name( "00060" )
+                                                                      .build() )
+                                            .build();
+
+            DataSource dataSource = DataSource.builder()
+                                              .disposition( DataSource.DataDisposition.GEOJSON )
+                                              .source( fakeDeclarationSource )
+                                              .context( dataset )
+                                              .links( Collections.emptyList() )
+                                              .uri( fakeUri )
+                                              .datasetOrientation( DatasetOrientation.LEFT )
+                                              .build();
+
+            NwisResponseReader reader = NwisResponseReader.of();
+
+            List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
+                                                 .toList();
+
+            assertEquals( 1, series.size() );
+
+            TimeSeries<Double> actual = series.get( 0 )
+                                              .getSingleValuedTimeSeries();
+
+            Geometry expectedGeometry = Geometry.newBuilder()
+                                                .setName( "09165000" )
+                                                .setSrid( 4326 )
+                                                .build();
+            Feature expectedFeature = Feature.of( expectedGeometry );
+
+            TimeScaleOuter expectedTimeScaleOuter = TimeScaleOuter.of();
+
+            TimeSeriesMetadata expectedMetadata =
+                    new TimeSeriesMetadata.Builder().setReferenceTimes( Map.of() )
+                                                    .setUnit( "ft^3/s" )
+                                                    .setVariableName( "00060" )
+                                                    .setTimeScale( expectedTimeScaleOuter )
+                                                    .setFeature( expectedFeature )
+                                                    .build();
+            TimeSeries<Double> expected =
+                    new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-01T10:00:00Z" ),
+                                                                         MissingValues.DOUBLE ) )
                                                     .addEvent( Event.of( Instant.parse( "2020-01-01T22:00:00Z" ),
                                                                          15.3 ) )
                                                     .build();
