@@ -1637,6 +1637,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                 messageStart + "add a post-rescaling transformer for the right data." );
         Objects.requireNonNull( this.baselineTransformerPostRescaling,
                                 messageStart + "add a post-rescaling transformer for the baseline data." );
+        Objects.requireNonNull( this.climatologyTransformerPostRescaling,
+                                messageStart + "add a post-rescaling transformer for the climatological data." );
         Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
         Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
         Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
@@ -1647,7 +1649,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                                             + DATA );
 
         // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
-        if ( this.getPoolRequests().isEmpty() )
+        if ( this.getPoolRequests()
+                 .isEmpty() )
         {
             throw new IllegalArgumentException( messageStart + "cannot create pools with zero pool requests. Add one "
                                                 + "or more pool requests and try again." );
@@ -1659,6 +1662,12 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             throw new IllegalArgumentException( messageStart
                                                 + "a baseline generator should be supplied when required, "
                                                 + "otherwise it should not be supplied." );
+        }
+
+        if ( Objects.isNull( this.baselineGenerator ) )
+        {
+            Objects.requireNonNull( this.baselineShim, messageStart + "add either a baseline shim or a "
+                                                       + "baseline generator." );
         }
     }
 }

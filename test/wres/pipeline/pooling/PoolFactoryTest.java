@@ -4,15 +4,19 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
@@ -25,14 +29,17 @@ import wres.config.components.TimeInterval;
 import wres.config.components.TimeIntervalBuilder;
 import wres.config.components.TimePools;
 import wres.config.components.TimePoolsBuilder;
+import wres.config.components.Variable;
 import wres.config.components.VariableBuilder;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.types.Ensemble;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
+import wres.io.retrieving.database.EnsembleRetrieverFactory;
 import wres.io.retrieving.database.SingleValuedRetrieverFactory;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Evaluation;
@@ -48,6 +55,16 @@ import wres.statistics.generated.GeometryTuple;
 class PoolFactoryTest
 {
     private static final String CFS = "CFS";
+    private static final String STREAMFLOW = "STREAMFLOW";
+
+    /** The mocks. */
+    private AutoCloseable mocks;
+
+    @BeforeEach
+    void setup()
+    {
+        this.mocks = MockitoAnnotations.openMocks( this );
+    }
 
     @Test
     void testGetPoolRequestsForEighteenTimeWindowsAndOneFeatureGroupProducesEighteenPoolRequests()
@@ -199,5 +216,203 @@ class PoolFactoryTest
                                            .collect( Collectors.toSet() );
 
         Assertions.assertEquals( 48, actualPoolIds.size() );
+    }
+
+    @Test
+    void testGetProducesEighteenPoolSuppliersForSingleValuedCase()
+    {
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 40 ) )
+                                                            .build();
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( Duration.ofHours( 23 ) )
+                                                  .frequency( Duration.ofHours( 17 ) )
+                                                  .build();
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2551-03-17T00:00:00Z" ) )
+                                                         .maximum( Instant.parse( "2551-03-20T00:00:00Z" ) )
+                                                         .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( Duration.ofHours( 13 ) )
+                                                       .frequency( Duration.ofHours( 7 ) )
+                                                       .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder().name( "DISCHARGE" )
+                                                               .build() )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .variable( VariableBuilder.builder().name( "STREAMFLOW" )
+                                                                .build() )
+                                      .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
+
+        Geometry feature = MessageUtilities.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
+        // Mock the sufficient elements of Project
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+        Mockito.when( project.getId() )
+               .thenReturn( 12345L );
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( "DISCHARGE", null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( STREAMFLOW, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
+               .thenReturn( null );
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
+
+        Evaluation evaluationDescription = MessageFactory.parse( declaration );
+
+        // Mock a feature-shaped retriever factory
+        RetrieverFactory<Double, Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( Stream::of );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( Stream::of );
+
+        PoolFactory poolFactory = PoolFactory.of( project );
+
+        PoolParameters poolParameters = new PoolParameters.Builder().build();
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
+
+        // Create the actual output
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> actual =
+                poolFactory.getSingleValuedPools( poolRequests,
+                                                  retrieverFactory,
+                                                  poolParameters );
+
+        // Assert expected number of suppliers
+        Assertions.assertEquals( 18, actual.size() );
+    }
+
+    /**
+     * Tests {@link PoolsGenerator#get()} using project declaration that is representative of system test
+     * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c. While that scenario does not supply ensemble
+     * data, the purpose of this test is to assert that the correct number of pools is generated, rather than the
+     * contents of each pool.
+     */
+
+    @Test
+    void testGetProducesEighteenPoolSuppliersForEnsembleCase()
+    {
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 40 ) )
+                                                            .build();
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( Duration.ofHours( 23 ) )
+                                                  .frequency( Duration.ofHours( 17 ) )
+                                                  .build();
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2551-03-17T00:00:00Z" ) )
+                                                         .maximum( Instant.parse( "2551-03-20T00:00:00Z" ) )
+                                                         .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( Duration.ofHours( 13 ) )
+                                                       .frequency( Duration.ofHours( 7 ) )
+                                                       .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder().name( "DISCHARGE" )
+                                                               .build() )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .variable( VariableBuilder.builder().name( "STREAMFLOW" )
+                                                                .build() )
+                                      .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( Collections.singleton( referenceTimePools ) )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
+
+        Geometry feature = MessageUtilities.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
+        // Mock the sufficient elements of Project
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+        Mockito.when( project.getId() )
+               .thenReturn( 12345L );
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( "DISCHARGE", null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( STREAMFLOW, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
+               .thenReturn( null );
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
+
+        Evaluation evaluationDescription = MessageFactory.parse( declaration );
+
+        // Mock a feature-shaped retriever factory
+        RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( Stream::of );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( Stream::of );
+
+        PoolFactory poolFactory = PoolFactory.of( project );
+
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
+
+        // Create the actual output
+        PoolParameters poolParameters = new PoolParameters.Builder().build();
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> actual =
+                poolFactory.getEnsemblePools( poolRequests,
+                                              retrieverFactory,
+                                              poolParameters );
+
+        // Assert expected number of suppliers
+        Assertions.assertEquals( 18, actual.size() );
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        if ( Objects.nonNull( this.mocks ) )
+        {
+            this.mocks.close();
+        }
     }
 }
