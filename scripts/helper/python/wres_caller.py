@@ -113,7 +113,12 @@ def wait_for_job_finish(job_location):
                               verify = wres_ca_file
                              ).text
         if not args.silent:
-            print("Failure reason is as follows: "+ stdout.split("EvaluationService The evaluation failed with the following stack trace:",1)[1])
+            holder = stdout.split("The evaluation failed with the following stack trace:", 1)
+            # Checks we are able to break up the string properly to extract just the
+            if (len(holder) > 1):
+                print("Failure reason is as follows: "+ holder[1])
+            else:
+                print("Unable to extract error, here is the full stack trace: \n" + stdout)
         exit( 1 )
 
 def obtain_output(job_location, job_id, output_folder):
@@ -161,7 +166,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-f', '--filename',   help='Declaration filename')
 parser.add_argument('-u', '--host',       help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
 parser.add_argument('-c', '--cert',       help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FILE environment variable.')
-parser.add_argument('-o', '--output',     help='Directory where output is to be written.', default=".")
+parser.add_argument('-o', '--output',     help='Relative directory where output is to be written.', default=".")
 parser.add_argument('-l', '--observed',   help='Data to post for the observed sources either one file or a directory.')
 parser.add_argument('-p', '--predicted',  help='Data to post for the predicted sources either one file or a directory.')
 parser.add_argument('-b', '--baseline',   help='Data to post for the baseline sources either one file or a directory.')
