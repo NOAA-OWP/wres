@@ -66,6 +66,10 @@ final class TimeSeriesSlicerTest
     private static final Instant T1985_01_01T01_00_00Z = Instant.parse( "1985-01-01T01:00:00Z" );
     private static final Instant T1985_01_01T02_00_00Z = Instant.parse( "1985-01-01T02:00:00Z" );
     private static final Instant T1985_01_01T03_00_00Z = Instant.parse( "1985-01-01T03:00:00Z" );
+    private static final Instant T1985_01_01T04_00_00Z = Instant.parse( "1985-01-01T04:00:00Z" );
+    private static final Instant T1985_01_01T05_00_00Z = Instant.parse( "1985-01-01T05:00:00Z" );
+    private static final Instant T1985_01_01T06_00_00Z = Instant.parse( "1985-01-01T06:00:00Z" );
+    private static final Instant T1985_01_01T07_00_00Z = Instant.parse( "1985-01-01T07:00:00Z" );
     private static final Instant T1985_01_02T00_00_00Z = Instant.parse( "1985-01-02T00:00:00Z" );
     private static final Instant T1985_01_02T01_00_00Z = Instant.parse( "1985-01-02T01:00:00Z" );
     private static final Instant T1985_01_02T02_00_00Z = Instant.parse( "1985-01-02T02:00:00Z" );
@@ -826,6 +830,49 @@ final class TimeSeriesSlicerTest
         expectedEvents.add( Event.of( Instant.parse( "2010-01-01T14:00:00Z" ), 2.0 ) );
         expectedEvents.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
         expectedEvents.add( Event.of( Instant.parse( T2010_01_01T16_00_00Z ), 4.0 ) );
+
+        TimeSeries<Double> expected = TimeSeries.of( metadata, expectedEvents );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSnipTimeSeriesToTimeWindow()
+    {
+        // Build a time-series with three basis times
+        SortedSet<Event<Double>> events = new TreeSet<>();
+
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ISSUED_TIME,
+                                                                     T1985_01_01T00_00_00Z ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                                             VARIABLE_NAME,
+                                                             FEATURE_NAME,
+                                                             UNIT );
+
+        events.add( Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
+        events.add( Event.of( T1985_01_01T02_00_00Z, 2.0 ) );
+        events.add( Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
+        events.add( Event.of( T1985_01_01T04_00_00Z, 4.0 ) );
+        events.add( Event.of( T1985_01_01T05_00_00Z, 5.0 ) );
+        events.add( Event.of( T1985_01_01T06_00_00Z, 6.0 ) );
+        events.add( Event.of( T1985_01_01T07_00_00Z, 7.0 ) );
+
+        TimeSeries<Double> series = TimeSeries.of( metadata, events );
+
+        // Right closed interval
+        TimeWindow timeWindow = MessageUtilities.getTimeWindow( T1985_01_01T00_00_00Z,
+                                                                T1985_01_01T00_00_00Z,
+                                                                T1985_01_01T02_00_00Z,
+                                                                T1985_01_01T06_00_00Z,
+                                                                Duration.ofHours( 3 ),
+                                                                Duration.ofHours( 5 ) );
+        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
+        TimeSeries<Double> actual = TimeSeriesSlicer.snip( series, timeWindowOuter );
+
+        SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
+
+        expectedEvents.add( Event.of( T1985_01_01T04_00_00Z, 4.0 ) );
+        expectedEvents.add( Event.of( T1985_01_01T05_00_00Z, 5.0 ) );
 
         TimeSeries<Double> expected = TimeSeries.of( metadata, expectedEvents );
 

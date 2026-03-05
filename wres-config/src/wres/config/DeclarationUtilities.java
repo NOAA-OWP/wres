@@ -349,8 +349,8 @@ public class DeclarationUtilities
         Objects.requireNonNull( dataset );
 
         return Objects.nonNull( dataset.type() )
-               && dataset.type() == DataType.ENSEMBLE_FORECASTS
-               || dataset.type() == DataType.SINGLE_VALUED_FORECASTS;
+               && dataset.type()
+                         .isForecastType();
     }
 
     /**
