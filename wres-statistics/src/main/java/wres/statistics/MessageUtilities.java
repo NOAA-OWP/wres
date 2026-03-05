@@ -18,6 +18,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeWindow;
 
@@ -539,6 +540,31 @@ public class MessageUtilities
         }
 
         return covariate.getVariableName() + " <= " + covariate.getMaximumInclusiveValue();
+    }
+
+    /**
+     * <p>Establishes whether the reference time type is consistent with forecasts, specifically whether it is one of
+     * {@link wres.statistics.generated.ReferenceTime.ReferenceTimeType#T0} or
+     * {@link wres.statistics.generated.ReferenceTime.ReferenceTimeType#ISSUED_TIME}.
+     *
+     * <p>Whether a reference time type is consistent with forecasts is largely a practice-based determination, rather
+     * a definitive or theoretical one, but the current usage of these reference time types is consistently aligned with
+     * forecasting. Nevertheless, this could change. For example, in principle, an issued time is nothing more than the
+     * time at which a time-series is issued and may not signal forecasting in all application areas.
+     *
+     * <p>The interpretation in this context is whether the lead durations or duration between the reference time and
+     * valid time is meaningful as a *subject of evaluation*. The latter is true for forecasts.
+     *
+     * @param referenceTimeType the reference time type
+     * @return whether the reference time type is currently considered a forecast type
+     */
+
+    public static boolean isForecastType( ReferenceTime.ReferenceTimeType referenceTimeType )
+    {
+        Objects.requireNonNull( referenceTimeType );
+
+        return referenceTimeType == ReferenceTime.ReferenceTimeType.T0
+               || referenceTimeType == ReferenceTime.ReferenceTimeType.ISSUED_TIME;
     }
 
     /**

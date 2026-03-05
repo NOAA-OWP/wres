@@ -297,7 +297,8 @@ class CachingRetrieverFactory<L, R, B> implements RetrieverFactory<L, R, B>
         {
             case LEFT ->
             {
-                if ( this.project.getDeclaration().left()
+                if ( this.project.getDeclaration()
+                                 .left()
                                  .type()
                                  .isForecastType() )
                 {

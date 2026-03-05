@@ -1499,9 +1499,10 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( types );
 
-        return types.stream().anyMatch( t -> t == ReferenceTimeType.T0
-                                             || t == ReferenceTimeType.ISSUED_TIME
-                                             || t == ReferenceTimeType.ANALYSIS_START_TIME );
+        return types.stream()
+                    .anyMatch( t -> t == ReferenceTimeType.T0
+                                    || t == ReferenceTimeType.ISSUED_TIME
+                                    || t == ReferenceTimeType.ANALYSIS_START_TIME );
     }
 
     /**
@@ -1726,13 +1727,12 @@ public final class TimeSeriesSlicer
         {
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace(
-                        "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
-                        + "were discovered within the series to snip to. Returning the unsnipped series.",
-                        toSnip,
-                        snipTo,
-                        lowerBuffer,
-                        upperBuffer );
+                LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no "
+                              + "events were discovered within the series to snip to. Returning the unsnipped series.",
+                              toSnip,
+                              snipTo,
+                              lowerBuffer,
+                              upperBuffer );
             }
 
             return toSnip;
@@ -1810,6 +1810,66 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Snips the input series to the prescribed time window using a right-closed interval for each time dimension,
+     * i.e., the upper bound is included, the lower bound is excluded. Only snips lead durations with respect to
+     * reference times with that are consistent with {@link MessageUtilities#isForecastType(ReferenceTimeType)}.
+     *
+     * @param <T> the time-series event value type
+     * @param toSnip the time-series to snip
+     * @param snipTo the time window to use when snipping
+     * @return the snipped time-series
+     */
+
+    public static <T> TimeSeries<T> snip( TimeSeries<T> toSnip, TimeWindowOuter snipTo )
+    {
+        Objects.requireNonNull( toSnip );
+
+        TimeSeries<T> returnMe = toSnip;
+
+        if ( Objects.nonNull( snipTo ) )
+        {
+
+            // Snip datetimes first, because lead durations are only snipped with respect to specific types of
+            // reference time for which lead durations are meaningful as a subject of evaluation, i.e., forecasts
+            TimeWindow inner = MessageUtilities.getTimeWindow( snipTo.getEarliestReferenceTime(),
+                                                               snipTo.getLatestReferenceTime(),
+                                                               snipTo.getEarliestValidTime(),
+                                                               snipTo.getLatestValidTime() );
+            TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
+
+            LOGGER.debug( "Snipping time-series {} to the time window of {}.",
+                          toSnip.hashCode(),
+                          partialSnip );
+
+            returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );
+
+            // For all other reference time types, filter the datetimes only
+            Set<ReferenceTimeType> filtered = toSnip.getReferenceTimes()
+                                                    .keySet()
+                                                    .stream()
+                                                    .filter( MessageUtilities::isForecastType )
+                                                    .collect( Collectors.toUnmodifiableSet() );
+            if ( !filtered.isEmpty()
+                 && !snipTo.bothLeadDurationsAreUnbounded() )
+            {
+                LOGGER.debug( "Additionally snipping time-series {} to lead durations ({},{}] for the reference time "
+                              + "types of {}.",
+                              toSnip.hashCode(),
+                              snipTo.getEarliestLeadDuration(),
+                              snipTo.getLatestLeadDuration(),
+                              filtered );
+
+                returnMe = TimeSeriesSlicer.filter( returnMe,
+                                                    snipTo,
+                                                    filtered );
+            }
+
+        }
+
+        return returnMe;
+    }
+
+    /**
      * Adds a prescribed offset to the valid time of each time-series in the list.
      *
      * @param <T> the time-series event value type
@@ -1851,62 +1911,6 @@ public final class TimeSeriesSlicer
         }
 
         return transformed;
-    }
-
-    /**
-     * Snips the input series to the prescribed time window using a right-closed interval for each time dimension,
-     * i.e., the upper bound is included, the lower bound is excluded. Only snips lead durations with respect to
-     * reference times with the type {@link ReferenceTimeType#T0}.
-     *
-     * @param <T> the time-series event value type
-     * @param toSnip the time-series to snip
-     * @param snipTo the time window to use when snipping
-     * @return the snipped time-series
-     */
-
-    public static <T> TimeSeries<T> snip( TimeSeries<T> toSnip, TimeWindowOuter snipTo )
-    {
-        Objects.requireNonNull( toSnip );
-
-        TimeSeries<T> returnMe = toSnip;
-
-        if ( Objects.nonNull( snipTo ) )
-        {
-
-            // Snip datetimes first, because lead durations are only snipped with respect to 
-            // the ReferenceTimeType.T0
-            TimeWindow inner = MessageUtilities.getTimeWindow( snipTo.getEarliestReferenceTime(),
-                                                               snipTo.getLatestReferenceTime(),
-                                                               snipTo.getEarliestValidTime(),
-                                                               snipTo.getLatestValidTime() );
-            TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
-
-            LOGGER.debug( "Snipping time-series {} to the time window of {}.",
-                          toSnip.hashCode(),
-                          partialSnip );
-
-            returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );
-
-            // For all other reference time types, filter the datetimes only
-            if ( toSnip.getReferenceTimes()
-                       .containsKey( ReferenceTimeType.T0 )
-                 && !snipTo.bothLeadDurationsAreUnbounded() )
-            {
-                LOGGER.debug( "Additionally snipping time-series {} to lead durations ({},{}] for the reference time "
-                              + "type of {}.",
-                              toSnip.hashCode(),
-                              snipTo.getEarliestLeadDuration(),
-                              snipTo.getLatestLeadDuration(),
-                              ReferenceTimeType.T0 );
-
-                returnMe = TimeSeriesSlicer.filter( returnMe,
-                                                    snipTo,
-                                                    Set.of( ReferenceTimeType.T0 ) );
-            }
-
-        }
-
-        return returnMe;
     }
 
     /**

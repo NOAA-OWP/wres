@@ -5,17 +5,20 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Outputs.Csv2Format;
 import wres.statistics.generated.Outputs.Netcdf2Format;
-import wres.statistics.generated.Outputs.NetcdfFormat;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.ProtobufFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
+import wres.statistics.generated.ReferenceTime;
 
 /**
  * Tests the {@link MessageUtilities}.
@@ -79,5 +82,13 @@ class MessageUtilitiesTest
                                        .build();
 
         assertEquals( "foo <= 4.3", MessageUtilities.toString( covariate ) );
+    }
+
+    @Test
+    void testIsForecastType()
+    {
+        assertAll( () -> assertTrue( MessageUtilities.isForecastType( ReferenceTime.ReferenceTimeType.T0 ) ),
+                   () -> assertTrue( MessageUtilities.isForecastType( ReferenceTime.ReferenceTimeType.ISSUED_TIME ) ),
+                   () -> assertFalse( MessageUtilities.isForecastType( ReferenceTime.ReferenceTimeType.EARLIEST_VALID_TIME ) ) );
     }
 }
