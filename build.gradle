@@ -685,9 +685,9 @@ project(':wres-reading') {
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
         api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
-        api 'tools.jackson.core:jackson-databind:3.0.3'
-        api 'tools.jackson.core:jackson-core:3.0.3'
-        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.0.3")
+        api 'tools.jackson.core:jackson-databind:3.1.0'
+        api 'tools.jackson.core:jackson-core:3.1.0'
+        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         api 'org.apache.commons:commons-lang3:3.20.0'
@@ -1140,9 +1140,9 @@ project(':wres-config') {
         // For YAML (de)serialization.
         implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
         api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
-        api 'tools.jackson.core:jackson-databind:3.0.3'
-        api 'tools.jackson.core:jackson-core:3.0.3'
-        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.0.3")
+        api 'tools.jackson.core:jackson-databind:3.1.0'
+        api 'tools.jackson.core:jackson-core:3.1.0'
+        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
 
         implementation('com.hubspot.jackson:jackson3-datatype-protobuf:0.9.19') {
             // Exclude old modules to eliminate several CVEs
@@ -1482,20 +1482,20 @@ project(':wres-tasker') {
         implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:12.1.5'
+        implementation 'org.eclipse.jetty:jetty-server:12.1.6'
 
         // Servlet library is now tied to ee10.
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.5'
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.5'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.6'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.6'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.5'
+        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.6'
 
         // Support ALPN
-        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.5'
+        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.6'
 
         // Servlet container library to run a web application with:
-        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.5'
+        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.6'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -1527,16 +1527,16 @@ project(':wres-tasker') {
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
-        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.5'
-        implementation 'org.eclipse.jetty:jetty-http:12.1.5'
-        implementation 'org.eclipse.jetty:jetty-util:12.1.5'
+        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.6'
+        implementation 'org.eclipse.jetty:jetty-http:12.1.6'
+        implementation 'org.eclipse.jetty:jetty-util:12.1.6'
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
 
         // JSON deserialization uses jackson directly. Specify recent version.
         implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
         api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
-        api 'tools.jackson.core:jackson-databind:3.0.3'
-        api 'tools.jackson.core:jackson-core:3.0.3'
+        api 'tools.jackson.core:jackson-databind:3.1.0'
+        api 'tools.jackson.core:jackson-core:3.1.0'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.20.0'
@@ -1566,7 +1566,14 @@ project(':wres-tasker') {
         testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
 
         // To test against an embedded AMQP broker
-        testImplementation 'org.apache.qpid:qpid-broker-core:10.0.1'
+        testImplementation('org.apache.qpid:qpid-broker-core:10.0.1') {
+            // Because of CVE-2025-52999. TODO: remove when QPID catches up
+            exclude group: 'tools.jackson.core'
+        }
+
+        // Removed above, delete when QPID catches up
+        api 'tools.jackson.core:jackson-core:3.1.0'
+
         // Provides support for both 0-8 and 0-9-1
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.0.1'
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-memory-store:10.0.1'
@@ -1647,7 +1654,7 @@ project(':wres-eventsbroker') {
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
         // Apache ActiveMQ Artemis server
-        implementation('org.apache.activemq:artemis-server:2.44.0') {
+        implementation('org.apache.activemq:artemis-server:2.52.0') {
             // TODO: remove when Artemis catches up
 
             // Because we use slf4j, not jcl:
@@ -1675,7 +1682,7 @@ project(':wres-eventsbroker') {
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.83'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.44.0') {
+        runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.52.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
@@ -2002,9 +2009,9 @@ dependencies {
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
     implementation 'org.apache.commons:commons-lang3:3.20.0'
-    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.5'
-    implementation 'org.eclipse.jetty:jetty-http:12.1.5'
-    implementation 'org.eclipse.jetty:jetty-util:12.1.5'
+    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.6'
+    implementation 'org.eclipse.jetty:jetty-http:12.1.6'
+    implementation 'org.eclipse.jetty:jetty-util:12.1.6'
     implementation project(':wres-statistics')
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
@@ -2013,7 +2020,7 @@ dependencies {
     implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
     //Jetty servlet stuff now tied to ee10, with the move to Jetty 12.
-    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.5'
+    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.6'
 
     // Servlet container library to run a web application with:
     runtimeOnly 'org.eclipse.jetty:jetty-webapp:11.0.25'
@@ -2023,7 +2030,7 @@ dependencies {
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
 
     // Jetty server
-    implementation 'org.eclipse.jetty:jetty-server:12.1.5'
+    implementation 'org.eclipse.jetty:jetty-server:12.1.6'
 
     implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
         // Not used at runtime, bloat
@@ -2059,10 +2066,10 @@ dependencies {
 
     // Support HTTP/2
     //implementation 'org.eclipse.jetty.http2:http2-server:11.0.24'
-    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.5'
+    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.6'
 
     // Support ALPN
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.5'
+    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.6'
 
     runtimeOnly('ch.qos.logback:logback-classic:1.5.23') {
         // Not used at runtime, bloat
