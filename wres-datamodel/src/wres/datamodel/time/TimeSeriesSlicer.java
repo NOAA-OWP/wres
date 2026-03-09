@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -1297,10 +1296,11 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Consolidates the input collection time-series into as few time-series as necessary, such that events with
-     * duplicate valid times belong to different time-series. Only accepts time-series that do not have reference
-     * times, aka "observation-like" time-series. Unlike {@link #consolidate(Collection)}, this method accepts
-     * duplicate valid times across multiple series.
+     * Consolidates the input collection time-series into non-overlapping time-series. Only accepts time-series that do
+     * not have reference times, aka "observation-like" time-series. Makes no attempt to generate the minimum number of
+     * aggregate time-series whose events are unique, simply iterates through the time-series in a single pass and
+     * collects together the time-series that do not overlap. Any remaining (overlapping) time-series are appended
+     * as-is. In short, there are no guarantees of optimal consolidation, rather the best effort for reasonable cost.
      *
      * @see #consolidate(Collection)
      * @param <T> the time-series event value type
@@ -1333,52 +1333,38 @@ public final class TimeSeriesSlicer
         // Validate metadata
         TimeSeriesSlicer.validateForZeroReferenceTimesAndCommonMetadata( collectedSeries );
 
-        // The time-series builders
-        Collection<SortedSet<Event<T>>> eventSets = new ArrayList<>();
+        Collection<TimeSeries<T>> toConsolidate = new ArrayList<>();
+        Collection<TimeSeries<T>> leftOvers = new ArrayList<>();
 
         // Iterate through the series and their events. Add the events to the first set that does not contain an
         // event at the same valid datetime. If all sets are exhausted, add a new one and place the event in that
         for ( TimeSeries<T> nextSeries : collectedSeries )
         {
-            for ( Event<T> nextEvent : nextSeries.getEvents() )
+            if ( toConsolidate.isEmpty() )
             {
-                boolean added = false;
-
-                for ( SortedSet<Event<T>> nextSet : eventSets )
-                {
-                    // Does this builder already contain this valid time? No, so add it
-                    if ( !nextSet.contains( nextEvent ) )
-                    {
-                        nextSet.add( nextEvent );
-                        added = true;
-
-                        // Only add to one set
-                        break;
-                    }
-                }
-
-                // Event not added to any existing builders, so create a new one and add the event to that
-                if ( !added )
-                {
-                    // Essential to map by valid time only
-                    SortedSet<Event<T>> newSet = new TreeSet<>( Comparator.comparing( Event::getTime ) );
-                    newSet.add( nextEvent );
-                    eventSets.add( newSet );
-                }
+                toConsolidate.add( nextSeries );
+            }
+            else if ( !TimeSeriesSlicer.overlaps( nextSeries, toConsolidate ) )
+            {
+                toConsolidate.add( nextSeries );
+            }
+            else
+            {
+                leftOvers.add( nextSeries );
             }
         }
 
-        // Find any metadata - it is all the same by earlier assertion
-        Optional<TimeSeries<T>> metadataSeries = collectedSeries.stream()
-                                                                .findAny();
+        LOGGER.debug( "Discovered {} time-series to consolidate and {} time-series that could not be consolidated.",
+                      toConsolidate.size(),
+                      leftOvers.size() );
 
-        return eventSets.stream()
-                        .map( n -> new TimeSeries.Builder<T>()
-                                .addEvents( n )
-                                .setMetadata( metadataSeries.orElseThrow()  // Must exist for events to exist
-                                                            .getMetadata() )
-                                .build() )
-                        .toList();
+        TimeSeries<T> consolidated = TimeSeriesSlicer.consolidate( toConsolidate );
+
+        List<TimeSeries<T>> results = new ArrayList<>();
+        results.add( consolidated );
+        results.addAll( leftOvers );
+
+        return Collections.unmodifiableList( results );
     }
 
     /**
@@ -2526,6 +2512,66 @@ public final class TimeSeriesSlicer
         }
 
         return Collections.unmodifiableSortedSet( timesteps );
+    }
+
+    /**
+     * Returns whether the test series overlaps any of the series in the collection. Only considers valid times.
+     * @param test the test series
+     * @param overlapsAny the collection of series to inspect
+     * @return true if the test series overlaps any one of the series in the collection
+     * @param <T> the event value type
+     */
+
+    private static <T> boolean overlaps( TimeSeries<T> test, Collection<TimeSeries<T>> overlapsAny )
+    {
+        Objects.requireNonNull( test );
+        Objects.requireNonNull( overlapsAny );
+
+        if ( overlapsAny.isEmpty() )
+        {
+            LOGGER.debug( "No series were found in the collection to test for overlaps." );
+            return false;
+        }
+
+        for ( TimeSeries<T> next : overlapsAny )
+        {
+            if ( TimeSeriesSlicer.overlaps( test, next ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns whether the first series overlaps the second series. Only considers valid times.
+     * @param first the first series
+     * @param second the second series
+     * @return true if the series overlap, otherwise false
+     * @param <T> the event value type
+     */
+
+    private static <T> boolean overlaps( TimeSeries<T> first, TimeSeries<T> second )
+    {
+        Objects.requireNonNull( first );
+        Objects.requireNonNull( second );
+
+        Instant earliestFirst = first.getEvents()
+                                     .first()
+                                     .getTime();
+        Instant earliestSecond = second.getEvents()
+                                       .first()
+                                       .getTime();
+        Instant latestFirst = first.getEvents()
+                                   .last()
+                                   .getTime();
+        Instant latestSecond = second.getEvents()
+                                     .last()
+                                     .getTime();
+
+        return !earliestFirst.isAfter( latestSecond )
+               && !latestFirst.isBefore( earliestSecond );
     }
 
     /**

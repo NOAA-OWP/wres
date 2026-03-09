@@ -1192,6 +1192,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                     .collect( Collectors.groupingBy( next -> next.getMetadata()
                                                                  .getFeature() ) );
 
+        // Consolidate the left-ish time-series for improved performance if they do not
+        // have reference times. See GitHub #723 and Redmine #95488 for the checkered
+        // history of this one
+        Map<Feature, List<TimeSeries<L>>> consolidatedLeftSeries =
+                leftSeries.entrySet()
+                          .stream()
+                          .map( e -> Map.entry( e.getKey(),
+                                                this.consolidateTimeSeriesWithZeroReferenceTimes( e.getValue() ) ) )
+                          .collect( Collectors.toMap( Map.Entry::getKey,
+                                                      Map.Entry::getValue ) );
+
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pairsPerFeature = new HashMap<>();
 
         // Generated baseline, if needed
@@ -1236,14 +1247,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                      // Add the pairs for each left feature
                                      for ( Feature nextLeftFeature : nextLeftFeatures )
                                      {
-                                         List<TimeSeries<L>> nextLeftSeries = leftSeries.get( nextLeftFeature );
-
-                                         // Consolidate the left-ish time-series for improved performance if they do not
-                                         // have reference times. See GitHub #723 and Redmine #95488 for the checkered
-                                         // history of this one
-                                         nextLeftSeries =
-                                                 this.consolidateTimeSeriesWithZeroReferenceTimes( nextLeftSeries );
-
+                                         List<TimeSeries<L>> nextLeftSeries =
+                                                 consolidatedLeftSeries.get( nextLeftFeature );
                                          List<TimeSeriesPlusValidation<L, R>> nextPairedSeries =
                                                  this.createPairsPerLeftSeries( nextLeftSeries,
                                                                                 transformedRightOrBaseline,
@@ -1283,7 +1288,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             LOGGER.debug( "While creating pool {}, discovered {} {} time-series and {} {} time-series from "
                           + "which to create pairs. Created {} paired time-series from these inputs.",
                           metaToReport,
-                          leftSeries.size(),
+                          consolidatedLeftSeries.size(),
                           DatasetOrientation.LEFT,
                           rightOrBaselineSeriesCount,
                           rightOrBaselineOrientation,
@@ -1664,7 +1669,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         if ( Objects.nonNull( timeSeries ) )
         {
             // Separate into time-series that have reference times and those that do not. Those with reference times
-            // are not consolidated. Those without should be index by their common metadata.
+            // are not consolidated. Those without should be indexed by their common metadata.
             Map<TimeSeriesMetadata, List<TimeSeries<T>>> withoutReferenceTimes = new HashMap<>();
             for ( TimeSeries<T> next : timeSeries )
             {
