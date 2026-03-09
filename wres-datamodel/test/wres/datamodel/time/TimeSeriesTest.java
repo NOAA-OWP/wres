@@ -246,16 +246,18 @@ public class TimeSeriesTest
      */
 
     @Test
-    public void testThatBuilderThrowsExpectedExceptionWhenAddingDuplicateTimes()
+    public void testThatBuilderThrowsExpectedExceptionWhenBuildingTimeSeriesWithDuplicateTimes()
     {
         Builder<Double> builder = new Builder<>();
 
-        builder.addEvent( Event.of( Instant.MIN, 1.0 ) );
-        Event<Double> event = Event.of( Instant.MIN, 2.0 );
+        builder.addEvent( Event.of( Instant.MIN, 1.0 ) )
+               .addEvent( Event.of( Instant.MIN, 2.0 ) )
+                .setMetadata( this.metadata );
         IllegalArgumentException exception =
-                assertThrows( IllegalArgumentException.class, () -> builder.addEvent( event ) );
+                assertThrows( IllegalArgumentException.class, builder::build );
 
-        assertTrue( exception.getMessage().startsWith( "While building a time-series, attempted to add an event" ) );
+        assertTrue( exception.getMessage()
+                             .startsWith( "Discovered a duplicate event by valid time, which is not allowed" ) );
     }
 
     /**

@@ -1,14 +1,14 @@
 package wres.datamodel.time;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -175,18 +175,11 @@ public class TimeSeries<T>
 
     public static class Builder<T>
     {
-        /**
-         * Events with a prescribed comparator based on event time, since duplicates by valid time are not allowed 
-         * (even if the event values are different).
-         */
 
-        private SortedSet<Event<T>> events =
-                new TreeSet<>( Comparator.comparing( Event::getTime ) );
+        /** Events, which may contain duplicates based on valid time, so validate on construction. */
+        private final List<Event<T>> events = new ArrayList<>();
 
-        /**
-         * The time-series metadata.
-         */
-
+        /** The time-series metadata. */
         private TimeSeriesMetadata metadata;
 
         /**
@@ -201,19 +194,7 @@ public class TimeSeries<T>
         public Builder<T> addEvent( Event<T> event )
         {
             Objects.requireNonNull( event );
-
-            boolean successfullyAdded = this.events.add( event );
-
-            if ( !successfullyAdded )
-            {
-                throw new IllegalArgumentException( "While building a time-series, attempted to add an event at the "
-                                                    + "same valid datetime as an existing event, which is not allowed. "
-                                                    + "The duplicate event by time is '"
-                                                    + event
-                                                    + "'. The time-series metadata is: "
-                                                    + this.metadata );
-            }
-
+            this.events.add( event );
             return this;
         }
 
@@ -234,24 +215,8 @@ public class TimeSeries<T>
         {
             Objects.requireNonNull( events );
 
-            // Must be as many instants as events, in keeping with the comparator used when this class builds the sorted
-            // set, i.e., duplicates by valid time are not allowed
-            Set<Instant> instants = events.stream()
-                                          .map( Event::getTime )
-                                          .collect( Collectors.toSet() );
-
-            int duplicates = events.size() - instants.size();
-
-            if ( duplicates > 0 )
-            {
-                throw new IllegalArgumentException( "While building a time-series from a set of events, discovered "
-                                                    + duplicates
-                                                    + " duplicate events by valid time. A time-series cannot contain "
-                                                    + "duplicate events." );
-            }
-
-            this.events = events;
-
+            this.events.clear();
+            this.events.addAll( events );
             return this;
         }
 
@@ -271,8 +236,7 @@ public class TimeSeries<T>
         {
             Objects.requireNonNull( events );
 
-            events.forEach( this::addEvent );
-
+            this.events.addAll( events );
             return this;
         }
 
@@ -337,15 +301,30 @@ public class TimeSeries<T>
         // Do not use a comparator based on valid time here because this would lead to an inconsistency with equals 
         // when comparing the set of events based on valid times alone. This guard on duplicates by valid time is only 
         // required when building the time-series
-        SortedSet<Event<T>> localEvents = new TreeSet<>();
-        localEvents.addAll( builder.events );
-        this.events = Collections.unmodifiableSortedSet( localEvents );
         this.metadata = builder.metadata;
-
         if ( Objects.isNull( this.metadata ) )
         {
-            throw new UnsupportedOperationException( "Use complete metadata in your TimeSeries instances." );
+            throw new UnsupportedOperationException( "Cannot build a time-series without time-series metadata." );
         }
+
+        List<Event<T>> copied = new ArrayList<>( builder.events );
+        copied.sort( Comparator.comparing( Event::getTime ) );
+
+        // Check for duplicates by time
+        for ( int i = 0; i < copied.size() - 1; i++ )
+        {
+            if ( copied.get( i )
+                       .getTime()
+                       .equals( copied.get( i + 1 )
+                                      .getTime() ) )
+            {
+                throw new IllegalArgumentException( "Discovered a duplicate event by valid time, which is not allowed: "
+                                                    + copied.get( i )
+                                                            .getTime() );
+            }
+        }
+
+        this.events = Collections.unmodifiableSortedSet( new TreeSet<>( copied ) );
 
         // All reference datetimes and types must be non-null
         for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes()

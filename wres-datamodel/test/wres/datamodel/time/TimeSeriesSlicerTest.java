@@ -1843,13 +1843,7 @@ final class TimeSeriesSlicerTest
                                                 .build();
 
         TimeSeries<Double> two =
-                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
-                                                                     10.247243 ) )
-                                                .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
-                                                                     9.52606 ) )
-                                                .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
-                                                                     8.804878 ) )
-                                                .addEvent( Event.of( Instant.parse( "1988-10-05T09:00:00Z" ),
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T09:00:00Z" ),
                                                                      8.083696 ) )
                                                 .addEvent( Event.of( Instant.parse( "1988-10-05T10:00:00Z" ),
                                                                      7.3517504 ) )
@@ -1862,8 +1856,16 @@ final class TimeSeriesSlicerTest
                                                 .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                                                 .build();
 
+        TimeSeries<Double> three =
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T13:00:00Z" ),
+                                                                     5.489594 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T14:00:00Z" ),
+                                                                     5.567231 ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                                                .build();
+
         Collection<TimeSeries<Double>> actual =
-                TimeSeriesSlicer.consolidateObservationLikeSeries( List.of( one, two ) );
+                TimeSeriesSlicer.consolidateObservationLikeSeries( List.of( one, two, three ) );
 
         assertEquals( 2, actual.size() );
 
@@ -1902,12 +1904,10 @@ final class TimeSeriesSlicerTest
                                                 .build();
 
         TimeSeries<Double> expectedTwo =
-                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T06:00:00Z" ),
-                                                                     10.247243 ) )
-                                                .addEvent( Event.of( Instant.parse( "1988-10-05T07:00:00Z" ),
-                                                                     9.52606 ) )
-                                                .addEvent( Event.of( Instant.parse( "1988-10-05T08:00:00Z" ),
-                                                                     8.804878 ) )
+                new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1988-10-05T13:00:00Z" ),
+                                                                     5.489594 ) )
+                                                .addEvent( Event.of( Instant.parse( "1988-10-05T14:00:00Z" ),
+                                                                     5.567231 ) )
                                                 .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                                                 .build();
 
