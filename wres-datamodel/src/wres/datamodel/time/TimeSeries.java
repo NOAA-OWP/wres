@@ -320,7 +320,8 @@ public class TimeSeries<T>
             {
                 throw new IllegalArgumentException( "Discovered a duplicate event by valid time, which is not allowed: "
                                                     + copied.get( i )
-                                                            .getTime() );
+                                                            .getTime()
+                                                    + ". The time-series metadata was: " + this.metadata );
             }
         }
 
