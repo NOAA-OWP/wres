@@ -126,7 +126,6 @@ public class NwisReader implements TimeSeriesReader
     /** Cache of location metadata for re-use. */
     private final Cache<@NonNull String, LocationMetadata> locationCache =
             Caffeine.newBuilder()
-                    .maximumSize( 100 ) // 100, arbitrarily
                     .build();
 
     /** For reading feature metadata. */
