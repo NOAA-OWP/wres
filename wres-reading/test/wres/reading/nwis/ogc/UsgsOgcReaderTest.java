@@ -57,19 +57,18 @@ import wres.statistics.generated.TimeScale;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link NwisReader}.
+ * Tests the {@link UsgsOgcReader}.
  *
  * @author James Brown
  */
 
-class NwisReaderTest
+class UsgsOgcReaderTest
 {
     /** Mocker server instance. */
     private ClientAndServer mockServer;
 
     /** Path used by GET. */
     private static final String PATH = "/collections/daily/items";
-
 
     /** Parameters used by GET. */
     private static final String PARAMS =
@@ -1082,7 +1081,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1204,7 +1203,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1330,7 +1329,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1472,7 +1471,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1632,7 +1631,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

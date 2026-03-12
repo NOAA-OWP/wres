@@ -12,8 +12,7 @@ import wres.reading.fews.PublishedInterfaceXmlReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.netcdf.nwm.NwmGridReader;
 import wres.reading.netcdf.nwm.NwmVectorReader;
-import wres.reading.nwis.ogc.NwisReader;
-import wres.reading.nwis.ogc.response.NwisResponseReader;
+import wres.reading.nwis.ogc.UsgsOgcReader;
 import wres.reading.nwis.iv.response.NwisIvResponseReader;
 import wres.reading.nwis.iv.NwisIvReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
@@ -48,9 +47,6 @@ public class TimeSeriesReaderFactory
 
     /** NWIS IV response reader. */
     private static final NwisIvResponseReader NWIS_IV_RESPONSE_READER = NwisIvResponseReader.of();
-
-    /** NWIS DV response reader. */
-    private static final NwisResponseReader NWIS_DV_RESPONSE_READER = NwisResponseReader.of();
 
     /** WRDS AHPS JSON reader. */
     private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
@@ -132,8 +128,8 @@ public class TimeSeriesReaderFactory
             }
             case GEOJSON ->
             {
-                // A GeoJSON source from USGS NWIS?
-                if ( ReaderUtilities.isNwisOgcSource( dataSource ) )
+                // A GeoJSON source from USGS?
+                if ( ReaderUtilities.isUsgsOgcSource( dataSource ) )
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
@@ -143,13 +139,12 @@ public class TimeSeriesReaderFactory
                                                                               declaration,
                                                                               dataSource );
 
-                    return NwisReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+                    return UsgsOgcReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
                 }
-                // A reader for USGS-formatted GeoJSON, but not from a NWIS instance
-                LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted GeoJSON from a "
-                              + "source other than NWIS.",
-                              dataSource );
-                return NWIS_DV_RESPONSE_READER;
+
+                throw new IllegalArgumentException( "Detected a GeoJson formatted response, but not from a recognized "
+                                                    + "USGS web service. Since the API is unknown, the response cannot "
+                                                    + "be read." );
             }
             case JSON_WRDS_AHPS ->
             {
@@ -237,11 +232,10 @@ public class TimeSeriesReaderFactory
                                                         + "unsupported: "
                                                         + dataSource
                                                         + "." );
-            default -> throw new IllegalArgumentException(
-                    "There is no reader implementation available for the prescribed "
-                    + "data source: "
-                    + dataSource
-                    + "." );
+            default -> throw new IllegalArgumentException( "There is no reader implementation available for the "
+                                                           + "prescribed data source: "
+                                                           + dataSource
+                                                           + "." );
         }
     }
 

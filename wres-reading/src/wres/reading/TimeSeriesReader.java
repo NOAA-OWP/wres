@@ -46,8 +46,8 @@ public interface TimeSeriesReader
     Stream<TimeSeriesTuple> read( DataSource dataSource );
 
     /**
-     * Reads and returns all time-series from the prescribed stream using the data source only for a description of the 
-     * source.
+     * Reads and returns all time-series from the prescribed stream, using the data source for descriptive information
+     * only.
      * 
      * @see #read(DataSource)
      * @param dataSource the data source, required

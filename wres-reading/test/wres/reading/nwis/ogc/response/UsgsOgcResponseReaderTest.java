@@ -41,11 +41,11 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale;
 
 /**
- * Tests the {@link NwisResponseReader}.
+ * Tests the {@link UsgsOgcResponseReader}.
  *
  * @author James Brown
  */
-class NwisResponseReaderTest
+class UsgsOgcResponseReaderTest
 {
     /** An example response from the daily values service. */
     private static final String DAILY_VALUES_RESPONSE = """
@@ -497,9 +497,10 @@ class NwisResponseReaderTest
                                                                                                29.0811111111111 ) );
             metadata.put( "USGS-02238500", new LocationMetadata( location, null, ZoneOffset.UTC, null ) );
 
-            NwisResponseReader reader = NwisResponseReader.of( metadata );
+            UsgsOgcResponseReader reader = UsgsOgcResponseReader.of( metadata );
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
+                                                 .map( TimeSeriesTuplePlusId::tuple )
                                                  .toList();
 
             assertEquals( 1, series.size() );
@@ -589,9 +590,10 @@ class NwisResponseReaderTest
                                               .datasetOrientation( DatasetOrientation.LEFT )
                                               .build();
 
-            NwisResponseReader reader = NwisResponseReader.of();
+            UsgsOgcResponseReader reader = UsgsOgcResponseReader.of();
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
+                                                 .map( TimeSeriesTuplePlusId::tuple )
                                                  .toList();
 
             assertEquals( 1, series.size() );
@@ -661,9 +663,10 @@ class NwisResponseReaderTest
                                               .datasetOrientation( DatasetOrientation.LEFT )
                                               .build();
 
-            NwisResponseReader reader = NwisResponseReader.of();
+            UsgsOgcResponseReader reader = UsgsOgcResponseReader.of();
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
+                                                 .map( TimeSeriesTuplePlusId::tuple )
                                                  .toList();
 
             assertEquals( 1, series.size() );

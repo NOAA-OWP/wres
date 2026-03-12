@@ -1340,17 +1340,25 @@ public final class TimeSeriesSlicer
         // event at the same valid datetime. If all sets are exhausted, add a new one and place the event in that
         for ( TimeSeries<T> nextSeries : collectedSeries )
         {
-            if ( toConsolidate.isEmpty() )
+            if ( !nextSeries.getEvents()
+                            .isEmpty() )
             {
-                toConsolidate.add( nextSeries );
+                if ( toConsolidate.isEmpty() )
+                {
+                    toConsolidate.add( nextSeries );
+                }
+                else if ( !TimeSeriesSlicer.overlaps( nextSeries, toConsolidate ) )
+                {
+                    toConsolidate.add( nextSeries );
+                }
+                else
+                {
+                    leftOvers.add( nextSeries );
+                }
             }
-            else if ( !TimeSeriesSlicer.overlaps( nextSeries, toConsolidate ) )
+            else if ( LOGGER.isDebugEnabled() )
             {
-                toConsolidate.add( nextSeries );
-            }
-            else
-            {
-                leftOvers.add( nextSeries );
+                LOGGER.debug( "Discovered an empty time-series, which will not be consolidated: {}.", nextSeries );
             }
         }
 
@@ -2516,10 +2524,12 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns whether the test series overlaps any of the series in the collection. Only considers valid times.
+     *
+     * @param <T> the event value type
      * @param test the test series
      * @param overlapsAny the collection of series to inspect
      * @return true if the test series overlaps any one of the series in the collection
-     * @param <T> the event value type
+     * @throws IllegalArgumentException if any of the input series are empty
      */
 
     private static <T> boolean overlaps( TimeSeries<T> test, Collection<TimeSeries<T>> overlapsAny )
@@ -2546,16 +2556,25 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns whether the first series overlaps the second series. Only considers valid times.
+     *
+     * @param <T> the event value type
      * @param first the first series
      * @param second the second series
      * @return true if the series overlap, otherwise false
-     * @param <T> the event value type
+     * @throws IllegalArgumentException if either of the input series is empty
      */
 
     private static <T> boolean overlaps( TimeSeries<T> first, TimeSeries<T> second )
     {
         Objects.requireNonNull( first );
         Objects.requireNonNull( second );
+
+        if ( first.getEvents()
+                  .isEmpty() || second.getEvents()
+                                      .isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot check an empty series for overlaps." );
+        }
 
         Instant earliestFirst = first.getEvents()
                                      .first()

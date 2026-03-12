@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,7 +42,6 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
-import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.nwis.ogc.LocationMetadata;
 import wres.statistics.MessageUtilities;
@@ -58,20 +54,24 @@ import wres.statistics.generated.TimeScale;
  *
  * <p>Implementation notes:
  *
- * <p>This implementation simply reads the responses from a file source or supplied stream and does not interact with
- * the web service that originally supplied the responses. In other words, any contextual information that is required
- * at read time should be supplied on construction. This includes any information that is obtained from a separate
- * endpoint of the web API, which could be provided as a deferred function call (i.e., {@link Supplier}), for example.
- * This reader is (optionally) embellished with location metadata. However, when the location metadata is absent, the
- * reader will except at read time if the time zone information contained within that metadata is required to convert
- * local times to standard time (UTC).
+ * <p>This class is merely responsible for parsing formatted JSON time-series responses and is not responsible for any
+ * web service interactions. However, since any pagination is internal to the responses, this class provides the caller
+ * with a hook to the next page of data. If the data spans multiple pages, the supplied {@link DataSource#uri()} is
+ * adjusted to indicate the next page of data to read so the caller can request the next page, if appropriate. When
+ * there are no more pages of data to read, the data source will return a null URI.
+ *
+ * <p>Any contextual information that is required at read time should be supplied on construction. This includes any
+ * information that is obtained from a separate endpoint of the web API. In particular, this reader is (optionally)
+ * embellished with location metadata. However, when the location metadata is absent, the reader will except at read
+ * time if the time zone information contained within that metadata is required to convert local times to standard time
+ * (UTC).
  *
  * @author James Brown
  */
-public class NwisResponseReader implements TimeSeriesReader
+public class UsgsOgcResponseReader
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( NwisResponseReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( UsgsOgcResponseReader.class );
 
     /** Maps GeoJSON bytes to POJOs. */
     private static final ObjectMapper OBJECT_MAPPER =
@@ -88,11 +88,11 @@ public class NwisResponseReader implements TimeSeriesReader
      * @return an instance
      */
 
-    public static NwisResponseReader of()
+    public static UsgsOgcResponseReader of()
     {
         Cache<@NonNull String, LocationMetadata> metadata = Caffeine.newBuilder()
                                                                     .build();
-        return new NwisResponseReader( metadata );
+        return new UsgsOgcResponseReader( metadata );
     }
 
     /**
@@ -102,37 +102,22 @@ public class NwisResponseReader implements TimeSeriesReader
      * @return an instance
      */
 
-    public static NwisResponseReader of( Cache<@NonNull String, LocationMetadata> locationMetadata )
+    public static UsgsOgcResponseReader of( Cache<@NonNull String, LocationMetadata> locationMetadata )
     {
-        return new NwisResponseReader( locationMetadata );
+        return new UsgsOgcResponseReader( locationMetadata );
     }
 
-    @Override
-    public Stream<TimeSeriesTuple> read( DataSource dataSource )
-    {
-        Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( dataSource.getVariable() );
-        Objects.requireNonNull( dataSource.getVariable()
-                                          .name() );
+    /**
+     * A reader that preserves the time-series identity associated with each time-series read. This is useful for
+     * reconstructing the time-series composition of paginated time-series when each page contains many time-series for
+     * a given geographic feature (e.g., separate gauges or monitoring methods).
+     *
+     * @param dataSource the data source
+     * @param inputStream the input stream
+     * @return the stream of time-series and their associated identities
+     */
 
-        // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource, false );
-
-        try
-        {
-            Path path = Paths.get( dataSource.uri() );
-            InputStream stream = Files.newInputStream( path );
-            return this.readFromStream( dataSource, stream );
-        }
-        catch ( IOException e )
-        {
-            throw new ReadException( "Failed to read a GeoJSON data source formatted for the USGS National Water "
-                                     + "Information System.", e );
-        }
-    }
-
-    @Override
-    public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream inputStream )
+    public Stream<TimeSeriesTuplePlusId> read( DataSource dataSource, InputStream inputStream )
     {
         return this.readFromStream( dataSource, inputStream );
     }
@@ -144,7 +129,7 @@ public class NwisResponseReader implements TimeSeriesReader
      * @return the time-series streams
      * @throws NullPointerException if either input is null
      */
-    private Stream<TimeSeriesTuple> readFromStream( DataSource dataSource, InputStream inputStream )
+    private Stream<TimeSeriesTuplePlusId> readFromStream( DataSource dataSource, InputStream inputStream )
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getVariable() );
@@ -156,7 +141,7 @@ public class NwisResponseReader implements TimeSeriesReader
         ReaderUtilities.validateDataDisposition( dataSource, DataSource.DataDisposition.GEOJSON );
 
         // Get the lazy supplier of time-series data
-        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
+        Supplier<TimeSeriesTuplePlusId> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
 
         // Generate a stream of time-series.
         // This is merely a facade on incremental reading until the underlying supplier reads incrementally
@@ -188,11 +173,11 @@ public class NwisResponseReader implements TimeSeriesReader
      * @throws ReadException if the data could not be read for any reason
      */
 
-    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
-                                                             InputStream inputStream )
+    private Supplier<TimeSeriesTuplePlusId> getTimeSeriesSupplier( DataSource dataSource,
+                                                                   InputStream inputStream )
     {
         AtomicInteger iterator = new AtomicInteger();
-        AtomicReference<List<TimeSeriesTuple>> timeSeriesTuples = new AtomicReference<>();
+        AtomicReference<List<TimeSeriesTuplePlusId>> timeSeriesTuples = new AtomicReference<>();
 
         // Create a supplier that returns the time-series
         return () -> {
@@ -202,11 +187,11 @@ public class NwisResponseReader implements TimeSeriesReader
             // time-series outside of this lambda), but it will then acquire all the time-series eagerly, i.e., now
             if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
-                List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
+                List<TimeSeriesTuplePlusId> eagerSeries = this.getTimeSeries( dataSource, inputStream );
                 timeSeriesTuples.set( eagerSeries );
             }
 
-            List<TimeSeriesTuple> tuples = timeSeriesTuples.get();
+            List<TimeSeriesTuplePlusId> tuples = timeSeriesTuples.get();
 
             // More time-series to return?
             if ( iterator.get() < tuples.size() )
@@ -228,8 +213,8 @@ public class NwisResponseReader implements TimeSeriesReader
      * @throws ReadException if the data could not be read for any reason
      */
 
-    private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
-                                                 InputStream inputStream )
+    private List<TimeSeriesTuplePlusId> getTimeSeries( DataSource dataSource,
+                                                       InputStream inputStream )
     {
         try
         {
@@ -246,7 +231,7 @@ public class NwisResponseReader implements TimeSeriesReader
 
             Response response = OBJECT_MAPPER.readValue( rawForecast, Response.class );
 
-            List<TimeSeriesTuple> allTimeSeries = new ArrayList<>();
+            List<TimeSeriesTuplePlusId> allTimeSeries = new ArrayList<>();
 
             // Some time-series with data
             if ( response.getNumberReturned() > 0 )
@@ -255,9 +240,11 @@ public class NwisResponseReader implements TimeSeriesReader
                         Arrays.stream( response.getFeatures() )
                               .collect( Collectors.groupingBy( f -> f.getProperties()
                                                                      .getTimeSeriesId() ) );
-                for ( List<wres.reading.nwis.ogc.response.Feature> nextValues : bySeries.values() )
+                for ( Map.Entry<String, List<wres.reading.nwis.ogc.response.Feature>> nextValues : bySeries.entrySet() )
                 {
-                    TimeSeriesTuple nextSeries = this.transform( dataSource, nextValues, response.getLinks() );
+                    String id = nextValues.getKey();
+                    List<wres.reading.nwis.ogc.response.Feature> data = nextValues.getValue();
+                    TimeSeriesTuplePlusId nextSeries = this.transform( id, dataSource, data, response.getLinks() );
                     allTimeSeries.add( nextSeries );
                 }
             }
@@ -285,9 +272,10 @@ public class NwisResponseReader implements TimeSeriesReader
      * @param links the links
      * @return the internal time-series
      */
-    private TimeSeriesTuple transform( DataSource dataSource,
-                                       List<wres.reading.nwis.ogc.response.Feature> timeSeries,
-                                       Link[] links )
+    private TimeSeriesTuplePlusId transform( String id,
+                                             DataSource dataSource,
+                                             List<wres.reading.nwis.ogc.response.Feature> timeSeries,
+                                             Link[] links )
     {
         // Get the link to the next page of data
         URI next = Arrays.stream( links )
@@ -309,7 +297,8 @@ public class NwisResponseReader implements TimeSeriesReader
 
         TimeSeries<Double> series = TimeSeries.of( metadata, events );
 
-        return TimeSeriesTuple.ofSingleValued( series, adjustedDataSource );
+        TimeSeriesTuple innerTuple = TimeSeriesTuple.ofSingleValued( series, adjustedDataSource );
+        return new TimeSeriesTuplePlusId( id, innerTuple );
     }
 
     /**
@@ -440,7 +429,7 @@ public class NwisResponseReader implements TimeSeriesReader
         {
             org.locationtech.jts.geom.Geometry geometry = metadata.geometry();
             wkt = geometry.toText();
-            if( Objects.nonNull( metadata.description() ) )
+            if ( Objects.nonNull( metadata.description() ) )
             {
                 description = metadata.description();
             }
@@ -531,7 +520,7 @@ public class NwisResponseReader implements TimeSeriesReader
      * @param locationMetadata the cache of location metadata
      */
 
-    private NwisResponseReader( Cache<@NonNull String, LocationMetadata> locationMetadata )
+    private UsgsOgcResponseReader( Cache<@NonNull String, LocationMetadata> locationMetadata )
     {
         Objects.requireNonNull( locationMetadata );
         this.locationMetadata = locationMetadata;
