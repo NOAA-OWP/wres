@@ -418,49 +418,61 @@ public class UsgsOgcReader implements TimeSeriesReader
         }
 
         List<TimeSeriesTuplePlusId> firstPage = this.readOnePage( dataSource, reader );
+
+        if ( firstPage.isEmpty() )
+        {
+            LOGGER.debug( "No time-series were read from the first page." );
+            return List.of();
+        }
+
         List<TimeSeriesTuplePlusId> allPages = new ArrayList<>( firstPage );
 
+        // There may be multiple time-series per page, but there is one page of data to which all time-series belong
+        TimeSeriesTuplePlusId nextPage = firstPage.get( 0 );
+
         // Another page to read?
-        for ( TimeSeriesTuplePlusId nextTuple : firstPage )
+        while ( Objects.nonNull( nextPage )
+                && nextPage.tuple()
+                           .getDataSource()
+                           .hasNextPage() )
         {
-            if ( nextTuple.tuple()
-                          .getDataSource()
-                          .hasNextPage() )
+            // Currently, the next page must be adjusted to enforce the format requirement. Bug in NWIS?
+            URI nextPageUri = nextPage.tuple()
+                                      .getDataSource()
+                                      .nextPage();
+            URIBuilder builder = new URIBuilder( nextPageUri );
+            builder.addParameter( "f", "json" );
+
+            // Also, the next page must be adjusted to include the API key afresh
+            builder.addParameter( API_KEY_NAME, API_KEY );
+
+            try
             {
-                // Currently, the next page must be adjusted to enforce the format requirement. Bug in NWIS?
-                URI nextPageUri = nextTuple.tuple()
-                                           .getDataSource()
-                                           .nextPage();
-                URIBuilder builder = new URIBuilder( nextPageUri );
-                builder.addParameter( "f", "json" );
-
-                // Also, the next page must be adjusted to include the API key afresh
-                builder.addParameter( API_KEY_NAME, API_KEY );
-
-                try
+                DataSource newSource = dataSource.toBuilder()
+                                                 .uri( builder.build() )
+                                                 .build();
+                List<TimeSeriesTuplePlusId> nextNextPage = this.readOnePage( newSource, reader );
+                allPages.addAll( nextNextPage );
+                if ( !nextNextPage.isEmpty() )
                 {
-                    DataSource newSource = dataSource.toBuilder()
-                                                     .uri( builder.build() )
-                                                     .build();
-                    List<TimeSeriesTuplePlusId> nextPage = this.readAllPages( newSource, reader );
-                    allPages.addAll( nextPage );
-
-                    if ( LOGGER.isDebugEnabled() )
-                    {
-                        LOGGER.debug( "Detected a next page in data source: {}. The URI of the next page is: {}.",
-                                      dataSource,
-                                      nextPageUri );
-                    }
+                    nextPage = nextNextPage.get( 0 );
                 }
-                catch ( URISyntaxException e )
+                else
                 {
-                    throw new ReadException( "While reading from the " + USGS + ", failed to "
-                                             + "adjust a base URI to add the format specification.", e );
+                    nextPage = null;
+                }
+
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Detected a next page in data source: {}. The URI of the next page is: {}.",
+                                  dataSource,
+                                  nextPageUri );
                 }
             }
-            else if ( LOGGER.isDebugEnabled() )
+            catch ( URISyntaxException e )
             {
-                LOGGER.debug( "Detected no next page in data source: {}.", dataSource );
+                throw new ReadException( "While reading from the " + USGS + ", failed to "
+                                         + "adjust a base URI to add the format specification.", e );
             }
         }
 
