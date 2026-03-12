@@ -199,11 +199,7 @@ public class TimeSeries<T>
         }
 
         /**
-         * Sets the events for the time-series. This is the preferred method to build a time-series from a pre-existing 
-         * set of events. Otherwise, favor {@link #addEvent(Event)} to build incrementally. Do not build a set of 
-         * events locally and then call this method, as it will be less performant than building incrementally with 
-         * {@link #addEvent(Event)}, although more performant than using the same pattern with 
-         * {@link #addEvents(SortedSet)} (i.e., avoid both where possible, but especially the latter).
+         * Sets the events for the time-series.
          *
          * @param events the events
          * @return the builder
@@ -215,16 +211,11 @@ public class TimeSeries<T>
         {
             Objects.requireNonNull( events );
 
-            this.events.clear();
-            this.events.addAll( events );
-            return this;
+            return this.addEvents( events );
         }
 
         /**
-         * Adds a collection of events to the time-series. Only use this method when building a time-series from 
-         * multiple pre-existing time-series or event collections, otherwise favor {@link #addEvent(Event)} or 
-         * {@link #setEvents(SortedSet)}. Do not build a set of events locally and then call this method, as it will 
-         * be less performant for very large time-series (requires a set to be populated twice).
+         * Adds a collection of events to the time-series.
          *
          * @param events the events
          * @return the builder

@@ -57,19 +57,18 @@ import wres.statistics.generated.TimeScale;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link NwisReader}.
+ * Tests the {@link UsgsOgcReader}.
  *
  * @author James Brown
  */
 
-class NwisReaderTest
+class UsgsOgcReaderTest
 {
     /** Mocker server instance. */
     private ClientAndServer mockServer;
 
     /** Path used by GET. */
     private static final String PATH = "/collections/daily/items";
-
 
     /** Parameters used by GET. */
     private static final String PARAMS =
@@ -668,9 +667,32 @@ class NwisReaderTest
                       29.0811111111111
                     ]
                   }
+                },
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "monitoring_location_id": "USGS-02238500",
+                    "parameter_code": "00060",
+                    "statistic_id": "00003",
+                    "time_series_id": "0ab995b8bbf44a609562fd1b939dbb36",
+                    "time": "2024-02-18",
+                    "unit_of_measure": "ft^3/s",
+                    "last_modified": "2025-03-11T00:13:29.795987+00:00",
+                    "value": "1.0",
+                    "approval_status": "Approved",
+                    "qualifier": null
+                  },
+                  "id": "047d796d-dd50-4492-9230-7edc7cc5b698",
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                      -81.8808333333333,
+                      29.0811111111111
+                    ]
+                  }
                 }
               ],
-              "numberReturned": 5,
+              "numberReturned": 6,
               "links": [
                 {
                   "type": "application/geo+json",
@@ -803,9 +825,32 @@ class NwisReaderTest
                       29.0811111111111
                     ]
                   }
+                },
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "monitoring_location_id": "USGS-02238500",
+                    "parameter_code": "00060",
+                    "statistic_id": "00003",
+                    "time_series_id": "0ab995b8bbf44a609562fd1b939dbb36",
+                    "time": "2024-02-19",
+                    "unit_of_measure": "ft^3/s",
+                    "last_modified": "2025-03-11T00:13:29.795987+00:00",
+                    "value": "2.0",
+                    "approval_status": "Approved",
+                    "qualifier": null
+                  },
+                  "id": "222fa449-705e-49eb-a788-7d1edf7491b8",
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                      -81.8808333333333,
+                      29.0811111111111
+                    ]
+                  }
                 }
               ],
-              "numberReturned": 4,
+              "numberReturned": 5,
               "links": [
                 {
                   "type": "application/geo+json",
@@ -869,9 +914,32 @@ class NwisReaderTest
                       29.0811111111111
                     ]
                   }
+                },
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "monitoring_location_id": "USGS-02238500",
+                    "parameter_code": "00060",
+                    "statistic_id": "00003",
+                    "time_series_id": "0ab995b8bbf44a609562fd1b939dbb36",
+                    "time": "2024-02-20",
+                    "unit_of_measure": "ft^3/s",
+                    "last_modified": "2025-03-11T00:13:29.795987+00:00",
+                    "value": "3.0",
+                    "approval_status": "Approved",
+                    "qualifier": null
+                  },
+                  "id": "38020de1-e0e7-43a0-8748-1795d1941539",
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                      -81.8808333333333,
+                      29.0811111111111
+                    ]
+                  }
                 }
               ],
-              "numberReturned": 1,
+              "numberReturned": 2,
               "links": [
                 {
                   "type": "application/geo+json",
@@ -1082,7 +1150,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1204,7 +1272,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1330,7 +1398,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1391,7 +1459,7 @@ class NwisReaderTest
     }
 
     @Test
-    void testReadReturnsOneTimeSeriesAcrossThreePages()
+    void testReadReturnsTwoConsolidatedTimeSeriesAcrossThreePages()
     {
         String secondPagePath = "/next/path";
 
@@ -1472,7 +1540,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1500,7 +1568,7 @@ class NwisReaderTest
                                                     .setTimeScale( expectedTimeScaleOuter )
                                                     .setFeature( expectedFeature )
                                                     .build();
-            TimeSeries<Double> expectedSeries =
+            TimeSeries<Double> expectedSeriesOne =
                     new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
                                                     .addEvent( Event.of( Instant.parse( "2024-02-14T00:00:00Z" ),
                                                                          10.2 ) )
@@ -1524,7 +1592,17 @@ class NwisReaderTest
                                                                          70.7 ) )
                                                     .build();
 
-            List<TimeSeries<Double>> expected = List.of( expectedSeries );
+            TimeSeries<Double> expectedSeriesTwo =
+                    new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-18T00:00:00Z" ),
+                                                                         1.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-19T00:00:00Z" ),
+                                                                         2.0 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2024-02-20T00:00:00Z" ),
+                                                                         3.0 ) )
+                                                    .build();
+
+            List<TimeSeries<Double>> expected = List.of( expectedSeriesOne, expectedSeriesTwo );
 
             assertEquals( expected, actual );
         }
@@ -1632,7 +1710,7 @@ class NwisReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        NwisReader reader = NwisReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

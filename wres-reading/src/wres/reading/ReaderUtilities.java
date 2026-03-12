@@ -450,7 +450,7 @@ public class ReaderUtilities
     }
 
     /**
-     * Return whether the source points to a National Water Information System (NWIS) Open Geospatial Consortium (OGC)
+     * Return whether the source points to a United States Geological Survey (USGS) Open Geospatial Consortium (OGC)
      * web service.
      *
      * @param source the data source
@@ -458,7 +458,7 @@ public class ReaderUtilities
      * @throws NullPointerException if the source is null
      */
 
-    public static boolean isNwisOgcSource( DataSource source )
+    public static boolean isUsgsOgcSource( DataSource source )
     {
         Objects.requireNonNull( source );
 
@@ -473,6 +473,7 @@ public class ReaderUtilities
 
         return ReaderUtilities.isWebSource( uri )
                && Objects.nonNull( uri.getPath() )
+               && Objects.nonNull( uri.getHost() )
                && uri.getHost()
                      .toLowerCase()
                      .contains( "usgs" ) // Host
