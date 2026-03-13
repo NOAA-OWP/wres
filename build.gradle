@@ -18,12 +18,9 @@ buildscript {
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.configureEach {
         resolutionStrategy.dependencySubstitution {
-            substitute module('com.overzealous:remark:1.1.0') using module('com.wavefront:remark:2023-07.07') because "not available on maven central anymore"
+            substitute(module("com.overzealous:remark:1.1.0")).using(module("com.wavefront:remark:2023-07.07"))
+                    .because("Not available on Maven Central anymore")
         }
-
-        // Forcing a newer version than what comes in with default com.github.seanrl.jaxb
-        // plugin below. This addresses a dependabot reported issue. See GitHub #478.
-        resolutionStrategy.force('org.codehaus.groovy:groovy-all:3.0.25')
     }
     repositories {
         mavenCentral()
@@ -33,6 +30,20 @@ buildscript {
         classpath 'com.atlassian.commonmark:commonmark:0.17.0'
         // To create a unified javadoc across submodules and top-level module:
         classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:3.0.1'
+
+        // Remove vulnerable transitive deps across multiple modules and plugins. Use this to exclude vulnerable
+        // deps that appear in many contexts. Otherwise, exclude locally using the standard exclude.
+        constraints {
+            classpath('com.fasterxml.jackson.core:jackson-core:2.21.1') {
+                because('Security vulnerabilities in older versions.')
+            }
+            classpath('org.codehaus.groovy:groovy-all') {
+                version {
+                    strictly("3.0.25")
+                }
+                because('Security vulnerabilities in older versions. See GitHub #478')
+            }
+        }
     }
 }
 
@@ -68,7 +79,7 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '12.1.9'
+    id 'org.owasp.dependencycheck' version '12.2.0'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -682,7 +693,7 @@ project(':wres-reading') {
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
         api 'tools.jackson.core:jackson-databind:3.1.0'
         api 'tools.jackson.core:jackson-core:3.1.0'
         implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
@@ -1134,8 +1145,8 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        implementation(platform("tools.jackson:jackson-bom:3.1.0"))
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
         api 'tools.jackson.core:jackson-databind:3.1.0'
         api 'tools.jackson.core:jackson-core:3.1.0'
         implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
@@ -1510,7 +1521,7 @@ project(':wres-tasker') {
         implementation 'org.apache.tika:tika-core:3.2.3'
 
         // To persist job metadata while keeping it relatively fast
-        implementation('org.redisson:redisson:3.51.0') {
+        implementation('org.redisson:redisson:3.52.0') {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
@@ -1529,8 +1540,8 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        implementation(platform("tools.jackson:jackson-bom:3.1.0"))
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
         api 'tools.jackson.core:jackson-databind:3.1.0'
         api 'tools.jackson.core:jackson-core:3.1.0'
 
@@ -2036,7 +2047,7 @@ dependencies {
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation('org.redisson:redisson:3.51.0') {
+    implementation('org.redisson:redisson:3.52.0') {
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
         exclude group: 'io.netty'
     }
