@@ -31,8 +31,8 @@ buildscript {
         // To create a unified javadoc across submodules and top-level module:
         classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:3.0.1'
 
-        // Remove vulnerable transitive deps across multiple modules and plugins. Use this to exclude vulnerable
-        // deps that appear in many contexts. Otherwise, exclude locally using the standard exclude.
+        // Remove vulnerable transitive deps in plugins. Use the subproject exclude to exclude vulnerable deps in the
+        // application itself, otherwise the module-specific exclude annotation
         constraints {
             classpath('com.fasterxml.jackson.core:jackson-core:2.21.1') {
                 because('Security vulnerabilities in older versions.')
@@ -254,6 +254,17 @@ subprojects {
         exclude group: 'com.google.code.findbugs', module: 'jsr305'
         exclude group: 'org.checkerframework', module: 'checker-qual'
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+    }
+
+    // Remove vulnerable transitive deps that appear in many subprojects/modules. Otherwise, use the module-specific
+    // exclude annotation
+    dependencies {
+        constraints {
+            implementation('com.fasterxml.jackson.core:jackson-core:2.21.1') {
+                because('Security vulnerabilities in older versions.')
+            }
+            testImplementation('com.fasterxml.jackson.core:jackson-core:2.21.1')
+        }
     }
 }
 
