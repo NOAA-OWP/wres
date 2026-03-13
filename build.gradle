@@ -1,3 +1,4 @@
+import io.swagger.v3.plugins.gradle.tasks.ResolveTask
 import org.commonmark.parser.Parser
 
 import org.commonmark.renderer.html.HtmlRenderer
@@ -81,11 +82,8 @@ plugins {
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
-    // Bumping from 2.2.26 causes several failures. Several are easy to resolve,
-    // changing yaml to YAML and skip = 'true' to skip = true, but one is not:
-    // https://github.com/swagger-api/swagger-core/issues/4813
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.26"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.45"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
     id 'org.beryx.jlink' version '3.2.0'
@@ -950,9 +948,7 @@ project(':wres-statistics') {
 
         workingDir = file("src/main/python")
         args = ["wresproto.py"]
-        environment = [
-                "SETUPTOOLS_SCM_PRETEND_VERSION": "${majorVersion}.${minorVersion}+${project.version}"
-        ]
+        environment = ["SETUPTOOLS_SCM_PRETEND_VERSION": "${majorVersion}.${minorVersion}+${project.version}"]
     }
 
     // Copy the protobuf schema to the /dist directory
@@ -1613,29 +1609,31 @@ project(':wres-tasker') {
         }
     }
 
-    // Task named "resolve" is from from swagger plugin, generates openapi json
-    resolve {
-        def skipDocs = 'true'
-        def sourceFile = file('dist/lib/static/swagger/wres_api_info.yaml')
-        outputDir = new File(swaggerDocsBaseDir, swaggerDocsSubdirPathString)
-        if (!skipDocs)
-        {
-            println("Merging the API documentation with the contents of: " + sourceFile)
-            println("Writing the API documentation to: " + outputDir)
-        }
-        outputFileName = 'wres_openapi'
-        outputFormat = 'YAML'
-        prettyPrint = 'true'
-        openApiFile = sourceFile
-        classpath = sourceSets.main.runtimeClasspath
-        resourcePackages = ['wres.tasker']
-        buildClasspath = classpath
-        buildClasspath += configurations.docGen
+    afterEvaluate {
+        tasks.withType(ResolveTask).configureEach {
+            def skipDocs = false
+            def sourceFile = file('wres-tasker/dist/lib/static/swagger/wres_api_info.yaml')
+            outputDir = new File(swaggerDocsBaseDir, swaggerDocsSubdirPathString)
+            if (!skipDocs)
+            {
+                println("Merging the API documentation with the contents of: " + sourceFile)
+                def out = outputDir as DirectoryProperty
+                println("Writing the API documentation to: " + out.get())
+            }
+            outputFileName = 'wres_openapi'
+            outputFormat = 'YAML'
+            prettyPrint = true
+            openApiFile = sourceFile
+            classpath = sourceSets.main.runtimeClasspath
+            resourcePackages = ['wres.tasker']
+            buildClasspath = classpath
+            buildClasspath += configurations.docGen
 
-        // Disable the api documentation task until the swagger gradle plugin respects
-        // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
-        // TODO: enable the documentation when the toolchain is respected
-        skip = skipDocs
+            // Disable the api documentation task until the swagger gradle plugin respects
+            // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
+            // TODO: enable the documentation when the toolchain is respected
+            skip = skipDocs
+        }
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
