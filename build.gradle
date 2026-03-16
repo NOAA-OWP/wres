@@ -1,3 +1,4 @@
+import io.swagger.v3.plugins.gradle.tasks.ResolveTask
 import org.commonmark.parser.Parser
 
 import org.commonmark.renderer.html.HtmlRenderer
@@ -17,12 +18,9 @@ buildscript {
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.configureEach {
         resolutionStrategy.dependencySubstitution {
-            substitute module('com.overzealous:remark:1.1.0') using module('com.wavefront:remark:2023-07.07') because "not available on maven central anymore"
+            substitute(module("com.overzealous:remark:1.1.0")).using(module("com.wavefront:remark:2023-07.07"))
+                    .because("Not available on Maven Central anymore")
         }
-
-        // Forcing a newer version than what comes in with default com.github.seanrl.jaxb
-        // plugin below. This addresses a dependabot reported issue. See GitHub #478.
-        resolutionStrategy.force('org.codehaus.groovy:groovy-all:3.0.25')
     }
     repositories {
         mavenCentral()
@@ -32,6 +30,20 @@ buildscript {
         classpath 'com.atlassian.commonmark:commonmark:0.17.0'
         // To create a unified javadoc across submodules and top-level module:
         classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:3.0.1'
+
+        // Remove vulnerable transitive deps in plugins. Use the subproject exclude to exclude vulnerable deps in the
+        // application itself, otherwise the module-specific exclude annotation
+        constraints {
+            classpath('com.fasterxml.jackson.core:jackson-core:2.21.1') {
+                because('Security vulnerabilities in older versions.')
+            }
+            classpath('org.codehaus.groovy:groovy-all') {
+                version {
+                    strictly("3.0.25")
+                }
+                because('Security vulnerabilities in older versions. See GitHub #478')
+            }
+        }
     }
 }
 
@@ -67,7 +79,7 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '12.1.9'
+    id 'org.owasp.dependencycheck' version '12.2.0'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -81,11 +93,8 @@ plugins {
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
-    // Bumping from 2.2.26 causes several failures. Several are easy to resolve,
-    // changing yaml to YAML and skip = 'true' to skip = true, but one is not:
-    // https://github.com/swagger-api/swagger-core/issues/4813
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.26"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.45"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
     id 'org.beryx.jlink' version '3.2.0'
@@ -246,6 +255,29 @@ subprojects {
         exclude group: 'org.checkerframework', module: 'checker-qual'
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
+
+    // Remove vulnerable transitive deps that appear in many subprojects/modules. Otherwise, use the module-specific
+    // exclude annotation
+    dependencies {
+        constraints {
+            implementation('com.fasterxml.jackson.core:jackson-core:2.21.1') {
+                because('Security vulnerabilities in older versions.')
+            }
+        }
+    }
+
+    // Aggressively enforce certain non-vulnerable transitive deps on the test path. This is mainly needed for
+    // mock-server, which has not been updated since 2023. A more aggressive approach is needed here than the
+    // constraints configuration, which is not respected in all situations/contexts
+    configurations.matching { it.name.contains("test") }.configureEach {
+        resolutionStrategy {
+            force 'io.netty:netty-codec:4.2.9.Final'
+            force 'io.netty:netty-codec-http:4.2.9.Final'
+            force 'io.netty:netty-codec-http2:4.2.9.Final'
+            force 'com.fasterxml.jackson.core:jackson-core:2.21.1'
+            force 'net.minidev:json-smart:2.6.0'
+        }
+    }
 }
 
 project(':wres-system') {
@@ -312,8 +344,6 @@ project(':wres-system') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-codec-http'
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
@@ -322,14 +352,12 @@ project(':wres-system') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
+        testImplementation 'com.google.guava:guava:33.5.0-jre'
+        testImplementation 'io.netty:netty-common:4.2.9.Final'
+        testImplementation 'io.netty:netty-handler:4.2.9.Final'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+        testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
     }
 
     test {
@@ -684,7 +712,7 @@ project(':wres-reading') {
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
         api 'tools.jackson.core:jackson-databind:3.1.0'
         api 'tools.jackson.core:jackson-core:3.1.0'
         implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
@@ -725,8 +753,6 @@ project(':wres-reading') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-codec-http'
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
@@ -737,7 +763,6 @@ project(':wres-reading') {
         }
 
         testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
@@ -745,7 +770,6 @@ project(':wres-reading') {
         }
 
         testImplementation('org.mock-server:mockserver-core:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
@@ -753,8 +777,6 @@ project(':wres-reading') {
         }
 
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
@@ -950,9 +972,7 @@ project(':wres-statistics') {
 
         workingDir = file("src/main/python")
         args = ["wresproto.py"]
-        environment = [
-                "SETUPTOOLS_SCM_PRETEND_VERSION": "${majorVersion}.${minorVersion}+${project.version}"
-        ]
+        environment = ["SETUPTOOLS_SCM_PRETEND_VERSION": "${majorVersion}.${minorVersion}+${project.version}"]
     }
 
     // Copy the protobuf schema to the /dist directory
@@ -1138,8 +1158,8 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        implementation(platform("tools.jackson:jackson-bom:3.1.0"))
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
         api 'tools.jackson.core:jackson-databind:3.1.0'
         api 'tools.jackson.core:jackson-core:3.1.0'
         implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
@@ -1301,8 +1321,6 @@ project(':wres-worker') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-codec-http'
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
@@ -1313,7 +1331,6 @@ project(':wres-worker') {
         }
 
         testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
@@ -1321,21 +1338,18 @@ project(':wres-worker') {
         }
 
         testImplementation('org.mock-server:mockserver-core:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
-        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
+        testImplementation 'com.google.guava:guava:33.5.0-jre'
+        testImplementation 'io.netty:netty-common:4.2.9.Final'
+        testImplementation 'io.netty:netty-handler:4.2.9.Final'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+        testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -1514,7 +1528,7 @@ project(':wres-tasker') {
         implementation 'org.apache.tika:tika-core:3.2.3'
 
         // To persist job metadata while keeping it relatively fast
-        implementation('org.redisson:redisson:3.51.0') {
+        implementation('org.redisson:redisson:3.52.0') {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
@@ -1533,8 +1547,8 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.20.1'
-        api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+        implementation(platform("tools.jackson:jackson-bom:3.1.0"))
+        api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
         api 'tools.jackson.core:jackson-databind:3.1.0'
         api 'tools.jackson.core:jackson-core:3.1.0'
 
@@ -1613,29 +1627,31 @@ project(':wres-tasker') {
         }
     }
 
-    // Task named "resolve" is from from swagger plugin, generates openapi json
-    resolve {
-        def skipDocs = 'true'
-        def sourceFile = file('dist/lib/static/swagger/wres_api_info.yaml')
-        outputDir = new File(swaggerDocsBaseDir, swaggerDocsSubdirPathString)
-        if (!skipDocs)
-        {
-            println("Merging the API documentation with the contents of: " + sourceFile)
-            println("Writing the API documentation to: " + outputDir)
-        }
-        outputFileName = 'wres_openapi'
-        outputFormat = 'YAML'
-        prettyPrint = 'true'
-        openApiFile = sourceFile
-        classpath = sourceSets.main.runtimeClasspath
-        resourcePackages = ['wres.tasker']
-        buildClasspath = classpath
-        buildClasspath += configurations.docGen
+    afterEvaluate {
+        tasks.withType(ResolveTask).configureEach {
+            def skipDocs = false
+            def sourceFile = file('wres-tasker/dist/lib/static/swagger/wres_api_info.yaml')
+            outputDir = new File(swaggerDocsBaseDir, swaggerDocsSubdirPathString)
+            if (!skipDocs)
+            {
+                println("Merging the API documentation with the contents of: " + sourceFile)
+                def out = outputDir as DirectoryProperty
+                println("Writing the API documentation to: " + out.get())
+            }
+            outputFileName = 'wres_openapi'
+            outputFormat = 'YAML'
+            prettyPrint = true
+            openApiFile = sourceFile
+            classpath = sourceSets.main.runtimeClasspath
+            resourcePackages = ['wres.tasker']
+            buildClasspath = classpath
+            buildClasspath += configurations.docGen
 
-        // Disable the api documentation task until the swagger gradle plugin respects
-        // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
-        // TODO: enable the documentation when the toolchain is respected
-        skip = skipDocs
+            // Disable the api documentation task until the swagger gradle plugin respects
+            // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
+            // TODO: enable the documentation when the toolchain is respected
+            skip = skipDocs
+        }
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
@@ -2038,9 +2054,17 @@ dependencies {
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation('org.redisson:redisson:3.51.0') {
+    implementation('org.redisson:redisson:3.52.0') {
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
         exclude group: 'io.netty'
+    }
+
+    // Aggressively remove a vulnerable dep brought in by redisson above
+    implementation('com.fasterxml.jackson.core:jackson-databind') {
+        version {
+            // "Strictly at least 2.21.0"
+            strictly '[2.21.0, )'
+        }
     }
 
     implementation('edu.ucar:cdm-core:5.9.1') {
@@ -2092,7 +2116,6 @@ dependencies {
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
     testImplementation 'org.mockito:mockito-core:5.21.0'
-
 }
 
 test {
