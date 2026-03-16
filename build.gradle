@@ -263,7 +263,19 @@ subprojects {
             implementation('com.fasterxml.jackson.core:jackson-core:2.21.1') {
                 because('Security vulnerabilities in older versions.')
             }
-            testImplementation('com.fasterxml.jackson.core:jackson-core:2.21.1')
+        }
+    }
+
+    // Aggressively enforce certain non-vulnerable transitive deps on the test path. This is mainly needed for
+    // mock-server, which has not been updated since 2023. A more aggressive approach is needed here than the
+    // constraints configuration, which is not respected in all situations/contexts
+    configurations.matching { it.name.contains("test") }.configureEach {
+        resolutionStrategy {
+            force 'io.netty:netty-codec:4.2.9.Final'
+            force 'io.netty:netty-codec-http:4.2.9.Final'
+            force 'io.netty:netty-codec-http2:4.2.9.Final'
+            force 'com.fasterxml.jackson.core:jackson-core:2.21.1'
+            force 'net.minidev:json-smart:2.6.0'
         }
     }
 }
@@ -332,8 +344,6 @@ project(':wres-system') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-codec-http'
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
@@ -342,14 +352,12 @@ project(':wres-system') {
             exclude group: 'org.xmlunit', module: 'xmlunit-core'
             exclude group: 'org.yaml', module: 'snakeyaml'
         }
-        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
+        testImplementation 'com.google.guava:guava:33.5.0-jre'
+        testImplementation 'io.netty:netty-common:4.2.9.Final'
+        testImplementation 'io.netty:netty-handler:4.2.9.Final'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+        testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
     }
 
     test {
@@ -745,8 +753,6 @@ project(':wres-reading') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-codec-http'
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
@@ -757,7 +763,6 @@ project(':wres-reading') {
         }
 
         testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
@@ -765,7 +770,6 @@ project(':wres-reading') {
         }
 
         testImplementation('org.mock-server:mockserver-core:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
@@ -773,8 +777,6 @@ project(':wres-reading') {
         }
 
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
         testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
         testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
         testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
@@ -1319,8 +1321,6 @@ project(':wres-worker') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.jayway.jsonpath', module: 'json-path'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-codec-http'
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'io.netty', module: 'netty-common'
             exclude group: 'io.netty', module: 'netty-handler'
             exclude group: 'net.minidev', module: 'json-smart'
@@ -1331,7 +1331,6 @@ project(':wres-worker') {
         }
 
         testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
@@ -1339,21 +1338,18 @@ project(':wres-worker') {
         }
 
         testImplementation('org.mock-server:mockserver-core:5.15.0') {
-            exclude group: 'io.netty', module: 'netty-codec-http2'
             exclude group: 'commons-beanutils', module: 'commons-beanutils'
             exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
-        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-codec-http:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-codec-http2:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
+        testImplementation 'com.google.guava:guava:33.5.0-jre'
+        testImplementation 'io.netty:netty-common:4.2.9.Final'
+        testImplementation 'io.netty:netty-handler:4.2.9.Final'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+        testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -2063,6 +2059,14 @@ dependencies {
         exclude group: 'io.netty'
     }
 
+    // Aggressively remove a vulnerable dep brought in by redisson above
+    implementation('com.fasterxml.jackson.core:jackson-databind') {
+        version {
+            // "Strictly at least 2.21.0"
+            strictly '[2.21.0, )'
+        }
+    }
+
     implementation('edu.ucar:cdm-core:5.9.1') {
         // Because we use slf4j, not jcl:
         exclude group: 'commons-logging', module: 'commons-logging'
@@ -2112,7 +2116,6 @@ dependencies {
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.14.1'
 
     testImplementation 'org.mockito:mockito-core:5.21.0'
-
 }
 
 test {
