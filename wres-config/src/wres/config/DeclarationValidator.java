@@ -5426,7 +5426,7 @@ public class DeclarationValidator
                  && source.uri()
                           .getPath()
                           .contains( "ogcapi" )
-                 && Objects.isNull( System.getProperty( "wres.nwisApiKey" ) ) )
+                 && Objects.isNull( System.getProperty( "wres.usgsApiKey" ) ) )
             {
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
@@ -5436,7 +5436,7 @@ public class DeclarationValidator
                                                                + "' data sources whose URI looks like a request to a "
                                                                + "USGS National Water Information System OGC web "
                                                                + "service, yet no API Key (system property: "
-                                                               + "wres.nwisApiKey) was discovered. The NWIS OGC web "
+                                                               + "wres.usgsApiKey) was discovered. The NWIS OGC web "
                                                                + "services are rate limited. Without an API key to "
                                                                + "boost your rate limit, you may reach this limit "
                                                                + "quickly. This could lead to an HTTP 429 error when "
@@ -5445,7 +5445,7 @@ public class DeclarationValidator
                                                                + "recommended that you acquire an API key from the USGS "
                                                                + "(https://api.waterdata.usgs.gov/signup/) and supply "
                                                                + "this key to the WRES using the system property, "
-                                                               + "wres.nwisApiKey." )
+                                                               + "wres.usgsApiKey." )
                                              .build();
                 oneOf.add( event );
             }

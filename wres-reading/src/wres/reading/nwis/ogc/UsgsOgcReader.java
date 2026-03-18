@@ -117,7 +117,7 @@ public class UsgsOgcReader implements TimeSeriesReader
     private static final int DEFAULT_PAGE_SIZE = 50000;
 
     /** API key. */
-    private static final String API_KEY = System.getProperty( "wres.nwisApiKey" );
+    private static final String API_KEY = System.getProperty( "wres.usgsApiKey" );
 
     /** Name of the API key request parameter. */
     private static final String API_KEY_NAME = "api_key";
@@ -502,7 +502,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                     extra = " No API key (system property: nwis.wresApiKey) was discovered. It is strongly "
                             + "recommended that you acquire an API key from the USGS "
                             + "(https://api.waterdata.usgs.gov/signup/) and supply this key to the WRES using the "
-                            + "system property, wres.nwisApiKey, which will increase your rate limit.";
+                            + "system property, wres.usgsApiKey, which will increase your rate limit.";
                 }
                 else
                 {
