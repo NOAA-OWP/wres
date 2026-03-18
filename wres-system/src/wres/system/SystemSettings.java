@@ -157,9 +157,9 @@ public class SystemSettings
             // redact the details
 
             // GitHub #258. Signal that the rate limiting key has been passed through, but do not report the key
-            if ( propertyName.equals( "wres.nwisApiKey" ) )
+            if ( propertyName.equals( "wres.usgsApiKey" ) )
             {
-                returnMe.put( "wres.nwisApiKey", "[REDACTED]" );
+                returnMe.put( "wres.usgsApiKey", "[REDACTED]" );
             }
         } );
 
