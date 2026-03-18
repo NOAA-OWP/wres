@@ -443,8 +443,11 @@ public class UsgsOgcReader implements TimeSeriesReader
             URIBuilder builder = new URIBuilder( nextPageUri );
             builder.addParameter( "f", "json" );
 
-            // Also, the next page must be adjusted to include the API key afresh
-            builder.addParameter( API_KEY_NAME, API_KEY );
+            // Also, the next page must be adjusted to include the API key afresh. GitHub #766
+            if ( this.hasApiKey() )
+            {
+                builder.addParameter( API_KEY_NAME, API_KEY );
+            }
 
             try
             {
