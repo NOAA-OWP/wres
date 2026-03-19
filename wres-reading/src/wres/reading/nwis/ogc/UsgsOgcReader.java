@@ -370,7 +370,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                 startGettingResults.countDown();
                 List<TimeSeriesTuple> result = ReaderUtilities.getTimeSeries( results,
                                                                               startGettingResults,
-                                                                              USGS );
+                                                                              "the " + USGS );
 
                 cachedSeries.addAll( result );
 
@@ -502,14 +502,14 @@ public class UsgsOgcReader implements TimeSeriesReader
 
                 if ( Objects.isNull( API_KEY ) )
                 {
-                    extra = " No API key (system property: nwis.wresApiKey) was discovered. It is strongly "
+                    extra = " No API key (system property: wres.usgsApiKey) was discovered. It is strongly "
                             + "recommended that you acquire an API key from the USGS "
                             + "(https://api.waterdata.usgs.gov/signup/) and supply this key to the WRES using the "
                             + "system property, wres.usgsApiKey, which will increase your rate limit.";
                 }
                 else
                 {
-                    extra = " An API key (system property: nwis.wresApiKey) was discovered. As such, the rate limit "
+                    extra = " An API key (system property: wres.usgsApiKey) was discovered. As such, the rate limit "
                             + "you have exceeded is already a boosted rate limit and no further action can be taken. "
                             + "The rate limit will reset after a short period.";
                 }

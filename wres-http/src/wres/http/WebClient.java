@@ -183,7 +183,8 @@ public class WebClient
         Objects.requireNonNull( uri );
         Objects.requireNonNull( retryOn );
 
-        if ( !uri.getScheme().startsWith( "http" ) )
+        if ( !uri.getScheme()
+                 .startsWith( "http" ) )
         {
             throw new IllegalArgumentException( MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
@@ -414,8 +415,7 @@ public class WebClient
 
         monitorEvent.end(); // End, not commit
 
-        if ( Objects.nonNull( httpResponse )
-             && Objects.nonNull( httpResponse.body() ) )
+        if ( Objects.nonNull( httpResponse ) )
         {
             int httpStatus = httpResponse.code();
 

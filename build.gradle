@@ -18,7 +18,8 @@ buildscript {
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.configureEach {
         resolutionStrategy.dependencySubstitution {
-            substitute(module("com.overzealous:remark:1.1.0")).using(module("com.wavefront:remark:2023-07.07"))
+            substitute(module("com.overzealous:remark:1.1.0"))
+                    .using(module("com.wavefront:remark:2023-07.07"))
                     .because("Not available on Maven Central anymore")
         }
     }
@@ -269,7 +270,7 @@ subprojects {
     // Aggressively enforce certain non-vulnerable transitive deps on the test path. This is mainly needed for
     // mock-server, which has not been updated since 2023. A more aggressive approach is needed here than the
     // constraints configuration, which is not respected in all situations/contexts
-    configurations.matching { it.name.contains("test") }.configureEach {
+    configurations.matching {it.name.contains("test")}.configureEach {
         resolutionStrategy {
             force 'io.netty:netty-codec:4.2.9.Final'
             force 'io.netty:netty-codec-http:4.2.9.Final'
@@ -777,6 +778,9 @@ project(':wres-reading') {
             exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
+
+        testImplementation("org.wiremock:wiremock:4.0.0-beta.30")
+        implementation("org.wiremock:wiremock-junit5:4.0.0-beta.30")
 
         testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
         testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'

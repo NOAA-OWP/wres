@@ -10,9 +10,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
@@ -66,6 +71,13 @@ class UsgsOgcReaderTest
 {
     /** Mocker server instance. */
     private ClientAndServer mockServer;
+
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
 
     /** Path used by GET. */
     private static final String PATH = "/collections/daily/items";
@@ -1205,6 +1217,104 @@ class UsgsOgcReaderTest
 
             assertEquals( expected, actual );
         }
+    }
+
+    @Test
+    void testReadReturnsOneTimeSeriesUsingWireMock()
+    {
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( "Content-Type", "application/json" )
+                                                       .withBody( RESPONSE_ONE_PAGE ) ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + WIREMOCK.getPort()
+                                  + PATH
+                                  + PARAMS );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .timeZoneOffset( ZoneOffset.UTC )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder().name( "00060" ).build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.GEOJSON )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() ).thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() ).thenReturn( 30_000 );
+
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder().setName( "02238500" ) )
+                                                             .build() );
+        Features features = FeaturesBuilder.builder().geometries( geometries ).build();
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2025-01-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2025-11-01T00:00:00Z" ) )
+                                                   .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .features( features )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker(
+                TimeChunker.ChunkingStrategy.YEAR_RANGES, declaration, fakeSource );
+
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .toList();
+
+            Geometry expectedGeometry = Geometry.newBuilder()
+                                                .setName( "02238500" )
+                                                .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
+                                                .setSrid( 4326 )
+                                                .build();
+
+            TimeSeriesMetadata expectedMetadata = new TimeSeriesMetadata.Builder()
+                    .setReferenceTimes( Map.of() )
+                    .setUnit( "ft^3/s" )
+                    .setVariableName( "00060" )
+                    .setFeature( Feature.of( expectedGeometry ) )
+                    .setTimeScale( TimeScaleOuter.of( TimeScale.newBuilder()
+                                                               .setPeriod( MessageUtilities.getDuration( Duration.ofDays(
+                                                                       1 ) ) )
+                                                               .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                               .build() ) )
+                    .build();
+
+            TimeSeries<Double> expectedSeries = new TimeSeries.Builder<Double>()
+                    .setMetadata( expectedMetadata )
+                    .addEvent( Event.of( Instant.parse( "2024-02-14T00:00:00Z" ), 10.2 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-15T00:00:00Z" ), 10.2 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-16T00:00:00Z" ), 10.2 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-18T00:00:00Z" ), 108.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-20T00:00:00Z" ), 600.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-06T00:00:00Z" ), 410.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-13T00:00:00Z" ), 284.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-14T00:00:00Z" ), 262.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-15T00:00:00Z" ), 179.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-16T00:00:00Z" ), 70.7 ) )
+                    .build();
+
+            Assertions.assertEquals( List.of( expectedSeries ), actual );
+        }
+
+        WIREMOCK.verify( WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) ) );
     }
 
     @Test
