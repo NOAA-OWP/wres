@@ -703,8 +703,12 @@ public class UsgsOgcReader implements TimeSeriesReader
         uriBuilder.setPath( pathBuilder.toString() )
                   .clearParameters()
                   .addParameter( "f", "json" )
-                  .addParameter( "lang", "en-US" )
-                  .addParameter( API_KEY_NAME, API_KEY );
+                  .addParameter( "lang", "en-US" );
+
+        if ( this.hasApiKey() )
+        {
+            uriBuilder.addParameter( API_KEY_NAME, API_KEY );
+        }
 
         Source source = dataSource.source();
 
