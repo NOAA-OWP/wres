@@ -17,6 +17,7 @@ volumes:
 services:
     nginx:
       image: "${DOCKER_REGISTRY}/wres/nginx"
+      init: true
       container_name: nginx_proxy
       restart: always
       volumes:
@@ -30,6 +31,7 @@ services:
         wres_net:
     cadvisor:
       image: gcr.io/cadvisor/cadvisor:latest
+      init: true
       container_name: cadvisor
       security_opt:
         - "label=disable"
@@ -46,6 +48,7 @@ services:
         wres_net:
     persister:
         image: "${DOCKER_REGISTRY}/wres/wres-redis:REDIS_IMAGE"
+        init: true
         restart: always
         userns_mode: keep-id
         volumes:
@@ -64,6 +67,7 @@ services:
         ports:
          - "8443:8443"
         image: "${DOCKER_REGISTRY}/wres/wres-tasker:TASKER_IMAGE"
+        init: true
         restart: always
         depends_on:
             broker:
@@ -101,6 +105,7 @@ services:
          - "15671:15671"
          - "15691:15691"
         image: "${DOCKER_REGISTRY}/wres/wres-broker:BROKER_IMAGE"
+        init: true
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -132,6 +137,7 @@ services:
             start_period: 5m
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:WORKER_IMAGE"
+        init: true
         restart: always
         depends_on:
             broker:
@@ -184,6 +190,7 @@ services:
         ports:
          - 15673:15673
         image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:EVENTS_IMAGE"
+        init: true
         restart: always
         volumes:
          # For heap-dump files
@@ -212,6 +219,7 @@ services:
             eventsbroker:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
+        init: true
         restart: always
         volumes:
          # To write graphics outputs
@@ -238,6 +246,7 @@ services:
             eventsbroker:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-writing:WRITING_IMAGE"
+        init: true
         restart: always
         volumes:
          # To write numeric outputs
