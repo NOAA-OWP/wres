@@ -1,7 +1,6 @@
 package wres.reading.nwis.iv;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockserver.model.HttpRequest.request;
 
 import java.net.URI;
 import java.time.Duration;
@@ -12,16 +11,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.model.Parameter;
-import org.mockserver.model.Parameters;
-import org.mockserver.verify.VerificationTimes;
 
 import wres.config.components.BaselineDataset;
 import wres.config.components.BaselineDatasetBuilder;
@@ -66,9 +61,12 @@ import wres.system.SystemSettings;
 
 class NwisIvReaderTest
 {
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
-
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
     /** Path used by GET. */
     private static final String PATH = "/nwis/iv/";
 
@@ -675,30 +673,16 @@ class NwisIvReaderTest
             }
             """;
 
-    private static final String GET = "GET";
-
-    @BeforeEach
-    void startServer()
-    {
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
-    }
-
     @Test
     void testReadReturnsOneTimeSeries()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -780,48 +764,44 @@ class NwisIvReaderTest
     @Test
     void testReadReturnsThreeChunkedTimeSeriesRequests()
     {
-        // Create the chunk parameters
-        Parameters parametersOne = new Parameters( new Parameter( "indent", "on" ),
-                                                   new Parameter( "endDT", "2019-01-01T00:00:00Z" ),
-                                                   new Parameter( "format", "json" ),
-                                                   new Parameter( "parameterCd", "00060" ),
-                                                   new Parameter( "sites", "09165000" ),
-                                                   new Parameter( "startDT", "2018-01-01T00:00:01Z" ) );
+        // First chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                  .withQueryParam( "startDT", WireMock.equalTo( "2018-01-01T00:00:01Z" ) )
+                                  .withQueryParam( "endDT", WireMock.equalTo( "2019-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "sites", WireMock.equalTo( "09165000" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
-        Parameters parametersTwo = new Parameters( new Parameter( "indent", "on" ),
-                                                   new Parameter( "endDT", "2020-01-01T00:00:00Z" ),
-                                                   new Parameter( "format", "json" ),
-                                                   new Parameter( "parameterCd", "00060" ),
-                                                   new Parameter( "sites", "09165000" ),
-                                                   new Parameter( "startDT", "2019-01-01T00:00:01Z" ) );
+        // Second chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                  .withQueryParam( "startDT", WireMock.equalTo( "2019-01-01T00:00:01Z" ) )
+                                  .withQueryParam( "endDT", WireMock.equalTo( "2020-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "sites", WireMock.equalTo( "09165000" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
-        Parameters parametersThree = new Parameters( new Parameter( "indent", "on" ),
-                                                     new Parameter( "endDT", "2021-01-01T00:00:00Z" ),
-                                                     new Parameter( "format", "json" ),
-                                                     new Parameter( "parameterCd", "00060" ),
-                                                     new Parameter( "sites", "09165000" ),
-                                                     new Parameter( "startDT", "2020-01-01T00:00:01Z" ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersOne )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersTwo )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersThree )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
+        // Third chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                  .withQueryParam( "startDT", WireMock.equalTo( "2020-01-01T00:00:01Z" ) )
+                                  .withQueryParam( "endDT", WireMock.equalTo( "2021-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "sites", WireMock.equalTo( "09165000" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -893,75 +873,78 @@ class NwisIvReaderTest
         }
 
         // Three requests made
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH ),
-                                VerificationTimes.exactly( 3 ) );
+        WIREMOCK.verify( WireMock.exactly( 3 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) ) );
 
-        // One request made with parameters one
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersOne ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                 .withQueryParam( "startDT", WireMock.equalTo( "2018-01-01T00:00:01Z" ) )
+                                 .withQueryParam( "endDT", WireMock.equalTo( "2019-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "sites", WireMock.equalTo( "09165000" ) ) );
 
-        // One request made with parameters two
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersTwo ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                 .withQueryParam( "startDT", WireMock.equalTo( "2019-01-01T00:00:01Z" ) )
+                                 .withQueryParam( "endDT", WireMock.equalTo( "2020-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "sites", WireMock.equalTo( "09165000" ) ) );
 
-        // One request made with parameters three
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersThree ),
-                                VerificationTimes.exactly( 1 ) );
-
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                 .withQueryParam( "startDT", WireMock.equalTo( "2020-01-01T00:00:01Z" ) )
+                                 .withQueryParam( "endDT", WireMock.equalTo( "2021-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "sites", WireMock.equalTo( "09165000" ) ) );
     }
 
     @Test
     void testReadReturnsThreeChunkedTimeSeriesRequestsForGeneratedBaselineWithTimeIntervalSet()
     {
-        // Create the chunk parameters
-        Parameters parametersOne = new Parameters( new Parameter( "indent", "on" ),
-                                                   new Parameter( "endDT", "2019-01-01T00:00:00Z" ),
-                                                   new Parameter( "format", "json" ),
-                                                   new Parameter( "parameterCd", "00060" ),
-                                                   new Parameter( "sites", "09165000" ),
-                                                   new Parameter( "startDT", "2018-01-01T00:00:01Z" ) );
+        // First chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                  .withQueryParam( "startDT", WireMock.equalTo( "2018-01-01T00:00:01Z" ) )
+                                  .withQueryParam( "endDT", WireMock.equalTo( "2019-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "sites", WireMock.equalTo( "09165000" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
-        Parameters parametersTwo = new Parameters( new Parameter( "indent", "on" ),
-                                                   new Parameter( "endDT", "2020-01-01T00:00:00Z" ),
-                                                   new Parameter( "format", "json" ),
-                                                   new Parameter( "parameterCd", "00060" ),
-                                                   new Parameter( "sites", "09165000" ),
-                                                   new Parameter( "startDT", "2019-01-01T00:00:01Z" ) );
+        // Second chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                  .withQueryParam( "startDT", WireMock.equalTo( "2019-01-01T00:00:01Z" ) )
+                                  .withQueryParam( "endDT", WireMock.equalTo( "2020-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "sites", WireMock.equalTo( "09165000" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
-        Parameters parametersThree = new Parameters( new Parameter( "indent", "on" ),
-                                                     new Parameter( "endDT", "2021-01-01T00:00:00Z" ),
-                                                     new Parameter( "format", "json" ),
-                                                     new Parameter( "parameterCd", "00060" ),
-                                                     new Parameter( "sites", "09165000" ),
-                                                     new Parameter( "startDT", "2020-01-01T00:00:01Z" ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersOne )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersTwo )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersThree )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
+        // Third chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                  .withQueryParam( "startDT", WireMock.equalTo( "2020-01-01T00:00:01Z" ) )
+                                  .withQueryParam( "endDT", WireMock.equalTo( "2021-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "sites", WireMock.equalTo( "09165000" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -1045,40 +1028,47 @@ class NwisIvReaderTest
         }
 
         // Three requests made
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH ),
-                                VerificationTimes.exactly( 3 ) );
+        WIREMOCK.verify( WireMock.exactly( 3 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) ) );
 
-        // One request made with parameters one
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersOne ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                 .withQueryParam( "startDT", WireMock.equalTo( "2018-01-01T00:00:01Z" ) )
+                                 .withQueryParam( "endDT", WireMock.equalTo( "2019-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "sites", WireMock.equalTo( "09165000" ) ) );
 
-        // One request made with parameters two
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersTwo ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                 .withQueryParam( "startDT", WireMock.equalTo( "2019-01-01T00:00:01Z" ) )
+                                 .withQueryParam( "endDT", WireMock.equalTo( "2020-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "sites", WireMock.equalTo( "09165000" ) ) );
 
-        // One request made with parameters three
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersThree ),
-                                VerificationTimes.exactly( 1 ) );
-
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "indent", WireMock.equalTo( "on" ) )
+                                 .withQueryParam( "startDT", WireMock.equalTo( "2020-01-01T00:00:01Z" ) )
+                                 .withQueryParam( "endDT", WireMock.equalTo( "2021-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "format", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameterCd", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "sites", WireMock.equalTo( "09165000" ) ) );
     }
 
     @Test
     void testReadReturnsOneTimeSeriesForEachOfTwoVariables()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( MULTIVARIATE_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( MULTIVARIATE_RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + MULTIVARIATE_PARAMS );
 

@@ -842,7 +842,8 @@ public class ReaderUtilities
             try
             {
                 // If the file exists, setup the input stream to point to it. IOException is handled below.
-                if ( Files.exists( path ) && Files.isReadable( path ) )
+                if ( Files.exists( path )
+                     && Files.isReadable( path ) )
                 {
                     inputStream = Files.newInputStream( path );
                 }
@@ -857,7 +858,7 @@ public class ReaderUtilities
                         throw new PreReadException( "The file "
                                                     + pathToTrustFile
                                                     + " supplied via system property, wres.wrdsCertificateFileToTrust, "
-                                                    + "for obtaining data afrom WRDS services was neither found on the "
+                                                    + "for obtaining data from WRDS services was neither found on the "
                                                     + "file system nor the class path." );
                     }
                 }

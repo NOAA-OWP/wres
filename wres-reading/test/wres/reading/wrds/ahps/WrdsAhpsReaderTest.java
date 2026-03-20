@@ -1,7 +1,6 @@
 package wres.reading.wrds.ahps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockserver.model.HttpRequest.request;
 
 import java.net.URI;
 import java.time.Instant;
@@ -11,17 +10,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.model.Parameter;
-import org.mockserver.model.Parameters;
-import org.mockserver.verify.VerificationTimes;
 
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
@@ -61,8 +56,12 @@ import wres.system.SystemSettings;
 
 class WrdsAhpsReaderTest
 {
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
 
     /** Feature considered. */
     private static final String FEATURE_NAME = "FROV2";
@@ -778,32 +777,16 @@ class WrdsAhpsReaderTest
             }
             """;
 
-    private static final String GET = "GET";
-
-    @BeforeEach
-    void startServer()
-    {
-        System.setProperty( "wres.wrdsCertificateFileToTrust",
-                            "org/mockserver/socket/CertificateAuthorityCertificate.pem" );
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
-    }
-
     @Test
     void testReadReturnsOneForecastTimeSeries()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH_V2 )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FORECAST_RESPONSE_V2 ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH_V2 ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( FORECAST_RESPONSE_V2 ) ) );
 
-        URI fakeUri = URI.create( "https://localhost:"
-                                  + this.mockServer.getLocalPort()
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + WIREMOCK.getPort()
                                   + FORECAST_PATH_V2 );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
@@ -904,13 +887,13 @@ class WrdsAhpsReaderTest
     @Test
     void testReadReturnsThreeForecastTimeSeries()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH_V2 )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( ANOTHER_FORECAST_RESPONSE_V2 ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH_V2 ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( ANOTHER_FORECAST_RESPONSE_V2 ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + FORECAST_PATH_V2 );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
@@ -963,21 +946,17 @@ class WrdsAhpsReaderTest
     @Test
     void testReadReturnsThreeForecastTimeSeriesInOneChunk()
     {
-        // Create the chunk parameters
-        Parameters parameters = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                new Parameter( "issuedTime",
-                                                               "[2022-09-17T00:00:00Z,2022-09-19T18:57:46Z]" ) );
-
         String path = "/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2";
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( path )
-                                         .withQueryStringParameters( parameters )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( ANOTHER_FORECAST_RESPONSE_V2 ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( path ) )
+                                  .withQueryParam( "issuedTime",
+                                                   WireMock.equalTo( "[2022-09-17T00:00:00Z,2022-09-19T18:57:46Z]" ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( ANOTHER_FORECAST_RESPONSE_V2 ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + "/api/rfc_forecast/v2.0/forecast/streamflow/" );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
@@ -1041,48 +1020,45 @@ class WrdsAhpsReaderTest
         }
 
         // One request made with parameters
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( path )
-                                         .withQueryStringParameters( parameters ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( path ) )
+                                 .withQueryParam( "issuedTime",
+                                                  WireMock.equalTo( "[2022-09-17T00:00:00Z,2022-09-19T18:57:46Z]" ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) ) );
     }
 
     @Test
     void testReadReturnsThreeChunkedObservedTimeSeries()
     {
-        // Create the chunk parameters
-        Parameters parametersOne = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                   new Parameter( "validTime",
-                                                                  "[2018-01-01T00:00:00Z,2019-01-01T00:00:00Z]" ) );
+        // First chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "validTime",
+                                                   WireMock.equalTo( "[2018-01-01T00:00:00Z,2019-01-01T00:00:00Z]" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( OBSERVED_RESPONSE_V1 ) ) );
 
-        Parameters parametersTwo = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                   new Parameter( "validTime",
-                                                                  "[2019-01-01T00:00:00Z,2020-01-01T00:00:00Z]" ) );
+        // Second chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "validTime",
+                                                   WireMock.equalTo( "[2019-01-01T00:00:00Z,2020-01-01T00:00:00Z]" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( OBSERVED_RESPONSE_V1 ) ) );
 
-        Parameters parametersThree = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                     new Parameter( "validTime",
-                                                                    "[2020-01-01T00:00:00Z,2021-01-01T00:00:00Z]" ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                         .withQueryStringParameters( parametersOne )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                         .withQueryStringParameters( parametersTwo )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                         .withQueryStringParameters( parametersThree )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
+        // Third chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "validTime",
+                                                   WireMock.equalTo( "[2020-01-01T00:00:00Z,2021-01-01T00:00:00Z]" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( OBSERVED_RESPONSE_V1 ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + OBSERVED_PATH_V1
                                   + OBSERVED_PATH_PARAMS_V1 );
 
@@ -1149,42 +1125,37 @@ class WrdsAhpsReaderTest
         }
 
         // Three requests made
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME ),
-                                VerificationTimes.exactly( 3 ) );
+        WIREMOCK.verify( WireMock.exactly( 3 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) ) );
 
-        // One request made with parameters one
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                         .withQueryStringParameters( parametersOne ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "validTime",
+                                                  WireMock.equalTo( "[2018-01-01T00:00:00Z,2019-01-01T00:00:00Z]" ) ) );
 
-        // One request made with parameters two
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                         .withQueryStringParameters( parametersTwo ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "validTime",
+                                                  WireMock.equalTo( "[2019-01-01T00:00:00Z,2020-01-01T00:00:00Z]" ) ) );
 
-        // One request made with parameters three
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                         .withQueryStringParameters( parametersThree ),
-                                VerificationTimes.exactly( 1 ) );
-
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( OBSERVED_PATH_V1 + FEATURE_NAME ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "validTime",
+                                                  WireMock.equalTo( "[2020-01-01T00:00:00Z,2021-01-01T00:00:00Z]" ) ) );
     }
 
     @Test
     void testReadProducesHttp404ErrorAndNoNullPointerException()
     {
         // GitHub issue #444
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH_V2 )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.notFoundResponse() );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH_V2 ) )
+                                  .willReturn( WireMock.notFound() ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + FORECAST_PATH_V2 );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
