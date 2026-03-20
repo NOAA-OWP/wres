@@ -361,6 +361,9 @@ project(':wres-system') {
         testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
         testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
         testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
+
+        testImplementation 'org.apache.httpcomponents.client5:httpclient5:5.6'
+        testImplementation 'org.apache.httpcomponents.core5:httpcore5:5.4.2'
     }
 
     test {
@@ -746,16 +749,9 @@ project(':wres-reading') {
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         testImplementation 'org.mockito:mockito-core:5.20.0'
 
-        // For mocking sseb service interaction
-        testImplementation("org.wiremock:wiremock:4.0.0-beta.30")
-        implementation("org.wiremock:wiremock-junit5:4.0.0-beta.30")
-
-        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
+        // For mocking web service interaction
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
