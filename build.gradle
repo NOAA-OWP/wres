@@ -346,8 +346,8 @@ project(':wres-system') {
     }
 
     test {
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += ["mockserver.maxSocketTimeout": 120000]
+        // Set the socket timeout for tests involving wiremock to 120s
+        systemProperties += ["jetty-idle-timeout": 120000]
         useJUnitPlatform()
     }
 }
@@ -750,7 +750,7 @@ project(':wres-reading') {
         useJUnitPlatform()
 
         // Set the socket timeout for tests involving wiremock to 120s
-        systemProperties += ["jetty-idle-timeout"          : 120000,
+        systemProperties += ["jetty-idle-timeout": 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
                              "ucar.unidata.io.http.httpBufferSize"  : 200000]
     }
