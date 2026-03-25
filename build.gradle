@@ -501,12 +501,9 @@ project(':wres-io') {
     test {
         useJUnitPlatform()
 
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
-                             "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                             "ucar.unidata.io.http.httpBufferSize"  : 200000]
+        systemProperties += ['ucar.unidata.io.http.maxReadCacheSize': 200000,
+                             'ucar.unidata.io.http.httpBufferSize'  : 200000]
     }
-
 
     // Give wres-io access to the liquibase changesets on the expected classpath
     // at test time.
