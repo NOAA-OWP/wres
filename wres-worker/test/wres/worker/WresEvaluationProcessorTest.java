@@ -3,29 +3,29 @@ package wres.worker;
 import java.io.IOException;
 import java.util.Optional;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.matchers.Times;
-import org.mockserver.model.HttpError;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-
 class WresEvaluationProcessorTest
 {
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
-
-    private final Connection mockConnection = mock( Connection.class );
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
 
     /** Mock job message for a smoke test job */
     private final byte[] mockJobMessage =
@@ -67,119 +67,104 @@ class WresEvaluationProcessorTest
                     104, 111, 115, 116, 46, 100, 111, 99, 107, 101, 114, 46, 105, 110, 116, 101, 114, 110, 97, 108, 74,
                     4, 53, 52, 51, 50 };
 
-    @BeforeEach
-    void startServer()
-    {
-        this.mockServer = ClientAndServer.startClientAndServer( 8010 );
-    }
-
-    @AfterEach
-    void stopServer() throws IOException
-    {
-        this.mockServer.stop();
-        this.mockConnection.close();
-    }
-
     @Test
     void testEvaluateCallSmokeTest() throws IOException
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/startEvaluation" )
-                                         .withMethod( "POST" ), Times.once() )
-                       .respond( HttpResponse.response( "123456" ) );
+        WIREMOCK.stubFor( WireMock.post( WireMock.urlPathEqualTo( "/evaluation/startEvaluation" ) )
+                                  .willReturn( WireMock.ok( "123456" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/stdout/123456" )
-                                         .withMethod( "GET" ), Times.once() )
-                       .respond( HttpResponse.response( "500" ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/stdout/123456" ) )
+                                  .willReturn( WireMock.ok( "500" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/stderr/123456" )
-                                         .withMethod( "GET" ), Times.once() )
-                       .respond( HttpResponse.response( "500" ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/stderr/123456" ) )
+                                  .willReturn( WireMock.ok( "500" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/status/123456" )
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response("COMPLETED") );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/status/123456" ) )
+                                  .willReturn( WireMock.ok( "COMPLETED" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/getEvaluation/123456" )
-                                         .withMethod( "GET" ), Times.once() )
-                       .respond( HttpResponse.response() );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/getEvaluation/123456" ) )
+                                  .willReturn( WireMock.ok() ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/close" )
-                                         .withMethod( "POST" ), Times.once() )
-                       .respond( HttpResponse.response() );
+        WIREMOCK.stubFor( WireMock.post( WireMock.urlPathEqualTo( "/evaluation/close" ) )
+                                  .willReturn( WireMock.ok() ) );
 
         Envelope envelope = new Envelope( 1, false, "", "wres.job" );
 
-        WresEvaluationProcessor wresEvaluationProcessor = new WresEvaluationProcessor( "wres.job.status",
-                                                                                       "6923033347430537124",
-                                                                                       this.mockConnection,
-                                                                                       envelope,
-                                                                                       this.mockJobMessage,
-                                                                                       8010 );
+        try ( Connection mockConnection = mock( Connection.class ) )
+        {
+            WresEvaluationProcessor wresEvaluationProcessor = new WresEvaluationProcessor( "wres.job.status",
+                                                                                           "6923033347430537124",
+                                                                                           mockConnection,
+                                                                                           envelope,
+                                                                                           this.mockJobMessage,
+                                                                                           WIREMOCK.getPort() );
 
-        when( this.mockConnection.createChannel() ).thenReturn( mock( Channel.class ) );
+            when( mockConnection.createChannel() )
+                    .thenReturn( mock( Channel.class ) );
 
-        Integer call = wresEvaluationProcessor.call();
+            Integer call = wresEvaluationProcessor.call();
 
-        Assertions.assertEquals( Optional.of( 200 ), Optional.ofNullable( call ) );
+            Assertions.assertEquals( Optional.of( 200 ), Optional.ofNullable( call ) );
+        }
     }
 
     @Test
     void testEvaluateCallResiliency() throws IOException
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/startEvaluation" )
-                                         .withMethod( "POST" ), Times.once() )
-                       .respond( HttpResponse.response( "123456" ) );
+        WIREMOCK.stubFor( WireMock.post( WireMock.urlPathEqualTo( "/evaluation/startEvaluation" ) )
+                                  .willReturn( WireMock.ok( "123456" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/stdout/123456" )
-                                         .withMethod( "GET" ), Times.once() )
-                       .respond( HttpResponse.response( "500" ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/stdout/123456" ) )
+                                  .willReturn( WireMock.ok( "500" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/stderr/123456" )
-                                         .withMethod( "GET" ), Times.once() )
-                       .respond( HttpResponse.response( "500" ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/stderr/123456" ) )
+                                  .willReturn( WireMock.ok( "500" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/status/123456" )
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response("COMPLETED") );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/evaluation/status/123456" ) )
+                                  .willReturn( WireMock.ok( "COMPLETED" ) ) );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/getEvaluation/123456" )
-                                         .withMethod( "GET" ), Times.exactly( 3 ) )
-                       .error( HttpError.error().withDropConnection( true ) );
+        // Fail 3 times, then succeed once
+        String scenarioName = "Evaluation Retry";
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/getEvaluation/123456" )
-                                         .withMethod( "GET" ), Times.once() )
-                       .respond( HttpResponse.response() );
+        for ( int i = 1; i <= 3; i++ )
+        {
+            String currentState = ( i == 1 ) ? Scenario.STARTED : "Failure " + ( i - 1 );
+            String nextState = "Failure " + i;
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/evaluation/close" )
-                                         .withMethod( "POST" ), Times.once() )
-                       .respond( HttpResponse.response() );
+            WIREMOCK.stubFor( WireMock.get( WireMock.urlEqualTo( "/evaluation/getEvaluation/123456" ) )
+                                      .inScenario( scenarioName )
+                                      .whenScenarioStateIs( currentState )
+                                      .willSetStateTo( nextState )
+                                      .willReturn( WireMock.aResponse()
+                                                           .withFault( Fault.CONNECTION_RESET_BY_PEER ) ) );
+        }
+
+        // Succeed
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlEqualTo( "/evaluation/getEvaluation/123456" ) )
+                                  .inScenario( scenarioName )
+                                  .whenScenarioStateIs( "Failure 3" )
+                                  .willReturn( WireMock.ok() ) );
+
+        WIREMOCK.stubFor( WireMock.post( WireMock.urlEqualTo( "/evaluation/close" ) )
+                                  .willReturn( WireMock.ok() ) );
 
         Envelope envelope = new Envelope( 1, false, "", "wres.job" );
 
-        WresEvaluationProcessor wresEvaluationProcessor = new WresEvaluationProcessor( "wres.job.status",
-                                                                                       "6923033347430537124",
-                                                                                       this.mockConnection,
-                                                                                       envelope,
-                                                                                       this.mockJobMessage,
-                                                                                       8010 );
+        try ( Connection mockConnection = mock( Connection.class ) )
+        {
+            WresEvaluationProcessor wresEvaluationProcessor = new WresEvaluationProcessor( "wres.job.status",
+                                                                                           "6923033347430537124",
+                                                                                           mockConnection,
+                                                                                           envelope,
+                                                                                           this.mockJobMessage,
+                                                                                           WIREMOCK.getPort() );
 
-        when( this.mockConnection.createChannel() ).thenReturn( mock( Channel.class ) );
+            when( mockConnection.createChannel() )
+                    .thenReturn( mock( Channel.class ) );
 
-        Integer call = wresEvaluationProcessor.call();
+            Integer call = wresEvaluationProcessor.call();
 
-        Assertions.assertEquals( Optional.of( 200 ), Optional.ofNullable( call ) );
+            Assertions.assertEquals( Optional.of( 200 ), Optional.ofNullable( call ) );
+        }
     }
 }
