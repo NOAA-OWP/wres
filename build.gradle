@@ -879,7 +879,11 @@ project(':wres-statistics') {
     // add the current project version (date and first 7 chars of the sha-1 commit hash of the wres-statistics artifact)
     // as a build tag. More importantly than correct versioning, the wheel artifact is now built integrally to the
     // overall build, with which it is tightly coupled.
-    def lastGitTag = grgit.describe(tags: true)
+
+    // Find the last tag or default to 1.0 if no tags exist
+    def lastGitTag = grgit.tag.list()
+            .reverse()
+            .find { it.commit == grgit.head() }?.name ?: "1.0"
 
     def matcher = lastGitTag =~ /(\d+)\.(\d+)/
 
@@ -902,9 +906,7 @@ project(':wres-statistics') {
 
     // Build the Python Wheel artifact
     tasks.register('buildProtobufBindingsForPython', VenvTask) {
-        // Dependencies are now declared inside the closure
-        dependsOn 'generateProto', 'pipInstall'
-
+        dependsOn 'generateProto', 'pipInstall', 'cleanWheels'
         workingDir = file("src/main/python")
         args = ["wresproto.py"]
         environment = ["SETUPTOOLS_SCM_PRETEND_VERSION": "${majorVersion}.${minorVersion}+${project.version}"]
@@ -932,6 +934,12 @@ project(':wres-statistics') {
     tasks.register('cleanProtoGeneratedDir') {
         def javaBindingsDir = file("${project.projectDir}/src/main/java/wres")
         delete fileTree(dir: javaBindingsDir).include('**/generated/*.java')
+    }
+
+    // Clean any existing wheel artifacts before generating a new one
+    tasks.register('cleanWheels') {
+        def wheelDir = file("${project.projectDir}/dist/wresproto")
+        delete fileTree(dir: wheelDir).include('*.whl')
     }
 
     // Tie the preparation of the Protobuf distribution into the java compile task for convenience.
