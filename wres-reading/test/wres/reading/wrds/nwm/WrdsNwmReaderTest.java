@@ -3,7 +3,6 @@ package wres.reading.wrds.nwm;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockserver.model.HttpRequest.request;
 
 import java.net.URI;
 import java.time.Instant;
@@ -13,18 +12,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.matchers.Times;
-import org.mockserver.model.HttpError;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.model.Parameter;
-import org.mockserver.model.Parameters;
-import org.mockserver.verify.VerificationTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +59,12 @@ class WrdsNwmReaderTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReaderTest.class );
 
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
 
     /** Feature considered. */
     private static final int NWM_FEATURE_ID = 8588002;
@@ -209,30 +208,16 @@ class WrdsNwmReaderTest
                                                     + "  ]\n"
                                                     + "}\n";
 
-    private static final String GET = "GET";
-
-    @BeforeEach
-    void startServer()
-    {
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
-    }
-
     @Test
     void testReadReturnsOneAnalysisTimeSeries()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( ANALYSIS_PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( ANALYSIS_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( ANALYSIS_PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( ANALYSIS_RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + ANALYSIS_PATH
                                   + ANALYSIS_PARAMS );
 
@@ -302,22 +287,27 @@ class WrdsNwmReaderTest
                       + "prior to success. Two of these exceptions can be expected because a connection is "
                       + "intentionally dropped twice before recovery." );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( ANALYSIS_PATH )
-                                         .withMethod( GET ),
-                              Times.exactly( 2 ) )
-                       .error( HttpError.error()
-                                        .withDropConnection( true ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( ANALYSIS_PATH ) )
+                                  .inScenario( "Retry Logic" )
+                                  .whenScenarioStateIs( Scenario.STARTED ) // Initial state
+                                  .willSetStateTo( "First Failure" )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withFault( Fault.CONNECTION_RESET_BY_PEER ) ) );
 
-        // On the third time, return the body successfully.
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( ANALYSIS_PATH )
-                                         .withMethod( "GET" ),
-                              Times.once() )
-                       .respond( org.mockserver.model.HttpResponse.response( ANALYSIS_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( ANALYSIS_PATH ) )
+                                  .inScenario( "Retry Logic" )
+                                  .whenScenarioStateIs( "First Failure" ) // Initial state
+                                  .willSetStateTo( "Success State" )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withFault( Fault.CONNECTION_RESET_BY_PEER ) ) );
+
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( ANALYSIS_PATH ) )
+                                  .inScenario( "Retry Logic" )
+                                  .whenScenarioStateIs( "Success State" )
+                                  .willReturn( WireMock.okJson( ANALYSIS_RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + ANALYSIS_PATH
                                   + ANALYSIS_PARAMS );
 
@@ -383,42 +373,39 @@ class WrdsNwmReaderTest
     void testReadReturnsThreeChunkedForecastTimeSeries()
     {
         // Create the chunk parameters. Note the fiddly interval notation on the date ranges
-        Parameters parametersOne = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                   new Parameter( "reference_time",
-                                                                  "(20220102T00Z,20220109T00Z]" ),
-                                                   new Parameter( "forecast_type", "deterministic" ) );
+        // First chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "reference_time",
+                                                   WireMock.equalTo( "(20220102T00Z,20220109T00Z]" ) )
+                                  .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( FORECAST_RESPONSE ) ) );
 
-        Parameters parametersTwo = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                   new Parameter( "reference_time",
-                                                                  "(20220109T00Z,20220116T00Z]" ),
-                                                   new Parameter( "forecast_type", "deterministic" ) );
+        // Second chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "reference_time",
+                                                   WireMock.equalTo( "(20220109T00Z,20220116T00Z]" ) )
+                                  .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( FORECAST_RESPONSE ) ) );
 
-        Parameters parametersThree = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
-                                                     new Parameter( "reference_time",
-                                                                    "(20220116T00Z,20220123T00Z]" ),
-                                                     new Parameter( "forecast_type", "deterministic" ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH )
-                                         .withQueryStringParameters( parametersOne )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH )
-                                         .withQueryStringParameters( parametersTwo )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH )
-                                         .withQueryStringParameters( parametersThree )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
+        // Third chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "reference_time",
+                                                   WireMock.equalTo( "(20220116T00Z,20220123T00Z]" ) )
+                                  .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( FORECAST_RESPONSE ) ) );
 
         // Need to use a short URL, as would be declared, since chunking goes through URL creation
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + "/api/v1/nwm/ops/short_range/" );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
@@ -479,27 +466,29 @@ class WrdsNwmReaderTest
         }
 
         // Three requests made
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( FORECAST_PATH ),
-                                VerificationTimes.exactly( 3 ) );
+        WIREMOCK.verify( WireMock.exactly( 3 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) ) );
 
-        // One request made with parameters one
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( FORECAST_PATH )
-                                         .withQueryStringParameters( parametersOne ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "reference_time",
+                                                  WireMock.equalTo( "(20220102T00Z,20220109T00Z]" ) )
+                                 .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) ) );
 
-        // One request made with parameters two
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( FORECAST_PATH )
-                                         .withQueryStringParameters( parametersTwo ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "reference_time",
+                                                  WireMock.equalTo( "(20220109T00Z,20220116T00Z]" ) )
+                                 .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) ) );
 
-        // One request made with parameters three
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( FORECAST_PATH )
-                                         .withQueryStringParameters( parametersThree ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "reference_time",
+                                                  WireMock.equalTo( "(20220116T00Z,20220123T00Z]" ) )
+                                 .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) ) );
     }
 
     /**

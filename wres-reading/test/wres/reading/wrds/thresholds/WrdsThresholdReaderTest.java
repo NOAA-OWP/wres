@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,8 +43,12 @@ import wres.statistics.generated.Threshold;
  */
 class WrdsThresholdReaderTest
 {
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
 
     /** Test file name. */
     private static final String TEST_JSON = "test.json";
@@ -912,27 +916,21 @@ class WrdsThresholdReaderTest
     void runBeforeEachTest()
     {
         this.reader = WrdsThresholdReader.of();
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
     }
 
     @Test
     void testReadThresholdsFromMockedService()
     {
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + "/redacted/api/location/v3.0/nws_threshold/" );
 
         String expectedPath = "/redacted/api/location/v3.0/nws_threshold/nws_lid/BLOF1,CEDG1,MNTG1,PTSA1,SMAF1/";
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( expectedPath )
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response( ANOTHER_RESPONSE ) );
+
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( expectedPath ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( ANOTHER_RESPONSE ) ) );
 
         ThresholdSource service
                 = ThresholdSourceBuilder.builder()
@@ -1178,20 +1176,21 @@ class WrdsThresholdReaderTest
     void testReadThresholdsFromMockedServiceWithChunksAndDuplicates()
     {
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + "/redacted/api/location/v3.0/nws_threshold/" );
 
         String expectedPathOne = "/redacted/api/location/v3.0/nws_threshold/nws_lid/BLOF1/";
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( expectedPathOne )
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response( ANOTHER_RESPONSE ) );
+
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( expectedPathOne ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( ANOTHER_RESPONSE ) ) );
 
         String expectedPathTwo = "/redacted/api/location/v3.0/nws_threshold/nws_lid/CEDG1/";
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( expectedPathTwo )
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response( ANOTHER_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( expectedPathTwo ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( ANOTHER_RESPONSE ) ) );
 
         ThresholdSource service
                 = ThresholdSourceBuilder.builder()
@@ -1328,10 +1327,10 @@ class WrdsThresholdReaderTest
                                       FeatureAuthority.NWS_LID );
 
             Set<wres.config.components.Threshold> ptsa1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
-                                                                                                         "PTSA1" );
+                                                                                                    "PTSA1" );
             assertFalse( ptsa1Thresholds.isEmpty() );
             Set<wres.config.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
-                                                                                                         "BLOF1" );
+                                                                                                    "BLOF1" );
             assertFalse( blof1Thresholds.isEmpty() );
             assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
                                                          "MNTG1" )
@@ -1414,6 +1413,7 @@ class WrdsThresholdReaderTest
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
+                    default -> throw new IllegalArgumentException( "Unexpected case." );
                 }
             }
 
@@ -1465,7 +1465,7 @@ class WrdsThresholdReaderTest
                                       FeatureAuthority.NWS_LID );
 
             Set<wres.config.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
-                                                                                                         "BLOF1" );
+                                                                                                    "BLOF1" );
             assertFalse( blof1Thresholds.isEmpty() );
             assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
                                                          "PTSA1" )
@@ -1482,12 +1482,12 @@ class WrdsThresholdReaderTest
 
             assertEquals( 6, blof1Thresholds.size() );
 
-            boolean has1_5 = false;
-            boolean has2_0 = false;
-            boolean has3_0 = false;
-            boolean has4_0 = false;
-            boolean has5_0 = false;
-            boolean has10_0 = false;
+            boolean hasOneFive = false;
+            boolean hasTwoZero = false;
+            boolean hasThreeZero = false;
+            boolean hasFourZero = false;
+            boolean hasFiveZero = false;
+            boolean hasTenZero = false;
 
             List<String> properThresholds = List.of(
                     "year_1_5",
@@ -1509,55 +1509,56 @@ class WrdsThresholdReaderTest
                 {
                     case "year_1_5" ->
                     {
-                        has1_5 = true;
+                        hasOneFive = true;
                         assertEquals( 58864.26,
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_2_0" ->
                     {
-                        has2_0 = true;
+                        hasTwoZero = true;
                         assertEquals( 87362.48,
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_3_0" ->
                     {
-                        has3_0 = true;
+                        hasThreeZero = true;
                         assertEquals( 109539.05,
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_4_0" ->
                     {
-                        has4_0 = true;
+                        hasFourZero = true;
                         assertEquals( 128454.64,
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_5_0" ->
                     {
-                        has5_0 = true;
+                        hasFiveZero = true;
                         assertEquals( 176406.6,
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
                     case "year_10_0" ->
                     {
-                        has10_0 = true;
+                        hasTenZero = true;
                         assertEquals( 216831.58000000002,
                                       threshold.getObservedThresholdValue(),
                                       EPSILON );
                     }
+                    default -> throw new IllegalArgumentException( "Unexpected case." );
                 }
             }
 
-            assertTrue( has1_5 );
-            assertTrue( has2_0 );
-            assertTrue( has3_0 );
-            assertTrue( has4_0 );
-            assertTrue( has5_0 );
-            assertTrue( has10_0 );
+            assertTrue( hasOneFive );
+            assertTrue( hasTwoZero );
+            assertTrue( hasThreeZero );
+            assertTrue( hasFourZero );
+            assertTrue( hasFiveZero );
+            assertTrue( hasTenZero );
 
             // Clean up
             if ( Files.exists( jsonPath ) )
@@ -1672,7 +1673,7 @@ class WrdsThresholdReaderTest
      */
 
     private static Set<wres.config.components.Threshold> createThresholds( Set<Threshold> thresholds,
-                                                                                String featureName )
+                                                                           String featureName )
     {
         return thresholds.stream()
                          .map( n -> WrdsThresholdReaderTest.createThreshold( n, featureName ) )
@@ -1687,7 +1688,7 @@ class WrdsThresholdReaderTest
      */
 
     private static wres.config.components.Threshold createThreshold( Threshold threshold,
-                                                                          String featureName )
+                                                                     String featureName )
     {
         Geometry geometry = Geometry.newBuilder()
                                     .setName( featureName )
@@ -1709,7 +1710,7 @@ class WrdsThresholdReaderTest
      */
 
     private static Set<wres.config.components.Threshold> filter( Set<wres.config.components.Threshold> thresholds,
-                                                                      String featureName )
+                                                                 String featureName )
     {
         return thresholds.stream()
                          .filter( n -> n.feature()

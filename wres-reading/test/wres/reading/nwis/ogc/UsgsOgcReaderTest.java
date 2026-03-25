@@ -10,19 +10,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.model.Parameter;
-import org.mockserver.model.Parameters;
-import org.mockserver.verify.VerificationTimes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockserver.model.HttpRequest.request;
 
 import wres.config.components.Dataset;
 import wres.config.components.DatasetBuilder;
@@ -64,8 +60,17 @@ import wres.system.SystemSettings;
 
 class UsgsOgcReaderTest
 {
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
+    /** Re-used string. */
+    private static final String CONTENT_TYPE = "Content-Type";
+
+    /** Re-used string. */
+    private static final String APPLICATION_JSON = "application/json";
 
     /** Path used by GET. */
     private static final String PATH = "/collections/daily/items";
@@ -1076,30 +1081,17 @@ class UsgsOgcReaderTest
             }
             """;
 
-    private static final String GET = "GET";
-
-    @BeforeEach
-    void startServer()
-    {
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
-    }
-
     @Test
     void testReadReturnsOneTimeSeries()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_ONE_PAGE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -1110,9 +1102,7 @@ class UsgsOgcReaderTest
 
         Dataset dataset = DatasetBuilder.builder()
                                         .sources( List.of( fakeDeclarationSource ) )
-                                        .variable( VariableBuilder.builder()
-                                                                  .name( "00060" )
-                                                                  .build() )
+                                        .variable( VariableBuilder.builder().name( "00060" ).build() )
                                         .build();
 
         DataSource fakeSource = DataSource.builder()
@@ -1125,18 +1115,13 @@ class UsgsOgcReaderTest
                                           .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
-        Mockito.when( systemSettings.getMaximumWebClientThreads() )
-               .thenReturn( 6 );
-        Mockito.when( systemSettings.getPoolObjectLifespan() )
-               .thenReturn( 30_000 );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() ).thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() ).thenReturn( 30_000 );
 
         Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
-                                                             .setLeft( Geometry.newBuilder()
-                                                                               .setName( "02238500" ) )
+                                                             .setLeft( Geometry.newBuilder().setName( "02238500" ) )
                                                              .build() );
-        Features features = FeaturesBuilder.builder()
-                                           .geometries( geometries )
-                                           .build();
+        Features features = FeaturesBuilder.builder().geometries( geometries ).build();
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2025-01-01T00:00:00Z" ) )
                                                    .maximum( Instant.parse( "2025-11-01T00:00:00Z" ) )
@@ -1146,9 +1131,8 @@ class UsgsOgcReaderTest
                                                                         .validDates( interval )
                                                                         .build();
 
-        TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
-                                                                  declaration,
-                                                                  fakeSource );
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker(
+                TimeChunker.ChunkingStrategy.YEAR_RANGES, declaration, fakeSource );
 
         UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
@@ -1162,67 +1146,57 @@ class UsgsOgcReaderTest
                                                 .setWkt( "POINT (-81.8808333333333 29.0811111111111)" )
                                                 .setSrid( 4326 )
                                                 .build();
-            Feature expectedFeature = Feature.of( expectedGeometry );
 
-            TimeScale expectedTimeScale = TimeScale.newBuilder()
-                                                   .setPeriod( MessageUtilities.getDuration( Duration.ofDays( 1 ) ) )
-                                                   .setFunction( TimeScale.TimeScaleFunction.MEAN )
-                                                   .build();
-            TimeScaleOuter expectedTimeScaleOuter = TimeScaleOuter.of( expectedTimeScale );
+            TimeSeriesMetadata expectedMetadata = new TimeSeriesMetadata.Builder()
+                    .setReferenceTimes( Map.of() )
+                    .setUnit( "ft^3/s" )
+                    .setVariableName( "00060" )
+                    .setFeature( Feature.of( expectedGeometry ) )
+                    .setTimeScale( TimeScaleOuter.of( TimeScale.newBuilder()
+                                                               .setPeriod( MessageUtilities.getDuration( Duration.ofDays(
+                                                                       1 ) ) )
+                                                               .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                               .build() ) )
+                    .build();
 
-            TimeSeriesMetadata expectedMetadata =
-                    new TimeSeriesMetadata.Builder().setReferenceTimes( Map.of() )
-                                                    .setUnit( "ft^3/s" )
-                                                    .setVariableName( "00060" )
-                                                    .setTimeScale( expectedTimeScaleOuter )
-                                                    .setFeature( expectedFeature )
-                                                    .build();
-            TimeSeries<Double> expectedSeries =
-                    new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
-                                                    .addEvent( Event.of( Instant.parse( "2024-02-14T00:00:00Z" ),
-                                                                         10.2 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-02-15T00:00:00Z" ),
-                                                                         10.2 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-02-16T00:00:00Z" ),
-                                                                         10.2 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-02-18T00:00:00Z" ),
-                                                                         108.0 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-02-20T00:00:00Z" ),
-                                                                         600.0 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-03-06T00:00:00Z" ),
-                                                                         410.0 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-03-13T00:00:00Z" ),
-                                                                         284.0 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-03-14T00:00:00Z" ),
-                                                                         262.0 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-03-15T00:00:00Z" ),
-                                                                         179.0 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2024-03-16T00:00:00Z" ),
-                                                                         70.7 ) )
-                                                    .build();
+            TimeSeries<Double> expectedSeries = new TimeSeries.Builder<Double>()
+                    .setMetadata( expectedMetadata )
+                    .addEvent( Event.of( Instant.parse( "2024-02-14T00:00:00Z" ), 10.2 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-15T00:00:00Z" ), 10.2 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-16T00:00:00Z" ), 10.2 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-18T00:00:00Z" ), 108.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-02-20T00:00:00Z" ), 600.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-06T00:00:00Z" ), 410.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-13T00:00:00Z" ), 284.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-14T00:00:00Z" ), 262.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-15T00:00:00Z" ), 179.0 ) )
+                    .addEvent( Event.of( Instant.parse( "2024-03-16T00:00:00Z" ), 70.7 ) )
+                    .build();
 
-            List<TimeSeries<Double>> expected = List.of( expectedSeries );
-
-            assertEquals( expected, actual );
+            Assertions.assertEquals( List.of( expectedSeries ), actual );
         }
+
+        WIREMOCK.verify( WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) ) );
     }
 
     @Test
     void testReadReturnsOneTimeSeriesWithGeospatialMetadataAndAppliesZoneOffset()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE_NO_GEOMETRY ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_ONE_PAGE_NO_GEOMETRY ) ) );
 
         // Supply the feature metadata on demand
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/collections/monitoring-locations/items/USGS-02238500" )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FEATURE_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/collections/monitoring-locations/items/USGS-02238500" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( FEATURE_RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -1335,19 +1309,21 @@ class UsgsOgcReaderTest
     @Test
     void testReadReturnsOneTimeSeriesAndIgnoresDaylightSavings()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_ONE_PAGE ) ) );
 
         // Supply the feature metadata on demand
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/collections/monitoring-locations/items/USGS-02238500" )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FEATURE_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/collections/monitoring-locations/items/USGS-02238500" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( FEATURE_RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -1466,30 +1442,35 @@ class UsgsOgcReaderTest
         // Add the link to the next page with respect to the mock server
         String adjustedResponse = RESPONSE_PAGE_ONE_OF_THREE.replace( "NEXT_PAGE_PLACEHOLDER",
                                                                       "http://localhost:"
-                                                                      + this.mockServer.getLocalPort()
+                                                                      + WIREMOCK.getPort()
                                                                       + secondPagePath );
         String thirdPagePath = "/another/path";
 
         String adjustedResponseTwo = RESPONSE_PAGE_TWO_OF_THREE.replace( "NEXT_PAGE_PLACEHOLDER",
                                                                          "http://localhost:"
-                                                                         + this.mockServer.getLocalPort()
+                                                                         + WIREMOCK.getPort()
                                                                          + thirdPagePath );
 
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( adjustedResponse ) );
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( secondPagePath )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( adjustedResponseTwo ) );
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( thirdPagePath )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_PAGE_THREE_OF_THREE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( adjustedResponse ) ) );
+
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( secondPagePath ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( adjustedResponseTwo ) ) );
+
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( thirdPagePath ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_PAGE_THREE_OF_THREE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -1611,45 +1592,44 @@ class UsgsOgcReaderTest
     @Test
     void testReadReturnsThreeChunkedTimeSeriesRequests()
     {
-        // Create the chunk parameters
-        Parameters parametersOne =
-                new Parameters( new Parameter( "time", "2018-01-01T00:00:01Z/2019-01-01T00:00:00Z" ),
-                                new Parameter( "f", "json" ),
-                                new Parameter( "parameter_code", "00060" ),
-                                new Parameter( "monitoring_location_id", "USGS-02238500" ) );
+        // First chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "time",
+                                                   WireMock.equalTo( "2018-01-01T00:00:01Z/2019-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "f", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameter_code", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "monitoring_location_id", WireMock.equalTo( "USGS-02238500" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_ONE_PAGE ) ) );
 
-        Parameters parametersTwo =
-                new Parameters( new Parameter( "time", "2019-01-01T00:00:01Z/2020-01-01T00:00:00Z" ),
-                                new Parameter( "f", "json" ),
-                                new Parameter( "parameter_code", "00060" ),
-                                new Parameter( "monitoring_location_id", "USGS-02238500" ) );
+        // Second chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "time",
+                                                   WireMock.equalTo( "2019-01-01T00:00:01Z/2020-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "f", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameter_code", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "monitoring_location_id", WireMock.equalTo( "USGS-02238500" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_ONE_PAGE ) ) );
 
-        Parameters parametersThree =
-                new Parameters( new Parameter( "time", "2020-01-01T00:00:01Z/2021-01-01T00:00:00Z" ),
-                                new Parameter( "f", "json" ),
-                                new Parameter( "parameter_code", "00060" ),
-                                new Parameter( "monitoring_location_id", "USGS-02238500" ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersOne )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersTwo )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE ) );
-
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersThree )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( RESPONSE_ONE_PAGE ) );
+        // Third chunk
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( PATH ) )
+                                  .withQueryParam( "time",
+                                                   WireMock.equalTo( "2020-01-01T00:00:01Z/2021-01-01T00:00:00Z" ) )
+                                  .withQueryParam( "f", WireMock.equalTo( "json" ) )
+                                  .withQueryParam( "parameter_code", WireMock.equalTo( "00060" ) )
+                                  .withQueryParam( "monitoring_location_id", WireMock.equalTo( "USGS-02238500" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( RESPONSE_ONE_PAGE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + PATH
                                   + PARAMS );
 
@@ -1722,27 +1702,31 @@ class UsgsOgcReaderTest
         }
 
         // Three requests made
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH ),
-                                VerificationTimes.exactly( 3 ) );
+        WIREMOCK.verify( WireMock.exactly( 3 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) ) );
 
-        // One request made with parameters one
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersOne ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "time",
+                                                  WireMock.equalTo( "2018-01-01T00:00:01Z/2019-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "f", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameter_code", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "monitoring_location_id", WireMock.equalTo( "USGS-02238500" ) ) );
 
-        // One request made with parameters two
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersTwo ),
-                                VerificationTimes.exactly( 1 ) );
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "time",
+                                                  WireMock.equalTo( "2019-01-01T00:00:01Z/2020-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "f", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameter_code", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "monitoring_location_id", WireMock.equalTo( "USGS-02238500" ) ) );
 
-        // One request made with parameters three
-        this.mockServer.verify( request().withMethod( GET )
-                                         .withPath( PATH )
-                                         .withQueryStringParameters( parametersThree ),
-                                VerificationTimes.exactly( 1 ) );
-
+        WIREMOCK.verify( WireMock.exactly( 1 ),
+                         WireMock.getRequestedFor( WireMock.urlPathEqualTo( PATH ) )
+                                 .withQueryParam( "time",
+                                                  WireMock.equalTo( "2020-01-01T00:00:01Z/2021-01-01T00:00:00Z" ) )
+                                 .withQueryParam( "f", WireMock.equalTo( "json" ) )
+                                 .withQueryParam( "parameter_code", WireMock.equalTo( "00060" ) )
+                                 .withQueryParam( "monitoring_location_id", WireMock.equalTo( "USGS-02238500" ) ) );
     }
 }

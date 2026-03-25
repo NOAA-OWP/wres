@@ -10,14 +10,13 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -58,8 +57,12 @@ import wres.system.SystemSettings;
 
 class WrdsHefsReaderTest
 {
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
 
     /** Feature considered. */
     private static final String FEATURE_NAME = "RDBN5";
@@ -139,30 +142,16 @@ class WrdsHefsReaderTest
             ]
             """;
 
-    private static final String GET = "GET";
-
-    @BeforeEach
-    void startServer()
-    {
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
-    }
-
     @Test
     void testReadReturnsOneForecastTimeSeries()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( FORECAST_RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + FORECAST_PATH );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
@@ -245,13 +234,11 @@ class WrdsHefsReaderTest
     @Test
     void testReadProducesHttp404ErrorAndNoNullPointerException()
     {
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( FORECAST_PATH )
-                                         .withMethod( GET ) )
-                       .respond( HttpResponse.notFoundResponse() );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
+                                  .willReturn( WireMock.notFound() ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort()
+                                  + WIREMOCK.getPort()
                                   + FORECAST_PATH );
 
         Source fakeDeclarationSource = SourceBuilder.builder()

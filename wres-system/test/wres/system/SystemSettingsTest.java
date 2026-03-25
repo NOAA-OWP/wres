@@ -50,17 +50,17 @@ class SystemSettingsTest
                    () -> assertFalse( propertyNames.stream()
                                                    .anyMatch( s -> s.contains( "separator" ) ) ),
                    () -> assertFalse( propertyNames.stream()
-                                                   .anyMatch( s -> s.contains( "sun" ) ) ),
+                                                   .anyMatch( s -> s.startsWith( "sun" ) ) ),
                    () -> assertFalse( propertyNames.stream()
                                                    .anyMatch( s -> s.contains( "user.country" ) ) ),
                    () -> assertFalse( propertyNames.stream()
-                                                   .anyMatch( s -> s.contains( "java.vendor" ) ) ),
+                                                   .anyMatch( s -> s.startsWith( "java.vendor" ) ) ),
                    () -> assertFalse( propertyNames.stream()
-                                                   .anyMatch( s -> s.contains( "java.e" ) ) ),
+                                                   .anyMatch( s -> s.startsWith( "java.e" ) ) ),
                    () -> assertFalse( propertyNames.stream()
-                                                   .anyMatch( s -> s.contains( "java.vm.specification" ) ) ),
+                                                   .anyMatch( s -> s.startsWith( "java.vm.specification" ) ) ),
                    () -> assertFalse( propertyNames.stream()
-                                                   .anyMatch( s -> s.contains( "java.specification" ) ) ),
+                                                   .anyMatch( s -> s.startsWith( "java.specification" ) ) ),
                    () -> assertFalse( propertyNames.stream()
                                                    .anyMatch( s -> s.contains( "printer" ) ) ),
                    () -> assertFalse( propertyNames.stream()

@@ -1,7 +1,5 @@
 package wres.system;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
@@ -18,6 +16,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import lombok.Getter;
+
 /**
  * Suppose you want to make an SSL/TLS connection, suppose you know either the
  * exact certificate or the signer of the certificate that you wish to trust
@@ -30,7 +30,9 @@ import javax.net.ssl.X509TrustManager;
 
 public class SSLStuffThatTrustsOneCertificate
 {
+    @Getter
     private final X509TrustManager trustManager;
+
     private final SSLContext sslContext;
 
     /**
@@ -46,40 +48,10 @@ public class SSLStuffThatTrustsOneCertificate
         this.sslContext = getSSLContextWithTrustManager( this.trustManager );
     }
 
-    /**
-     * Create JSSE goo that trusts a single specified certificate.
-     * (Convenience constructor accepting a File)
-     * @param derEncodedCertificate the certificate, intermediate cert, or CA
-     * @param password The password to use for the trust store, or null if none. 
-     * @throws IllegalArgumentException when failing to read the file
-     * @throws IllegalStateException when any exceptions occur setting up SSL
-     */
-    SSLStuffThatTrustsOneCertificate( File derEncodedCertificate, String password )
-    {
-        try ( InputStream inputStream = new FileInputStream( derEncodedCertificate ) )
-        {
-            this.trustManager = getTrustManagerWithOneAuthority( inputStream, password );
-        }
-        catch ( IOException ioe )
-        {
-            throw new IllegalArgumentException( "Failed to read file " + derEncodedCertificate,
-                                                ioe );
-        }
-        this.sslContext = getSSLContextWithTrustManager( this.trustManager );
-    }
-
     SSLSocketFactory getSSLSocketFactory()
     {
         return this.getSSLContext()
                    .getSocketFactory();
-    }
-
-    /**
-     * @return the trust manager
-     */
-    public X509TrustManager getTrustManager()
-    {
-        return this.trustManager;
     }
 
     /**
@@ -161,15 +133,16 @@ public class SSLStuffThatTrustsOneCertificate
                                              kse );
         }
 
-        for ( TrustManager trustManager : trustManagerFactory.getTrustManagers() )
+        for ( TrustManager trustManagerInner : trustManagerFactory.getTrustManagers() )
         {
-            if ( trustManager instanceof X509TrustManager )
+            if ( trustManagerInner instanceof X509TrustManager x509TrustManager )
             {
-                return (X509TrustManager) trustManager;
+                return x509TrustManager;
             }
         }
 
-        throw new IllegalStateException( "WRES expected an X509TrustManager to exist in JRE, but no trust manager was found." );
+        throw new IllegalStateException( "WRES expected an X509TrustManager to exist in JRE, but no trust manager was "
+                                         + "found." );
     }
 
 
@@ -180,12 +153,12 @@ public class SSLStuffThatTrustsOneCertificate
      */
     private SSLContext getSSLContextWithTrustManager( TrustManager trustManager )
     {
-        SSLContext sslContext;
+        SSLContext sslContextInner;
         String protocol = "TLSv1.2";
 
         try
         {
-            sslContext = SSLContext.getInstance( protocol );
+            sslContextInner = SSLContext.getInstance( protocol );
         }
         catch ( NoSuchAlgorithmException nsae )
         {
@@ -199,14 +172,14 @@ public class SSLStuffThatTrustsOneCertificate
 
         try
         {
-            sslContext.init( null, trustManagers, null );
+            sslContextInner.init( null, trustManagers, null );
         }
         catch ( KeyManagementException kme )
         {
             throw new IllegalStateException( "WRES unable to initialize SSLContext", kme );
         }
 
-        return sslContext;
+        return sslContextInner;
     }
 
 }

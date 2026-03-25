@@ -830,7 +830,8 @@ public final class TimeSeriesSlicer
         }
 
         // Thinning required? If not, then return the intersecting times.
-        boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
+        boolean upscaleLeft = Objects.nonNull( desiredTimeScale )
+                              && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
                                && !desiredTimeScale.equals( right.getTimeScale() );
 
@@ -2476,7 +2477,8 @@ public final class TimeSeriesSlicer
                            && nextValidTime.isBefore( timeWindow.getLatestValidTime() ) );
 
             // Filter by lead durations
-            if ( include && Objects.nonNull( referenceTime ) && !timeWindow.bothLeadDurationsAreUnbounded() )
+            if ( include && Objects.nonNull( referenceTime )
+                 && !timeWindow.bothLeadDurationsAreUnbounded() )
             {
                 Duration leadDuration = Duration.between( referenceTime, nextValidTime );
 

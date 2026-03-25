@@ -218,14 +218,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
         // exceptional behavior
         if ( successfulPoolsToReport.isEmpty() )
         {
-            String extra = "";
-
-            if ( !this.declaration.covariates()
-                                  .isEmpty() )
-            {
-                extra = " In addition, please check that the covariates declared in this evaluation select at least "
-                        + "some data for one or more pools.";
-            }
+            String extra = this.getExtraHelp( this.declaration );
 
             throw new WresProcessingException( "Statistics could not be produced for any pools. This probably occurred "
                                                + "because none of the pools contained valid pairs. Check that the "
@@ -494,6 +487,33 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
                          featureGroup.getName(),
                          TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
         }
+    }
+
+    /**
+     * Returns some extra help when no pairs could be generated.
+     * @param declaration the declaration
+     * @return the extra help
+     */
+
+    private String getExtraHelp( EvaluationDeclaration declaration )
+    {
+        String help = "";
+
+        if ( !declaration.covariates()
+                         .isEmpty() )
+        {
+            help = " In addition, please check that the covariates declared in this evaluation select at least "
+                   + "some data for one or more pools.";
+        }
+
+        if ( !Objects.nonNull( declaration.crossPair() ) )
+        {
+            help += "Since 'cross_pair' was declared, you should also check that contemporaneous pairs are "
+                    + "available across the 'predicted' and 'baseline' datasets whose values are being cross-"
+                    + "paired.";
+        }
+
+        return help;
     }
 
     /**

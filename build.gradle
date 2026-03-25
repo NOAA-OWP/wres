@@ -18,7 +18,8 @@ buildscript {
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.configureEach {
         resolutionStrategy.dependencySubstitution {
-            substitute(module("com.overzealous:remark:1.1.0")).using(module("com.wavefront:remark:2023-07.07"))
+            substitute(module("com.overzealous:remark:1.1.0"))
+                    .using(module("com.wavefront:remark:2023-07.07"))
                     .because("Not available on Maven Central anymore")
         }
     }
@@ -269,7 +270,7 @@ subprojects {
     // Aggressively enforce certain non-vulnerable transitive deps on the test path. This is mainly needed for
     // mock-server, which has not been updated since 2023. A more aggressive approach is needed here than the
     // constraints configuration, which is not respected in all situations/contexts
-    configurations.matching { it.name.contains("test") }.configureEach {
+    configurations.matching {it.name.contains("test")}.configureEach {
         resolutionStrategy {
             force 'io.netty:netty-codec:4.2.9.Final'
             force 'io.netty:netty-codec-http:4.2.9.Final'
@@ -336,35 +337,17 @@ project(':wres-system') {
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-        // Use mockserver to test certificate utilities.
-        // Various transitive dependencies need to be overridden to avoid
-        // triggering alerts related to security vulnerabilities.
-        // See GitHub #478. 
-        testImplementation('org.mock-server:mockserver-netty:5.15.0') {
-            exclude group: 'commons-io', module: 'commons-io'
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.google.guava', module: 'guava'
-            exclude group: 'com.jayway.jsonpath', module: 'json-path'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-common'
-            exclude group: 'io.netty', module: 'netty-handler'
-            exclude group: 'net.minidev', module: 'json-smart'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-            exclude group: 'org.xmlunit', module: 'xmlunit-core'
-            exclude group: 'org.yaml', module: 'snakeyaml'
-        }
-        testImplementation 'com.google.guava:guava:33.5.0-jre'
-        testImplementation 'io.netty:netty-common:4.2.9.Final'
-        testImplementation 'io.netty:netty-handler:4.2.9.Final'
-        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
+        // For mocking web service interaction
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
+
+        testImplementation 'org.apache.httpcomponents.client5:httpclient5:5.6'
+        testImplementation 'org.apache.httpcomponents.core5:httpcore5:5.4.2'
     }
 
     test {
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += ["mockserver.maxSocketTimeout": 120000]
+        // Set the socket timeout for tests involving wiremock to 120s
+        systemProperties += ["jetty-idle-timeout": 120000]
         useJUnitPlatform()
     }
 }
@@ -518,12 +501,9 @@ project(':wres-io') {
     test {
         useJUnitPlatform()
 
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
-                             "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                             "ucar.unidata.io.http.httpBufferSize"  : 200000]
+        systemProperties += ['ucar.unidata.io.http.maxReadCacheSize': 200000,
+                             'ucar.unidata.io.http.httpBufferSize'  : 200000]
     }
-
 
     // Give wres-io access to the liquibase changesets on the expected classpath
     // at test time.
@@ -745,45 +725,9 @@ project(':wres-reading') {
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         testImplementation 'org.mockito:mockito-core:5.20.0'
 
-        // Use mockserver as a mock server for mock API responses
-        // Various transitive dependencies need to be overridden to avoid
-        // triggering alerts related to security vulnerabilities.
-        // See GitHub #478.
-        testImplementation('org.mock-server:mockserver-netty:5.15.0') {
-            exclude group: 'commons-io', module: 'commons-io'
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.google.guava', module: 'guava'
-            exclude group: 'com.jayway.jsonpath', module: 'json-path'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-common'
-            exclude group: 'io.netty', module: 'netty-handler'
-            exclude group: 'net.minidev', module: 'json-smart'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-            exclude group: 'org.xmlunit', module: 'xmlunit-core'
-            exclude group: 'org.yaml', module: 'snakeyaml'
-        }
-
-        testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-        }
-
-        testImplementation('org.mock-server:mockserver-core:5.15.0') {
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-        }
-
-        testRuntimeOnly 'com.google.guava:guava:33.5.0-jre'
-        testRuntimeOnly 'io.netty:netty-common:4.2.9.Final'
-        testRuntimeOnly 'io.netty:netty-handler:4.2.9.Final'
-        testRuntimeOnly 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testRuntimeOnly 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testRuntimeOnly 'commons-beanutils:commons-beanutils:1.11.0'
+        // For mocking web service interaction
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -797,24 +741,13 @@ project(':wres-reading') {
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.1'
-
-        // TODO: remove when mock server catches up. Currently, the direct dependency
-        // on wres-config brings in a later version
-        constraints {
-            testImplementation('com.networknt:json-schema-validator') {
-                version {
-                    strictly('1.5.9')
-                }
-                because('because mock server depends on this')
-            }
-        }
     }
 
     test {
         useJUnitPlatform()
 
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
+        // Set the socket timeout for tests involving wiremock to 120s
+        systemProperties += ["jetty-idle-timeout"                   : 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
                              "ucar.unidata.io.http.httpBufferSize"  : 200000]
     }
@@ -1313,45 +1246,9 @@ project(':wres-worker') {
         implementation 'com.google.protobuf:protobuf-java:3.25.8'
         testImplementation 'org.mockito:mockito-core:5.21.0'
 
-        // Use mockserver as a mock server for mock API responses
-        // Various transitive dependencies need to be overridden to avoid
-        // triggering alerts related to security vulnerabilities.
-        // See GitHub #478.
-        testImplementation('org.mock-server:mockserver-netty:5.15.0') {
-            exclude group: 'commons-io', module: 'commons-io'
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.google.guava', module: 'guava'
-            exclude group: 'com.jayway.jsonpath', module: 'json-path'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'io.netty', module: 'netty-common'
-            exclude group: 'io.netty', module: 'netty-handler'
-            exclude group: 'net.minidev', module: 'json-smart'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-            exclude group: 'org.xmlunit', module: 'xmlunit-core'
-            exclude group: 'org.yaml', module: 'snakeyaml'
-        }
-
-        testImplementation('org.mock-server:mockserver-client-java:5.15.0') {
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-        }
-
-        testImplementation('org.mock-server:mockserver-core:5.15.0') {
-            exclude group: 'commons-beanutils', module: 'commons-beanutils'
-            exclude group: 'com.nimbusds', module: 'nimbus-jose-jwt'
-            exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
-            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-        }
-
-        testImplementation 'com.google.guava:guava:33.5.0-jre'
-        testImplementation 'io.netty:netty-common:4.2.9.Final'
-        testImplementation 'io.netty:netty-handler:4.2.9.Final'
-        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
-        testImplementation 'commons-beanutils:commons-beanutils:1.11.0'
+        // For mocking web service interaction
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -1362,10 +1259,10 @@ project(':wres-worker') {
     test {
         useJUnitPlatform()
 
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
-                             "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                             "ucar.unidata.io.http.httpBufferSize"  : 200000]
+        // Set the socket timeout for tests involving wiremock to 120s
+        systemProperties += ['jetty-idle-timeout'                   : 120000,
+                             'ucar.unidata.io.http.maxReadCacheSize': 200000,
+                             'ucar.unidata.io.http.httpBufferSize'  : 200000]
     }
 
     apply plugin: 'application'

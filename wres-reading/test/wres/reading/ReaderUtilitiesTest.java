@@ -30,16 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
 
 import wres.config.MetricConstants;
 import wres.config.components.DataType;
@@ -87,14 +86,18 @@ import wres.statistics.generated.TimeScale;
 
 class ReaderUtilitiesTest
 {
+    @RegisterExtension
+    private static final WireMockExtension WIREMOCK = WireMockExtension.newInstance()
+                                                                       .options( WireMockConfiguration.wireMockConfig()
+                                                                                                      .dynamicPort()
+                                                                                                      .dynamicHttpsPort() )
+                                                                       .build();
+
     /** Test file name. */
     private static final String TEST_JSON = "test.json";
 
     /** Re-used string. */
     private static final String TEST = "test";
-
-    /** Mocker server instance. */
-    private ClientAndServer mockServer;
 
     /** Unit string. */
     private static final String FT = "FT";
@@ -662,18 +665,6 @@ class ReaderUtilitiesTest
                 ]
             }
             """;
-
-    @BeforeEach
-    void startServer()
-    {
-        this.mockServer = ClientAndServer.startClientAndServer( 0 );
-    }
-
-    @AfterEach
-    void stopServer()
-    {
-        this.mockServer.stop();
-    }
 
     @Test
     void testSplitByDelimiter()
@@ -1280,13 +1271,13 @@ class ReaderUtilitiesTest
     void testFillThresholdsUsesHandbook5IdentifiersForNwsFeatureAuthority()
     {
         // Path expectation includes handbook 5 identifiers
-        this.mockServer.when( HttpRequest.request()
-                                         .withPath( "/nws_lid/BLOF1,CEDG1,MNTG1,PTSA1,SMAF1/" )
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( "/nws_lid/BLOF1,CEDG1,MNTG1,PTSA1,SMAF1/" ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort() );
+                                  + WIREMOCK.getPort() );
 
         ThresholdSource service
                 = ThresholdSourceBuilder.builder()
@@ -1350,13 +1341,13 @@ class ReaderUtilitiesTest
     @Test
     void testReadFromWebSource() throws IOException
     {
-        // Path expectation includes handbook 5 identifiers
-        this.mockServer.when( HttpRequest.request()
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.anyUrl() )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort() );
+                                  + WIREMOCK.getPort() );
 
         try ( InputStream stream =
                       ReaderUtilities.getByteStreamFromWebSource( fakeUri,
@@ -1374,13 +1365,11 @@ class ReaderUtilitiesTest
     @Test
     void testReadFromWebSourceSkipsMissingWhenEncountering404() throws IOException
     {
-        // Path expectation includes handbook 5 identifiers
-        this.mockServer.when( HttpRequest.request()
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.notFoundResponse() );
+        WIREMOCK.stubFor( WireMock.get( WireMock.anyUrl() )
+                                  .willReturn( WireMock.notFound() ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort() );
+                                  + WIREMOCK.getPort() );
 
         try ( InputStream stream =
                       ReaderUtilities.getByteStreamFromWebSource( fakeUri,
@@ -1396,13 +1385,11 @@ class ReaderUtilitiesTest
     @Test
     void testReadFromWebSourceThrowsExceptionWhenEncountering404AssignedAsException()
     {
-        // Path expectation includes handbook 5 identifiers
-        this.mockServer.when( HttpRequest.request()
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.notFoundResponse() );
+        WIREMOCK.stubFor( WireMock.get( WireMock.anyUrl() )
+                                  .willReturn( WireMock.notFound() ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + this.mockServer.getLocalPort() );
+                                  + WIREMOCK.getPort() );
 
         AtomicInteger actualErrorCode = new AtomicInteger();
         Function<WebClient.ClientResponse, String> unpacker =
@@ -1425,13 +1412,13 @@ class ReaderUtilitiesTest
     @Test
     void testReadFromWebSourceThrowsExpectedExceptionWhenGetFromWebExcepts() throws IOException
     {
-        // Path expectation includes handbook 5 identifiers
-        this.mockServer.when( HttpRequest.request()
-                                         .withMethod( "GET" ) )
-                       .respond( HttpResponse.response( RESPONSE ) );
+        WIREMOCK.stubFor( WireMock.get( WireMock.anyUrl() )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withBody( RESPONSE ) ) );
 
         String uri = "http://localhost:"
-                     + this.mockServer.getLocalPort();
+                     + WIREMOCK.getPort();
         URI fakeUri = URI.create( uri );
 
         WebClient client = Mockito.mock( WebClient.class );
