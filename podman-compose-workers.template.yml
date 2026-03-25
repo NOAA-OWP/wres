@@ -17,6 +17,7 @@ volumes:
 services:
     nginx:
       image: "${DOCKER_REGISTRY}/wres/nginx"
+      init: true
       container_name: nginx_proxy
       restart: always
       volumes:
@@ -30,6 +31,7 @@ services:
         wres_net:
     cadvisor:
       image: gcr.io/cadvisor/cadvisor:latest
+      init: true
       container_name: cadvisor
       security_opt:
         - "label=disable"
@@ -46,6 +48,7 @@ services:
         wres_net:
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:WORKER_IMAGE"
+        init: true
         restart: always
         depends_on:
             eventsbroker:
@@ -96,6 +99,7 @@ services:
         ports:
          - 15673:15673
         image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:EVENTS_IMAGE"
+        init: true
         restart: always
         volumes:
          # For heap-dump files
@@ -123,6 +127,7 @@ services:
             eventsbroker:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-graphics:GRAPHICS_IMAGE"
+        init: true
         restart: always
         volumes:
          # To write graphics outputs
@@ -148,6 +153,7 @@ services:
             eventsbroker:
                 condition: service_started
         image: "${DOCKER_REGISTRY}/wres/wres-writing:WRITING_IMAGE"
+        init: true
         restart: always
         volumes:
          # To write numeric outputs
