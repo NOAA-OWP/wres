@@ -266,21 +266,6 @@ subprojects {
             }
         }
     }
-
-    // Aggressively enforce certain non-vulnerable transitive deps on the test path. This is mainly needed for
-    // mock-server, which has not been updated since 2023. A more aggressive approach is needed here than the
-    // constraints configuration, which is not respected in all situations/contexts
-    configurations.matching {it.name.contains("test")}.configureEach {
-        resolutionStrategy {
-            force 'io.netty:netty-codec:4.2.9.Final'
-            force 'io.netty:netty-codec-http:4.2.9.Final'
-            force 'io.netty:netty-codec-http2:4.2.9.Final'
-            force 'com.fasterxml.jackson.core:jackson-core:2.21.1'
-            force 'net.minidev:json-smart:2.6.0'
-            force 'org.apache.commons:commons-lang3:3.20.0'
-            force 'org.mozilla:rhino:1.7.15.1'
-        }
-    }
 }
 
 project(':wres-system') {
@@ -1441,7 +1426,7 @@ project(':wres-tasker') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.9.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.12.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:5.3.2'
@@ -1599,7 +1584,7 @@ project(':wres-eventsbroker') {
             exclude group: 'io.netty', module: 'io.netty'
         }
 
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.9.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.12.Final'
 
         // Include later dependency version
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.83'
