@@ -453,7 +453,7 @@ public class TimeWindowSlicer
         {
             LOGGER.debug( "Building one big time window." );
 
-            timeWindows = Collections.singleton( getOneBigTimeWindow( declaration ) );
+            timeWindows = Collections.singleton( TimeWindowSlicer.getOneBigTimeWindow( declaration ) );
         }
 
         // Add the explicitly declared time windows

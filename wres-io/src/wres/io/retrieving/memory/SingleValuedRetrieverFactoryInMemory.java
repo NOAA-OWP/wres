@@ -22,7 +22,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.TimeWindowSlicer;
 import wres.io.project.Project;
 import wres.io.retrieving.CachingRetriever;
 import wres.io.retrieving.DuplicatePolicy;
@@ -88,8 +87,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                   TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow =
-                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
-                                                                            this.project.getDesiredTimeScale() );
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
@@ -116,17 +114,14 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<Feature> features,
                                                                    TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
-                                                                                        this.project.getDesiredTimeScale() );
-
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
         Variable variable = data.variable();
 
-        adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.type(),
-                                                                             this.project.getEarliestAnalysisDuration(),
-                                                                             this.project.getLatestAnalysisDuration() );
+        TimeWindowOuter adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( timeWindow,
+                                                                                             data.type(),
+                                                                                             this.project.getEarliestAnalysisDuration(),
+                                                                                             this.project.getLatestAnalysisDuration() );
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.RIGHT,
                                                                    data,
@@ -154,17 +149,15 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
-                                                                                        this.project.getDesiredTimeScale() );
-
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
         Variable variable = data.variable();
 
-        adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.type(),
-                                                                             this.project.getEarliestAnalysisDuration(),
-                                                                             this.project.getLatestAnalysisDuration() );
+        TimeWindowOuter adjustedWindow =
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( timeWindow,
+                                                                    data.type(),
+                                                                    this.project.getEarliestAnalysisDuration(),
+                                                                    this.project.getLatestAnalysisDuration() );
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.BASELINE,
                                                                    data,
@@ -208,8 +201,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                        TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow =
-                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
-                                                                            this.project.getDesiredTimeScale() );
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow );
 
         CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
         Dataset data = covariateData.dataset();

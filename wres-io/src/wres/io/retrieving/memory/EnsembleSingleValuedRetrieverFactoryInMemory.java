@@ -12,7 +12,6 @@ import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetOrientation;
 import wres.config.components.Variable;
-import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -87,8 +86,7 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     {
         // Consider all possible lead durations
         TimeWindowOuter adjustedWindow =
-                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
-                                                                            this.project.getDesiredTimeScale() );
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
@@ -122,15 +120,12 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<Feature> features,
                                                                      TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
-                                                                                        this.project.getDesiredTimeScale() );
-
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
         Variable variable = data.variable();
 
         TimeWindowOuter finalWindow =
-                RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( timeWindow,
                                                                     data.type(),
                                                                     this.project.getEarliestAnalysisDuration(),
                                                                     this.project.getLatestAnalysisDuration() );
@@ -163,15 +158,12 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
-                                                                                        this.project.getDesiredTimeScale() );
-
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
         Variable variable = data.variable();
 
         TimeWindowOuter finalWindow =
-                RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( timeWindow,
                                                                     data.type(),
                                                                     this.project.getEarliestAnalysisDuration(),
                                                                     this.project.getLatestAnalysisDuration() );
@@ -228,8 +220,7 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     {
         // Consider all possible lead durations
         TimeWindowOuter adjustedWindow =
-                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
-                                                                            this.project.getDesiredTimeScale() );
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow );
 
         CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
         Dataset data = covariateData.dataset();

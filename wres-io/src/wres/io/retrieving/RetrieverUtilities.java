@@ -26,7 +26,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.TimeWindowSlicer;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -156,15 +155,12 @@ public class RetrieverUtilities
     }
 
     /**
-     * Generates a time window from the supplied time window and adjusts to use unconditional lead durations. In
-     * addition, extends the time window to account for the timescale period when the timescale is supplied.
+     * Generates a time window from the supplied time window and adjusts to use unconditional lead durations.
      * @param timeWindow the time window
-     * @param timeScale the timescale
      * @return the adjusted time window with unconditional lead durations
      * @throws NullPointerException if the time window is null
      */
-    public static TimeWindowOuter getTimeWindowWithUnconditionalLeadTimes( TimeWindowOuter timeWindow,
-                                                                           TimeScaleOuter timeScale )
+    public static TimeWindowOuter getTimeWindowWithUnconditionalLeadTimes( TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( timeWindow );
 
@@ -187,8 +183,7 @@ public class RetrieverUtilities
                                      .setLatestLeadDuration( upper )
                                      .build();
 
-        return TimeWindowSlicer.adjustTimeWindowForTimeScale( TimeWindowOuter.of( inner ),
-                                                              timeScale );
+        return TimeWindowOuter.of( inner );
     }
 
     /**

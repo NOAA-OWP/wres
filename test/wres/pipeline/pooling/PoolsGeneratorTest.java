@@ -14,6 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
@@ -30,10 +31,12 @@ import wres.config.components.TimePools;
 import wres.config.components.TimePoolsBuilder;
 import wres.config.components.Variable;
 import wres.config.components.VariableBuilder;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -302,6 +305,122 @@ class PoolsGeneratorTest
 
         // Assert expected number of suppliers
         Assertions.assertEquals( 18, actual.size() );
+    }
+
+    @Test
+    void testGetProducesPoolSupplierWithRetrieverTimeWindowAdjustedForTimeScale()
+    {
+        // GitHub #773
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 6 ) )
+                                                            .maximum( Duration.ofHours( 30 ) )
+                                                            .build();
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( Duration.ofHours( 24 ) )
+                                                  .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder().name( "DISCHARGE" )
+                                                               .build() )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .variable( VariableBuilder.builder().name( "STREAMFLOW" )
+                                                                .build() )
+                                      .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( Collections.singleton( leadTimePools ) )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
+
+        Geometry feature = MessageUtilities.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = MessageUtilities.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = MessageUtilities.getGeometryGroup( null, geoTuple );
+        FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
+
+        // Mock the sufficient elements of Project
+        Project project = Mockito.mock( Project.class );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+
+        // Return the desired timescale by which to adjust the retrieval window
+        Mockito.when( project.getDesiredTimeScale() )
+               .thenReturn( TimeScaleOuter.of( Duration.ofHours( 24 ) ) );
+
+        Mockito.when( project.getId() )
+               .thenReturn( 12345L );
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( "DISCHARGE", null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( STREAMFLOW, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
+               .thenReturn( null );
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
+
+        // Mock a feature-shaped retriever factory
+        ArgumentCaptor<TimeWindowOuter> argument = ArgumentCaptor.forClass( TimeWindowOuter.class );
+        RetrieverFactory<Double, Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
+        Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
+               .thenReturn( Stream::of );
+        Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any( TimeWindowOuter.class ) ) )
+               .thenReturn( Stream::of );
+
+        Evaluation evaluationDescription = MessageFactory.parse( declaration );
+        PoolFactory poolFactory = PoolFactory.of( project );
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription, null );
+
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        PoolsGenerator<Double, Double, Double> generator = new PoolsGenerator.Builder<Double, Double, Double>()
+                .setProject( project )
+                .setPoolRequests( poolRequests )
+                .setRetrieverFactory( retrieverFactory )
+                .setPairer( TimeSeriesPairerByExactTime.of() )
+                .setLeftUpscaler( upscaler )
+                .setRightUpscaler( upscaler )
+                .setBaselineUpscaler( upscaler )
+                .setClimatologyUpscaler( upscaler )
+                .setLeftTransformerPreRescaling( a -> a )
+                .setRightTransformerPreRescaling( a -> a )
+                .setBaselineTransformerPreRescaling( a -> a )
+                .setLeftTransformerPostRescaling( a -> a )
+                .setRightTransformerPostRescaling( a -> a )
+                .setBaselineTransformerPostRescaling( a -> a )
+                .setClimatologyTransformerPostRescaling( a -> a )
+                .setLeftFilter( a -> true )
+                .setRightFilter( a -> true )
+                .setBaselineFilter( a -> true )
+                .setLeftMissingFilter( a -> false )
+                .setRightMissingFilter( a -> false )
+                .setBaselineMissingFilter( a -> false )
+                .setBaselineShim( a -> a )
+                .build();
+
+        List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> actual = generator.get();
+
+        // Assert expected number of suppliers
+        Assertions.assertEquals( 1, actual.size() );
+
+        // Verify the call to the retriever produced the expected (adjusted) time window
+        Mockito.verify( retrieverFactory )
+               .getRightRetriever( Mockito.any(), argument.capture() );
+
+        // Assert that the retriever request data 24 hours earlier than the earliest lead duration for the time window
+        Assertions.assertEquals( MessageUtilities.getDuration( Duration.ofHours( -18 ) ),
+                                 argument.getValue()
+                                         .getTimeWindow()
+                                         .getEarliestLeadDuration() );
     }
 
     @AfterEach
