@@ -731,6 +731,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                 TimeWindowOuter nextWindow = nextPool.getMetadata()
                                                      .getTimeWindow();
 
+                // Adjust the time window for retrieval
+                nextWindow = this.getRetrievalTimeWindow( nextWindow, this.getProject()
+                                                                          .getDesiredTimeScale() );
+
                 Set<FeatureTuple> features = nextPool.getMetadata()
                                                      .getFeatureTuples();
 
@@ -802,13 +806,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * Builds a left-ish retriever for each {@link TimeWindowOuter} in the input. Uses the minimum number of retrievers 
-     * necessary to avoid retrieving the same data from an underlying source (e.g., database) more than once. In order,
-     * to achieve this, each unique retriever is wrapped inside a {@link CachingRetriever} and re-used as many times 
-     * as there are common time-windows, ignoring any lead duration bounds. The returned map has a comparator that 
-     * ignores the lead duration bounds, which allows for transparent use by the caller against the original time 
-     * windows. De-duplication only happens for datasets that are {@link DataType#OBSERVATIONS} or
-     * {@link DataType#SIMULATIONS}.
+     * Builds a left-ish retriever for each {@link TimeWindowOuter} in the input. Retrieval is de-duplicated for
+     * datasets that are {@link DataType#OBSERVATIONS} or {@link DataType#SIMULATIONS}. For these data types, a union
+     * time window is built and the retrieval is cached inside a {@link CachingRetriever}. The caching retriever is
+     * then linked to each time window in the returned mapping. For other data types, no de-duplication occurs.
      *
      * @param poolRequests the pool requests
      * @param type the type of data
@@ -819,13 +820,20 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                                                                      DataType type )
     {
         RetrieverFactory<L, R, B> factory = this.getRetrieverFactory();
+        TimeScaleOuter timeScale = this.getProject()
+                                       .getDesiredTimeScale();
 
         Set<TimeWindowOuter> timeWindows = poolRequests.stream()
-                                                       .map( next -> next.getMetadata().getTimeWindow() )
+                                                       .map( next -> next.getMetadata()
+                                                                         .getTimeWindow() )
+                                                       // Adjust the time window for retrieval
+                                                       .map( next -> this.getRetrievalTimeWindow( next, timeScale ) )
                                                        .collect( Collectors.toSet() );
 
         Set<Feature> features = poolRequests.stream()
-                                            .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                                            .flatMap( next -> next.getMetadata()
+                                                                  .getFeatureTuples()
+                                                                  .stream() )
                                             .map( FeatureTuple::getLeft )
                                             .collect( Collectors.toSet() );
 
@@ -839,16 +847,17 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             Supplier<Stream<TimeSeries<L>>> leftRetriever = factory.getLeftRetriever( features, unionWindow );
             Supplier<Stream<TimeSeries<L>>> cachingRetriever = CachingRetriever.of( leftRetriever );
 
-            // Build a retriever for each unique time window (ignoring lead durations via the comparator)
+            // Link the union (caching) retriever to each time window
             Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> returnMe = new TreeMap<>();
             timeWindows.forEach( nextWindow -> returnMe.put( nextWindow, cachingRetriever ) );
 
             // Log any de-duplication that was achieved
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to "
-                              + "{} using the union of time windows across all pools, which is {}.",
-                              this.getPoolRequests().size(),
+                LOGGER.debug( "While creating the retrievers for {} pools, de-duplicated the retrievers of {} data "
+                              + "from {} to {} using the union of time windows across all pools, which is {}.",
+                              this.getPoolRequests()
+                                  .size(),
                               DatasetOrientation.LEFT,
                               timeWindows.size(),
                               1,
@@ -866,6 +875,21 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
             return Collections.unmodifiableMap( returnMe );
         }
+    }
+
+    /**
+     * Returns a time window for retrieval that is expanded to account for the desired timescale of the pairs. This
+     * ensures that pairs can be created from data at a native scale that falls outside the pool window, but falls
+     * within the pool window at the larger scale.
+     *
+     * @param timeWindow the time window
+     * @param timeScale the desired timescale
+     * @return the adjusted time window
+     */
+
+    private TimeWindowOuter getRetrievalTimeWindow( TimeWindowOuter timeWindow, TimeScaleOuter timeScale )
+    {
+        return TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow, timeScale );
     }
 
     /**

@@ -12,7 +12,6 @@ import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetOrientation;
 import wres.config.components.Variable;
-import wres.datamodel.time.TimeWindowSlicer;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -90,8 +89,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( timeWindow );
 
         TimeWindowOuter adjustedWindow =
-                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
-                                                                            this.project.getDesiredTimeScale() );
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
@@ -127,14 +125,11 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( timeWindow );
 
-        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
-                                                                                        this.project.getDesiredTimeScale() );
-
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
         Variable variable = data.variable();
         TimeWindowOuter finalWindow =
-                RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( timeWindow,
                                                                     data.type(),
                                                                     this.project.getEarliestAnalysisDuration(),
                                                                     this.project.getLatestAnalysisDuration() );
@@ -170,15 +165,12 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( timeWindow );
 
-        TimeWindowOuter adjustedWindow = TimeWindowSlicer.adjustTimeWindowForTimeScale( timeWindow,
-                                                                                        this.project.getDesiredTimeScale() );
-
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
         Variable variable = data.variable();
 
         TimeWindowOuter finalWindow =
-                RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( timeWindow,
                                                                     data.type(),
                                                                     this.project.getEarliestAnalysisDuration(),
                                                                     this.project.getLatestAnalysisDuration() );
@@ -252,8 +244,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( variableName );
 
         TimeWindowOuter adjustedWindow =
-                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
-                                                                            this.project.getDesiredTimeScale() );
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow );
 
         CovariateDataset covariateData = this.project.getCovariateDataset( variableName );
         Dataset data = covariateData.dataset();
