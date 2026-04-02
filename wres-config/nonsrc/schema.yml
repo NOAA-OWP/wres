@@ -597,7 +597,7 @@ definitions:
     description: "Can be used to manually time-shift the data read from the 
     source, which may assist with pairing. For example, with the period set '-2' 
     and a unit set to 'hours', two hours will be subtracted from the valid 
-    times in all time-series covered by this declaration."
+    times and reference times in all time-series covered by this declaration."
     type: object
     additionalProperties: false
     properties:
