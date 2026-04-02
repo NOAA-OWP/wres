@@ -1865,27 +1865,31 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Adds a prescribed offset to the valid time of each time-series in the list.
+     * Adds a prescribed offset to the valid times and, optionally, the reference times of each time-series in the list.
      *
      * @param <T> the time-series event value type
      * @param toTransform the list of time-series to transform
      * @param offset the offset to add
+     * @param adjustReferenceTimes is true to also adjust the reference times
      * @return the adjusted time-series
      */
 
-    public static <T> TimeSeries<T> applyOffsetToValidTimes( TimeSeries<T> toTransform, Duration offset )
+    public static <T> TimeSeries<T> applyTimeOffset( TimeSeries<T> toTransform,
+                                                     Duration offset,
+                                                     boolean adjustReferenceTimes )
     {
         Objects.requireNonNull( toTransform );
         Objects.requireNonNull( offset );
 
-        TimeSeries<T> transformed = toTransform;
+        TimeSeries.Builder<T> timeTransformed = new TimeSeries.Builder<T>()
+                .setMetadata( toTransform.getMetadata() );
 
         // Transform valid times?
+        boolean transformed = false;
+
         if ( !Duration.ZERO.equals( offset ) )
         {
             SortedSet<Event<T>> events = toTransform.getEvents();
-            TimeSeries.Builder<T> timeTransformed = new TimeSeries.Builder<>();
-            timeTransformed.setMetadata( toTransform.getMetadata() );
 
             for ( Event<T> next : events )
             {
@@ -1895,17 +1899,42 @@ public final class TimeSeriesSlicer
                 timeTransformed.addEvent( event );
             }
 
-            transformed = timeTransformed.build();
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Added {} to the valid times associated with time-series {}.",
-                              offset,
-                              transformed.hashCode() );
-            }
+            transformed = true;
         }
 
-        return transformed;
+        // Transform reference times
+        if ( !toTransform.getReferenceTimes()
+                         .isEmpty()
+             && adjustReferenceTimes )
+        {
+            Map<ReferenceTimeType, Instant> adjusted =
+                    toTransform.getReferenceTimes()
+                               .entrySet()
+                               .stream()
+                               .map( a -> Map.entry( a.getKey(),
+                                                     a.getValue().plus( offset ) ) )
+                               .collect( Collectors.toMap( Map.Entry::getKey,
+                                                           Map.Entry::getValue ) );
+
+            TimeSeriesMetadata metadata = toTransform.getMetadata()
+                                                     .toBuilder()
+                                                     .setReferenceTimes( adjusted )
+                                                     .build();
+            timeTransformed.setMetadata( metadata );
+            transformed = true;
+        }
+
+        TimeSeries<T> returnMe = timeTransformed.build();
+
+        if ( LOGGER.isTraceEnabled()
+             && transformed )
+        {
+            LOGGER.trace( "Added {} to the times associated with time-series {}.",
+                          offset,
+                          returnMe.hashCode() );
+        }
+
+        return returnMe;
     }
 
     /**
