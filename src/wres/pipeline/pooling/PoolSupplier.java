@@ -814,9 +814,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         // series are brought into memory, so apply relevant filters and transformers now. See #95488.
         // Apply any valid time offset to the left-ish data upfront, as well as event filters.
         Duration leftValidOffset = this.getLeftTimeShift();
-        UnaryOperator<TimeSeries<L>> mapper = nextSeries -> this.applyValidTimeOffset( nextSeries,
-                                                                                       leftValidOffset,
-                                                                                       DatasetOrientation.LEFT );
+        UnaryOperator<TimeSeries<L>> mapper = nextSeries -> this.applyTimeOffset( nextSeries,
+                                                                                  leftValidOffset,
+                                                                                  DatasetOrientation.LEFT );
         UnaryOperator<TimeSeries<L>> eventFilterMapper = this.getLeftTransformerPreRescaling();
 
         UnaryOperator<TimeSeries<L>> composition = series -> mapper.apply( eventFilterMapper.apply( series ) );
@@ -1233,9 +1233,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                      TimeSeries<R> transformedRightOrBaseline =
                                              rightOrBaselineTransformerPre.apply( nextRightOrBaselineSeries );
                                      transformedRightOrBaseline =
-                                             this.applyValidTimeOffset( transformedRightOrBaseline,
-                                                                        timeParameters.timeShift(),
-                                                                        rightOrBaselineOrientation );
+                                             this.applyTimeOffset( transformedRightOrBaseline,
+                                                                   timeParameters.timeShift(),
+                                                                   rightOrBaselineOrientation );
 
                                      Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
                                                                                                     .getFeature();
@@ -2517,9 +2517,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @throws NullPointerException if the input is time-series is null
      */
 
-    private <T> TimeSeries<T> applyValidTimeOffset( TimeSeries<T> toTransform,
-                                                    Duration offset,
-                                                    DatasetOrientation lrb )
+    private <T> TimeSeries<T> applyTimeOffset( TimeSeries<T> toTransform,
+                                               Duration offset,
+                                               DatasetOrientation lrb )
     {
         Objects.requireNonNull( toTransform );
 
@@ -2532,10 +2532,10 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             // Log the time shift
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Applying a valid time offset of {} to {} time-series.", offset, lrb );
+                LOGGER.debug( "Applying a time offset of {} to {} time-series.", offset, lrb );
             }
 
-            transformed = TimeSeriesSlicer.applyOffsetToValidTimes( transformed, offset );
+            transformed = TimeSeriesSlicer.applyTimeOffset( transformed, offset, true );
         }
 
         return transformed;

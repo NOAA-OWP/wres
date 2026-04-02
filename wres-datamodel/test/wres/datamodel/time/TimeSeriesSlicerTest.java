@@ -892,12 +892,40 @@ final class TimeSeriesSlicerTest
         Duration offset = Duration.ofHours( 1 );
 
         // Adjust
-        TimeSeries<Double> actual = TimeSeriesSlicer.applyOffsetToValidTimes( toAdjust, offset );
+        TimeSeries<Double> actual = TimeSeriesSlicer.applyTimeOffset( toAdjust, offset, false );
 
         // Create the expected series
         SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
         expectedEvents.add( Event.of( Instant.parse( T2010_01_01T16_00_00Z ), 3.0 ) );
         TimeSeries<Double> expected = TimeSeries.of( metadata, expectedEvents );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testApplyTimeOffsetToValidTimesAndReferenceTimes()
+    {
+        // Build a time-series to adjust
+        SortedSet<Event<Double>> first = new TreeSet<>();
+        first.add( Event.of( T2010_01_01T15_00_00Z, 3.0 ) );
+        TimeSeriesMetadata metadata = TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( T2010_01_01T12_00_00Z );
+        TimeSeries<Double> toAdjust = TimeSeries.of( metadata, first );
+
+        // Add an offset of one hour
+        Duration offset = Duration.ofHours( 1 );
+
+        // Adjust
+        TimeSeries<Double> actual = TimeSeriesSlicer.applyTimeOffset( toAdjust, offset, true );
+
+        // Create the expected series
+        SortedSet<Event<Double>> expectedEvents = new TreeSet<>();
+        TimeSeriesMetadata expectedMetadata =
+                metadata.toBuilder()
+                        .setReferenceTimes( Map.of( ReferenceTimeType.T0,
+                                                    Instant.parse( "2010-01-01T13:00:00Z" ) ) )
+                        .build();
+        expectedEvents.add( Event.of( Instant.parse( T2010_01_01T16_00_00Z ), 3.0 ) );
+        TimeSeries<Double> expected = TimeSeries.of( expectedMetadata, expectedEvents );
 
         assertEquals( expected, actual );
     }

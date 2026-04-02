@@ -121,7 +121,7 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
             }
 
             featuredCovariate = featuredCovariate.stream()
-                                                 .map( t -> TimeSeriesSlicer.applyOffsetToValidTimes( t, offset ) )
+                                                 .map( t -> TimeSeriesSlicer.applyTimeOffset( t, offset, true ) )
                                                  .toList();
         }
 
