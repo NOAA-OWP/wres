@@ -24,6 +24,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.DataTypes;
 import wres.config.DeclarationUtilities;
 import wres.config.components.BaselineDataset;
 import wres.config.components.CovariateDataset;
@@ -142,9 +143,12 @@ public class InMemoryProject implements Project
         // Get the variable name to evaluate
         VariableNames variableNames = this.getVariablesToEvaluate( declaration, timeSeriesStore );
 
+        // Get the ingested data types from the ingest results
+        DataTypes ingestedDataTypes = ProjectUtilities.getIngestedDataTypes( ingestResults );
+
         // Interpolate and set the declaration
         this.declaration = ProjectUtilities.interpolate( declaration,
-                                                         ingestResults,
+                                                         ingestedDataTypes,
                                                          variableNames,
                                                          this.measurementUnit,
                                                          this.desiredTimeScale,
@@ -160,7 +164,7 @@ public class InMemoryProject implements Project
         this.validateEnsembleConditions( timeSeriesStore, this.declaration );
 
         // Validate the project
-        ProjectUtilities.validate( this );
+        ProjectUtilities.validate( this, ingestedDataTypes );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }

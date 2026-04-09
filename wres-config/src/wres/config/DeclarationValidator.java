@@ -304,7 +304,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events =
                 errors.stream()
                       .map( next -> EvaluationStatusEvent.newBuilder()
-                                                         .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                                         .setStatusLevel( StatusLevel.ERROR )
                                                          .setEventMessage( next.toString() )
                                                          .build() )
                       .toList();
@@ -439,17 +439,26 @@ public class DeclarationValidator
      *
      * @see #validate(EvaluationDeclaration, boolean)
      * @param declaration the declaration
+     * @param ingestedDataTypes the ingested data types
+     * @param notify whether to notify any errors or warnings, which will produce an exception if errors were discovered
      * @throws NullPointerException if the declaration is null
+     * @return any status events encountered
      */
-    public static void validatePostDataIngest( EvaluationDeclaration declaration )
+    public static List<EvaluationStatusEvent> validatePostDataIngest( EvaluationDeclaration declaration,
+                                                                      DataTypes ingestedDataTypes,
+                                                                      boolean notify )
     {
         // Data types are defined for all datasets
         List<EvaluationStatusEvent> typesDefined = DeclarationValidator.typesAreDefined( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( typesDefined );
 
-        // Data types are consistent with other declaration
-        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreValid( declaration );
+        // Data types are consistent with other declaration and with the ingested data types. Some of this validation
+        // was performed pre-ingest, but data types may have been interpolated post-ingest, so repeat and add the
+        // validation of the ingested data types
+        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreValid( declaration,
+                                                                                          ingestedDataTypes );
         events.addAll( typesConsistent );
+
         // Covariates must have unique variable names
         List<EvaluationStatusEvent> covariateVariables
                 = DeclarationValidator.covariateVariableNamesAreUnique( declaration );
@@ -473,7 +482,12 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> finalEvents = Collections.unmodifiableList( events );
 
         // Notify any events encountered
-        DeclarationValidator.notify( finalEvents );
+        if ( notify )
+        {
+            DeclarationValidator.notify( finalEvents );
+        }
+
+        return finalEvents;
     }
 
     /**
@@ -490,7 +504,7 @@ public class DeclarationValidator
             List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
                     events.stream()
                           .filter( a -> a.getStatusLevel()
-                                        == EvaluationStatus.EvaluationStatusEvent.StatusLevel.WARN )
+                                        == StatusLevel.WARN )
                           .toList();
             if ( !warnEvents.isEmpty() )
             {
@@ -509,7 +523,7 @@ public class DeclarationValidator
         List<EvaluationStatus.EvaluationStatusEvent> errorEvents =
                 events.stream()
                       .filter( a -> a.getStatusLevel()
-                                    == EvaluationStatus.EvaluationStatusEvent.StatusLevel.ERROR )
+                                    == StatusLevel.ERROR )
                       .toList();
         if ( !errorEvents.isEmpty() )
         {
@@ -550,6 +564,15 @@ public class DeclarationValidator
         // Data types are valid
         List<EvaluationStatusEvent> typesValid = DeclarationValidator.typesAreValid( declaration );
         events.addAll( typesValid );
+        // Observed data type is not forecast-like (warn). This is intentionally not bundled above as the same warning
+        // should not be repeated post-ingest, and the above method is also called post-ingest
+        if ( Objects.nonNull( declaration.left() ) )
+        {
+            List<EvaluationStatusEvent> observedType =
+                    DeclarationValidator.observedTypeIsForecastLike( declaration.left()
+                                                                                .type(), "declared data type" );
+            events.addAll( observedType );
+        }
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -672,19 +695,191 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that the data types are valid.
+     * Checks that the declared data types are internally consistent with other declaration and the context in which
+     * they are declared.
+     *
      * @param declaration the declaration
      * @return any status events encountered
      */
     private static List<EvaluationStatusEvent> typesAreValid( EvaluationDeclaration declaration )
     {
         // Data types are consistent with other declaration
-        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
+        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreInternallyConsistent( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( typesConsistent );
 
         // Data types for covariates are not forecast-like
         List<EvaluationStatusEvent> covariateTypes = DeclarationValidator.covariateTypesAreValid( declaration );
         events.addAll( covariateTypes );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks {@link DeclarationValidator#typesAreValid(EvaluationDeclaration)} and, additionally, checks that the
+     * declared data types are consistent with the ingested data types,
+     * {@link DeclarationValidator#typesAreConsistentWithIngestedTypes(EvaluationDeclaration, DataTypes)}.
+     *
+     * @param declaration the declaration
+     * @param ingestedDataTypes the ingested data types
+     * @return any status events encountered
+     */
+    private static List<EvaluationStatusEvent> typesAreValid( EvaluationDeclaration declaration,
+                                                              DataTypes ingestedDataTypes )
+    {
+        // Data types are consistent with other declaration
+        List<EvaluationStatusEvent> events = new ArrayList<>( DeclarationValidator.typesAreValid( declaration ) );
+
+        // Declared data types are consistent with the ingested types
+        List<EvaluationStatusEvent> ingestedTypes =
+                DeclarationValidator.typesAreConsistentWithIngestedTypes( declaration,
+                                                                          ingestedDataTypes );
+
+        events.addAll( ingestedTypes );
+
+        // If the ingested data type for the observed orientation is a forecast type, warn about this. It is allowed,
+        // in principle (e.g., directly comparing forecasts with forecasts), but it is potentially incorrect
+        List<EvaluationStatusEvent> observedType =
+                DeclarationValidator.observedTypeIsForecastLike( ingestedDataTypes.leftType(),
+                                                                 "data type inferred from the time-series "
+                                                                 + "data" );
+
+        events.addAll( observedType );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Determines whether the observed dataset has a forecast data type.
+     * @param observedType the observed data type
+     * @param message a qualifying message
+     * @return any status events encountered
+     */
+
+    private static List<EvaluationStatusEvent> observedTypeIsForecastLike( DataType observedType,
+                                                                           String message )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( observedType )
+             && observedType.isForecastType() )
+        {
+            EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
+                                                               .setStatusLevel( StatusLevel.WARN )
+                                                               .setEventMessage( "The " + message + " for the "
+                                                                                 + "'observed' dataset was "
+                                                                                 + "'" + observedType +
+                                                                                 "'. While this is allowed, it is "
+                                                                                 + "unusual. If this data type is "
+                                                                                 + "unexpected, it should be fixed as "
+                                                                                 + "errors may follow or the "
+                                                                                 + "evaluation statistics may be "
+                                                                                 + "unexpected." )
+                                                               .build();
+
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the declared data types are consistent with the ingested data types.
+     * @param declaration the declaration
+     * @param ingestedDataTypes the ingested data types
+     * @return any status events encountered
+     */
+
+    private static List<EvaluationStatusEvent> typesAreConsistentWithIngestedTypes( EvaluationDeclaration declaration,
+                                                                                    DataTypes ingestedDataTypes )
+    {
+        List<EvaluationStatusEvent> observed =
+                DeclarationValidator.typeIsConsistentWithIngestedType( declaration.left(),
+                                                                       DatasetOrientation.LEFT,
+                                                                       ingestedDataTypes.leftType() );
+
+        List<EvaluationStatusEvent> events = new ArrayList<>( observed );
+
+        List<EvaluationStatusEvent> predicted =
+                DeclarationValidator.typeIsConsistentWithIngestedType( declaration.right(),
+                                                                       DatasetOrientation.RIGHT,
+                                                                       ingestedDataTypes.rightType() );
+
+        events.addAll( predicted );
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            List<EvaluationStatusEvent> baseline =
+                    DeclarationValidator.typeIsConsistentWithIngestedType( declaration.baseline()
+                                                                                      .dataset(),
+                                                                           DatasetOrientation.BASELINE,
+                                                                           ingestedDataTypes.baselineType() );
+
+            events.addAll( baseline );
+        }
+
+        for ( CovariateDataset next : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariate =
+                    DeclarationValidator.typeIsConsistentWithIngestedType( next.dataset(),
+                                                                           DatasetOrientation.COVARIATE,
+                                                                           ingestedDataTypes.covariatesType() );
+
+            events.addAll( covariate );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Determines whether the data type associated with a declared dataset is consistent with the analyzed type upon
+     * ingest.
+     *
+     * @param dataset the dataset
+     * @param orientation the dataset orientation
+     * @param ingestedDataType the data type inferred from ingest
+     * @return any status events encountered
+     */
+    private static List<EvaluationStatusEvent> typeIsConsistentWithIngestedType( Dataset dataset,
+                                                                                 DatasetOrientation orientation,
+                                                                                 DataType ingestedDataType )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( ingestedDataType )
+             && ingestedDataType != dataset.type()
+             // Can both be different but observation-like
+             && !( ingestedDataType.isObservationLike()
+                   && dataset.type()
+                             .isObservationLike() ) )
+        {
+            String article = "the";
+            if ( orientation == DatasetOrientation.COVARIATE )
+            {
+                article = "a";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The data type inferred from the time-series data for "
+                                                             + article
+                                                             + " '"
+                                                             + orientation
+                                                             + "' dataset was '"
+                                                             + ingestedDataType
+                                                             + "', but the declared data 'type' was '"
+                                                             + dataset.type()
+                                                             + "'. Please omit the declared data 'type' or fix the "
+                                                             + "data for consistency with the declared 'type'. Please "
+                                                             + "note that omitting the declared data 'type' will not "
+                                                             + "fix any errors in the underlying data. Thus, if the "
+                                                             + "data source contains errors that led to an incorrect "
+                                                             + "analysis of the data type, such as the presence of "
+                                                             + "forecast information in an observation-like dataset, "
+                                                             + "these errors should be fixed." )
+                                           .build();
+            events.add( event );
+        }
 
         return Collections.unmodifiableList( events );
     }
@@ -696,9 +891,10 @@ public class DeclarationValidator
      * @return the validation events encountered
      */
 
-    private static List<EvaluationStatusEvent> typesAreConsistent( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> typesAreInternallyConsistent( EvaluationDeclaration declaration )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
+
 
         // If there is no ensemble data present, there cannot be ensemble-like declaration
         if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ENSEMBLE_FORECASTS, declaration ) )

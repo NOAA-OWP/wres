@@ -29,6 +29,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.DataTypes;
 import wres.config.DeclarationUtilities;
 import wres.config.components.BaselineDataset;
 import wres.config.components.CovariateDataset;
@@ -161,9 +162,12 @@ public class DatabaseProject implements Project
         // Determine the variables to evaluate
         VariableNames variableNames = this.getVariablesToEvaluate( declaration, this.projectId );
 
+        // Get the ingested data types from the ingest results
+        DataTypes ingestedDataTypes = ProjectUtilities.getIngestedDataTypes( ingestResults );
+
         // Interpolate the declaration and set it
         this.declaration = ProjectUtilities.interpolate( declaration,
-                                                         ingestResults,
+                                                         ingestedDataTypes,
                                                          variableNames,
                                                          this.measurementUnit,
                                                          this.desiredTimeScale,
@@ -180,7 +184,7 @@ public class DatabaseProject implements Project
         this.validateEnsembleConditions( this.declaration, this.projectId );
 
         // Perform validation that requires the API only, no implementation details
-        ProjectUtilities.validate( this );
+        ProjectUtilities.validate( this, ingestedDataTypes );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }

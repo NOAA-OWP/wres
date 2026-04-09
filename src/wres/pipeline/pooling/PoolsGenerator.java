@@ -1441,9 +1441,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * @param existingTimeScale the existing time scale
-     * @param desiredTimeScale the desired time scale
-     * @return true if both scales are not null and the desired time scale has a larger period
+     * @param existingTimeScale the existing timescale
+     * @param desiredTimeScale the desired timescale
+     * @return true if both scales are not null and the desired timescale has a larger period
      */
 
     private boolean shouldUpscaleClimatology( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
@@ -1459,7 +1459,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      * @param climatologyMapper the mapper to transform the climatology from left-ish data to double values
      * @param featureAuthorityDataset the orientation of the main dataset used for the climatological feature names
      * @return the climatological data or null if no climatology is defined
-     * @throws NullPointerException if the climatology is not null and the climateMapper is null
+     * @throws NullPointerException if the climatology is not null and the climatologyMapper is null
      */
 
     private Supplier<Climatology> createClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
@@ -1470,6 +1470,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             // Null if no climatology
             if ( Objects.isNull( climatology ) )
             {
+                LOGGER.debug( "No climatological data found: the supplier was empty." );
                 return null;
             }
 
@@ -1481,6 +1482,12 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                                                                                      mapper,
                                                                                                      null ) )
                                                            .toList();
+
+            if( climData.isEmpty() )
+            {
+                LOGGER.debug( "No climatological data found: there were no time-series present." );
+                return null;
+            }
 
             if ( LOGGER.isDebugEnabled() )
             {

@@ -85,8 +85,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesRetriever.class );
 
     /** Log message for the retriever script. */
-    private static final String LOG_SCRIPT = "Built retriever {}:{}{}The script was built as a prepared statement with "
-                                             + "the following list of parameters: {}.";
+    private static final String LOG_SCRIPT = "Built retriever {} as a prepared statement. It is shown below as a "
+                                             + "regular statement for convenience:{}{}";
 
     /** Database instance. */
     private final Database database;
@@ -860,22 +860,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     void logScript( DataScripter dataScripter )
     {
-        // Log the prepared statement actually used
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          dataScripter,
-                          dataScripter.getParameterStrings() );
-        }
-
-        // Log the runnable form of the prepared statement to assist in debugging
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "The following runnable script was obtained from the prepared statement in retriever {}. "
-                          + "As such, this script differs from the original script and is designed to assist in "
-                          + "debugging only. See the DEBUG logging for the original, prepared, statement:{}{}",
                           this,
                           System.lineSeparator(),
                           dataScripter.toStringRunnableForDebugPurposes() );
