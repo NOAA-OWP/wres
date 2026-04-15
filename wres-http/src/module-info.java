@@ -12,5 +12,6 @@ module wres.http
     requires okhttp3;
     requires kotlin.stdlib;
     requires static lombok;
+    requires wres.system;
     exports wres.http;
 }

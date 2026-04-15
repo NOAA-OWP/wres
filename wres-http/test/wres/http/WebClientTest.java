@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Tests the {@link WebClient}.
- * 
+ *
  * @author James Brown
  */
 
@@ -34,15 +34,15 @@ class WebClientTest
     /**
      * #77007
      */
-    
+
     @Test
     void testGetTimingInformationDoesNotThrowArrayIndexOutOfBoundsExceptionWhenNothingRead()
     {
         WebClient client = new WebClient( true );
-        
+
         String timingInformation = client.getTimingInformation();
         String firstPart = StringUtils.substringBefore( timingInformation, "," );
-        
+
         assertEquals( "Out of request/response count 0", firstPart );
     }
 
@@ -52,7 +52,7 @@ class WebClientTest
         OkHttpClient mockClient = WebClientUtils.defaultHttpClient();
         Call mockCall = mock( Call.class );
         OkHttpClient spyClient = spy( mockClient );
-        WebClient client = new WebClient(spyClient, new RetryPolicy.Builder().build() );
+        WebClient client = new WebClient( spyClient, new RetryPolicy.Builder().build() );
         URI uri = URI.create( "http://localhost:8010/evaluation/status/test" );
 
         doReturn( mockCall ).when( spyClient ).newCall( any() );
@@ -67,7 +67,7 @@ class WebClientTest
         OkHttpClient mockClient = WebClientUtils.defaultHttpClient();
         Call mockCall = mock( Call.class );
         OkHttpClient spyClient = spy( mockClient );
-        WebClient client = new WebClient(spyClient, new RetryPolicy.Builder().maxRetryCount( 1 ).build() );
+        WebClient client = new WebClient( spyClient, new RetryPolicy.Builder().maxRetryCount( 1 ).build() );
         URI uri = URI.create( "http://localhost:8010/evaluation/status/test" );
 
         doReturn( mockCall ).when( spyClient ).newCall( any() );
@@ -84,8 +84,12 @@ class WebClientTest
         OkHttpClient mockClient = WebClientUtils.defaultHttpClient();
         Call mockCall = mock( Call.class );
         OkHttpClient spyClient = spy( mockClient );
-        WebClient client = new WebClient(spyClient, new RetryPolicy.Builder().maxRetryCount( 2 ).build() );
-        URI uri = URI.create( "http://localhost:8010/evaluation/status/test" );
+        WebClient client = new WebClient( spyClient, new RetryPolicy.Builder()
+                .maxRetryCount( 2 )
+                .build() );
+        // Fake API key should be redacted in any non-debug logging: cannot assert this, but can witness it in test log
+        // as [REDACTED], rather than "foo"
+        URI uri = URI.create( "http://localhost:8010/evaluation/status/test?api_key=foo" );
 
         doReturn( mockCall ).when( spyClient ).newCall( any() );
         Mockito.when( mockCall.execute() )
@@ -102,19 +106,20 @@ class WebClientTest
         OkHttpClient mockClient = WebClientUtils.defaultHttpClient();
         Call mockCall = mock( Call.class );
         OkHttpClient spyClient = spy( mockClient );
-        WebClient client = new WebClient(spyClient, new RetryPolicy.Builder().maxRetryCount( 4 ).build() );
+        WebClient client = new WebClient( spyClient, new RetryPolicy.Builder().maxRetryCount( 4 ).build() );
         URI uri = URI.create( "http://localhost:8010/evaluation/status/test" );
         Response mockResponse = mock( Response.class );
 
         doReturn( mockCall ).when( spyClient ).newCall( any() );
         when( mockCall.execute() )
-               .thenThrow( new ConnectException() )
-               .thenThrow( new ConnectException() )
-               .thenReturn( mockResponse );
+                .thenThrow( new ConnectException() )
+                .thenThrow( new ConnectException() )
+                .thenReturn( mockResponse );
         when( mockResponse.body() ).thenReturn( mock( ResponseBody.class ) );
         when( mockResponse.code() ).thenReturn( 200 );
         when( mockResponse.headers() ).thenReturn( mock( Headers.class ) );
 
-        assertEquals( WebClient.ClientResponse.class, (client.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() ) ).getClass() );
+        assertEquals( WebClient.ClientResponse.class,
+                      ( client.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() ) ).getClass() );
     }
 }

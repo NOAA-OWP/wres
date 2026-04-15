@@ -330,6 +330,9 @@ project(':wres-system') {
         testImplementation 'org.apache.httpcomponents.core5:httpcore5:5.4.2'
     }
 
+    // Make this a Java Platform Module System (Java 9 jigsaw) module
+    java.modularity.inferModulePath.set(true)
+
     test {
         // Set the socket timeout for tests involving wiremock to 120s
         systemProperties += ["jetty-idle-timeout": 120000]
@@ -868,7 +871,7 @@ project(':wres-statistics') {
     // Find the last tag or default to 1.0 if no tags exist
     def lastGitTag = grgit.tag.list()
             .reverse()
-            .find { it.commit == grgit.head() }?.name ?: "1.0"
+            .find {it.commit == grgit.head()}?.name ?: "1.0"
 
     def matcher = lastGitTag =~ /(\d+)\.(\d+)/
 
@@ -1681,6 +1684,7 @@ project(':wres-events') {
 
 project(':wres-http') {
     dependencies {
+        implementation project(':wres-system')
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
         // Better-than-Java's HTTP client
@@ -1699,6 +1703,9 @@ project(':wres-http') {
 
         testImplementation 'org.mockito:mockito-core:5.21.0'
     }
+
+    // Make this a Java Platform Module System (Java 9 jigsaw) module
+    java.modularity.inferModulePath.set(true)
 
     // Facilitate unit tests with JUnit
     test {
