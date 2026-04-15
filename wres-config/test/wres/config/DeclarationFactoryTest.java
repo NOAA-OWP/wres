@@ -4696,13 +4696,13 @@ class DeclarationFactoryTest
                 predicted:
                   sources: another_file.csv
                 covariates:
-                  - minimum: 0.25
-                    sources: precipitation.tgz
+                  - sources: precipitation.tgz
                     variable: precipitation
-                  - maximum: 0.0
-                    rescale_function: mean
-                    sources: temperature.tgz
+                    minimum: 0.25
+                  - sources: temperature.tgz
                     variable: temperature
+                    maximum: 0.0
+                    rescale_function: mean
                 """;
 
         URI covariateOneUri = URI.create( "precipitation.tgz" );
