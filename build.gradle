@@ -323,8 +323,8 @@ project(':wres-system') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // For mocking web service interaction
-        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
-        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.32')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.32')
 
         testImplementation 'org.apache.httpcomponents.client5:httpclient5:5.6'
         testImplementation 'org.apache.httpcomponents.core5:httpcore5:5.4.2'
@@ -683,9 +683,9 @@ project(':wres-reading') {
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
         api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
-        api 'tools.jackson.core:jackson-databind:3.1.0'
-        api 'tools.jackson.core:jackson-core:3.1.0'
-        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
+        api 'tools.jackson.core:jackson-databind:3.1.1'
+        api 'tools.jackson.core:jackson-core:3.1.1'
+        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.1")
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
         api 'org.apache.commons:commons-lang3:3.20.0'
@@ -714,8 +714,8 @@ project(':wres-reading') {
         testImplementation 'org.mockito:mockito-core:5.20.0'
 
         // For mocking web service interaction
-        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
-        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.32')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.32')
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -1089,22 +1089,24 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation(platform("tools.jackson:jackson-bom:3.1.0"))
+        implementation(platform("tools.jackson:jackson-bom:3.1.1"))
         api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
-        api 'tools.jackson.core:jackson-databind:3.1.0'
-        api 'tools.jackson.core:jackson-core:3.1.0'
-        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.0")
+        api 'tools.jackson.core:jackson-databind:3.1.1'
+        api 'tools.jackson.core:jackson-core:3.1.1'
+        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.1")
 
-        implementation('com.hubspot.jackson:jackson3-datatype-protobuf:0.9.19') {
+        implementation('com.hubspot.jackson:jackson3-datatype-protobuf:0.9.20') {
             // Exclude old modules to eliminate several CVEs
             // Remove older protobuf version and include later version below
             exclude group: 'com.google.protobuf', module: 'protobuf-java'
             exclude group: 'com.google.protobuf', module: 'protobuf-java-util'
             // Remove older guava version
             exclude group: 'com.google.guava', module: 'guava'
+            exclude group: 'tools.jackson.core', module: 'jackson-core'
         }
         // Include later dependency versions for the excluded dependencies above
         api 'com.google.protobuf:protobuf-java:3.25.8'
+        implementation 'tools.jackson.core:jackson-core:3.1.1'
 
         // To validate WKT strings as geometries
         api group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -1118,7 +1120,7 @@ project(':wres-config') {
         implementation group: 'com.opencsv', name: 'opencsv', version: '5.12.0'
 
         // YAML/JSON schema validation
-        api 'com.networknt:json-schema-validator:3.0.0'
+        api 'com.networknt:json-schema-validator:3.0.1'
 
         // To auto-generate builders for Java records through annotation processing
         annotationProcessor 'io.soabase.record-builder:record-builder-processor:51'
@@ -1243,8 +1245,8 @@ project(':wres-worker') {
         testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // For mocking web service interaction
-        testImplementation('org.wiremock:wiremock:4.0.0-beta.30')
-        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.30')
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.32')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.32')
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -1391,24 +1393,28 @@ project(':wres-tasker') {
         implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:12.1.6'
+        implementation 'org.eclipse.jetty:jetty-server:12.1.7'
 
         // Servlet library is now tied to ee10.
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.6'
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.6'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.7'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.7'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.6'
+        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.7'
 
         // Support ALPN
-        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.6'
+        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.7'
 
         // Servlet container library to run a web application with:
-        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.6'
+        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.7'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
+        implementation('org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11') {
+            exclude group: 'org.eclipse.jetty', module: 'jetty-http'
+        }
+        // Add later version excluded above
+        implementation 'org.eclipse.jetty:jetty-http:12.1.7'
 
         // To handle multipart post
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
@@ -1436,16 +1442,16 @@ project(':wres-tasker') {
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
-        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.6'
-        implementation 'org.eclipse.jetty:jetty-http:12.1.6'
-        implementation 'org.eclipse.jetty:jetty-util:12.1.6'
+        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.7'
+        implementation 'org.eclipse.jetty:jetty-http:12.1.7'
+        implementation 'org.eclipse.jetty:jetty-util:12.1.7'
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation(platform("tools.jackson:jackson-bom:3.1.0"))
+        implementation(platform("tools.jackson:jackson-bom:3.1.1"))
         api 'com.fasterxml.jackson.core:jackson-annotations:2.21'
-        api 'tools.jackson.core:jackson-databind:3.1.0'
-        api 'tools.jackson.core:jackson-core:3.1.0'
+        api 'tools.jackson.core:jackson-databind:3.1.1'
+        api 'tools.jackson.core:jackson-core:3.1.1'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.20.0'
@@ -1481,7 +1487,7 @@ project(':wres-tasker') {
         }
 
         // Removed above, delete when QPID catches up
-        api 'tools.jackson.core:jackson-core:3.1.0'
+        api 'tools.jackson.core:jackson-core:3.1.1'
 
         // Provides support for both 0-8 and 0-9-1
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.0.1'
@@ -1924,9 +1930,9 @@ dependencies {
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
     implementation 'org.apache.commons:commons-lang3:3.20.0'
-    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.6'
-    implementation 'org.eclipse.jetty:jetty-http:12.1.6'
-    implementation 'org.eclipse.jetty:jetty-util:12.1.6'
+    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.7'
+    implementation 'org.eclipse.jetty:jetty-http:12.1.7'
+    implementation 'org.eclipse.jetty:jetty-util:12.1.7'
     implementation project(':wres-statistics')
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
@@ -1935,17 +1941,21 @@ dependencies {
     implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
     //Jetty servlet stuff now tied to ee10, with the move to Jetty 12.
-    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.6'
+    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.7'
 
     // Servlet container library to run a web application with:
     runtimeOnly 'org.eclipse.jetty:jetty-webapp:11.0.25'
 
     // Needed at compile-time to reference ServletContainer.class and
     // DefaultServlet.class
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11'
+    implementation('org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.11') {
+        exclude group: 'org.eclipse.jetty', module: 'jetty-http'
+    }
+    // Add later version excluded above
+    implementation 'org.eclipse.jetty:jetty-http:12.1.7'
 
     // Jetty server
-    implementation 'org.eclipse.jetty:jetty-server:12.1.6'
+    implementation 'org.eclipse.jetty:jetty-server:12.1.7'
 
     implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
         // Not used at runtime, bloat
@@ -1988,11 +1998,10 @@ dependencies {
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.11'
 
     // Support HTTP/2
-    //implementation 'org.eclipse.jetty.http2:http2-server:11.0.24'
-    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.6'
+    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.7'
 
     // Support ALPN
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.6'
+    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.7'
 
     runtimeOnly('ch.qos.logback:logback-classic:1.5.32') {
         // Not used at runtime, bloat
