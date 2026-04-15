@@ -2,8 +2,12 @@ package wres.system;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
@@ -26,6 +30,12 @@ import lombok.Value;
 @Builder( toBuilder = true )
 public class SystemSettings
 {
+    /** A list of keys whose associated values should be redacted */
+    private static final Set<String> BAD_WORDS = Set.of( "wres.usgsApiKey", "apiKey", "api_key" );
+
+    /** A string to signal redaction. */
+    private static final String REDACTION_WORD = "[REDACTED]";
+
     @Builder.Default
     @XmlElement( name = "database" )
     DatabaseSettings databaseConfiguration = null;
@@ -112,7 +122,7 @@ public class SystemSettings
         DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
                 this.getDatabaseConfiguration()
                     .toBuilder();
-        databaseBuilder.password( "[REDACTED]" );
+        databaseBuilder.password( REDACTION_WORD );
         return this.toBuilder()
                    .databaseConfiguration( databaseBuilder.build() )
                    .build();
@@ -142,7 +152,7 @@ public class SystemSettings
                  && !lowerCaseName.contains( "class.path" )
                  && !lowerCaseName.contains( "separator" )
                  && !lowerCaseName.startsWith( "sun" )
-                 && !lowerCaseName.contains( "user.country" )
+                 && !lowerCaseName.contains( "user." )
                  && !lowerCaseName.startsWith( "java.vendor" )
                  && !lowerCaseName.startsWith( "java.e" )
                  && !lowerCaseName.startsWith( "java.vm.specification" )
@@ -156,14 +166,44 @@ public class SystemSettings
             // Allow some names to be passed through that are less sensitive and help to provide some context, but
             // redact the details
 
-            // GitHub #258. Signal that the rate limiting key has been passed through, but do not report the key
-            if ( propertyName.equals( "wres.usgsApiKey" ) )
+            // Redact any bad words
+            if ( BAD_WORDS.contains( propertyName ) )
             {
-                returnMe.put( "wres.usgsApiKey", "[REDACTED]" );
+                returnMe.put( propertyName, REDACTION_WORD );
             }
         } );
 
         return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Tokenizes the input string into key-value pairs using common separators and then either retains a key-value
+     * pair, omits the key-value pair or redacts the value, depending on whether the keys are clean or represent bad
+     * words that are flagged for elimination or redaction, respectively.
+     *
+     * @see #BAD_WORDS
+     * @param unclean the potentially unclean string to clean
+     * @return the clean string
+     * @throws NullPointerException if the input is null
+     */
+
+    public static String redactBadWords( String unclean )
+    {
+        Objects.requireNonNull( unclean );
+
+        // Regex logic:
+        // (?i)        -> Case-insensitive
+        // (key1|key2) -> Matches any of our bad keys
+        // ([:=])      -> Matches either : or = as a separator
+        // ([^,\s]+)   -> Matches the value (everything until a comma or space)
+        String keysRegex = String.join( "|", BAD_WORDS );
+        String regex = "(?i)(" + keysRegex + ")([:=])([^,\\s&]+)";
+
+        Pattern pattern = Pattern.compile( regex );
+        Matcher matcher = pattern.matcher( unclean );
+
+        // $1 refers to the key, $2 refers to the separator
+        return matcher.replaceAll( "$1$2" + REDACTION_WORD );
     }
 
     /**

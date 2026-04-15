@@ -33,6 +33,8 @@ import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.system.SystemSettings;
+
 /**
  * Allows caller to get an InputStream from a URI with retry with exponential
  * backoff, as well as returning the HTTP status code for source-specific
@@ -218,8 +220,10 @@ public class WebClient
                 {
                     if ( Objects.nonNull( httpResponse ) )
                     {
+                        String redacted = SystemSettings.redactBadWords( uri.toString() );
+
                         LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
-                                     uri,
+                                     redacted,
                                      httpResponse.code() );
 
                         // Close the response, ready for retry: GitHub #228
@@ -254,7 +258,8 @@ public class WebClient
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
+            String redacted = SystemSettings.redactBadWords( uri.toString() );
+            LOGGER.warn( "Interrupted while getting data from {}", redacted, ie );
             Thread.currentThread().interrupt();
             return new ClientResponse( -1 );
         }
@@ -490,18 +495,20 @@ public class WebClient
         }
         catch ( IOException ioe )
         {
+            String redacted = SystemSettings.redactBadWords( uri.toString() );
+
             LOGGER.debug( "Full exception trace: ", ioe );
             // Examine the exception chain to see if it is recoverable.
             if ( WebClient.shouldRetryWithChain( ioe, retryCount ) )
             {
-                LOGGER.warn( "Retrying {} in a bit due to {}.", uri, ioe.toString() );
+                LOGGER.warn( "Retrying {} in a bit due to {}.", redacted, ioe.toString() );
             }
             else
             {
                 // Unrecoverable. If truly recoverable, add code to the method
                 // called shouldRetryIndividualException().
                 throw new HttpRetrievalException( "Unrecoverable exception when getting data from "
-                                                  + uri,
+                                                  + redacted,
                                                   ioe );
             }
         }
