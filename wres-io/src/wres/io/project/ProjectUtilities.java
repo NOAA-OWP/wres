@@ -846,7 +846,7 @@ class ProjectUtilities
      * Interpolates missing declaration post-ingest.
      *
      * @param declaration the declaration
-     * @param ingestResults the ingest results
+     * @param ingestedDataTypes the ingested data types
      * @param variableNames the analyzed variable names
      * @param measurementUnit the analyzed measurement unit
      * @param timeScale the analyzed evaluation timescale, possibly null
@@ -856,7 +856,7 @@ class ProjectUtilities
      * @throws NullPointerException if any required input is null
      */
     static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
-                                              List<IngestResult> ingestResults,
+                                              DataTypes ingestedDataTypes,
                                               VariableNames variableNames,
                                               String measurementUnit,
                                               TimeScaleOuter timeScale,
@@ -864,11 +864,68 @@ class ProjectUtilities
                                               Set<FeatureGroup> featureGroups )
     {
         Objects.requireNonNull( declaration );
-        Objects.requireNonNull( ingestResults );
+        Objects.requireNonNull( ingestedDataTypes );
         Objects.requireNonNull( variableNames );
         Objects.requireNonNull( measurementUnit );
         Objects.requireNonNull( features );
         Objects.requireNonNull( featureGroups );
+
+        wres.statistics.generated.TimeScale innerTimeScale = null;
+        if ( Objects.nonNull( timeScale ) )
+        {
+            innerTimeScale = timeScale.getTimeScale();
+        }
+
+        // If the ingested types differ from any existing types or there are conflicting types for a single
+        // orientation, this will throw an exception
+        declaration = DeclarationInterpolator.interpolate( declaration,
+                                                           ingestedDataTypes,
+                                                           variableNames,
+                                                           measurementUnit,
+                                                           innerTimeScale,
+                                                           true );
+
+        // Adjust the declaration to include the fully described features based on the ingested data
+        Set<GeometryTuple> unwrappedFeatures = features.stream()
+                                                       .map( FeatureTuple::getGeometryTuple )
+                                                       .collect( Collectors.toUnmodifiableSet() );
+
+        // Match and gather any offsets for the declared features using the ingest-augmented features
+        boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
+        Map<GeometryTuple, Offset> declaredOffsets = ProjectUtilities.getOffsets( declaration );
+        Map<GeometryTuple, Offset> offsets =
+                ProjectUtilities.getOffsetsForMatchingFeatures( unwrappedFeatures,
+                                                                declaredOffsets,
+                                                                hasBaseline );
+
+        Features dataFeatures = new Features( unwrappedFeatures, offsets );
+        FeatureGroups dataFeatureGroups
+                = FeatureGroupsBuilder.builder()
+                                      .geometryGroups( featureGroups.stream()
+                                                                    .map( FeatureGroup::getGeometryGroup )
+                                                                    // Non-singletons only
+                                                                    .filter( g -> g.getGeometryTuplesList()
+                                                                                   .size()
+                                                                                  > 1 )
+                                                                    .collect( Collectors.toSet() ) )
+                                      .build();
+        declaration = EvaluationDeclarationBuilder.builder( declaration )
+                                                  .features( dataFeatures )
+                                                  .featureGroups( dataFeatureGroups )
+                                                  .build();
+
+        return declaration;
+    }
+
+    /**
+     * Determines the ingested data types from the supplied ingest results.
+     * @param ingestResults the ingest results
+     * @return the data types obtained from the ingest results
+     */
+
+    static DataTypes getIngestedDataTypes( List<IngestResult> ingestResults )
+    {
+        Objects.requireNonNull( ingestResults );
 
         // Organize the data types by dataset orientation, including linked types
         Map<DatasetOrientation, Set<DataType>> dataTypes = new EnumMap<>( DatasetOrientation.class );
@@ -928,56 +985,10 @@ class ProjectUtilities
         DataType baselineType = singletons.get( DatasetOrientation.BASELINE );
         DataType covariateType = singletons.get( DatasetOrientation.COVARIATE );
 
-        DataTypes types = new DataTypes( leftType,
-                                         rightType,
-                                         baselineType,
-                                         covariateType );
-
-        wres.statistics.generated.TimeScale innerTimeScale = null;
-        if ( Objects.nonNull( timeScale ) )
-        {
-            innerTimeScale = timeScale.getTimeScale();
-        }
-
-        // If the ingested types differ from any existing types of there are conflicting types for a single
-        // orientation, this will throw an exception
-        declaration = DeclarationInterpolator.interpolate( declaration,
-                                                           types,
-                                                           variableNames,
-                                                           measurementUnit,
-                                                           innerTimeScale,
-                                                           true );
-
-        // Adjust the declaration to include the fully described features based on the ingested data
-        Set<GeometryTuple> unwrappedFeatures = features.stream()
-                                                       .map( FeatureTuple::getGeometryTuple )
-                                                       .collect( Collectors.toUnmodifiableSet() );
-
-        // Match and gather any offsets for the declared features using the ingest-augmented features
-        boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
-        Map<GeometryTuple, Offset> declaredOffsets = ProjectUtilities.getOffsets( declaration );
-        Map<GeometryTuple, Offset> offsets =
-                ProjectUtilities.getOffsetsForMatchingFeatures( unwrappedFeatures,
-                                                                declaredOffsets,
-                                                                hasBaseline );
-
-        Features dataFeatures = new Features( unwrappedFeatures, offsets );
-        FeatureGroups dataFeatureGroups
-                = FeatureGroupsBuilder.builder()
-                                      .geometryGroups( featureGroups.stream()
-                                                                    .map( FeatureGroup::getGeometryGroup )
-                                                                    // Non-singletons only
-                                                                    .filter( g -> g.getGeometryTuplesList()
-                                                                                   .size()
-                                                                                  > 1 )
-                                                                    .collect( Collectors.toSet() ) )
-                                      .build();
-        declaration = EvaluationDeclarationBuilder.builder( declaration )
-                                                  .features( dataFeatures )
-                                                  .featureGroups( dataFeatureGroups )
-                                                  .build();
-
-        return declaration;
+        return new DataTypes( leftType,
+                              rightType,
+                              baselineType,
+                              covariateType );
     }
 
     /**
@@ -986,15 +997,19 @@ class ProjectUtilities
      * implementation, leveraging this method for implementation-invariant validation.
      *
      * @param project the project
+     * @param ingestedDataTypes the ingested data types
      * @throws DeclarationException if the declaration and ingest are inconsistent
      */
-    static void validate( Project project )
+    static void validate( Project project,
+                          DataTypes ingestedDataTypes )
     {
         Objects.requireNonNull( project );
 
         // Validate the declaration in relation to the interpolated data types and other analyzed information
         LOGGER.debug( "Performing post-ingest validation of the declaration" );
-        DeclarationValidator.validatePostDataIngest( project.getDeclaration() );
+        DeclarationValidator.validatePostDataIngest( project.getDeclaration(),
+                                                     ingestedDataTypes,
+                                                     true );
 
         ProjectUtilities.validateThresholdsForFeatureGroups( project.getFeatureGroups(), project.getFeatures() );
     }

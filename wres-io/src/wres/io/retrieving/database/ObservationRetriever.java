@@ -105,7 +105,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     public Stream<TimeSeries<Double>> get()
     {
         this.validateForMultiSeriesRetrieval();
-        String timeSeriesTableScript = getStartOfScriptForGetAllTimeSeries();
+        String timeSeriesTableScript = this.getStartOfScriptForGetAllTimeSeries();
 
         Database database = super.getDatabase();
         DataScripter dataScripter = new DataScripter( database, timeSeriesTableScript );

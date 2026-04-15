@@ -81,6 +81,24 @@ import wres.statistics.generated.TimeWindow;
  * respectively. The resulting features and thresholds are not resolved into explicit descriptions of the same options.
  * It is assumed that another module (wres-io) resolves these attributes.
  *
+ * <p>At most, three sources of information are used to interpolate declaration, as follows:
+ * <ol>
+ *     <li>The original declaration, provider by a user; </li>
+ *     <li>The analyzed declaration, whereby the software examines the declaration as a whole and tries to determine
+ *     a user's intent. For example, if ensemble declaration is present in one context, this may be used to inform an
+ *     ensemble-like interpolation choice in another context; and </li>
+ *     <li>The information read from the data sources and supplied to this interpolator as a sidecar, notably to
+ *     {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, DataTypes, VariableNames, String, TimeScale, boolean)}</li>
+ * </ol>
+ *
+ * <p>Only the first two sources of information are used by
+ * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, boolean)}, whereas all three sources of information
+ * are used by {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, DataTypes, VariableNames, String, TimeScale, boolean)}.
+ *
+ * <p>In general, declaration validation is handled by the {@link DeclarationValidator}. However, when an interpolation
+ * method encounters an inconsistency between different sources of information that prevents a reasonable interpolation,
+ * then validation warnings or errors may be produced, which may be notified, optionally.
+ *
  * @author James Brown
  */
 public class DeclarationInterpolator
@@ -115,22 +133,9 @@ public class DeclarationInterpolator
     /** Re-used string. */
     private static final String INTENDED_TYPE_EXPLICITLY = "intended 'type' explicitly.";
     /** Re-used string. */
-    private static final String DATASET_WAS = "' dataset was ";
+    private static final String DATASET_WAS = "' dataset was '";
     /** Re-used string. */
     private static final String FOR_THE_PREDICTED_DATASET_WAS = "for the 'predicted' dataset was '";
-    /** Re-used string. */
-    private static final String BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS =
-            "', but the data 'type' was explicitly declared as '";
-    /** Re-used string. */
-    private static final String THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY =
-            "'. The evaluation will proceed with the explicitly";
-    /** Re-used string. */
-    private static final String DECLARED_TYPE_OF = " declared 'type' of '";
-    /** Re-used string. */
-    private static final String IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED =
-            "'. If this is incorrect, please fix the declared ";
-    /** Re-used string. */
-    private static final String TYPE = "'type'.";
     /** Re-used string. */
     private static final String INTERPOLATED_THE_COVARIATE_DATASET_TO_HAVE_A_PURPOSE_OF =
             "Interpolated the covariate dataset {} to have a purpose of {}.";
@@ -2569,14 +2574,12 @@ public class DeclarationInterpolator
                                                                                        DatasetOrientation.LEFT );
             events.addAll( undeclared );
         }
-        // Interpolate the left or observed data type when explicitly declared
+        // The data type is retained as declared. Any discrepancy with the ingested type must be handled by post-ingest
+        // declaration validation
         else
         {
-            List<EvaluationStatusEvent> declared =
-                    DeclarationInterpolator.interpolateObservedDataTypeWhenDeclared( datasetBuilder,
-                                                                                     ingestedDataType,
-                                                                                     DatasetOrientation.LEFT );
-            events.addAll( declared );
+            LOGGER.debug( "Retaining the declared data type of {} for the 'observed' dataset. The ingested type was "
+                          + "analyzed as {}.", observed.type(), ingestedDataType );
         }
 
         // Set the adjusted dataset
@@ -2613,13 +2616,12 @@ public class DeclarationInterpolator
                 events.addAll( undeclared );
             }
             // Interpolate the type when explicitly declared
+            // The data type is retained as declared. Any discrepancy with the ingested type must be handled by post-ingest
+            // declaration validation
             else
             {
-                List<EvaluationStatusEvent> declared =
-                        DeclarationInterpolator.interpolateObservedDataTypeWhenDeclared( datasetBuilder,
-                                                                                         ingestedDataType,
-                                                                                         DatasetOrientation.COVARIATE );
-                events.addAll( declared );
+                LOGGER.debug( "Retaining the declared data type of {} for the 'covariate' dataset, {}. The ingested "
+                              + "type was analyzed as {}.", covariate.type(), covariateDataset, ingestedDataType );
             }
 
             CovariateDatasetBuilder covariateBuilder = CovariateDatasetBuilder.builder( covariateDataset )
@@ -2629,53 +2631,6 @@ public class DeclarationInterpolator
 
         // Set the adjusted covariates
         builder.covariates( adjustedCovariates );
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * Interpolates the data type for observation-like datasets when there is explicit declaration of the data type. By
-     * default, uses the declared type, but also checks against the data type inferred from ingest.
-     * @param datasetBuilder the dataset builder
-     * @param ingestedDataType the data type inferred from ingest
-     * @param orientation the dataset orientation
-     * @return any interpolation events encountered
-     */
-    private static List<EvaluationStatusEvent> interpolateObservedDataTypeWhenDeclared( DatasetBuilder datasetBuilder,
-                                                                                        DataType ingestedDataType,
-                                                                                        DatasetOrientation orientation )
-    {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        if ( Objects.nonNull( ingestedDataType )
-             && ingestedDataType != datasetBuilder.type() )
-        {
-            String article = "the";
-            if ( orientation == DatasetOrientation.COVARIATE )
-            {
-                article = "a";
-            }
-
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                             + "for "
-                                                             + article
-                                                             + "'"
-                                                             + orientation
-                                                             + DATASET_WAS
-                                                             + ingestedDataType
-                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
-                                                             + datasetBuilder.type()
-                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
-                                                             + DECLARED_TYPE_OF
-                                                             + datasetBuilder.type()
-                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
-                                                             + TYPE )
-                                           .build();
-            events.add( event );
-        }
 
         return Collections.unmodifiableList( events );
     }
@@ -2867,13 +2822,12 @@ public class DeclarationInterpolator
                                                                                         ingestedDataType );
             events.addAll( undeclared );
         }
-        // Interpolate the right or predicted data type when explicitly declared
+        // The data type is retained as declared. Any discrepancy with the ingested type must be handled by post-ingest
+        // declaration validation
         else
         {
-            List<EvaluationStatusEvent> declared =
-                    DeclarationInterpolator.interpolatePredictedDataTypeWhenDeclared( builder,
-                                                                                      ingestedDataType );
-            events.addAll( declared );
+            LOGGER.debug( "Retaining the declared data type of {} for the 'predicted' dataset. The ingested type was "
+                          + "analyzed as {}.", predicted.type(), ingestedDataType );
         }
 
         return Collections.unmodifiableList( events );
@@ -3012,42 +2966,6 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Interpolates the predicted data type when there is explicit declaration for a predicted data type. By default,
-     * uses the declared type, but also checks against the data type inferred from ingest.
-     * @param builder the builder
-     * @param ingestedDataType the data type inferred from ingest
-     * @return any interpolation events encountered
-     */
-    private static List<EvaluationStatusEvent> interpolatePredictedDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
-                                                                                         DataType ingestedDataType )
-    {
-        Dataset predicted = builder.right();
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        if ( Objects.nonNull( ingestedDataType )
-             && ingestedDataType != predicted.type() )
-        {
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                             + FOR_THE_PREDICTED_DATASET_WAS
-                                                             + ingestedDataType
-                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
-                                                             + predicted.type()
-                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
-                                                             + DECLARED_TYPE_OF
-                                                             + predicted.type()
-                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
-                                                             + TYPE )
-                                           .build();
-            events.add( event );
-        }
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
      * Interpolates the baseline data type.
      * @param builder the builder
      * @param ingestedDataType the data type inferred from ingest
@@ -3071,13 +2989,12 @@ public class DeclarationInterpolator
                                                                                            ingestedDataType );
                 events.addAll( undeclared );
             }
-            // Interpolate the baseline data type when explicitly declared
+            // The data type is retained as declared. Any discrepancy with the ingested type must be handled by post-ingest
+            // declaration validation
             else
             {
-                List<EvaluationStatusEvent> declared =
-                        DeclarationInterpolator.interpolateBaselineDataTypeWhenDeclared( builder,
-                                                                                         ingestedDataType );
-                events.addAll( declared );
+                LOGGER.debug( "Retaining the declared data type of {} for the 'baseline' dataset. The ingested type "
+                              + "was analyzed as {}.", baselineDataset.type(), ingestedDataType );
             }
         }
 
@@ -3189,43 +3106,6 @@ public class DeclarationInterpolator
                                       .dataset( newBaselineDataset )
                                       .build();
         builder.baseline( newBaseline );
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * Interpolates the baseline data type when there is explicit declaration for a baseline data type. By default,
-     * uses the declared type, but also checks against the data type inferred from ingest.
-     * @param builder the builder
-     * @param ingestedDataType the data type inferred from ingest
-     * @return any interpolation events encountered
-     */
-    private static List<EvaluationStatusEvent> interpolateBaselineDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
-                                                                                        DataType ingestedDataType )
-    {
-        BaselineDataset baseline = builder.baseline();
-        Dataset baselineDataset = baseline.dataset();
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        if ( Objects.nonNull( ingestedDataType )
-             && ingestedDataType != baselineDataset.type() )
-        {
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                             + "for the baseline dataset was '"
-                                                             + ingestedDataType
-                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
-                                                             + baselineDataset.type()
-                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
-                                                             + DECLARED_TYPE_OF
-                                                             + baselineDataset.type()
-                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
-                                                             + TYPE )
-                                           .build();
-            events.add( event );
-        }
 
         return Collections.unmodifiableList( events );
     }

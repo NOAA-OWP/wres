@@ -3690,6 +3690,66 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testValidatePostIngestWithConflictBetweenDeclaredAndIngestedDataTypesProducesErrors()
+    {
+        DataTypes ingestedTypes = new DataTypes( DataType.SIMULATIONS,
+                                                 DataType.ENSEMBLE_FORECASTS,
+                                                 DataType.SINGLE_VALUED_FORECASTS,
+                                                 DataType.OBSERVATIONS );
+
+        Dataset observed = DatasetBuilder.builder()
+                                         .type( DataType.OBSERVATIONS )
+                                         .build();
+
+        Dataset predicted = DatasetBuilder.builder()
+                                          .type( DataType.ANALYSES )
+                                          .build();
+
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .type( DataType.ENSEMBLE_FORECASTS )
+                                                .build();
+
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .build();
+
+        Dataset covariateDataset = DatasetBuilder.builder()
+                                                 .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                 .build();
+
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( covariateDataset )
+                                                            .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( observed )
+                                                                        .right( predicted )
+                                                                        .baseline( baseline )
+                                                                        .covariates( List.of( covariate ) )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validatePostDataIngest( declaration,
+                                                                                          ingestedTypes,
+                                                                                          false );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "'predicted' dataset was "
+                                                                        + "'ensemble forecasts', but the declared data "
+                                                                        + "'type' was 'analyses'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "'baseline' dataset was "
+                                                                        + "'single valued forecasts', but the declared "
+                                                                        + "data 'type' was 'ensemble forecasts'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "'covariate' dataset was "
+                                                                        + "'observations', but the declared data "
+                                                                        + "'type' was 'single valued forecasts'",
+                                                                        StatusLevel.ERROR ) ) );
+    }
+
+    @Test
     void testValidateXmlDeclarationProducesError() throws IOException
     {
         // Redmine #121176, GitHub #487
