@@ -243,9 +243,8 @@ public final class Functions
         if ( !sharedResources.systemSettings()
                              .isUseDatabase() )
         {
-            throw new IllegalArgumentException(
-                    "This is an in-memory execution. Cannot migrate a database because there "
-                    + "is no database to migrate." );
+            throw new IllegalArgumentException( "This is an in-memory execution. Cannot migrate a database because "
+                                                + "there is no database to migrate." );
         }
 
         Instant start = Instant.now();
@@ -258,7 +257,7 @@ public final class Functions
 
             try
             {
-                //The migrateDatabase method deals with database locking, so we don't need to worry about that here
+                // The migrateDatabase method deals with database locking, so we don't need to worry about that here
                 DatabaseOperations.migrateDatabase( Functions.database );
             }
             catch ( SQLException se )

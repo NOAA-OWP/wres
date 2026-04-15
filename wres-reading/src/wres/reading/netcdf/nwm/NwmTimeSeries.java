@@ -240,9 +240,9 @@ class NwmTimeSeries implements Closeable
                       profile,
                       this.baseUri );
 
-        ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "NwmTimeSeries Reader %d" )
-                .build();
+        ThreadFactory nwmReaderThreadFactory = BasicThreadFactory.builder()
+                                                                 .namingPattern( "NwmTimeSeries Reader %d" )
+                                                                 .build();
 
         BlockingQueue<Runnable> nwmReaderQueue =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
@@ -396,7 +396,7 @@ class NwmTimeSeries implements Closeable
             Variable variableVariable;
             NetcdfFile netcdfFile = this.getNetcdfFiles()
                                         .iterator()
-                                        .next();  // Do not close here
+                                        .next();  // Do NOT close here, ignore any IDE warning
             variableVariable = netcdfFile.findVariable( variableName );
 
             if ( variableVariable == null )
@@ -522,9 +522,8 @@ class NwmTimeSeries implements Closeable
             // TODO: use the reference datetime from actual data, not args.
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
-            Geometry geometry = MessageUtilities.getGeometry(
-                    series.getKey()
-                          .toString() );
+            Geometry geometry = MessageUtilities.getGeometry( series.getKey()
+                                                                    .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
