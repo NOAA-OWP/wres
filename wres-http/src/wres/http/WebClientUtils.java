@@ -2,8 +2,11 @@ package wres.http;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 
 /**
  * Web client utility class.
@@ -53,6 +56,26 @@ public class WebClientUtils
                                   .writeTimeout( Duration.ZERO )
                                   .readTimeout( Duration.ZERO )
                                   .build();
+    }
+
+    /**
+     * Uses the specified client as a platform from which to create a new client with the prescribed protocols.
+     *
+     * @param client the client, required
+     * @param protocols the protocols, required
+     * @throws NullPointerException if any input is null
+     * @return an OkHttpClient
+     */
+    public static OkHttpClient setClientProtocols( OkHttpClient client,
+                                                   Set<Protocol> protocols )
+    {
+        Objects.requireNonNull( client );
+        Objects.requireNonNull( protocols );
+
+        return client.newBuilder()
+                     .protocols( protocols.stream()
+                                          .toList() )
+                     .build();
     }
 
     /**
