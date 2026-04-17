@@ -526,7 +526,7 @@ public class WebClient
     }
 
     /**
-     * Makes a default retry policy as an arbitrary function of time based on paramaters in the WebClient
+     * Makes a default retry policy as an arbitrary function of time based on parameters in the WebClient
      */
     private void setDefaultRetryPolicy()
     {
