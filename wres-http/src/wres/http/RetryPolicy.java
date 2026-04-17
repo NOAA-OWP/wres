@@ -4,13 +4,15 @@ package wres.http;
 import java.time.Duration;
 import java.time.Instant;
 
+import lombok.Getter;
+
 /**
  * An object to define the retry policy of a WebClient
  */
 
+@Getter
 public class RetryPolicy
 {
-
     /**
      * The max amount of time spent on retrying and calls before stopping
      * Stops making calls even if there are still retry attempts
@@ -24,8 +26,6 @@ public class RetryPolicy
      */
     private final int maxRetryCount;
 
-
-
     /**
      * A RetryPolicy that follows a builder pattern
      * @param builder the builder to create a retryPolicy
@@ -34,24 +34,6 @@ public class RetryPolicy
     {
         this.maxRetryTime = builder.maxRetryTime;
         this.maxRetryCount = builder.maxRetryCount;
-    }
-
-    /**
-     * gets max retry count
-     * @return int of max retry count
-     */
-    public int getMaxRetryCount()
-    {
-        return this.maxRetryCount;
-    }
-
-    /**
-     * gets max retry duration
-     * @return a Duration of how long to try attempts
-     */
-    public Duration getMaxRetryTime()
-    {
-        return this.maxRetryTime;
     }
 
     /**
