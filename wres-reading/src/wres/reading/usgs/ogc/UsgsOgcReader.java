@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import okhttp3.Protocol;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 
@@ -54,6 +55,7 @@ import wres.config.components.Source;
 import wres.config.components.Variable;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
@@ -121,6 +123,11 @@ public class UsgsOgcReader implements TimeSeriesReader
 
     /** Name of the API key request parameter. */
     private static final String API_KEY_NAME = "api_key";
+
+    /** A downgraded web-client to use until the OGC wb server handles the HTTP/2 protocol properly. See GitHub #787. */
+    private static final WebClient HTTP_CLIENT_1_1 =
+            new WebClient( WebClientUtils.setClientProtocols( WebClientUtils.defaultTimeoutHttpClient(),
+                                                              Set.of( Protocol.HTTP_1_1 ) ) );
 
     /** Cache of location metadata for re-use. */
     private final Cache<@NonNull String, LocationMetadata> locationCache =
@@ -526,7 +533,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                                                                                             NO_DATA_PREDICATE,
                                                                                             ERROR_RESPONSE_PREDICATE,
                                                                                             errorUnpacker,
-                                                                                            null ) )
+                                                                                            HTTP_CLIENT_1_1 ) )
         {
             if ( Objects.nonNull( response ) )
             {
@@ -693,7 +700,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                                                                                         NO_DATA_PREDICATE,
                                                                                         ERROR_RESPONSE_PREDICATE,
                                                                                         null,
-                                                                                        null ) )
+                                                                                        HTTP_CLIENT_1_1 ) )
         {
             // Currently, the only reason we require feature metadata is for the time zone information. The metadata is
             // not present, but is it actually needed in this context? Let's see...
