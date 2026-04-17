@@ -81,6 +81,7 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeScale;
 import wres.system.SSLStuffThatTrustsOneCertificate;
+import wres.system.SystemSettings;
 
 /**
  * Utilities for reading from data sources, such as files and data services.
@@ -917,8 +918,10 @@ public class ReaderUtilities
         }
         catch ( URISyntaxException e )
         {
+            String sanitizedUriString = SystemSettings.redactBadWords( uri.toString() );
+
             throw new IllegalArgumentException( "Could not create URI from "
-                                                + uri
+                                                + sanitizedUriString
                                                 + " and "
                                                 + urlParameters,
                                                 e );
@@ -1090,6 +1093,8 @@ public class ReaderUtilities
             webClient = WEB_CLIENT;
         }
 
+        String sanitizedUriString = SystemSettings.redactBadWords( uri.toString() );
+
         try
         {
             // Stream is closed on completion of streaming data, unless there is an error response
@@ -1109,7 +1114,7 @@ public class ReaderUtilities
 
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.{}",
                              httpStatus,
-                             uri,
+                             sanitizedUriString,
                              possibleError );
 
                 // Clean up now
@@ -1122,7 +1127,8 @@ public class ReaderUtilities
             {
                 String possibleError = errorUnpacker.apply( response );
 
-                if ( Objects.nonNull( possibleError ) )
+                if ( Objects.nonNull( possibleError )
+                     && !possibleError.isBlank() )
                 {
                     possibleError = ". Received this error message: " + possibleError;
                 }
@@ -1131,7 +1137,7 @@ public class ReaderUtilities
                 ReaderUtilities.closeWebClientResponse( response );
 
                 throw new ReadException( "Failed to read data from '"
-                                         + uri
+                                         + sanitizedUriString
                                          +
                                          "' due to HTTP status code "
                                          + httpStatus
@@ -1143,7 +1149,7 @@ public class ReaderUtilities
         catch ( IOException e )
         {
             throw new ReadException( "Failed to acquire a byte stream from "
-                                     + uri
+                                     + sanitizedUriString
                                      + ".",
                                      e );
         }
