@@ -4,14 +4,14 @@
 
 FROM alpine:3.20.3 AS builder
 
-ARG BROKER_VERSION=2.44.0
+ARG BROKER_VERSION=2.52.0
 
 WORKDIR /workspace
 
 # Download Artemis tgz and checksum
-ADD https://dlcdn.apache.org/activemq/activemq-artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz \
+ADD https://archive.apache.org/dist/artemis/artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz \
     apache-artemis-${BROKER_VERSION}-bin.tar.gz
-ADD https://dlcdn.apache.org/activemq/activemq-artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512 \
+ADD https://archive.apache.org/dist/artemis/artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512 \
     apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512
 
 # Assert checksum
@@ -28,13 +28,13 @@ RUN apk --no-cache add tar && \
 # Final image
 #############
 
-FROM registry.access.redhat.com/ubi8/ubi:8.10-1184.1741863532
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1776748720
 
 RUN dnf install -y \
     java-17-openjdk-headless-1:17.0.18.0.8-1.el8 \
     procps-ng-3.3.15-14.el8 \
     iproute-6.2.0-6.el8_10 \
-    libaio-0.3.112-1.el8 \
+    libaio \
     && dnf clean all
 
 # Set env vars expected by BROKER
