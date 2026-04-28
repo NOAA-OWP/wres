@@ -44,6 +44,12 @@ buildscript {
                 }
                 because('Security vulnerabilities in older versions. See GitHub #478')
             }
+            classpath('org.bouncycastle:bcprov-jdk18on') {
+                version {
+                    strictly("1.84")
+                }
+                because('Security vulnerabilities in 1.83 and earlier.')
+            }
         }
     }
 }
@@ -80,7 +86,7 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '12.2.0'
+    id 'org.owasp.dependencycheck' version '12.2.1'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -1477,17 +1483,20 @@ project(':wres-tasker') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // To generate fake certificates and keys for testing
-        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
-        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.84'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.84'
 
         // To test against an embedded AMQP broker
         testImplementation('org.apache.qpid:qpid-broker-core:10.0.1') {
-            // Because of CVE-2025-52999. TODO: remove when QPID catches up
+            // TODO: remove when QPID catches up
+            // Because of CVE-2025-52999.
             exclude group: 'tools.jackson.core'
+            // Because of CVE-2026-5598 and CVE-2026-0636
+            exclude group: 'org.bouncycastle:bcprov-jdk18on'
         }
 
         // Removed above, delete when QPID catches up
-        api 'tools.jackson.core:jackson-core:3.1.1'
+        testImplementation 'tools.jackson.core:jackson-core:3.1.1'
 
         // Provides support for both 0-8 and 0-9-1
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.0.1'
@@ -1596,7 +1605,7 @@ project(':wres-eventsbroker') {
         implementation group: 'io.netty', name: 'netty-all', version: '4.2.12.Final'
 
         // Include later dependency version
-        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.83'
+        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.84'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
         runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.52.0') {

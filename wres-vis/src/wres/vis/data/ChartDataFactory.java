@@ -97,7 +97,8 @@ public class ChartDataFactory
     {
         // Arrange the series by threshold
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata()
+                                                         .getThresholds() );
 
         YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
 
