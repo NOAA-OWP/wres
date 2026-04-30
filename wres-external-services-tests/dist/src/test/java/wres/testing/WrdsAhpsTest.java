@@ -78,10 +78,7 @@ public class WrdsAhpsTest
     @Test
     void canGetMinimalResponseFromWrdsAhpsWithWebClient() throws IOException
     {
-        List<Integer> retryOnThese = Collections.emptyList();
-
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_ONE,
-                                                                         retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_ONE ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -95,10 +92,7 @@ public class WrdsAhpsTest
     @Test
     void canGetAndParseResponseFromWrdsAhpsWithWebClientAndJacksonPojos() throws IOException
     {
-        List<Integer> retryOnThese = Collections.emptyList();
-
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_TWO,
-                                                                         retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_TWO ) )
         {
             ForecastResponse document = OBJECT_MAPPER.readValue( response.getResponse(),
                                                                  ForecastResponse.class );

@@ -36,7 +36,8 @@ public class WrdsNwmTest
     {
         String wrdsHostname = System.getenv( "WRDS_HOSTNAME" );
 
-        if ( Objects.nonNull( wrdsHostname ) && !wrdsHostname.isBlank() )
+        if ( Objects.nonNull( wrdsHostname )
+             && !wrdsHostname.isBlank() )
         {
             WRDS_HOSTNAME = wrdsHostname;
         }
@@ -83,10 +84,7 @@ public class WrdsNwmTest
     @Test
     void canGetMinimalResponseFromWrdsNwmWithWebClient() throws IOException
     {
-        List<Integer> retryOnThese = Collections.emptyList();
-
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_ONE,
-                                                                         retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_ONE ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -100,11 +98,9 @@ public class WrdsNwmTest
     @Test
     void canGetAndParseResponseFromWrdsNwmWithWebClient() throws IOException
     {
-        List<Integer> retryOnThese = Collections.emptyList();
         NwmRootDocument document;
 
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_TWO,
-                                                                         retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_TWO ) )
         {
             // Parse the stream in the way WrdsNwmReader parses a document:
             document = JSON_OBJECT_MAPPER.readValue( response.getResponse(),
