@@ -1717,6 +1717,10 @@ project(':wres-http') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         testImplementation 'org.mockito:mockito-core:5.21.0'
+
+        // For mocking web service interaction
+        testImplementation('org.wiremock:wiremock:4.0.0-beta.32')
+        testImplementation('org.wiremock:wiremock-junit5:4.0.0-beta.32')
     }
 
     // Make this a Java Platform Module System (Java 9 jigsaw) module

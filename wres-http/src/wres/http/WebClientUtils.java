@@ -1,7 +1,6 @@
 package wres.http;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -13,13 +12,6 @@ import okhttp3.Protocol;
  */
 public class WebClientUtils
 {
-    private static final List<Integer> DEFAULT_RETRY_STATES = List.of( 500,
-                                                                       502,
-                                                                       503,
-                                                                       504,
-                                                                       523,
-                                                                       524 );
-
     /**
      * Creates a base level HttpClient, is public to reduce code repeating
      * @return an OkHttpClient
@@ -76,14 +68,6 @@ public class WebClientUtils
                      .protocols( protocols.stream()
                                           .toList() )
                      .build();
-    }
-
-    /**
-     * @return the default retry states
-     */
-    public static List<Integer> getDefaultRetryStates()
-    {
-        return DEFAULT_RETRY_STATES;
     }
 
     /**

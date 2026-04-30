@@ -271,7 +271,7 @@ public class Worker
     private static void isServerReadyForWork() throws IOException
     {
         URI uri = URI.create( String.format( SERVER_READY_FOR_WORK_CHECK_URI, DEFAULT_PORT ) );
-        try ( WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() ) )
+        try ( WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri ) )
         {
             if ( fromWeb.getStatusCode() != HttpURLConnection.HTTP_OK )
             {

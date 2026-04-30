@@ -458,7 +458,7 @@ class FeatureService
 
     private static byte[] readFromWeb( URI uri )
     {
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
         {
             if ( response.getStatusCode() != 200 )
             {

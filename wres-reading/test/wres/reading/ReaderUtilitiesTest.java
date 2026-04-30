@@ -1275,9 +1275,9 @@ class ReaderUtilitiesTest
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
                                                        .withBody( RESPONSE ) ) );
-
         URI fakeUri = URI.create( "http://localhost:"
                                   + WIREMOCK.getPort() );
+
 
         ThresholdSource service
                 = ThresholdSourceBuilder.builder()
@@ -1422,7 +1422,7 @@ class ReaderUtilitiesTest
         URI fakeUri = URI.create( uri );
 
         WebClient client = Mockito.mock( WebClient.class );
-        Mockito.when( client.getFromWeb( Mockito.any(), Mockito.anyList() ) )
+        Mockito.when( client.getFromWeb( Mockito.any() ) )
                .thenThrow( new IOException() );
 
         ReadException actual = assertThrows( ReadException.class,

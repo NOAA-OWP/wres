@@ -18,10 +18,10 @@ import wres.http.WebClient;
 import wres.http.WebClientUtils;
 
 /**
- * Produces and sends one message for each line of one of stdout or stderr to
+ * <p>Produces and sends one message for each line of one of stdout or stderr to
  * the broker, each message containing a line of one of the standard streams.
  *
- * A consumer (e.g. the tasker) can listen for this output on a topic named
+ * <p>A consumer (e.g. the tasker) can listen for this output on a topic named
  * with the convention job.[job_id].[which_stream], for example job.532.stdout,
  * and can do whatever it chooses with the stream such as display it, serve it,
  * or store it.
@@ -44,7 +44,7 @@ public class JobStandardStreamMessenger implements Runnable
         /** Standard out. */
         STDOUT,
         /** Standard error. */
-        STDERR;
+        STDERR
     }
 
     private final Connection connection;
@@ -125,7 +125,7 @@ public class JobStandardStreamMessenger implements Runnable
         }
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ), WebClientUtils.getDefaultRetryStates() );
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
                 InputStreamReader utf8Reader = new InputStreamReader( clientResponse.getResponse(),
                                                                       StandardCharsets.UTF_8 );
                 BufferedReader reader = new BufferedReader( utf8Reader );

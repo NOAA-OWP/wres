@@ -887,7 +887,7 @@ public class ReaderUtilities
     }
 
     /**
-     * Get a URI based on prescribed URI and a parameter set.
+     * Adds the parameters to a URI in their natural order.
      *
      * @param uri the uri to build upon
      * @param urlParameters the parameters to add to the uri
@@ -1098,8 +1098,7 @@ public class ReaderUtilities
         try
         {
             // Stream is closed on completion of streaming data, unless there is an error response
-            WebClient.ClientResponse response =
-                    webClient.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+            WebClient.ClientResponse response = webClient.getFromWeb( uri );
 
             int httpStatus = response.getStatusCode();
 
