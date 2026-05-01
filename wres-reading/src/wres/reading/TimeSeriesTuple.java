@@ -2,10 +2,12 @@ package wres.reading;
 
 import java.util.Objects;
 
+import lombok.Builder;
 import lombok.Getter;
 
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesMetadata;
 
 /**
  * A small value class that stores a tuple of time series. There is up to one time-series for each type of time-series 
@@ -18,6 +20,7 @@ import wres.datamodel.time.TimeSeries;
  */
 
 @Getter
+@Builder
 public class TimeSeriesTuple
 {
     /** A single-valued time-series. */
@@ -28,6 +31,14 @@ public class TimeSeriesTuple
 
     /** The data source from which the time-series originate. */
     private final DataSource dataSource;
+
+    /** An optional time-series identifier for the single-valued time-series, possibly null. This is useful for
+     * some readers to maintain context that is currently unavailable in the {@link TimeSeriesMetadata}. */
+    private final String singleValuedTimeSeriesId;
+
+    /** An optional time-series identifier for the ensemble time-series, possibly null. This is useful for
+     * some readers to maintain context that is currently unavailable in the {@link TimeSeriesMetadata}. */
+    private final String ensembleTimeSeriesId;
 
     /**
      * Creates an instance with a single-valued time-series and an ensemble time-series.
@@ -42,7 +53,7 @@ public class TimeSeriesTuple
                                       TimeSeries<Ensemble> ensemble,
                                       DataSource dataSource )
     {
-        return new TimeSeriesTuple( singleValued, ensemble, dataSource );
+        return new TimeSeriesTuple( singleValued, ensemble, dataSource, null, null );
     }
 
     /**
@@ -56,7 +67,7 @@ public class TimeSeriesTuple
     public static TimeSeriesTuple ofSingleValued( TimeSeries<Double> singleValued,
                                                   DataSource dataSource )
     {
-        return new TimeSeriesTuple( singleValued, null, dataSource );
+        return new TimeSeriesTuple( singleValued, null, dataSource, null, null );
     }
 
     /**
@@ -70,7 +81,7 @@ public class TimeSeriesTuple
     public static TimeSeriesTuple ofEnsemble( TimeSeries<Ensemble> ensemble,
                                               DataSource dataSource )
     {
-        return new TimeSeriesTuple( null, ensemble, dataSource );
+        return new TimeSeriesTuple( null, ensemble, dataSource, null, null );
     }
 
     /**
@@ -96,16 +107,22 @@ public class TimeSeriesTuple
      * @param singleValuedTimeSeries the single-valued series
      * @param ensembleTimeSeries the ensemble series
      * @param dataSource the data source, required
+     * @param singleValuedTimeSeriesId an optional identifier for the single-valued time-series
+     * @param ensembleTimeSeriesId an optional identifier for the ensemble time-series
      * @throws NullPointerException if the data source is null
      */
     private TimeSeriesTuple( TimeSeries<Double> singleValuedTimeSeries,
                              TimeSeries<Ensemble> ensembleTimeSeries,
-                             DataSource dataSource )
+                             DataSource dataSource,
+                             String singleValuedTimeSeriesId,
+                             String ensembleTimeSeriesId )
     {
         Objects.requireNonNull( dataSource );
 
         this.singleValuedTimeSeries = singleValuedTimeSeries;
         this.ensembleTimeSeries = ensembleTimeSeries;
         this.dataSource = dataSource;
+        this.singleValuedTimeSeriesId = singleValuedTimeSeriesId;
+        this.ensembleTimeSeriesId = ensembleTimeSeriesId;
     }
 }

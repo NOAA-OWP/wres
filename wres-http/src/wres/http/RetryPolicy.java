@@ -72,7 +72,7 @@ public class RetryPolicy
      * No default.
      */
     @Builder.Default
-    private final BiPredicate<IOException, Integer> exceptionPolicy = RetryPolicy.getDefaultExceptionPolicy();
+    private final BiPredicate<Exception, Integer> exceptionPolicy = RetryPolicy.getDefaultExceptionPolicy();
 
     /**
      * Determines whether a retry should be attempted for the supplied time constraints and retry count.
@@ -98,7 +98,7 @@ public class RetryPolicy
      * @return whether a further retry should be attempted
      * @throws NullPointerException if the exception is null
      */
-    public boolean shouldRetry( IOException exception, int retryCount )
+    public boolean shouldRetry( Exception exception, int retryCount )
     {
         Objects.requireNonNull( exception );
 
@@ -120,7 +120,7 @@ public class RetryPolicy
      * @return a default policy for performing retries when an exception is encountered
      */
 
-    private static BiPredicate<IOException, Integer> getDefaultExceptionPolicy()
+    private static BiPredicate<Exception, Integer> getDefaultExceptionPolicy()
     {
         return ( ioe, retryCount ) ->
         {

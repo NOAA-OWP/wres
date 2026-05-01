@@ -63,7 +63,6 @@ import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.usgs.ogc.response.MonitoringLocation;
-import wres.reading.usgs.ogc.response.TimeSeriesTuplePlusId;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
@@ -215,8 +214,7 @@ public class UsgsOgcReader implements TimeSeriesReader
         LOGGER.debug( "Discovered an existing stream, assumed to be from the {}. Passing through to an underlying "
                       + "GeoJSON reader.", USGS );
 
-        return GEOJSON_READER.read( dataSource, stream )
-                             .map( TimeSeriesTuplePlusId::tuple );
+        return GEOJSON_READER.read( dataSource, stream );
     }
 
     /**
@@ -362,7 +360,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                             this.getExecutor()
                                 .submit( () ->
                                          {
-                                             List<TimeSeriesTuplePlusId> unconsolidated =
+                                             List<TimeSeriesTuple> unconsolidated =
                                                      this.readAllPages( innerSource, reader );
                                              return this.consolidateTimeSeries( unconsolidated, dataSource );
                                          } );
@@ -416,15 +414,15 @@ public class UsgsOgcReader implements TimeSeriesReader
      * @throws ReadException if the time-series could not be read for any reason
      */
 
-    private List<TimeSeriesTuplePlusId> readAllPages( DataSource dataSource,
-                                                      UsgsOgcResponseReader reader )
+    private List<TimeSeriesTuple> readAllPages( DataSource dataSource,
+                                                UsgsOgcResponseReader reader )
     {
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Reading all pages of data from: {}.", dataSource.uri() );
         }
 
-        List<TimeSeriesTuplePlusId> firstPage = this.readOnePage( dataSource, reader );
+        List<TimeSeriesTuple> firstPage = this.readOnePage( dataSource, reader );
 
         if ( firstPage.isEmpty() )
         {
@@ -432,20 +430,18 @@ public class UsgsOgcReader implements TimeSeriesReader
             return List.of();
         }
 
-        List<TimeSeriesTuplePlusId> allPages = new ArrayList<>( firstPage );
+        List<TimeSeriesTuple> allPages = new ArrayList<>( firstPage );
 
         // There may be multiple time-series per page, but there is one page of data to which all time-series belong
-        TimeSeriesTuplePlusId nextPage = firstPage.get( 0 );
+        TimeSeriesTuple nextPage = firstPage.get( 0 );
 
         // Another page to read?
         while ( Objects.nonNull( nextPage )
-                && nextPage.tuple()
-                           .getDataSource()
+                && nextPage.getDataSource()
                            .hasNextPage() )
         {
             // Currently, the next page must be adjusted to enforce the format requirement. Bug in NWIS?
-            URI nextPageUri = nextPage.tuple()
-                                      .getDataSource()
+            URI nextPageUri = nextPage.getDataSource()
                                       .nextPage();
             URIBuilder builder = new URIBuilder( nextPageUri );
             builder.addParameter( "f", "json" );
@@ -461,7 +457,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                 DataSource newSource = dataSource.toBuilder()
                                                  .uri( builder.build() )
                                                  .build();
-                List<TimeSeriesTuplePlusId> nextNextPage = this.readOnePage( newSource, reader );
+                List<TimeSeriesTuple> nextNextPage = this.readOnePage( newSource, reader );
                 allPages.addAll( nextNextPage );
                 if ( !nextNextPage.isEmpty() )
                 {
@@ -497,8 +493,8 @@ public class UsgsOgcReader implements TimeSeriesReader
      * @throws ReadException if the page could not be read for any reason
      */
 
-    private List<TimeSeriesTuplePlusId> readOnePage( DataSource dataSource,
-                                                     UsgsOgcResponseReader reader )
+    private List<TimeSeriesTuple> readOnePage( DataSource dataSource,
+                                               UsgsOgcResponseReader reader )
     {
         // Unpack an HTTP 429 response code and report
         Function<WebClient.ClientResponse, String> errorUnpacker = response ->
@@ -601,21 +597,20 @@ public class UsgsOgcReader implements TimeSeriesReader
      * @return the consolidated time-series
      */
 
-    private List<TimeSeriesTuple> consolidateTimeSeries( List<TimeSeriesTuplePlusId> toConsolidate,
+    private List<TimeSeriesTuple> consolidateTimeSeries( List<TimeSeriesTuple> toConsolidate,
                                                          DataSource dataSource )
     {
         LOGGER.debug( "Consolidating {} time-series.", toConsolidate.size() );
 
-        Map<String, List<TimeSeriesTuplePlusId>> grouped =
+        Map<String, List<TimeSeriesTuple>> grouped =
                 toConsolidate.stream()
-                             .collect( Collectors.groupingBy( TimeSeriesTuplePlusId::id ) );
+                             .collect( Collectors.groupingBy( TimeSeriesTuple::getSingleValuedTimeSeriesId ) );
 
         LOGGER.debug( "Encountered {} time-series to consolidate.", grouped.size() );
 
         return grouped.values()
                       .stream()
                       .map( t -> t.stream()
-                                  .map( TimeSeriesTuplePlusId::tuple )
                                   .map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                   .toList() )
                       .map( TimeSeriesSlicer::consolidate )
