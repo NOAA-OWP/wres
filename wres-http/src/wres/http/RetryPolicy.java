@@ -174,7 +174,8 @@ public class RetryPolicy
             return true;
         }
 
-        if ( t instanceof UnknownHostException && retryCount > 0 )
+        if ( t instanceof UnknownHostException
+             && retryCount > 0 )
         {
             return true;
         }

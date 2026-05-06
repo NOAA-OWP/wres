@@ -3,6 +3,7 @@ package wres.reading;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ProtocolException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -40,15 +41,21 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import wres.http.RetryPolicy;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -98,6 +105,10 @@ public class ReaderUtilities
 
     /** Default WRDS project name, required by the service. Yuck. */
     public static final String DEFAULT_WRDS_PROJ = "UNKNOWN_PROJECT_USING_WRES";
+
+    /** A default retry policy when errors are encountered during the reading of a response body, as distinct from the
+     * request headers stage, for which retries are handled by another client, such as {@link WebClient}. */
+    public static final RetryPolicy DEFAULT_BODY_RETRY_POLICY = ReaderUtilities.getDefaultBodyRetryPolicy();
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
@@ -784,8 +795,8 @@ public class ReaderUtilities
             KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
             String cacertsPath = System.getProperty( "java.home" ) + "/lib/security/cacerts";
             FileInputStream fis = new FileInputStream( cacertsPath );
-            String password = "changeit";
-            keyStore.load( fis, password.toCharArray() );   // NOSONAR
+            String pass = "changeit";
+            keyStore.load( fis, pass.toCharArray() );   // NOSONAR
             fis.close();
 
             // Initialize the factory for use.
@@ -1152,6 +1163,94 @@ public class ReaderUtilities
                                      + ".",
                                      e );
         }
+    }
+
+    /**
+     * A helper to acquire time-series data using retries with exponential back-off. Errors can occur in two separate
+     * places when reading from a web source: before headers are processed; and, subsequently, when reading from the
+     * response body. Both situations require resilience and, therefore, retries. However, only the former is visible
+     * to web clients, such as {@link WebClient}. The latter occurs during stream processing and is only visible to a
+     * format reader. Call this helper from within a format reader that reads from a web service to conduct retries with
+     * exponential back-off according to a prescribed {@link RetryPolicy}. Unlike errors that occur during header
+     * processing, which may include a server response with a formal HTTP error code, errors that occur during stream
+     * reading are always manifest as an exception. In this context, retries only occur when an exception is
+     * encountered for which {@link RetryPolicy#shouldRetry(Exception, int)} returns {@code true}.
+     *
+     * @param formatReader the time-series format reader, which reads data from an input stream
+     * @param webSourceToRetry a supplier of time-series data as an input stream, which should be retried
+     * @param dataSource the data source
+     * @param retryPolicy the retry policy
+     * @return the time-series data stream, possibly after retries
+     * @throws NullPointerException if any input is null
+     */
+
+    public static Stream<TimeSeriesTuple> getTimeSeriesWithRetries( TimeSeriesReader formatReader,
+                                                                    Supplier<InputStream> webSourceToRetry,
+                                                                    DataSource dataSource,
+                                                                    RetryPolicy retryPolicy )
+    {
+        Objects.requireNonNull( formatReader );
+        Objects.requireNonNull( webSourceToRetry );
+        Objects.requireNonNull( retryPolicy );
+        Objects.requireNonNull( retryPolicy );
+
+        int retryCount = 0;
+        long sleepMillis = 1000;
+
+        Exception cause;
+
+        String redacted = SystemSettings.redactBadWords( dataSource.uri()
+                                                                   .toString() );
+
+        try
+        {
+            return formatReader.read( dataSource, webSourceToRetry.get() );
+        }
+        catch ( ReadException e )
+        {
+            cause = e;
+
+            LOGGER.warn( "Encountered an error while reading the time-series data stream from {}. The data stream may "
+                         + "be retried in due course.",
+                         redacted );
+
+            while ( retryPolicy.shouldRetry( e, retryCount ) )
+            {
+                try
+                {
+                    //noinspection BusyWait
+                    Thread.sleep( sleepMillis );
+                }
+                catch ( InterruptedException i )
+                {
+                    Thread.currentThread()
+                          .interrupt();
+                    throw new ReadException( "Interrupted while attempting to retry a time-series data stream from "
+                                             + redacted + ".", i );
+                }
+
+                try
+                {
+                    return formatReader.read( dataSource, webSourceToRetry.get() );
+                }
+                catch ( ReadException f )
+                {
+                    LOGGER.warn( "Encountered an error while reading the time-series data stream from {}. This is "
+                                 + "retry {} of {}.",
+                                 redacted,
+                                 retryCount + 1,
+                                 retryPolicy.getMaxRetryCount() );
+                    cause = f;
+                }
+
+                // Exponential backoff to be nice to the stream provider
+                sleepMillis *= 2;
+                retryCount++;
+            }
+        }
+
+        throw new ReadException( "Failed to read time-series data from an input stream. The data source was: "
+                                 + redacted, cause );
     }
 
     /**
@@ -1691,6 +1790,29 @@ public class ReaderUtilities
         LOGGER.debug( "Created year ranges: {}.", yearRanges );
 
         return Collections.unmodifiableSortedSet( yearRanges );
+    }
+
+    /**
+     * Returns a default retry policy that leads to retries with backoff when an exception occurs with a particular
+     * trace during the streaming of a response body.
+     *
+     * @return a retry policy
+     */
+
+    private static RetryPolicy getDefaultBodyRetryPolicy()
+    {
+        BiPredicate<Exception, Integer> exceptionPolicy = ( e, c ) ->
+                e instanceof ProtocolException
+                || "unexpected end of stream".equals( e.getMessage() )
+                || ExceptionUtils.getThrowableList( e )
+                                 .stream()
+                                 .anyMatch( s -> "stream was reset: PROTOCOL_ERROR"
+                                         .equals( s.getMessage() ) );
+
+        return RetryPolicy.builder()
+                          .maxRetryCount( 5 )
+                          .exceptionPolicy( exceptionPolicy )
+                          .build();
     }
 
     /**

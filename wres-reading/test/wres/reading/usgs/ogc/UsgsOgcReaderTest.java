@@ -46,6 +46,7 @@ import wres.reading.DataSource.DataDisposition;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
+import wres.reading.usgs.ogc.response.UsgsOgcResponseReader;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
@@ -1340,7 +1341,7 @@ class UsgsOgcReaderTest
         TimeChunker timeChunker = ReaderUtilities.getTimeChunker(
                 TimeChunker.ChunkingStrategy.YEAR_RANGES, declaration, fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1452,7 +1453,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1580,7 +1581,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1727,7 +1728,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1896,7 +1897,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1992,7 +1993,7 @@ class UsgsOgcReaderTest
         TimeChunker timeChunker = ReaderUtilities.getTimeChunker(
                 TimeChunker.ChunkingStrategy.YEAR_RANGES, declaration, fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

@@ -102,9 +102,6 @@ public class UsgsOgcReader implements TimeSeriesReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( UsgsOgcReader.class );
 
-    /** A format reader, instantiated without any location metadata. */
-    private static final UsgsOgcResponseReader GEOJSON_READER = UsgsOgcResponseReader.of();
-
     /** Message string. */
     private static final String USGS = "USGS water data web service";
 
@@ -128,11 +125,6 @@ public class UsgsOgcReader implements TimeSeriesReader
             new WebClient( WebClientUtils.setClientProtocols( WebClientUtils.defaultTimeoutHttpClient(),
                                                               Set.of( Protocol.HTTP_1_1 ) ) );
 
-    /** Cache of location metadata for re-use. */
-    private final Cache<@NonNull String, LocationMetadata> locationCache =
-            Caffeine.newBuilder()
-                    .build();
-
     /** For reading feature metadata. */
     private static final ObjectMapper OBJECT_MAPPER =
             JsonMapper.builder()
@@ -142,9 +134,6 @@ public class UsgsOgcReader implements TimeSeriesReader
     /** Mapping between time zone short names and formal IANA time zone names. This is highly brittle but stems from
      * the NWIS DV service providing ambiguous information about time zones via abbreviated names. */
     private static final Map<String, String> TIMEZONE_MAP;
-
-    /** The time chunker. */
-    private final TimeChunker timeChunker;
 
     // Populate the timezone map for time zones supported by USGS NWIS. If some are missing, expect a runtime exception,
     // which will need to be mitigated by adding more. Most are supported out of the box, but some are not and these are
@@ -162,25 +151,38 @@ public class UsgsOgcReader implements TimeSeriesReader
     /** Re-used string.*/
     private static final String ITEMS = "items";
 
+    /** Cache of location metadata for re-use. */
+    private final Cache<@NonNull String, LocationMetadata> locationCache =
+            Caffeine.newBuilder()
+                    .build();
+
+    /** The time chunker. */
+    private final TimeChunker timeChunker;
+
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
     private final EvaluationDeclaration declaration;
 
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
+    /** A reader for reading formatted GeoJson responses. */
+    private final TimeSeriesReader geoJsonReader;
+
     /**
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @param timeChunker the time chunker
+     * @param geoJsonReader a reader for reading formatted GeoJson responses from the USGS OGC web service
      * @return an instance
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if any input is null
      */
 
     public static UsgsOgcReader of( EvaluationDeclaration declaration,
                                     SystemSettings systemSettings,
-                                    TimeChunker timeChunker )
+                                    TimeChunker timeChunker,
+                                    TimeSeriesReader geoJsonReader )
     {
-        return new UsgsOgcReader( declaration, systemSettings, timeChunker );
+        return new UsgsOgcReader( declaration, systemSettings, timeChunker, geoJsonReader );
     }
 
     @Override
@@ -195,11 +197,12 @@ public class UsgsOgcReader implements TimeSeriesReader
     }
 
     /**
-     * This implementation is equivalent to calling {@link UsgsOgcResponseReader#read(DataSource, InputStream)}. It
-     * provides a low-level or "raw" read from an input stream and does not iterate through multiple pages of data or
-     * provide any context to the underlying reader (e.g., geospatial information). High-level reading should be
-     * performed with {@link #read(DataSource)}, which generates web service requests, including requests for
-     * geospatial metadata, such as local time offsets, and handles chunking and pagination.
+     * This implementation is equivalent to calling {@link TimeSeriesReader#read(DataSource, InputStream)} on the
+     * underlying GeoJson format reader supplied on construction of this format reader. It provides a low-level or "raw"
+     * read from an input stream and does not iterate through multiple pages of data or provide any context to the
+     * underlying reader (e.g., geospatial information). High-level reading should be performed with
+     * {@link #read(DataSource)}, which generates web service requests, including requests for geospatial metadata,
+     * such as local time offsets, and handles chunking and pagination.
      *
      * @param dataSource the data source, required
      * @param stream the input stream, required
@@ -214,7 +217,7 @@ public class UsgsOgcReader implements TimeSeriesReader
         LOGGER.debug( "Discovered an existing stream, assumed to be from the {}. Passing through to an underlying "
                       + "GeoJSON reader.", USGS );
 
-        return GEOJSON_READER.read( dataSource, stream );
+        return geoJsonReader.read( dataSource, stream );
     }
 
     /**
@@ -525,24 +528,35 @@ public class UsgsOgcReader implements TimeSeriesReader
         };
 
         // Get the input stream and read from it
-        try ( WebClient.ClientResponse response = ReaderUtilities.getResponseFromWebSource( dataSource.uri(),
-                                                                                            NO_DATA_PREDICATE,
-                                                                                            ERROR_RESPONSE_PREDICATE,
-                                                                                            errorUnpacker,
-                                                                                            HTTP_CLIENT_1_1 ) )
+        Supplier<InputStream> streamSupplier = () ->
         {
+            LOGGER.debug( "Reading response from web source for URI: {}", dataSource.uri() );
+
+            WebClient.ClientResponse response = ReaderUtilities.getResponseFromWebSource( dataSource.uri(),
+                                                                                          NO_DATA_PREDICATE,
+                                                                                          ERROR_RESPONSE_PREDICATE,
+                                                                                          errorUnpacker,
+                                                                                          HTTP_CLIENT_1_1 );
             if ( Objects.nonNull( response ) )
             {
                 // Log rate limit info.
                 this.logRateLimits( response.getHeaders() );
 
-                return reader.read( dataSource, response.getResponse() )
-                             .toList(); // Terminal
+                return response.getResponse();
             }
 
-            return List.of();
+            return InputStream.nullInputStream();
+        };
+
+        try
+        {
+            return ReaderUtilities.getTimeSeriesWithRetries( reader,
+                                                             streamSupplier,
+                                                             dataSource,
+                                                             ReaderUtilities.DEFAULT_BODY_RETRY_POLICY )
+                                  .toList();
         }
-        catch ( IOException e )
+        catch ( ReadException e )
         {
             throw new ReadException( "Failed to read from the " + USGS + ".", e );
         }
@@ -1016,25 +1030,30 @@ public class UsgsOgcReader implements TimeSeriesReader
 
     /**
      * Hidden constructor.
+     *
      * @param declaration the optional declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
+     * @param geoJsonReader a reader for reading formatted GeoJson responses
      * @throws DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if any input is null
      */
 
     private UsgsOgcReader( EvaluationDeclaration declaration,
                            SystemSettings systemSettings,
-                           TimeChunker timeChunker )
+                           TimeChunker timeChunker,
+                           TimeSeriesReader geoJsonReader )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( timeChunker );
+        Objects.requireNonNull( geoJsonReader );
 
         this.declaration = declaration;
         this.timeChunker = timeChunker;
+        this.geoJsonReader = geoJsonReader;
 
         ThreadFactory webClientFactory = BasicThreadFactory.builder()
-                                                           .namingPattern( "USGS NWIS Reading Thread %d" )
+                                                           .namingPattern( "USGS Reading Thread %d" )
                                                            .build();
 
         // Use a queue with as many places as client threads

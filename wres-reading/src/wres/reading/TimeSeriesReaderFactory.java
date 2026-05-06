@@ -15,6 +15,7 @@ import wres.reading.netcdf.nwm.NwmVectorReader;
 import wres.reading.usgs.ogc.UsgsOgcReader;
 import wres.reading.usgs.iv.response.NwisIvResponseReader;
 import wres.reading.usgs.iv.NwisIvReader;
+import wres.reading.usgs.ogc.response.UsgsOgcResponseReader;
 import wres.reading.wrds.ahps.WrdsAhpsReader;
 import wres.reading.wrds.hefs.WrdsHefsJsonReader;
 import wres.reading.wrds.hefs.WrdsHefsReader;
@@ -139,7 +140,10 @@ public class TimeSeriesReaderFactory
                                                                               declaration,
                                                                               dataSource );
 
-                    return UsgsOgcReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+                    return UsgsOgcReader.of( this.getDeclaration(),
+                                             this.systemSettings,
+                                             timeChunker,
+                                             UsgsOgcResponseReader.of() );
                 }
 
                 throw new IllegalArgumentException( "Detected a GeoJson formatted response, but not from a recognized "
