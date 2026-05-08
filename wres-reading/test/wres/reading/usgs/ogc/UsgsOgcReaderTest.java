@@ -1,5 +1,6 @@
 package wres.reading.usgs.ogc;
 
+import java.net.ProtocolException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,6 +44,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.DataSource.DataDisposition;
+import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeChunker;
 import wres.reading.TimeSeriesTuple;
@@ -1341,7 +1343,7 @@ class UsgsOgcReaderTest
         TimeChunker timeChunker = ReaderUtilities.getTimeChunker(
                 TimeChunker.ChunkingStrategy.YEAR_RANGES, declaration, fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1453,7 +1455,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1581,7 +1583,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1728,7 +1730,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -1897,7 +1899,7 @@ class UsgsOgcReaderTest
                                                                   declaration,
                                                                   fakeSource );
 
-        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, UsgsOgcResponseReader.of() );
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -2027,6 +2029,114 @@ class UsgsOgcReaderTest
                     .addEvent( Event.of( Instant.parse( "2026-03-09T07:50:00Z" ), 1.31 ) )
                     .addEvent( Event.of( Instant.parse( "2026-03-09T07:55:00Z" ), 1.31 ) )
                     .build();
+
+            Assertions.assertEquals( List.of( expectedSeries ), actual );
+        }
+
+        WIREMOCK.verify( WireMock.getRequestedFor( WireMock.urlPathEqualTo( CONTINUOUS_VALUES_PATH ) ) );
+    }
+
+    @Test
+    void testReadContinuousValuesRecoversFromTwoProtocolErrorsAndReturnsOneTimeSeries()
+    {
+        // GitHub #795
+        WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( CONTINUOUS_VALUES_PATH ) )
+                                  .willReturn( WireMock.aResponse()
+                                                       .withStatus( 200 )
+                                                       .withHeader( CONTENT_TYPE, APPLICATION_JSON )
+                                                       .withBody( CONTINUOUS_VALUES_RESPONSE_ONE_PAGE ) ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + WIREMOCK.getPort()
+                                  + CONTINUOUS_VALUES_PATH
+                                  + CONTINUOUS_VALUES_PARAMS );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder().name( "00060" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.builder()
+                                          .disposition( DataDisposition.GEOJSON )
+                                          .source( fakeDeclarationSource )
+                                          .context( dataset )
+                                          .links( Collections.emptyList() )
+                                          .uri( fakeUri )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder()
+                                                                               .setName( "01593450" ) )
+                                                             .build() );
+        Features features = FeaturesBuilder.builder().geometries( geometries ).build();
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2026-03-09T07:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2026-03-09T08:00:00Z" ) )
+                                                   .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .features( features )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        TimeChunker timeChunker = ReaderUtilities.getTimeChunker(
+                TimeChunker.ChunkingStrategy.YEAR_RANGES, declaration, fakeSource );
+
+        Geometry expectedGeometry = Geometry.newBuilder()
+                                            .setName( "01593450" )
+                                            .setSrid( 4326 )
+                                            .build();
+
+        TimeSeriesMetadata expectedMetadata = new TimeSeriesMetadata.Builder()
+                .setReferenceTimes( Map.of() )
+                .setUnit( "ft^3/s" )
+                .setVariableName( "00060" )
+                .setFeature( Feature.of( expectedGeometry ) )
+                .setTimeScale( TimeScaleOuter.of() )
+                .build();
+
+        TimeSeries<Double> expectedSeries = new TimeSeries.Builder<Double>()
+                .setMetadata( expectedMetadata )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:05:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:10:00Z" ), 1.4 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:15:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:20:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:25:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:30:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:35:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:40:00Z" ), 1.4 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:45:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:50:00Z" ), 1.31 ) )
+                .addEvent( Event.of( Instant.parse( "2026-03-09T07:55:00Z" ), 1.31 ) )
+                .build();
+
+        // Mock the response reader and throw an error on first try, then succeed
+        UsgsOgcResponseReader mockedReader = Mockito.mock( UsgsOgcResponseReader.class );
+        Mockito.when( mockedReader.read( Mockito.any(), Mockito.any() ) )
+               .thenThrow( new ReadException( "stream was reset: PROTOCOL_ERROR" ) ) // HTTP/2
+               .thenThrow( new ReadException( "foo", new ProtocolException( "bar" ) ) ) // HTTP/1.1
+               .thenReturn( Stream.of( TimeSeriesTuple.builder().singleValuedTimeSeries( expectedSeries )
+                                                      .dataSource( fakeSource )
+                                                      .singleValuedTimeSeriesId( "foo" )
+                                                      .build() ) );
+
+        UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, mockedReader );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .toList();
 
             Assertions.assertEquals( List.of( expectedSeries ), actual );
         }

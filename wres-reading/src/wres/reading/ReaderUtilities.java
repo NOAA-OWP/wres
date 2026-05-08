@@ -1211,8 +1211,9 @@ public class ReaderUtilities
             cause = e;
 
             LOGGER.warn( "Encountered an error while reading the time-series data stream from {}. The data stream may "
-                         + "be retried in due course.",
-                         redacted );
+                         + "be retried in due course. The error was as follows:",
+                         redacted,
+                         e );
 
             while ( retryPolicy.shouldRetry( e, retryCount ) )
             {
@@ -1231,7 +1232,13 @@ public class ReaderUtilities
 
                 try
                 {
-                    return formatReader.read( dataSource, webSourceToRetry.get() );
+                    Stream<TimeSeriesTuple> tuples = formatReader.read( dataSource, webSourceToRetry.get() );
+
+                    LOGGER.warn( "Succeeded in reading the time-series data stream from {} after {} attempts.",
+                                 redacted,
+                                 retryCount + 2 );
+
+                    return tuples;
                 }
                 catch ( ReadException f )
                 {

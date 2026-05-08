@@ -33,7 +33,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import okhttp3.Protocol;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 
@@ -55,7 +54,6 @@ import wres.config.components.Source;
 import wres.config.components.Variable;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.http.WebClient;
-import wres.http.WebClientUtils;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
@@ -120,11 +118,6 @@ public class UsgsOgcReader implements TimeSeriesReader
     /** Name of the API key request parameter. */
     private static final String API_KEY_NAME = "api_key";
 
-    /** A downgraded web-client to use until the OGC wb server handles the HTTP/2 protocol properly. See GitHub #787. */
-    private static final WebClient HTTP_CLIENT_1_1 =
-            new WebClient( WebClientUtils.setClientProtocols( WebClientUtils.defaultTimeoutHttpClient(),
-                                                              Set.of( Protocol.HTTP_1_1 ) ) );
-
     /** For reading feature metadata. */
     private static final ObjectMapper OBJECT_MAPPER =
             JsonMapper.builder()
@@ -172,17 +165,15 @@ public class UsgsOgcReader implements TimeSeriesReader
      * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @param timeChunker the time chunker
-     * @param geoJsonReader a reader for reading formatted GeoJson responses from the USGS OGC web service
      * @return an instance
      * @throws NullPointerException if any input is null
      */
 
     public static UsgsOgcReader of( EvaluationDeclaration declaration,
                                     SystemSettings systemSettings,
-                                    TimeChunker timeChunker,
-                                    TimeSeriesReader geoJsonReader )
+                                    TimeChunker timeChunker )
     {
-        return new UsgsOgcReader( declaration, systemSettings, timeChunker, geoJsonReader );
+        return new UsgsOgcReader( declaration, systemSettings, timeChunker, null );
     }
 
     @Override
@@ -218,6 +209,26 @@ public class UsgsOgcReader implements TimeSeriesReader
                       + "GeoJSON reader.", USGS );
 
         return geoJsonReader.read( dataSource, stream );
+    }
+
+    /**
+     * Creates an instance with an underlying format reader. This creation method supports more comprehensive unit
+     * testing by exposing an injected format reader for mocking. It is not intended for production use.
+     *
+     * @param declaration the declaration, which is used to perform chunking of a data source
+     * @param systemSettings the system settings
+     * @param timeChunker the time chunker
+     * @param geoJsonReader a reader for reading formatted GeoJson responses from the USGS OGC web service
+     * @return an instance
+     * @throws NullPointerException if any input is null
+     */
+
+    static UsgsOgcReader of( EvaluationDeclaration declaration,
+                             SystemSettings systemSettings,
+                             TimeChunker timeChunker,
+                             TimeSeriesReader geoJsonReader )
+    {
+        return new UsgsOgcReader( declaration, systemSettings, timeChunker, geoJsonReader );
     }
 
     /**
@@ -354,8 +365,6 @@ public class UsgsOgcReader implements TimeSeriesReader
                                   nextChunk.getLeft(),
                                   locationMetadata );
 
-                    UsgsOgcResponseReader reader = UsgsOgcResponseReader.of( this.locationCache );
-
                     LOGGER.debug( "Submitting a reading task for chunk, {}.", innerSource );
 
                     // Get the next time-series as a future
@@ -364,7 +373,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                                 .submit( () ->
                                          {
                                              List<TimeSeriesTuple> unconsolidated =
-                                                     this.readAllPages( innerSource, reader );
+                                                     this.readAllPages( innerSource, this.getReader() );
                                              return this.consolidateTimeSeries( unconsolidated, dataSource );
                                          } );
 
@@ -418,7 +427,7 @@ public class UsgsOgcReader implements TimeSeriesReader
      */
 
     private List<TimeSeriesTuple> readAllPages( DataSource dataSource,
-                                                UsgsOgcResponseReader reader )
+                                                TimeSeriesReader reader )
     {
         if ( LOGGER.isDebugEnabled() )
         {
@@ -497,7 +506,7 @@ public class UsgsOgcReader implements TimeSeriesReader
      */
 
     private List<TimeSeriesTuple> readOnePage( DataSource dataSource,
-                                               UsgsOgcResponseReader reader )
+                                               TimeSeriesReader reader )
     {
         // Unpack an HTTP 429 response code and report
         Function<WebClient.ClientResponse, String> errorUnpacker = response ->
@@ -536,7 +545,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                                                                                           NO_DATA_PREDICATE,
                                                                                           ERROR_RESPONSE_PREDICATE,
                                                                                           errorUnpacker,
-                                                                                          HTTP_CLIENT_1_1 );
+                                                                                          null );
             if ( Objects.nonNull( response ) )
             {
                 // Log rate limit info.
@@ -709,7 +718,7 @@ public class UsgsOgcReader implements TimeSeriesReader
                                                                                         NO_DATA_PREDICATE,
                                                                                         ERROR_RESPONSE_PREDICATE,
                                                                                         null,
-                                                                                        HTTP_CLIENT_1_1 ) )
+                                                                                        null ) )
         {
             // Currently, the only reason we require feature metadata is for the time zone information. The metadata is
             // not present, but is it actually needed in this context? Let's see...
@@ -1029,6 +1038,20 @@ public class UsgsOgcReader implements TimeSeriesReader
     }
 
     /**
+     * @return an underlying format reader
+     */
+
+    private TimeSeriesReader getReader()
+    {
+        if ( Objects.nonNull( this.geoJsonReader ) )
+        {
+            return this.geoJsonReader;
+        }
+
+        return UsgsOgcResponseReader.of( this.locationCache );
+    }
+
+    /**
      * Hidden constructor.
      *
      * @param declaration the optional declaration, which is used to perform chunking of a data source
@@ -1046,7 +1069,6 @@ public class UsgsOgcReader implements TimeSeriesReader
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( timeChunker );
-        Objects.requireNonNull( geoJsonReader );
 
         this.declaration = declaration;
         this.timeChunker = timeChunker;
