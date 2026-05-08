@@ -500,7 +500,6 @@ class UsgsOgcResponseReaderTest
             UsgsOgcResponseReader reader = UsgsOgcResponseReader.of( metadata );
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
-                                                 .map( TimeSeriesTuplePlusId::tuple )
                                                  .toList();
 
             assertEquals( 1, series.size() );
@@ -593,7 +592,6 @@ class UsgsOgcResponseReaderTest
             UsgsOgcResponseReader reader = UsgsOgcResponseReader.of();
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
-                                                 .map( TimeSeriesTuplePlusId::tuple )
                                                  .toList();
 
             assertEquals( 1, series.size() );
@@ -666,7 +664,6 @@ class UsgsOgcResponseReaderTest
             UsgsOgcResponseReader reader = UsgsOgcResponseReader.of();
 
             List<TimeSeriesTuple> series = reader.read( dataSource, inputStream )
-                                                 .map( TimeSeriesTuplePlusId::tuple )
                                                  .toList();
 
             assertEquals( 1, series.size() );

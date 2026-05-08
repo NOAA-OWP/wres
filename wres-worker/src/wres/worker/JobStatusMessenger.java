@@ -28,7 +28,7 @@ import wres.messages.generated.JobStatus;
 
 
 /**
- * Produces and sends a message indicating the job was RECEIVED, and one ALIVE
+ * <p>Produces and sends a message indicating the job was RECEIVED, and one ALIVE
  * message for every second (duration) that the process is alive, finally one
  * DEAD message when the process is not alive. Assumes the caller already
  * started the process and that it will be alive before it is dead. Nonetheless,
@@ -36,7 +36,7 @@ import wres.messages.generated.JobStatus;
  * DEAD message will be sent even if the process was not started or was dead on
  * arrival to this class.
  *
- * A consumer (e.g. the tasker) can listen for this output on a topic named
+ * <p>A consumer (e.g. the tasker) can listen for this output on a topic named
  * with the convention job.[job_id].status, for example job.532.status,
  * and can do whatever it chooses with the messages such as display them, serve
  * them, or store them.
@@ -52,7 +52,7 @@ public class JobStatusMessenger
 
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultHttpClient(),
-                                                               new RetryPolicy.Builder()
+                                                               RetryPolicy.builder()
                                                                        .maxRetryTime( Duration.ofSeconds( 30 ) )
                                                                        .maxRetryCount( Integer.MAX_VALUE )
                                                                        .build() );
@@ -161,8 +161,7 @@ public class JobStatusMessenger
     {
         String url = String.format( STATUS_URI, this.getPort(), this.getEvaluationId() );
         try (
-                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ),
-                                                                          WebClientUtils.getDefaultRetryStates() )
+                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) )
         )
         {
             if ( fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK )

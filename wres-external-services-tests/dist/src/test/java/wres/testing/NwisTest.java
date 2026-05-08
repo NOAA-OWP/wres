@@ -36,10 +36,7 @@ public class NwisTest
     @Test
     void canGetMinimalResponseFromNwisWithWebClient() throws IOException
     {
-        List<Integer> retryOnThese = Collections.emptyList();
-
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_ONE,
-                                                                         retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_ONE ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -55,11 +52,8 @@ public class NwisTest
     void canGetAndParseResponseFromNwisWithWebClientAndJacksonPojos()
             throws IOException
     {
-        List<Integer> retryOnThese = Collections.emptyList();
-
         // GET
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_TWO,
-                                                                         retryOnThese ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_TWO ) )
         {
             // Parse
             Response document = OBJECT_MAPPER.readValue( response.getResponse(),

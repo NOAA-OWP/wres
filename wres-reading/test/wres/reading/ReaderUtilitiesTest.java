@@ -1,6 +1,7 @@
 package wres.reading;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -21,6 +22,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -70,6 +72,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.types.Ensemble;
+import wres.http.RetryPolicy;
 import wres.http.WebClient;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
@@ -1275,9 +1278,9 @@ class ReaderUtilitiesTest
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
                                                        .withBody( RESPONSE ) ) );
-
         URI fakeUri = URI.create( "http://localhost:"
                                   + WIREMOCK.getPort() );
+
 
         ThresholdSource service
                 = ThresholdSourceBuilder.builder()
@@ -1422,7 +1425,7 @@ class ReaderUtilitiesTest
         URI fakeUri = URI.create( uri );
 
         WebClient client = Mockito.mock( WebClient.class );
-        Mockito.when( client.getFromWeb( Mockito.any(), Mockito.anyList() ) )
+        Mockito.when( client.getFromWeb( Mockito.any() ) )
                .thenThrow( new IOException() );
 
         ReadException actual = assertThrows( ReadException.class,
@@ -2052,4 +2055,51 @@ class ReaderUtilitiesTest
         assertTrue( ReaderUtilities.isNwisIvSource( dataSource ) );
     }
 
+    @Test
+    void testGetTimeSeriesWithRetriesSucceedsAfterTwoFailuresReadingFromInputStream()
+    {
+        TimeSeriesReader reader = Mockito.mock();
+
+        DataSource dataSource =
+                DataSource.builder()
+                          .disposition( DataSource.DataDisposition.JSON_WATERML )
+                          .source( SourceBuilder.builder()
+                                                .build() )
+                          .context( DatasetBuilder.builder()
+                                                  .build() )
+                          .links( List.of() )
+                          .uri( URI.create( "https:///nwis/iv/foo" ) )
+                          .build();
+
+        Geometry geometry = MessageUtilities.getGeometry( "bar", "baz", null, null );
+        TimeSeriesMetadata metadata = new TimeSeriesMetadata.Builder()
+                .setVariableName( "foo" )
+                .setUnit( "qux" )
+                .setFeature( Feature.of( geometry ) )
+                .setReferenceTimes( Map.of() )
+                .build();
+
+        RetryPolicy retryPolicy = RetryPolicy.builder()
+                                             .exceptionPolicy( ( a, b ) -> a.getMessage()
+                                                                            .equals(
+                                                                                    "This is an expected read exception!" ) )
+                                             .maxRetryCount( 2 )
+                                             .build();
+
+        Mockito.when( reader.read( Mockito.eq( dataSource ), Mockito.any() ) )
+               .thenThrow( new ReadException( "This is an expected read exception!" ) )
+               .thenThrow( new ReadException( "This is an expected read exception!" ) )
+               .thenReturn( Stream.of( TimeSeriesTuple.ofSingleValued( TimeSeries.of( metadata ), dataSource ) ) );
+
+        List<TimeSeries<Double>> actual =
+                ReaderUtilities.getTimeSeriesWithRetries( reader,
+                                                          ByteArrayInputStream::nullInputStream, // Nothing stream
+                                                          dataSource,
+                                                          retryPolicy )
+                               .map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                               .toList();
+        List<TimeSeries<Double>> expected = Collections.singletonList( TimeSeries.of( metadata ) );
+
+        assertEquals( expected, actual );
+    }
 }

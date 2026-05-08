@@ -139,7 +139,9 @@ public class TimeSeriesReaderFactory
                                                                               declaration,
                                                                               dataSource );
 
-                    return UsgsOgcReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+                    return UsgsOgcReader.of( this.getDeclaration(),
+                                             this.systemSettings,
+                                             timeChunker );
                 }
 
                 throw new IllegalArgumentException( "Detected a GeoJson formatted response, but not from a recognized "

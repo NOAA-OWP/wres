@@ -1,107 +1,203 @@
 package wres.http;
 
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiPredicate;
 
+import lombok.Builder;
 import lombok.Getter;
 
 /**
- * An object to define the retry policy of a WebClient
+ * <p>A retry policy that is invoked when connections to a web server fail because:
+ * <ol>
+ * <li>The http error code corresponds to a code that should be retried; or</li>
+ * <li>The connection fails with an exception or underlying cause (nested exception) that should be retried.</li>
+ * </ol>
+ *
+ * <p>The retries themselves may be constrained in one of two ways, namely:
+ * <ol>
+ * <li>A maximum duration or time elapsed since the first retry; and</li>
+ * <li>A maximum number of retries.</li>
+ * </ol>
+ *
+ * <p>In summary, there are policy triggers (first list) and policy constraints (second list). A retry is only attempted
+ * when one of the policy triggers occurs and that trigger leads to a determination that all policy constraints are met.
  */
 
 @Getter
+@Builder
 public class RetryPolicy
 {
-    /**
-     * The max amount of time spent on retrying and calls before stopping
-     * Stops making calls even if there are still retry attempts
-     * Default = 0 unlimited time
-     */
-    private final Duration maxRetryTime;
+
+    /**The maximum possible duration. */
+    private static final Duration MAXIMUM_DURATION = Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 );
 
     /**
-     * The total number of retries attempted before stopping
-     * Default = 0 no retry attempts
+     * The max amount of time spent on retrying and calls before stopping. Stops making calls even if there are still
+     * retry attempts. Default is effectively unlimited time.
      */
-    private final int maxRetryCount;
+    @Builder.Default
+    private final Duration maxRetryTime = MAXIMUM_DURATION;
 
     /**
-     * A RetryPolicy that follows a builder pattern
-     * @param builder the builder to create a retryPolicy
+     * The total number of retries attempted before stopping. Default is no retries.
      */
-    private RetryPolicy( Builder builder )
+    @Builder.Default
+    private final int maxRetryCount = 0;
+
+    /**
+     * The HTTP error codes that should be retried.
+     */
+    @Builder.Default
+    private final Set<Integer> errorCodes = Set.of( 500,
+                                                    502,
+                                                    503,
+                                                    504,
+                                                    523,
+                                                    524 );
+
+    /**
+     * The particular conditions under which an {@link IOException} should be retried, conditionally on a retry count.
+     * No default.
+     */
+    @Builder.Default
+    private final BiPredicate<Exception, Integer> exceptionPolicy = RetryPolicy.getDefaultExceptionPolicy();
+
+    /**
+     * Determines whether a retry should be attempted for the supplied time constraints and retry count.
+     *
+     * @param start the start time of calling
+     * @param now the current time when checking a retry
+     * @param retryCount the current retry count
+     * @return whether a further retry should be attempted
+     */
+    public boolean shouldRetry( Instant start, Instant now, int retryCount )
     {
-        this.maxRetryTime = builder.maxRetryTime;
-        this.maxRetryCount = builder.maxRetryCount;
+        return this.getMaxRetryCount() > retryCount
+               && ( this.getMaxRetryTime() == MAXIMUM_DURATION ||
+                    Duration.between( start, now )
+                            .compareTo( this.getMaxRetryTime() ) < 0 );
     }
 
     /**
-     * Method to determine if a retry should be attempted in the WebClient
-     * The first stopper encountered causes this to fail
-     * @param start Start time of calling
-     * @param now Current time when checking retry
-     * @param attemptCount The amount of attempts a call has been made
-     * @return boolean if retries should be attempted
+     * Determines whether a retry should be attempted for the supplied exception.
+     *
+     * @param exception the exception
+     * @param retryCount the current retry count
+     * @return whether a further retry should be attempted
+     * @throws NullPointerException if the exception is null
      */
-    public boolean shouldRetry( Instant start, Instant now, int attemptCount )
+    public boolean shouldRetry( Exception exception, int retryCount )
     {
-        boolean shouldRetry = true;
-        // Check that MaxRetryTime is not unlimited (ZERO)
-        if ( !this.getMaxRetryTime().isZero() )
-        {
-            // if MaxRetryTime is greater than currentTime, continue retries
-            shouldRetry = start.plus( this.getMaxRetryTime() )
-                               .isAfter( now );
-        }
+        Objects.requireNonNull( exception );
 
-        // If we already have reached a failure point, no reason to check attempt count
-        if ( shouldRetry )
-        {
-            shouldRetry = this.getMaxRetryCount() > attemptCount;
-        }
-
-        return shouldRetry;
+        return this.exceptionPolicy.test( exception, retryCount );
     }
 
     /**
-     * Builds an instance.
+     * Determines whether a retry should be attempted for the supplied HTTP error code.
+     *
+     * @param errorCode the error code
+     * @return whether a further retry should be attempted
      */
-    public static class Builder
+    public boolean shouldRetry( int errorCode )
     {
-        private Duration maxRetryTime = Duration.ZERO;
+        return this.errorCodes.contains( errorCode );
+    }
 
-        private int maxRetryCount = 0;
+    /**
+     * @return a default policy for performing retries when an exception is encountered
+     */
 
-        /**
-         * Sets max retry time
-         * @param maxRetryTime the value to set
-         * @return a builder
-         */
-        public Builder maxRetryTime( Duration maxRetryTime )
+    private static BiPredicate<Exception, Integer> getDefaultExceptionPolicy()
+    {
+        return ( ioe, retryCount ) ->
         {
-            this.maxRetryTime = maxRetryTime;
-            return this;
+            if ( RetryPolicy.shouldRetryIndividualThrowable( ioe, retryCount ) )
+            {
+                return true;
+            }
+
+            Throwable cause = ioe.getCause();
+
+            while ( !Objects.isNull( cause ) )
+            {
+                if ( RetryPolicy.shouldRetryIndividualThrowable( cause, retryCount ) )
+                {
+                    return true;
+                }
+
+                cause = cause.getCause();
+            }
+
+            return false;
+        };
+    }
+
+    /**
+     * Look at an individual throwable and determines whether it should be retried.
+     *
+     * @param t The throwable
+     * @param retryCount The number of times the request with exception T has been retried
+     * @return true when the exception can be safely retried, false otherwise.
+     */
+    private static boolean shouldRetryIndividualThrowable( Throwable t, int retryCount )
+    {
+        if ( t instanceof HttpTimeoutException )
+        {
+            return true;
         }
 
-        /**
-         * Sets max retry count
-         * @param retryCount value to set
-         * @return a builder
-         */
-        public Builder maxRetryCount( int retryCount )
+        if ( t instanceof ConnectException )
         {
-            this.maxRetryCount = retryCount;
-            return this;
+            return true;
         }
 
-        /**
-         * The default builder has 0 retries
-         * @return a RetryPolicy
-         */
-        public RetryPolicy build()
+        if ( t instanceof SocketException )
         {
-            return new RetryPolicy( this );
+            return true;
         }
+
+        if ( t instanceof SocketTimeoutException )
+        {
+            return true;
+        }
+
+        if ( t instanceof UnknownHostException
+             && retryCount > 0 )
+        {
+            return true;
+        }
+
+        if ( t instanceof EOFException )
+        {
+            return true;
+        }
+
+        if ( t instanceof InterruptedIOException
+             && Objects.nonNull( t.getMessage() )
+             && t.getMessage()
+                 .toLowerCase()
+                 .contains( "timeout" ) )
+        {
+            return true;
+        }
+
+        return t instanceof IOException
+               && Objects.nonNull( t.getMessage() )
+               && t.getMessage()
+                   .toLowerCase()
+                   .contains( "connection reset" );
     }
 }

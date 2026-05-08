@@ -1,9 +1,13 @@
 package wres.reading.usgs.ogc.response;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,6 +46,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
+import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
 import wres.reading.usgs.ogc.LocationMetadata;
 import wres.statistics.MessageUtilities;
@@ -68,7 +73,7 @@ import wres.statistics.generated.TimeScale;
  *
  * @author James Brown
  */
-public class UsgsOgcResponseReader
+public class UsgsOgcResponseReader implements TimeSeriesReader
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( UsgsOgcResponseReader.class );
@@ -107,6 +112,26 @@ public class UsgsOgcResponseReader
         return new UsgsOgcResponseReader( locationMetadata );
     }
 
+    @Override
+    public Stream<TimeSeriesTuple> read( DataSource dataSource )
+    {
+        Objects.requireNonNull( dataSource );
+
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource, false );
+
+        try
+        {
+            Path path = Paths.get( dataSource.uri() );
+            InputStream stream = new BufferedInputStream( Files.newInputStream( path ) );
+            return this.readFromStream( dataSource, stream );
+        }
+        catch ( IOException e )
+        {
+            throw new ReadException( "Failed to read a USGS data source.", e );
+        }
+    }
+
     /**
      * A reader that preserves the time-series identity associated with each time-series read. This is useful for
      * reconstructing the time-series composition of paginated time-series when each page contains many time-series for
@@ -117,7 +142,7 @@ public class UsgsOgcResponseReader
      * @return the stream of time-series and their associated identities
      */
 
-    public Stream<TimeSeriesTuplePlusId> read( DataSource dataSource, InputStream inputStream )
+    public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream inputStream )
     {
         return this.readFromStream( dataSource, inputStream );
     }
@@ -129,7 +154,7 @@ public class UsgsOgcResponseReader
      * @return the time-series streams
      * @throws NullPointerException if either input is null
      */
-    private Stream<TimeSeriesTuplePlusId> readFromStream( DataSource dataSource, InputStream inputStream )
+    private Stream<TimeSeriesTuple> readFromStream( DataSource dataSource, InputStream inputStream )
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getVariable() );
@@ -141,7 +166,7 @@ public class UsgsOgcResponseReader
         ReaderUtilities.validateDataDisposition( dataSource, DataSource.DataDisposition.GEOJSON );
 
         // Get the lazy supplier of time-series data
-        Supplier<TimeSeriesTuplePlusId> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
+        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
 
         // Generate a stream of time-series.
         // This is merely a facade on incremental reading until the underlying supplier reads incrementally
@@ -173,11 +198,11 @@ public class UsgsOgcResponseReader
      * @throws ReadException if the data could not be read for any reason
      */
 
-    private Supplier<TimeSeriesTuplePlusId> getTimeSeriesSupplier( DataSource dataSource,
-                                                                   InputStream inputStream )
+    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
+                                                             InputStream inputStream )
     {
         AtomicInteger iterator = new AtomicInteger();
-        AtomicReference<List<TimeSeriesTuplePlusId>> timeSeriesTuples = new AtomicReference<>();
+        AtomicReference<List<TimeSeriesTuple>> timeSeriesTuples = new AtomicReference<>();
 
         // Create a supplier that returns the time-series
         return () -> {
@@ -187,11 +212,11 @@ public class UsgsOgcResponseReader
             // time-series outside of this lambda), but it will then acquire all the time-series eagerly, i.e., now
             if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
-                List<TimeSeriesTuplePlusId> eagerSeries = this.getTimeSeries( dataSource, inputStream );
+                List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
                 timeSeriesTuples.set( eagerSeries );
             }
 
-            List<TimeSeriesTuplePlusId> tuples = timeSeriesTuples.get();
+            List<TimeSeriesTuple> tuples = timeSeriesTuples.get();
 
             // More time-series to return?
             if ( iterator.get() < tuples.size() )
@@ -213,8 +238,8 @@ public class UsgsOgcResponseReader
      * @throws ReadException if the data could not be read for any reason
      */
 
-    private List<TimeSeriesTuplePlusId> getTimeSeries( DataSource dataSource,
-                                                       InputStream inputStream )
+    private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
+                                                 InputStream inputStream )
     {
         try
         {
@@ -231,7 +256,7 @@ public class UsgsOgcResponseReader
 
             Response response = OBJECT_MAPPER.readValue( rawForecast, Response.class );
 
-            List<TimeSeriesTuplePlusId> allTimeSeries = new ArrayList<>();
+            List<TimeSeriesTuple> allTimeSeries = new ArrayList<>();
 
             // Some time-series with data
             if ( response.getNumberReturned() > 0 )
@@ -244,7 +269,7 @@ public class UsgsOgcResponseReader
                 {
                     String id = nextValues.getKey();
                     List<wres.reading.usgs.ogc.response.Feature> data = nextValues.getValue();
-                    TimeSeriesTuplePlusId nextSeries = this.transform( id, dataSource, data, response.getLinks() );
+                    TimeSeriesTuple nextSeries = this.transform( id, dataSource, data, response.getLinks() );
                     allTimeSeries.add( nextSeries );
                 }
             }
@@ -272,10 +297,10 @@ public class UsgsOgcResponseReader
      * @param links the links
      * @return the internal time-series
      */
-    private TimeSeriesTuplePlusId transform( String id,
-                                             DataSource dataSource,
-                                             List<wres.reading.usgs.ogc.response.Feature> timeSeries,
-                                             Link[] links )
+    private TimeSeriesTuple transform( String id,
+                                       DataSource dataSource,
+                                       List<wres.reading.usgs.ogc.response.Feature> timeSeries,
+                                       Link[] links )
     {
         // Get the link to the next page of data
         URI next = Arrays.stream( links )
@@ -297,8 +322,11 @@ public class UsgsOgcResponseReader
 
         TimeSeries<Double> series = TimeSeries.of( metadata, events );
 
-        TimeSeriesTuple innerTuple = TimeSeriesTuple.ofSingleValued( series, adjustedDataSource );
-        return new TimeSeriesTuplePlusId( id, innerTuple );
+        return TimeSeriesTuple.builder()
+                              .singleValuedTimeSeries( series )
+                              .singleValuedTimeSeriesId( id )
+                              .dataSource( adjustedDataSource )
+                              .build();
     }
 
     /**

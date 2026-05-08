@@ -455,8 +455,7 @@ public class WrdsThresholdReader implements ThresholdReader
      */
     private static byte[] getResponseFromWeb( URI inputAddress ) throws IOException
     {
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress,
-                                                                         WebClientUtils.getDefaultRetryStates() ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress ) )
         {
 
             if ( response.getStatusCode() >= 400

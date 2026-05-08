@@ -7,7 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,7 +30,6 @@ import wres.http.WebClientUtils;
 import wres.messages.generated.Job;
 import wres.messages.generated.JobOutput;
 import wres.messages.generated.JobResult;
-
 
 /**
  * Holds a wres evaluation job started with call(), interacts with the worker server also sends messages
@@ -62,8 +61,6 @@ class WresEvaluationProcessor implements Callable<Integer>
     private static final String MIGRATE_DATABASE_URI =
             "http://localhost:%d/evaluation/migrateDatabase?dbHost=%s&dbName=%s&dbPort=%s";
 
-    private static final List<Integer> RETRY_STATES = List.of( 503, 504 );
-
     /** Stream identifier. */
     public enum WhichStream
     {
@@ -86,7 +83,10 @@ class WresEvaluationProcessor implements Callable<Integer>
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient(
             WebClientUtils.noTimeoutHttpClient(),
-            new RetryPolicy.Builder().maxRetryCount( 8 ).build() );
+            RetryPolicy.builder()
+                       .maxRetryCount( 8 )
+                       .errorCodes( Set.of( 503, 504 ) )
+                       .build() );
 
     /**
      * The envelope from the message that caused creation of this process,
@@ -280,15 +280,15 @@ class WresEvaluationProcessor implements Callable<Integer>
         catch ( EvaluationProcessingException epe )
         {
             String genericError = """
-                    !!!!----------------------------------------------------------------------------------!!!!
-                                        
-                    This evaluation has failed due to an unrecoverable problem within the WRES.
-                    Please do not resubmit your evaluation.
-                    Instead, please report this issue by opening a ticket in the WRES User Support project:
-                    https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new
-                                        
-                    !!!!----------------------------------------------------------------------------------!!!!
-                    """;
+                     !!!!----------------------------------------------------------------------------------!!!!
+                                        \s
+                     This evaluation has failed due to an unrecoverable problem within the WRES.
+                     Please do not resubmit your evaluation.
+                     Instead, please report this issue by opening a ticket in the WRES User Support project:
+                     https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new
+                                        \s
+                     !!!!----------------------------------------------------------------------------------!!!!
+                    \s""";
             this.sendMessage( prepareStdStreamMessage( genericError ), WhichStream.STDOUT );
 
             String errorMessage =
@@ -343,8 +343,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         LOGGER.info( startMessage );
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( startEvalURI,
-                                                                                 RETRY_STATES )
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( startEvalURI )
         )
         {
             // We rely on these log statements for tying IDs together easier while debugging.

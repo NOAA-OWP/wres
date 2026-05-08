@@ -1,15 +1,8 @@
 package wres.http;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.net.UnknownHostException;
-import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -129,61 +122,19 @@ public class WebClient
     }
 
     /**
-     * Get a pair of HTTP status and InputStream of body of given URI
-     * @param uri The URI to GET and transform the body into an InputStream.
-     * @return A pair of the HTTP status (left) and InputStream of body (right).
-     *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
-     *                     response, when wrapping response to decompress fails.
-     * @throws IllegalArgumentException When non-http uri is passed in.
-     * @throws NullPointerException When any argument is null.
-     */
-
-    public ClientResponse getFromWeb( URI uri ) throws IOException
-    {
-        Objects.requireNonNull( uri );
-
-        if ( !uri.getScheme()
-                 .startsWith( "http" ) )
-        {
-            throw new IllegalArgumentException( MUST_PASS_AN_HTTP_URI_GOT + uri );
-        }
-        LOGGER.debug( "getFromWeb {}", uri );
-
-        WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
-
-        Request request = new Request.Builder()
-                .url( uri.toURL() )
-                .header( "Accept-Encoding", "gzip" )
-                .header( "User-Agent", this.getUserAgent() )
-                .build();
-
-        monitorEvent.begin();
-        Instant start = Instant.now();
-        int retryCount = 0;
-
-        Response httpResponse = tryRequest( request, retryCount );
-
-        return this.validateResponse( httpResponse, uri, retryCount, monitorEvent, start );
-    }
-
-    /**
      * Get a pair of HTTP status and InputStream of body of given URI.
-     * @param uri The URI to GET and transform the body into an InputStream.
-     * @param retryOn A list of http status codes that should cause a custom retry.
-     * @return A pair of the HTTP status (left) and InputStream of body (right).
-     *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
-     *                     response, when wrapping response to decompress fails.
-     * @throws IllegalArgumentException When non-http uri is passed in.
-     * @throws NullPointerException When any argument is null.
+     *
+     * @param uri The URI to GET
+     * @return the client response
+     * @throws IOException when sending/receiving fails after exhausting any retry policy
+     * @throws IllegalArgumentException when non-http uri is passed in.
+     * @throws NullPointerException when the uri is null.
      */
 
-    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn )
+    public ClientResponse getFromWeb( URI uri )
             throws IOException
     {
         Objects.requireNonNull( uri );
-        Objects.requireNonNull( retryOn );
 
         if ( !uri.getScheme()
                  .startsWith( "http" ) )
@@ -209,6 +160,7 @@ public class WebClient
             monitorEvent.begin();
             Instant start = Instant.now();
 
+            // Part 1 (of 3) of the retry policy. This call enacts the exception recovery policy.
             Response httpResponse = tryRequest( request, retryCount );
 
             while ( retry )
@@ -216,7 +168,9 @@ public class WebClient
                 // When a tolerable exception happened (httpResponse is null)
                 // or the status is something we need to retry:
                 if ( Objects.isNull( httpResponse )
-                     || retryOn.contains( httpResponse.code() ) )
+
+                     // Part 2 (of 3) of the retry policy. This call handles specific HTTP error codes.
+                     || this.retryPolicy.shouldRetry( httpResponse.code() ) )
                 {
                     if ( Objects.nonNull( httpResponse ) )
                     {
@@ -231,12 +185,17 @@ public class WebClient
                     }
 
                     Thread.sleep( sleepMillis );
+
+                    // Try again, which enacts the exception recovery policy again.
                     httpResponse = tryRequest( request, retryCount );
                     Instant now = Instant.now();
 
                     // Exponential backoff to be nice to the server.
                     sleepMillis *= 2;
                     retryCount++;
+
+                    // Part 3 (of 3) of the retry policy. This determines whether another retry is needed based on
+                    // timing and retry count
                     retry = this.retryPolicy.shouldRetry( start, now, retryCount );
                     if ( !retry )
                     {
@@ -245,7 +204,7 @@ public class WebClient
                                      retryCount,
                                      this.retryPolicy.getMaxRetryCount(),
                                      now,
-                                     start.plus( this.retryPolicy.getMaxRetryTime() ) );
+                                     this.retryPolicy.getMaxRetryTime() );
                     }
                 }
                 else
@@ -283,15 +242,14 @@ public class WebClient
     }
 
     /**
-     * Post a pair of HTTP status and InputStream of body of given URI.
-     * @param uri The URI to POST and transform the body into an InputStream.
-     * @param jobMessage The body contents we want to send in a post request
-     * @return A pair of the HTTP status (left) and InputStream of body (right).
-     *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
-     *                     response, when wrapping response to decompress fails.
-     * @throws IllegalArgumentException When non-http uri is passed in.
-     * @throws NullPointerException When any argument is null.
+     * Posts to a web service.
+     *
+     * @param uri the URI to POST.
+     * @param jobMessage the body contents we want to send in a POST request
+     * @return the client response
+     * @throws IOException when encountering an exception after exhausting the retry policy
+     * @throws IllegalArgumentException when a non-http uri is passed in
+     * @throws NullPointerException when any argument is null
      */
 
     public ClientResponse postToWeb( URI uri, String jobMessage )
@@ -320,6 +278,8 @@ public class WebClient
         monitorEvent.begin();
         Instant start = Instant.now();
 
+        // Basic retries only, limited to the exception portion of the retry policy. Was this for idempotency reasons,
+        // i.e., POST is not idempotent, whereas GET is and allows more extensive retries?
         Response httpResponse = tryRequest( request, retryCount );
 
         return this.validateResponse( httpResponse, uri, retryCount, monitorEvent, start );
@@ -469,6 +429,7 @@ public class WebClient
     }
 
     /**
+     * Attempts a request and enacts the exception handling portion of the retry policy when appropriate.
      *
      * @param request The request to attempt
      * @param retryCount The number of times this request has been retried
@@ -498,8 +459,9 @@ public class WebClient
             String redacted = SystemSettings.redactBadWords( uri.toString() );
 
             LOGGER.debug( "Full exception trace: ", ioe );
+
             // Examine the exception chain to see if it is recoverable.
-            if ( WebClient.shouldRetryWithChain( ioe, retryCount ) )
+            if ( this.retryPolicy.shouldRetry( ioe, retryCount ) )
             {
                 LOGGER.warn( "Retrying {} in a bit due to {}.", redacted, ioe.toString() );
             }
@@ -526,7 +488,7 @@ public class WebClient
     }
 
     /**
-     * Makes a default retry policy as an arbitrary function of time based on parameters in the WebClient
+     * Makes a default retry policy.
      */
     private void setDefaultRetryPolicy()
     {
@@ -535,10 +497,11 @@ public class WebClient
         Duration maxRetryTime = Duration.ofMillis( ( this.httpClient.callTimeoutMillis()
                                                      + this.httpClient.connectTimeoutMillis() ) * 2L );
 
-        this.retryPolicy = new RetryPolicy.Builder()
-                .maxRetryTime( maxRetryTime )
-                .maxRetryCount( Integer.MAX_VALUE )
-                .build();
+        // Use defaults for all those not instantiated explicitly
+        this.retryPolicy = RetryPolicy.builder()
+                                      .maxRetryCount( Integer.MAX_VALUE )
+                                      .maxRetryTime( maxRetryTime )
+                                      .build();
     }
 
     private void setUserAgent()
@@ -602,89 +565,6 @@ public class WebClient
             throw new UnsupportedOperationException( "Could not handle Content-Encoding "
                                                      + encoding );
         }
-    }
-
-
-    /**
-     * Given an IOException, test if this one or its causes should be retried.
-     * @param ioe The exception to examine
-     * @param retryCount The number of times this request has been retried
-     * @return True when it can be retried, false otherwise.
-     */
-    private static boolean shouldRetryWithChain( IOException ioe, int retryCount )
-    {
-        if ( WebClient.shouldRetryIndividualException( ioe, retryCount ) )
-        {
-            return true;
-        }
-
-        Throwable cause = ioe.getCause();
-
-        while ( !Objects.isNull( cause ) )
-        {
-            if ( WebClient.shouldRetryIndividualException( cause, retryCount ) )
-            {
-                return true;
-            }
-
-            cause = cause.getCause();
-        }
-
-        return false;
-    }
-
-    /**
-     * Look at an individual exception, return true if it ought to be retried.
-     * @param t The Exception (Throwable to avoid casting mess)
-     * @param retryCount The number of times the request with exception T has been retried
-     * @return true when the exception can be safely retried, false otherwise.
-     */
-    private static boolean shouldRetryIndividualException( Throwable t, int retryCount )
-    {
-        if ( t instanceof HttpTimeoutException )
-        {
-            return true;
-        }
-
-        if ( t instanceof ConnectException )
-        {
-            return true;
-        }
-
-        if ( t instanceof SocketException )
-        {
-            return true;
-        }
-
-        if ( t instanceof SocketTimeoutException )
-        {
-            return true;
-        }
-
-        if ( t instanceof UnknownHostException && retryCount > 0 )
-        {
-            return true;
-        }
-
-        if ( t instanceof EOFException )
-        {
-            return true;
-        }
-
-        if ( t instanceof InterruptedIOException
-             && Objects.nonNull( t.getMessage() )
-             && t.getMessage()
-                 .toLowerCase()
-                 .contains( "timeout" ) )
-        {
-            return true;
-        }
-
-        return t instanceof IOException
-               && Objects.nonNull( t.getMessage() )
-               && t.getMessage()
-                   .toLowerCase()
-                   .contains( "connection reset" );
     }
 
     /**
