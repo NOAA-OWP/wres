@@ -402,7 +402,7 @@ public class DeclarationInterpolator
             events.addAll( rightTypeEvents );
         }
 
-        // Baseline data type has the same as the predicted data type, by default
+        // Resolve the baseline data type
         List<EvaluationStatusEvent> baseTypeEvents =
                 DeclarationInterpolator.interpolateBaselineDataType( builder, dataTypes.baselineType() );
         events.addAll( baseTypeEvents );
@@ -3052,7 +3052,8 @@ public class DeclarationInterpolator
             // Is it consistent with the type inferred from the declaration? If not, we only emit an error if
             // the type inferred from the declaration is ENSEMBLE_FORECASTS because this requires
             // definitive/unique declaration options. Otherwise, we emit a warning.
-            if ( ingestedDataType != calculatedDataType && calculatedDataType == DataType.ENSEMBLE_FORECASTS )
+            if ( ingestedDataType != calculatedDataType
+                 && calculatedDataType == DataType.ENSEMBLE_FORECASTS )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()

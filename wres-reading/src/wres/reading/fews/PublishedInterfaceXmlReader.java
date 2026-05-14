@@ -743,9 +743,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         {
             if ( !metadataEqual && LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug(
-                        "Saving a trace as a standalone time-series because the metadata has changed. The current "
-                        + "metadata is {}. The new metadata is: {}.",
+                LOGGER.debug( "Saving a trace as a standalone time-series because the metadata has changed. The "
+                              + "current metadata is {}. The new metadata is: {}.",
                         metadata,
                         currentTimeSeriesMetadata );
             }
