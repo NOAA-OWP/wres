@@ -171,20 +171,25 @@ public class TimeSeriesStore
         Objects.requireNonNull( orientation );
         Objects.requireNonNull( features );
 
-        return TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
-                                                 this.rightEnsembleSeries,
-                                                 this.baselineEnsembleSeries,
-                                                 this.covariateEnsembleSeries,
-                                                 orientation )
-                              .stream()
-                              .filter( next -> features.contains( next.getMetadata()
-                                                                      .getFeature() )
-                                               && ( Objects.isNull( variableName )
-                                                    || Objects.equals( next.getMetadata()
-                                                                           .getVariableName(),
-                                                                       variableName ) ) )
-                              .map( next -> TimeSeriesSlicer.filter( next,
-                                                                     timeWindow ) );
+        return this.getOrDeriveEnsemble( TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
+                                                                           this.rightEnsembleSeries,
+                                                                           this.baselineEnsembleSeries,
+                                                                           this.covariateEnsembleSeries,
+                                                                           orientation ),
+                                         TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
+                                                                               this.rightSingleValuedSeries,
+                                                                               this.baselineSingleValuedSeries,
+                                                                               this.covariateSingleValuedSeries,
+                                                                               orientation ) )
+                   .stream()
+                   .filter( next -> features.contains( next.getMetadata()
+                                                           .getFeature() )
+                                    && ( Objects.isNull( variableName )
+                                         || Objects.equals( next.getMetadata()
+                                                                .getVariableName(),
+                                                            variableName ) ) )
+                   .map( next -> TimeSeriesSlicer.filter( next,
+                                                          timeWindow ) );
     }
 
     /**
@@ -199,12 +204,17 @@ public class TimeSeriesStore
     {
         Objects.requireNonNull( orientation );
 
-        return TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
-                                                 this.rightEnsembleSeries,
-                                                 this.baselineEnsembleSeries,
-                                                 this.covariateEnsembleSeries,
-                                                 orientation )
-                              .stream();
+        return this.getOrDeriveEnsemble( TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
+                                                                           this.rightEnsembleSeries,
+                                                                           this.baselineEnsembleSeries,
+                                                                           this.covariateEnsembleSeries,
+                                                                           orientation ),
+                                         TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
+                                                                               this.rightSingleValuedSeries,
+                                                                               this.baselineSingleValuedSeries,
+                                                                               this.covariateSingleValuedSeries,
+                                                                               orientation ) )
+                   .stream();
     }
 
     /**
@@ -214,9 +224,15 @@ public class TimeSeriesStore
 
     public Stream<TimeSeries<Ensemble>> getEnsembleSeries()
     {
-        return Stream.concat( Stream.concat( this.leftEnsembleSeries.stream(),
-                                             this.rightEnsembleSeries.stream() ),
-                              this.baselineEnsembleSeries.stream() );
+        return Stream.concat( Stream.concat( this.getOrDeriveEnsemble( this.leftEnsembleSeries,
+                                                                       this.leftSingleValuedSeries )
+                                                 .stream(),
+                                             this.getOrDeriveEnsemble( this.rightEnsembleSeries,
+                                                                       this.rightSingleValuedSeries )
+                                                 .stream() ),
+                              this.getOrDeriveEnsemble( this.baselineEnsembleSeries,
+                                                        this.baselineSingleValuedSeries )
+                                  .stream() );
     }
 
     /**
@@ -357,6 +373,28 @@ public class TimeSeriesStore
             case BASELINE -> baselineEnsembleSeries;
             case COVARIATE -> covariateEnsembleSeries;
         };
+    }
+
+    /**
+     * Allows for the treatment of single-valued time-series as one-member ensemble time-series on demand. See GitHub
+     * #803.
+     *
+     * @param ensemble the ensemble time-series
+     * @param singleValued the single-valued time-series for an equivalent orientation
+     * @return the ensemble time-series
+     */
+
+    private Collection<TimeSeries<Ensemble>> getOrDeriveEnsemble( Collection<TimeSeries<Ensemble>> ensemble,
+                                                                  Collection<TimeSeries<Double>> singleValued )
+    {
+        if ( !ensemble.isEmpty() )
+        {
+            return ensemble;
+        }
+
+        return singleValued.stream()
+                           .map( s -> TimeSeriesSlicer.transform( s, Ensemble::of, m -> m ) )
+                           .toList();
     }
 
     /**

@@ -770,6 +770,84 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEnsembleTypeForPredictedAndSingleValuedTypeForBaselineProducesError()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( source ) )
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .build();
+
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( List.of( source ) )
+                                                .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                .build();
+
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "has a declared data 'type' of 'ensemble forecasts' "
+                                                       + "whereas the 'baseline' dataset has a declared 'type' of "
+                                                       + "'single valued forecasts'",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testSingleValuedTypeForPredictedAndEnsembleTypeForBaselineProducesError()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( source ) )
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( List.of( source ) )
+                                                .type( DataType.ENSEMBLE_FORECASTS )
+                                                .build();
+
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "has a declared data 'type' of 'single valued "
+                                                       + "forecasts' whereas the 'baseline' dataset has a declared "
+                                                       + "'type' of 'ensemble forecasts'",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testEvaluationTimeScaleIsValidResultsinError()
     {
         TimeScale timeScaleInner = TimeScale.newBuilder()

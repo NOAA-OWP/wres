@@ -703,9 +703,15 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> typesAreValid( EvaluationDeclaration declaration )
     {
+        // Data types are consistent with each other
+        List<EvaluationStatusEvent> typesInternallyConsistent =
+                DeclarationValidator.typesAreConsistentWithEachOther( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( typesInternallyConsistent );
+
         // Data types are consistent with other declaration
-        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreInternallyConsistent( declaration );
-        List<EvaluationStatusEvent> events = new ArrayList<>( typesConsistent );
+        List<EvaluationStatusEvent> typesExternallyConsistent =
+                DeclarationValidator.typesAreConsistentWithOtherDeclaration( declaration );
+        events.addAll( typesExternallyConsistent );
 
         // Data types for covariates are not forecast-like
         List<EvaluationStatusEvent> covariateTypes = DeclarationValidator.covariateTypesAreValid( declaration );
@@ -850,7 +856,9 @@ public class DeclarationValidator
              // Can both be different but observation-like
              && !( ingestedDataType.isObservationLike()
                    && dataset.type()
-                             .isObservationLike() ) )
+                             .isObservationLike() )
+             // Do not self-validate. If the type was analyzed incorrectly, this should be fixed at source
+             && !dataset.typeWasAnalyzed() )
         {
             String article = "the";
             if ( orientation == DatasetOrientation.COVARIATE )
@@ -885,13 +893,62 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that the data types are consistent with each other.
+     *
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> typesAreConsistentWithEachOther( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // If either of the predicted or baseline datasets are ensemble forecasts, check the other type
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && ( Objects.nonNull( declaration.right() )
+                  && declaration.right()
+                                .type() == DataType.ENSEMBLE_FORECASTS
+                  || declaration.baseline()
+                                .dataset()
+                                .type() == DataType.ENSEMBLE_FORECASTS ) )
+        {
+            DataType predicted = declaration.right()
+                                            .type();
+            DataType baseline = declaration.baseline()
+                                           .dataset()
+                                           .type();
+
+            if ( Objects.nonNull( predicted )
+                 && Objects.nonNull( baseline )
+                 && predicted != baseline )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The data 'type' of the 'predicted' and 'baseline' "
+                                                                 + "datasets is inconsistent. The 'predicted' dataset "
+                                                                 + "has a declared data 'type' of '"
+                                                                 + predicted
+                                                                 + "' whereas the 'baseline' dataset has a declared "
+                                                                 + "'type' of '"
+                                                                 + baseline
+                                                                 + "'. This may be intended, but should be confirmed." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Checks that the data types are consistent with the other declaration supplied.
      *
      * @param declaration the declaration
      * @return the validation events encountered
      */
 
-    private static List<EvaluationStatusEvent> typesAreInternallyConsistent( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> typesAreConsistentWithOtherDeclaration( EvaluationDeclaration declaration )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 

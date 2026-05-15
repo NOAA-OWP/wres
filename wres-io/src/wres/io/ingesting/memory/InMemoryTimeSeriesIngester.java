@@ -50,6 +50,8 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( outerSource );
 
+        LOGGER.debug( "Ingesting times-series in memory." );
+
         // Whether there is non-missing data present
         boolean hasNonMissingValues = false;
 
@@ -64,11 +66,6 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
             DataType dataType = null;
             for ( TimeSeriesTuple nextTuple : listedTuples )
             {
-                // If needed, adjust the tuple to handle the special case where a time-series was read as single-valued,
-                // but declared to be treated as an ensemble. It is convenient to perform that adaptation on "ingest"
-                // because a retriever will be constructed for the expected type, i.e., ensemble time-series
-                nextTuple = this.checkAndAdaptTupleForDataType( nextTuple );
-
                 DataSource innerSource = nextTuple.getDataSource();
                 DatasetOrientation innerOrientation =
                         DatasetOrientation.valueOf( innerSource.datasetOrientation()
@@ -143,38 +140,6 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         }
 
         return true;
-    }
-
-    /**
-     * Handles the special case where a single-valued time-series should be treated as an ensemble time-series.
-     *
-     * @param tuple the tuple to check and adapt
-     * @return the adapted tuple
-     */
-
-    private TimeSeriesTuple checkAndAdaptTupleForDataType( TimeSeriesTuple tuple )
-    {
-        // Special case where time-series were read as single-valued, but declared as ensemble, and should
-        // be treated as declared, i.e., a one-member ensemble. See #130267.
-        if ( tuple.getDataSource()
-                  .context()
-                  .type() == DataType.ENSEMBLE_FORECASTS
-             && tuple.hasSingleValuedTimeSeries() )
-        {
-            LOGGER.debug( "Discovered a time-series tuple with single-valued time-series declared to be treated as "
-                          + "ensemble time-series. The single-valued time-series will be converted to one-member "
-                          + "ensembles." );
-
-            TimeSeries<Double> singleValued = tuple.getSingleValuedTimeSeries();
-
-            TimeSeries<Ensemble> ensemble = TimeSeriesSlicer.transform( singleValued, Ensemble::of, m -> m );
-
-            return TimeSeriesTuple.ofEnsemble( ensemble, tuple.getDataSource() );
-        }
-        else
-        {
-            return tuple;
-        }
     }
 
     /**

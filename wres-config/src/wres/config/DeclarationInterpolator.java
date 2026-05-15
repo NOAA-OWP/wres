@@ -141,6 +141,8 @@ public class DeclarationInterpolator
             "Interpolated the covariate dataset {} to have a purpose of {}.";
     /** Re-used string. */
     private static final String DISCOVERED_A_COVARIATE_DATASET = "Discovered a covariate dataset ";
+    /** Re-used string. */
+    private static final String FOR_THE_BASELINE_DATASET_WAS = "for the 'baseline' dataset was '";
 
     /**
      * Performs pre-ingest interpolation of "missing" declaration from the available declaration. Currently, this
@@ -402,7 +404,7 @@ public class DeclarationInterpolator
             events.addAll( rightTypeEvents );
         }
 
-        // Baseline data type has the same as the predicted data type, by default
+        // Resolve the baseline data type
         List<EvaluationStatusEvent> baseTypeEvents =
                 DeclarationInterpolator.interpolateBaselineDataType( builder, dataTypes.baselineType() );
         events.addAll( baseTypeEvents );
@@ -2777,7 +2779,8 @@ public class DeclarationInterpolator
         }
 
         // Adjust the type
-        datasetBuilder.type( typeToUse );
+        datasetBuilder.type( typeToUse )
+                      .typeWasAnalyzed( true );
 
         return Collections.unmodifiableList( events );
     }
@@ -2959,6 +2962,7 @@ public class DeclarationInterpolator
         // Set the type
         Dataset newPredicted = DatasetBuilder.builder( predicted )
                                              .type( typeToUse )
+                                             .typeWasAnalyzed( true )
                                              .build();
         builder.right( newPredicted );
 
@@ -2966,7 +2970,13 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Interpolates the baseline data type.
+     * Interpolates the baseline data type. The baseline type is a special case whereby a single-valued baseline
+     * (either declared or analyzed) can be substituted as a one-member ensemble forecast to allow for the evaluation of
+     * ensemble forecasts against a single-valued baseline. See GitHub #803. This special handling could be omitted and
+     * generalized to a dataset of any orientation if the data model better abstracted a pool to avoid aggregating the
+     * main and baseline pairs as a single data type, i.e., there would be no need to use this "trick" of treating a
+     * single-valued forecast dataset as a one-member ensemble forecast dataset.
+     *
      * @param builder the builder
      * @param ingestedDataType the data type inferred from ingest
      * @return any interpolation events encountered
@@ -2989,12 +2999,15 @@ public class DeclarationInterpolator
                                                                                            ingestedDataType );
                 events.addAll( undeclared );
             }
-            // The data type is retained as declared. Any discrepancy with the ingested type must be handled by post-ingest
-            // declaration validation
+            // Interpolate the baseline data type when declared.
             else
             {
-                LOGGER.debug( "Retaining the declared data type of {} for the 'baseline' dataset. The ingested type "
-                              + "was analyzed as {}.", baselineDataset.type(), ingestedDataType );
+                List<EvaluationStatusEvent> declared =
+                        DeclarationInterpolator.interpolateBaselineDataTypeWhenDeclared( builder,
+                                                                                         ingestedDataType,
+                                                                                         builder.right()
+                                                                                                .type() );
+                events.addAll( declared );
             }
         }
 
@@ -3049,27 +3062,24 @@ public class DeclarationInterpolator
         // Is the ingested data type known?
         if ( Objects.nonNull( ingestedDataType ) )
         {
-            // Is it consistent with the type inferred from the declaration? If not, we only emit an error if
-            // the type inferred from the declaration is ENSEMBLE_FORECASTS because this requires
-            // definitive/unique declaration options. Otherwise, we emit a warning.
-            if ( ingestedDataType != calculatedDataType && calculatedDataType == DataType.ENSEMBLE_FORECASTS )
+            // Is it consistent with the type inferred from the declaration?
+            if ( ingestedDataType != calculatedDataType
+                 && calculatedDataType == DataType.ENSEMBLE_FORECASTS )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                               .setEventMessage(
-                                                       THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                       + "for the 'baseline' dataset was '"
-                                                       + ingestedDataType
-                                                       + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
-                                                       + DECLARATION_WAS
-                                                       + calculatedDataType
-                                                       + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
-                                                       + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
-                                                       + MESSAGES_THAT_INDICATE_WHY_THE_DATA_TYPE
-                                                       + INFERRED_FROM_THE_DECLARATION_WAS
-                                                       + calculatedDataType
-                                                       + "'." )
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                 + FOR_THE_BASELINE_DATASET_WAS
+                                                                 + ingestedDataType
+                                                                 + ". However, the 'predicted' data 'type' was '"
+                                                                 + calculatedDataType
+                                                                 + "'. For convenience, the evaluation will treat the "
+                                                                 + "'baseline' dataset as '"
+                                                                 + calculatedDataType
+                                                                 + "' containing a single trace. Any ensemble or "
+                                                                 + "probabilistic  evaluation metrics that rely on the "
+                                                                 + "'baseline' dataset should be treated with caution." )
                                                .build();
                 events.add( event );
             }
@@ -3082,7 +3092,7 @@ public class DeclarationInterpolator
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
                                                .setEventMessage(
                                                        THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                       + "for the 'baseline' dataset was '"
+                                                       + FOR_THE_BASELINE_DATASET_WAS
                                                        + ingestedDataType
                                                        + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
                                                        + DECLARATION_WAS
@@ -3100,12 +3110,72 @@ public class DeclarationInterpolator
 
         Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
                                                    .type( typeToUse )
+                                                   .typeWasAnalyzed( true )
                                                    .build();
         BaselineDataset newBaseline =
                 BaselineDatasetBuilder.builder( baseline )
                                       .dataset( newBaselineDataset )
                                       .build();
         builder.baseline( newBaseline );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the baseline data type when the type is declared explicitly, preferring an analyzed type if
+     * available.
+     *
+     * @param builder the builder
+     * @param ingestedDataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateBaselineDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
+                                                                                        DataType ingestedDataType,
+                                                                                        DataType predictedType )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        BaselineDataset baseline = builder.baseline();
+        Dataset baselineDataset = baseline.dataset();
+        DataType baselineType = baselineDataset.type();
+
+        LOGGER.debug( "The declared data type for the 'baseline' dataset was '{}'. The ingested type "
+                      + "was analyzed as '{}'.", baselineDataset.type(), ingestedDataType );
+
+        if ( Objects.nonNull( ingestedDataType )
+             && ingestedDataType == DataType.SINGLE_VALUED_FORECASTS
+             && predictedType == DataType.ENSEMBLE_FORECASTS )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                             + FOR_THE_BASELINE_DATASET_WAS
+                                                             + ingestedDataType
+                                                             + "' and the declared data 'type' was '"
+                                                             + baselineType
+                                                             + "'. However, the 'predicted' data 'type' was '"
+                                                             + predictedType
+                                                             + "'. For convenience, the evaluation will treat the "
+                                                             + "'baseline' dataset as '"
+                                                             + predictedType
+                                                             + "' containing a single trace. Any ensemble or "
+                                                             + "probabilistic  evaluation metrics that rely on the "
+                                                             + "'baseline' dataset should be treated with caution." )
+                                           .build();
+            events.add( event );
+
+            Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
+                                                       .type( predictedType )
+                                                       // Flag that the type was overridden
+                                                       .typeWasAnalyzed( true )
+                                                       .build();
+            BaselineDataset newBaseline =
+                    BaselineDatasetBuilder.builder( baseline )
+                                          .dataset( newBaselineDataset )
+                                          .build();
+            builder.baseline( newBaseline );
+        }
 
         return Collections.unmodifiableList( events );
     }
