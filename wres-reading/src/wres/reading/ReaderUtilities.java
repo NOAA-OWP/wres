@@ -322,8 +322,8 @@ public class ReaderUtilities
     }
 
     /**
-     * A helper that tries to guess the time-scale information from the composition of the supplied URI. This works 
-     * when particular time-series data services use fixed time-scales, such as the USGS NWIS Instantaneous Values 
+     * A helper that tries to guess the time-scale information from the composition of the supplied URI. This works
+     * when particular time-series data services use fixed time-scales, such as the USGS NWIS Instantaneous Values
      * Service.
      *
      * @param uri the uri
@@ -832,10 +832,10 @@ public class ReaderUtilities
     }
 
     /**
-     * Get an SSLContext for use with Water Resources Data Service (WRDS) services. It looks for the 
+     * Get an SSLContext for use with Water Resources Data Service (WRDS) services. It looks for the
      * system property. If found, it tries to load the file from the file system first, and then the
      * class path. If the file is not found, or it is found but cannot be used, then its an exception.
-     * If no property is supplied, then it uses the JDK default trusted CAs. 
+     * If no property is supplied, then it uses the JDK default trusted CAs.
      * @return The resulting SSLContext and X509TrustManager to use for authenticating WRDS.
      * @throws PreReadException if the context and trust manager cannot be built for any reason
      */
@@ -879,7 +879,7 @@ public class ReaderUtilities
                 SSLStuffThatTrustsOneCertificate sslGoo =
                         new SSLStuffThatTrustsOneCertificate( inputStream,
                                                               passwordForInternalTrustStore );
-                inputStream.close(); //Stream should not be null when I reach here. 
+                inputStream.close(); //Stream should not be null when I reach here.
                 return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
             }
             catch ( IOException ioe )
@@ -1184,10 +1184,10 @@ public class ReaderUtilities
      * @throws NullPointerException if any input is null
      */
 
-    public static Stream<TimeSeriesTuple> getTimeSeriesWithRetries( TimeSeriesReader formatReader,
-                                                                    Supplier<InputStream> webSourceToRetry,
-                                                                    DataSource dataSource,
-                                                                    RetryPolicy retryPolicy )
+    public static List<TimeSeriesTuple> getTimeSeriesWithRetries( TimeSeriesReader formatReader,
+                                                                  Supplier<InputStream> webSourceToRetry,
+                                                                  DataSource dataSource,
+                                                                  RetryPolicy retryPolicy )
     {
         Objects.requireNonNull( formatReader );
         Objects.requireNonNull( webSourceToRetry );
@@ -1204,7 +1204,8 @@ public class ReaderUtilities
 
         try
         {
-            return formatReader.read( dataSource, webSourceToRetry.get() );
+            return formatReader.read( dataSource, webSourceToRetry.get() )
+                               .toList();
         }
         catch ( ReadException e )
         {
@@ -1238,7 +1239,7 @@ public class ReaderUtilities
                                  redacted,
                                  retryCount + 2 );
 
-                    return tuples;
+                    return tuples.toList();
                 }
                 catch ( ReadException f )
                 {

@@ -140,8 +140,7 @@ public class TimeScaleFromParameterCodes
             case "K" -> Duration.ofHours( 12 );
             case "L" -> Duration.ofHours( 18 );
             case "D" -> Duration.ofDays( 1 );
-            default -> throw new UnsupportedOperationException(
-                    "While attempting to deserialize a WRDS json response "
+            default -> throw new UnsupportedOperationException( "While attempting to deserialize a WRDS json response "
                     + "contained in "
                     + source
                     + ", found an unsupported duration code '"

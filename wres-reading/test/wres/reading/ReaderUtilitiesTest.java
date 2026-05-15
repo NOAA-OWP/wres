@@ -2096,6 +2096,7 @@ class ReaderUtilitiesTest
                                                           ByteArrayInputStream::nullInputStream, // Nothing stream
                                                           dataSource,
                                                           retryPolicy )
+                               .stream()
                                .map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                .toList();
         List<TimeSeries<Double>> expected = Collections.singletonList( TimeSeries.of( metadata ) );

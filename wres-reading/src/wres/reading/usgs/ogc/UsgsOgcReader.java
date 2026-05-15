@@ -562,8 +562,7 @@ public class UsgsOgcReader implements TimeSeriesReader
             return ReaderUtilities.getTimeSeriesWithRetries( reader,
                                                              streamSupplier,
                                                              dataSource,
-                                                             ReaderUtilities.DEFAULT_BODY_RETRY_POLICY )
-                                  .toList();
+                                                             ReaderUtilities.DEFAULT_BODY_RETRY_POLICY );
         }
         catch ( ReadException e )
         {
