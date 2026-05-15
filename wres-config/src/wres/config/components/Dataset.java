@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
@@ -33,6 +34,7 @@ import wres.config.serializers.ZoneOffsetSerializer;
  * @param timeScale the timescale
  * @param unit the measurement unit
  * @param missingValue the missing value identifiers
+ * @param typeWasAnalyzed an internal flag that indicates whether the data type was analyzed or interpolated
  */
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
@@ -52,7 +54,8 @@ public record Dataset( @JsonProperty( "label" ) String label,
                        @JsonDeserialize( using = TimeScaleDeserializer.class )
                        @JsonProperty( "time_scale" ) TimeScale timeScale,
                        @JsonProperty( "unit" ) String unit,
-                       @JsonProperty( "missing_value" ) List<Double> missingValue )
+                       @JsonProperty( "missing_value" ) List<Double> missingValue,
+                       @JsonIgnore boolean typeWasAnalyzed )
 {
     /**
      * Set the defaults.
@@ -67,6 +70,7 @@ public record Dataset( @JsonProperty( "label" ) String label,
      * @param timeScale the timescale
      * @param unit the measurement unit
      * @param missingValue the missing value identifiers
+     * @param typeWasAnalyzed an internal flag that indicates whether the data type was analyzed or interpolated
      */
     public Dataset
     {

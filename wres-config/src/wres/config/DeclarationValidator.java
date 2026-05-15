@@ -856,7 +856,9 @@ public class DeclarationValidator
              // Can both be different but observation-like
              && !( ingestedDataType.isObservationLike()
                    && dataset.type()
-                             .isObservationLike() ) )
+                             .isObservationLike() )
+             // Do not self-validate. If the type was analyzed incorrectly, this should be fixed at source
+             && !dataset.typeWasAnalyzed() )
         {
             String article = "the";
             if ( orientation == DatasetOrientation.COVARIATE )
@@ -922,14 +924,15 @@ public class DeclarationValidator
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setStatusLevel( StatusLevel.WARN )
                                                .setEventMessage( "The data 'type' of the 'predicted' and 'baseline' "
-                                                                 + "datasets is inconsistent, which is not allowed. "
-                                                                 + "The 'predicted' dataset has a declared data 'type' "
-                                                                 + "of '" + predicted + "' whereas the 'baseline' "
-                                                                 + "dataset has a declared 'type' of '" + baseline
-                                                                 + "'. Please ensure that the declared data types are "
-                                                                 + "consistent and try again." )
+                                                                 + "datasets is inconsistent. The 'predicted' dataset "
+                                                                 + "has a declared data 'type' of '"
+                                                                 + predicted
+                                                                 + "' whereas the 'baseline' dataset has a declared "
+                                                                 + "'type' of '"
+                                                                 + baseline
+                                                                 + "'. This may be intended, but should be confirmed." )
                                                .build();
                 events.add( event );
             }

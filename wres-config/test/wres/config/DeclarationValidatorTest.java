@@ -805,7 +805,7 @@ class DeclarationValidatorTest
                                                        "has a declared data 'type' of 'ensemble forecasts' "
                                                        + "whereas the 'baseline' dataset has a declared 'type' of "
                                                        + "'single valued forecasts'",
-                                                       StatusLevel.ERROR ) );
+                                                       StatusLevel.WARN ) );
     }
 
     @Test
@@ -844,7 +844,7 @@ class DeclarationValidatorTest
                                                        "has a declared data 'type' of 'single valued "
                                                        + "forecasts' whereas the 'baseline' dataset has a declared "
                                                        + "'type' of 'ensemble forecasts'",
-                                                       StatusLevel.ERROR ) );
+                                                       StatusLevel.WARN ) );
     }
 
     @Test
