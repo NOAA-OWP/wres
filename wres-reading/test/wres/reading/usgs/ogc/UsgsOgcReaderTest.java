@@ -2123,13 +2123,27 @@ class UsgsOgcReaderTest
 
         // Mock the response reader and throw an error on first try, then succeed
         UsgsOgcResponseReader mockedReader = Mockito.mock( UsgsOgcResponseReader.class );
+
+        // Create a real or mocked stream that throws an exception when consumed
+        Stream<TimeSeriesTuple> brokenStream1 = Stream.generate( () -> {
+            throw new ReadException( "stream was reset: PROTOCOL_ERROR" );
+        } );
+
+        Stream<TimeSeriesTuple> brokenStream2 = Stream.generate( () -> {
+            throw new ReadException( "foo", new ProtocolException( "bar" ) );
+        } );
+
+        Stream<TimeSeriesTuple> successfulStream = Stream.of( TimeSeriesTuple.builder()
+                                                                             .singleValuedTimeSeries( expectedSeries )
+                                                                             .dataSource( fakeSource )
+                                                                             .singleValuedTimeSeriesId( "foo" )
+                                                                             .build() );
+
+        // Stub the mock to return these streams successfully
         Mockito.when( mockedReader.read( Mockito.any(), Mockito.any() ) )
-               .thenThrow( new ReadException( "stream was reset: PROTOCOL_ERROR" ) ) // HTTP/2
-               .thenThrow( new ReadException( "foo", new ProtocolException( "bar" ) ) ) // HTTP/1.1
-               .thenReturn( Stream.of( TimeSeriesTuple.builder().singleValuedTimeSeries( expectedSeries )
-                                                      .dataSource( fakeSource )
-                                                      .singleValuedTimeSeriesId( "foo" )
-                                                      .build() ) );
+               .thenReturn( brokenStream1 )
+               .thenReturn( brokenStream2 )
+               .thenReturn( successfulStream );
 
         UsgsOgcReader reader = UsgsOgcReader.of( declaration, systemSettings, timeChunker, mockedReader );
 
