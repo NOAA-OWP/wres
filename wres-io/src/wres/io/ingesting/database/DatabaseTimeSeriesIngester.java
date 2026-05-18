@@ -310,8 +310,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                         this.checkForEmptySeriesAndAddReferenceTimeIfRequired( tuple.getSingleValuedTimeSeries(),
                                                                                innerSource.uri() );
 
-                System.out.println( nextSeries );
-
                 // Truncate to the precision of the lead durations we accept. See GitHub #719 and #630. This stems
                 // from a flawed representation of time-series in our database schema whereby valid times are
                 // represented as lead duration offsets from a reference time using truncated precision, rather

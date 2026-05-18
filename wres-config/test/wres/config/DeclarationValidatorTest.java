@@ -256,8 +256,6 @@ class DeclarationValidatorTest
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        System.out.println( events );
-
         assertTrue( DeclarationValidatorTest.contains( events, "Please declare an evaluation 'time_scale' or "
                                                                + "remove the 'rescale_function'",
                                                        StatusLevel.ERROR ) );
@@ -2311,8 +2309,6 @@ class DeclarationValidatorTest
                                             .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
-
-        System.out.println( events );
 
         // Two warnings, both of the same type
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
