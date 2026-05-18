@@ -508,7 +508,7 @@ public class UsgsOgcResponseReader implements TimeSeriesReader
             return TimeScaleOuter.of();
         }
 
-        // There are currently two OGC services, each of which is associated with time-series that that has a fixed
+        // There are currently two OGC services, each of which is associated with time-series that have a fixed
         // timescale. Since this is not instantaneous data (above), it must be daily data. If other services are added,
         // this logic will need to become more sophisticated
         LOGGER.debug( "Assuming that the time-series data has a time-scale of one day." );

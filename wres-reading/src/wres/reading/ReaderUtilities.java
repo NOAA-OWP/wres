@@ -1202,12 +1202,12 @@ public class ReaderUtilities
         String redacted = SystemSettings.redactBadWords( dataSource.uri()
                                                                    .toString() );
 
-        try
+        try ( InputStream stream = webSourceToRetry.get() )
         {
-            return formatReader.read( dataSource, webSourceToRetry.get() )
+            return formatReader.read( dataSource, stream )
                                .toList();
         }
-        catch ( ReadException e )
+        catch ( ReadException | IOException e )
         {
             cause = e;
 
@@ -1231,9 +1231,9 @@ public class ReaderUtilities
                                              + redacted + ".", i );
                 }
 
-                try
+                try ( InputStream stream = webSourceToRetry.get() )
                 {
-                    Stream<TimeSeriesTuple> tuples = formatReader.read( dataSource, webSourceToRetry.get() );
+                    Stream<TimeSeriesTuple> tuples = formatReader.read( dataSource, stream );
 
                     LOGGER.warn( "Succeeded in reading the time-series data stream from {} after {} attempts.",
                                  redacted,
@@ -1241,7 +1241,7 @@ public class ReaderUtilities
 
                     return tuples.toList();
                 }
-                catch ( ReadException f )
+                catch ( ReadException | IOException f )
                 {
                     LOGGER.warn( "Encountered an error while reading the time-series data stream from {}. This is "
                                  + "retry {} of {}.",
