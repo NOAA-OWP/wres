@@ -1399,20 +1399,20 @@ project(':wres-tasker') {
         implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
         // Server library to run a web server:
-        implementation 'org.eclipse.jetty:jetty-server:12.1.7'
+        implementation 'org.eclipse.jetty:jetty-server:12.1.9'
 
         // Servlet library is now tied to ee10.
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.7'
-        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.7'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.9'
+        implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlets:12.1.9'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.7'
+        implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.9'
 
         // Support ALPN
-        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.7'
+        runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.9'
 
         // Servlet container library to run a web application with:
-        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.7'
+        runtimeOnly 'org.eclipse.jetty.ee10:jetty-ee10-webapp:12.1.9'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -1420,7 +1420,7 @@ project(':wres-tasker') {
             exclude group: 'org.eclipse.jetty', module: 'jetty-http'
         }
         // Add later version excluded above
-        implementation 'org.eclipse.jetty:jetty-http:12.1.7'
+        implementation 'org.eclipse.jetty:jetty-http:12.1.9'
 
         // To handle multipart post
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
@@ -1448,9 +1448,9 @@ project(':wres-tasker') {
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.4'
 
-        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.7'
-        implementation 'org.eclipse.jetty:jetty-http:12.1.7'
-        implementation 'org.eclipse.jetty:jetty-util:12.1.7'
+        implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.9'
+        implementation 'org.eclipse.jetty:jetty-http:12.1.9'
+        implementation 'org.eclipse.jetty:jetty-util:12.1.9'
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.11'
 
         // JSON deserialization uses jackson directly. Specify recent version.
@@ -1943,9 +1943,9 @@ dependencies {
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
     implementation 'javax.measure:unit-api:2.2'
     implementation 'org.apache.commons:commons-lang3:3.20.0'
-    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.7'
-    implementation 'org.eclipse.jetty:jetty-http:12.1.7'
-    implementation 'org.eclipse.jetty:jetty-util:12.1.7'
+    implementation 'org.eclipse.jetty:jetty-alpn-server:12.1.9'
+    implementation 'org.eclipse.jetty:jetty-http:12.1.9'
+    implementation 'org.eclipse.jetty:jetty-util:12.1.9'
     implementation project(':wres-statistics')
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
@@ -1954,7 +1954,7 @@ dependencies {
     implementation 'jakarta.servlet:jakarta.servlet-api:6.1.0'
 
     //Jetty servlet stuff now tied to ee10, with the move to Jetty 12.
-    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.7'
+    implementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.9'
 
     // Servlet container library to run a web application with:
     runtimeOnly 'org.eclipse.jetty:jetty-webapp:11.0.25'
@@ -1965,10 +1965,10 @@ dependencies {
         exclude group: 'org.eclipse.jetty', module: 'jetty-http'
     }
     // Add later version excluded above
-    implementation 'org.eclipse.jetty:jetty-http:12.1.7'
+    implementation 'org.eclipse.jetty:jetty-http:12.1.9'
 
     // Jetty server
-    implementation 'org.eclipse.jetty:jetty-server:12.1.7'
+    implementation 'org.eclipse.jetty:jetty-server:12.1.9'
 
     implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
         // Not used at runtime, bloat
@@ -2011,10 +2011,10 @@ dependencies {
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.11'
 
     // Support HTTP/2
-    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.7'
+    implementation 'org.eclipse.jetty.http2:jetty-http2-server:12.1.9'
 
     // Support ALPN
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.7'
+    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server:12.1.9'
 
     runtimeOnly('ch.qos.logback:logback-classic:1.5.32') {
         // Not used at runtime, bloat
