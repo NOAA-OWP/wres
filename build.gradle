@@ -361,7 +361,7 @@ project(':wres-datamodel') {
         }
 
         api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -448,7 +448,7 @@ project(':wres-io') {
         implementation 'com.zaxxer:HikariCP:7.0.2'
 
         // To cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -707,7 +707,7 @@ project(':wres-reading') {
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // For caches
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.2') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1426,7 +1426,7 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.11'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1655,7 +1655,7 @@ project(':wres-events') {
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1970,7 +1970,7 @@ dependencies {
     // Jetty server
     implementation 'org.eclipse.jetty:jetty-server:12.1.7'
 
-    implementation('com.github.ben-manes.caffeine:caffeine:3.2.3') {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
