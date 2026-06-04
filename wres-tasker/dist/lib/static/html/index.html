@@ -3,27 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Water Resources Evaluation Service</title>
-    <style type="text/css">
-        html, body
-        {
-            height: 100%;
-            margin: 0;
-            padding: 0.5em;
-        }
-        .evaluation
-        {
-            width: 60em;
-            height: 55em;
-        }
-        p
-        {
-            max-width: 40em;
-        }
-        p, form, h1
-        {
-            margin: 16pt;
-        }
-    </style>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 <h1>Welcome to a guide to the COWRES HTTP API</h1>
@@ -43,7 +23,7 @@
 
 <form action="/job" method="post">
     Evaluation project declaration full text:<br />
-    <textarea id="projectConfig" class="evaluation" name="projectConfig" required="true" style="resize:both;" rows="40" cols="80">
+    <textarea id="projectConfig" class="evaluation" name="projectConfig" required="true" rows="40" cols="80">
 label: web demo
 observed: /mnt/wres_share/systests/data/DRRC2QINE.xml
 predicted:
