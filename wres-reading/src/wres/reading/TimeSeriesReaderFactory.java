@@ -12,6 +12,7 @@ import wres.reading.fews.PublishedInterfaceXmlReader;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.netcdf.nwm.NwmGridReader;
 import wres.reading.netcdf.nwm.NwmVectorReader;
+import wres.reading.parquet.ParquetReader;
 import wres.reading.usgs.ogc.UsgsOgcReader;
 import wres.reading.usgs.iv.response.NwisIvResponseReader;
 import wres.reading.usgs.iv.NwisIvReader;
@@ -227,11 +228,15 @@ public class TimeSeriesReaderFactory
             {
                 return NwmVectorReader.of( this.getDeclaration() );
             }
+            case PARQUET ->
+            {
+                return ParquetReader.of();
+            }
             case UNKNOWN ->
                     throw new IllegalArgumentException( "The data source could not be read because the format of the "
-                                                        + "content is UNKNOWN. This may have occurred because the source "
-                                                        + "is corrupt or because the content type is unrecognized or "
-                                                        + "unsupported: "
+                                                        + "content is UNKNOWN. This may have occurred because the "
+                                                        + "source is corrupt or because the content type is "
+                                                        + "unrecognized or unsupported: "
                                                         + dataSource
                                                         + "." );
             default -> throw new IllegalArgumentException( "There is no reader implementation available for the "

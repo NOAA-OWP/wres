@@ -699,6 +699,11 @@ project(':wres-reading') {
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.17'
 
+        // Read parquet files
+        implementation 'org.apache.parquet:parquet-hadoop:1.14.1'
+        implementation 'org.apache.hadoop:hadoop-common:3.4.0'
+        implementation 'org.apache.hadoop:hadoop-mapreduce-client-core:3.4.0'
+
         testImplementation 'org.mockito:mockito-core:5.21.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
@@ -1897,7 +1902,8 @@ applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
                              '-Ducar.unidata.io.http.httpBufferSize=200000',
                              '-Djava.util.logging.config.file=logging.properties',
-                             '-Dorg.jboss.logging.provider=slf4j']
+                             '-Dorg.jboss.logging.provider=slf4j',
+                             "-Dorg.xerial.snappy.tempdir=${System.getProperty('java.io.tmpdir')}"]
 
 // See #95586. Use the ZGC garbage collector for a recent JDK, else CMS, else default.
 if (TARGET_JDK >= 17)

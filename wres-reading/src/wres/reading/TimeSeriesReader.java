@@ -33,8 +33,7 @@ import java.util.stream.Stream;
 public interface TimeSeriesReader
 {
     /**
-     * Reads and returns all time-series from the underlying source, creating a stream to read from the source. To read 
-     * from an existing stream, use {@link #read(DataSource, InputStream)}.
+     * Reads and returns all time-series from the underlying data source.
      *  
      * @see #read(DataSource, InputStream)
      * @param dataSource the data source, required
@@ -46,8 +45,8 @@ public interface TimeSeriesReader
     Stream<TimeSeriesTuple> read( DataSource dataSource );
 
     /**
-     * Reads and returns all time-series from the prescribed stream, using the data source for descriptive information
-     * only.
+     * A stream reader for data formats that support sequential streaming. Reads and returns all time-series from the
+     * prescribed stream, using the data source for descriptive information only.
      * 
      * @see #read(DataSource)
      * @param dataSource the data source, required

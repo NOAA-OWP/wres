@@ -126,8 +126,8 @@ public class NwmGridReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( stream );
 
-        LOGGER.warn( "Streaming of Netcdf gridded time-series data is not currently supported. Attempting to read "
-                     + "directly from the data source supplied, {}.",
+        LOGGER.warn( "The NetCDF format is a random access format for which sequential streaming is not supported. "
+                     + "Attempting to read directly from the data source supplied, {}.",
                      dataSource );
 
         return this.read( dataSource );

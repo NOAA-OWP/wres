@@ -81,6 +81,12 @@
     <!-- ActiveMQ audit logs with level "error" -->
     <logger name="org.apache.activemq.audit" level="error" />
 
+    <!-- Suppress all Parquet Hadoop logs -->
+    <logger name="org.apache.parquet.hadoop" level="error"/>
+
+    <!-- Suppress all Hadoop compression logs -->
+    <logger name="org.apache.hadoop.io.compress" level="error"/>
+
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />

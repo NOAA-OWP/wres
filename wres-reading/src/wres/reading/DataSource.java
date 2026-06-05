@@ -107,6 +107,8 @@ public record DataSource( @NonNull DataDisposition disposition,
         CSV_WRES_THRESHOLDS,
         /** The data has been detected as GeoJSON. */
         GEOJSON,
+        /** The data has been detected as Parquet. */
+        PARQUET,
         /** The data type is unknown or to be determined. */
         UNKNOWN;
 
@@ -321,6 +323,10 @@ public record DataSource( @NonNull DataDisposition disposition,
         else if ( subtype.equals( "fastinfosetxml" ) )
         {
             disposition = DataSource.getDispositionOfFastInfosetSubtype( firstBytes, uri );
+        }
+        else if ( subtype.equals( "x-parquet" ) )
+        {
+            disposition = DataDisposition.PARQUET;
         }
 
         LOGGER.debug( "Detected {} for {}", disposition, uri );
