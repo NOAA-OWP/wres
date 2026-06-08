@@ -50,14 +50,16 @@ task( unzipArtifactToTest, type: Copy, group: 'test' )
     println( "zipFile: " + zipFile )
     println( "outputDir: " + outputDir )
 
-    // Print the SHA-256 of the artifact if it exists
-    if( zipFile.exists() )
+    inputs.file zipFile
+    outputs.dir outputDir
+
+    if ( zipFile.exists() )
     {
-        byte[] binaryContent = zipFile.bytes
-        MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
-        byte[] hashbytes = digest.digest( binaryContent )
-        String shaHex = bytesToHex( hashbytes );
-        println( "Artifact " + artifactName + " has a SHA-256 of: " + shaHex )
+        String shaHex = calculateSHA256(zipFile)
+        println("Artifact " + artifactName + " has a SHA-256 of: " + shaHex)
+
+        println( "Extracting " + zipFile + " to " + outputDir + "..." )
+        ant.unzip( src: zipFile, dest: outputDir, overwrite: "true" )
     }
 
     from zipTree(zipFile)
@@ -82,12 +84,9 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
 
     // Print the SHA-256 of the graphics artifact if it exists
     if( zipFile.exists() )
-    { 
-        byte[] binaryContent = zipFile.bytes
-        MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
-        byte[] hashbytes = digest.digest( binaryContent )
-        String shaHex = bytesToHex( hashbytes );
-        println( "Graphics artifact "+ artifactName + " has a SHA-256 of: " + shaHex )
+    {
+        String shaHex = calculateSHA256(zipFile)
+        println( "Graphics Artifact " + artifactName + " has a SHA-256 of: " + shaHex )
     }
 
     from zipTree(zipFile)
@@ -209,11 +208,8 @@ task( unzipWritingArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, gr
             // Print the SHA-256 of the graphics artifact if it exists
             if( zipFile.exists() )
             {
-                byte[] binaryContent = zipFile.bytes
-                MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
-                byte[] hashbytes = digest.digest( binaryContent )
-                String shaHex = bytesToHex( hashbytes );
-                println( "Writing artifact "+ artifactName + " has a SHA-256 of: " + shaHex )
+                String shaHex = calculateSHA256(zipFile)
+                println( "Writing Artifact " + artifactName + " has a SHA-256 of: " + shaHex )
             }
 
             from zipTree(zipFile)
@@ -336,6 +332,20 @@ test.finalizedBy( stopWritingClient )
 boolean isWindows()
 {
     return System.properties[ 'os.name' ].toLowerCase().contains( 'windows' );
+}
+
+// Calculate the SHAE-256 of the input file
+String calculateSHA256( File file ) {
+    MessageDigest digest = MessageDigest.getInstance( "SHA-256" )
+    file.withInputStream { is ->
+        byte[] buffer = new byte[ 8192 ]
+        int read
+        while ( ( read = is.read(buffer) ) != -1 ) 
+        {
+            digest.update( buffer, 0, read )
+        }
+    }
+    return bytesToHex( digest.digest() )
 }
 
 // Converts a byte array to a hex string 
