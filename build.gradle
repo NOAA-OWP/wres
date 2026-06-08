@@ -1441,7 +1441,7 @@ project(':wres-tasker') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.12.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.13.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:5.3.2'
@@ -1602,7 +1602,7 @@ project(':wres-eventsbroker') {
             exclude group: 'io.netty', module: 'io.netty'
         }
 
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.12.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.2.13.Final'
 
         // Include later dependency version
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.84'
