@@ -1,11 +1,13 @@
 package wres.reading.parquet;
 
-import java.io.EOFException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -15,16 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.apache.parquet.conf.ParquetConfiguration;
-import org.apache.parquet.conf.PlainParquetConfiguration;
-import org.apache.parquet.example.data.Group;
-import org.apache.parquet.hadoop.ParquetFileReader;
-import org.apache.parquet.hadoop.api.ReadSupport;
-import org.apache.parquet.hadoop.example.GroupReadSupport;
-import org.apache.parquet.io.InputFile;
-import org.apache.parquet.io.LocalInputFile;
-import org.apache.parquet.io.SeekableInputStream;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +30,7 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
+import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 
 /**
@@ -67,6 +60,9 @@ public class ParquetReader implements TimeSeriesReader
     /** Default value string. */
     private static final String UNKNOWN = "unknown";
 
+    /** Database URL> **/
+    private static final String DUCKDB_JDBC_URL = "jdbc:jfr:duckdb:";
+
     /**
      * @return an instance
      */
@@ -82,12 +78,9 @@ public class ParquetReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Validate the data source
-        this.validateDataSource( dataSource );
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.PARQUET );
 
-        Path path = Paths.get( dataSource.uri() );
-
-        InputFile inputFile = new LocalInputFile( path );
-        return this.read( dataSource, inputFile );
+        return this.readInner( dataSource );
     }
 
     /**
@@ -108,36 +101,28 @@ public class ParquetReader implements TimeSeriesReader
         Objects.requireNonNull( inputStream );
 
         // Validate the data source
-        this.validateDataSource( dataSource );
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.PARQUET );
 
-        try
-        {
-            byte[] bytes = inputStream.readAllBytes();
-            InputFile inputFile = new ByteArrayInputFile( bytes );
-            return this.read( dataSource, inputFile );
-        }
-        catch ( IOException e )
-        {
-            throw new ReadException( "Failed to read from an input stream for this data source: " + dataSource );
-        }
+        LOGGER.warn( "The Parquet format is a random access format for which sequential streaming is not supported. "
+                     + "Attempting to read directly from the data source supplied, {}.",
+                     dataSource );
+
+        return this.read( dataSource );
     }
 
     /**
-     * @param parquetFile the parquet file
      * @param dataSource the data source
      * @return the time-series streams
      * @throws ReadException if the data source could not be read
      * @throws NullPointerException if either input is null
      */
 
-    private Stream<TimeSeriesTuple> read( DataSource dataSource,
-                                          InputFile parquetFile )
+    private Stream<TimeSeriesTuple> readInner( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( parquetFile );
 
         // Get the lazy supplier of time-series data
-        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, parquetFile, new AtomicBoolean() );
+        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, new AtomicBoolean() );
 
         // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this
         // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to
@@ -153,7 +138,6 @@ public class ParquetReader implements TimeSeriesReader
      * Returns a time-series supplier from the inputs.
      *
      * @param dataSource the data source
-     * @param parquetFile the parquet file
      * @param readStatus whether the file has been read before
      * @return a time-series supplier
      * @throws ReadException if the file could not be read for any reason
@@ -161,11 +145,9 @@ public class ParquetReader implements TimeSeriesReader
      */
 
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
-                                                             InputFile parquetFile,
                                                              AtomicBoolean readStatus )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( parquetFile );
 
         return () ->
         {
@@ -175,50 +157,31 @@ public class ParquetReader implements TimeSeriesReader
                 return null;
             }
 
-            ParquetConfiguration conf = new PlainParquetConfiguration();
-
-            TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( dataSource,
-                                                                      parquetFile );
+            TimeSeriesMetadata metadata = this.getTimeSeriesMetadata( dataSource );
 
             TimeSeries.Builder<Double> timeSeriesBuilder = new TimeSeries.Builder<Double>()
                     .setMetadata( metadata );
+            String targetFilePath = this.getParquetPath( dataSource );
+            String querySql = String.format( "SELECT value_time, sim_flow FROM read_parquet('%s')", targetFilePath );
 
-            int timeIdx = -1;
-            int flowIdx = -1;
-            boolean indicesResolved = false;
-
-            try ( org.apache.parquet.hadoop.ParquetReader<Group> reader = new HadoopFreeParquetBuilder( parquetFile )
-                    .withConf( conf )
-                    .build() )
+            try ( Connection conn = DriverManager.getConnection( DUCKDB_JDBC_URL );
+                  Statement stmt = conn.createStatement();
+                  ResultSet rs = stmt.executeQuery( querySql ) )
             {
-
-                Group group;
-                while ( ( group = reader.read() ) != null )
+                while ( rs.next() )
                 {
-                    if ( !indicesResolved )
-                    {
-                        timeIdx = group.getType()
-                                       .getFieldIndex( "value_time" );
-                        flowIdx = group.getType()
-                                       .getFieldIndex( "sim_flow" );
-                        indicesResolved = true;
-                    }
+                    Timestamp timestampVal = rs.getTimestamp( "value_time" );
+                    LocalDateTime localDateTime = timestampVal.toLocalDateTime();
 
-                    long rawEpochTime = group.getLong( timeIdx, 0 );
-                    long seconds = rawEpochTime / 1_000_000_000L;
-                    int nanos = ( int ) ( rawEpochTime % 1_000_000_000L );
-
-                    // Create a local time as adjustedToUTC is false
-                    LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( seconds, nanos, ZoneOffset.UTC );
-
-                    double rawFlow = group.getFloat( flowIdx, 0 );
-
-                    // But assume UTC anyway for now
+                    // A fairy story, but the format does not provide sufficient information for any other assumption
+                    // because adjustedToUTC=false.
                     Instant timestamp = localDateTime.toInstant( ZoneOffset.UTC );
+
+                    double rawFlow = rs.getDouble( "sim_flow" );
                     timeSeriesBuilder.addEvent( Event.of( timestamp, rawFlow ) );
                 }
             }
-            catch ( IOException e )
+            catch ( SQLException e )
             {
                 throw new ReadException(
                         "Could not read the time-series from a Parquet file contained in this data source:"
@@ -235,75 +198,69 @@ public class ParquetReader implements TimeSeriesReader
     /**
      * Reads the time-series metadata from the source file.
      * @param dataSource the data source
-     * @param parquetFile the parquet file
      * @return the time-series metadata
      * @throws ReadException if the metadata could not be read for any reason
      */
 
-    private TimeSeriesMetadata getTimeSeriesMetadata( DataSource dataSource,
-                                                      InputFile parquetFile )
+    private TimeSeriesMetadata getTimeSeriesMetadata( DataSource dataSource )
     {
-        Map<String, String> fileMetadata;
-        try ( ParquetFileReader metaReader = ParquetFileReader.open( parquetFile ) )
+        String featureId = UNKNOWN;
+        String variableName = UNKNOWN;
+        String measurementUnit = UNKNOWN;
+        String targetFilePath = this.getParquetPath( dataSource );
+        String metadataSql = String.format( "SELECT CAST(key AS VARCHAR) AS key_str, CAST(value AS VARCHAR) AS val_str "
+                                            + "FROM parquet_kv_metadata('%s')", targetFilePath );
+
+        try ( Connection conn = DriverManager.getConnection( DUCKDB_JDBC_URL );
+              Statement stmt = conn.createStatement();
+              ResultSet rs = stmt.executeQuery( metadataSql ) )
         {
-            fileMetadata = metaReader.getFileMetaData().getKeyValueMetaData();
+            while ( rs.next() )
+            {
+                String key = rs.getString( "key_str" );
+                String value = rs.getString( "val_str" );
+                if ( "feature_id".equalsIgnoreCase( key ) )
+                {
+                    featureId = value;
+                }
+                else if ( "variable_name".equalsIgnoreCase( key ) )
+                {
+                    variableName = value;
+                }
+                else if ( "measurement_unit".equalsIgnoreCase( key ) )
+                {
+                    measurementUnit = value;
+                }
+            }
         }
-        catch ( IOException e )
+        catch ( SQLException e )
         {
-            throw new ReadException( "Could not read the metadata from a Parquet file contained in this data source:"
-                                     + dataSource,
-                                     e );
+            throw new ReadException( "Failed to read the time-series metadata for a data source with URI: "
+                                     + dataSource.uri(), e );
         }
 
-        TimeSeriesMetadata.Builder metadata = new TimeSeriesMetadata.Builder();
+        Geometry geometry = MessageUtilities.getGeometry( featureId );
+        Feature feature = Feature.of( geometry );
 
-        String featureId = ( fileMetadata != null ) ?
-                fileMetadata.getOrDefault( "feature_id", UNKNOWN ) : UNKNOWN;
-
-        metadata.setFeature( Feature.of( Geometry.newBuilder()
-                                                 .setName( featureId )
-                                                 .build() ) );
-
-        String variableName = ( fileMetadata != null ) ?
-                fileMetadata.getOrDefault( "variable_name", UNKNOWN ) : UNKNOWN;
-
-        metadata.setVariableName( variableName );
-
-        String unit = ( fileMetadata != null ) ?
-                fileMetadata.getOrDefault( "measurement_unit", UNKNOWN ) : UNKNOWN;
-
-        metadata.setUnit( unit );
-
-        metadata.setReferenceTimes( Map.of() );
-
-        return metadata.build();
+        return new TimeSeriesMetadata.Builder()
+                .setReferenceTimes( Map.of() )
+                .setFeature( feature )
+                .setVariableName( variableName )
+                .setUnit( measurementUnit )
+                .build();
     }
 
     /**
-     * Validates the data source.
-     *
      * @param dataSource the data source
+     * @return the path tpo the Parquet file
      */
 
-    private void validateDataSource( DataSource dataSource )
+    private String getParquetPath( DataSource dataSource )
     {
-        // Validate the disposition of the data source
-        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.PARQUET );
-
-        if ( Objects.nonNull( dataSource.source()
-                                        .timeZoneOffset() )
-             && !Objects.equals( dataSource.source()
-                                           .timeZoneOffset(),
-                                 ZoneOffset.UTC ) )
-        {
-            throw new ReadException( "The declared 'time_zone_offset' for the data source at '"
-                                     + dataSource.uri()
-                                     + "' was '"
-                                     + dataSource.source()
-                                                 .timeZoneOffset()
-                                     + "', which is inconsistent with the CSV format requirement that all times are "
-                                     + "supplied in UTC. Please resolve this conflict and try again." );
-        }
+        return Paths.get( dataSource.uri() )
+                    .toAbsolutePath()
+                    .toString()
+                    .replace( "\\", "/" );
     }
 
     /**
@@ -313,153 +270,6 @@ public class ParquetReader implements TimeSeriesReader
     private ParquetReader()
     {
         // Do not construct
-    }
-
-    /**
-     * A convenience class the provides a file interface to a byte stream for reading.
-     */
-
-    private static class ByteArrayInputFile implements InputFile
-    {
-        private final byte[] data;
-
-        public ByteArrayInputFile( byte[] data )
-        {
-            this.data = data;
-        }
-
-        @Override
-        public long getLength()
-        {
-            return data.length;
-        }
-
-        @Override
-        public SeekableInputStream newStream()
-        {
-            return new SeekableByteArrayInputStream( data );
-        }
-
-        private static class SeekableByteArrayInputStream extends SeekableInputStream
-        {
-            private final byte[] data;
-            private int pos = 0;
-
-            public SeekableByteArrayInputStream( byte[] data )
-            {
-                this.data = data;
-            }
-
-            @Override
-            public long getPos()
-            {
-                return pos;
-            }
-
-            @Override
-            public void seek( long newPos ) throws IOException
-            {
-                if ( newPos < 0 || newPos > data.length )
-                {
-                    throw new IOException( "Seek out of bounds." );
-                }
-                this.pos = ( int ) newPos;
-            }
-
-            @Override
-            public int read()
-            {
-                return ( pos < data.length ) ? ( data[pos++] & 0xff ) : -1;
-            }
-
-            @Override
-            public int read( @NotNull byte[] b, int off, int len )
-            {
-                if ( pos >= data.length )
-                {
-                    return -1;
-                }
-                int avail = data.length - pos;
-                if ( len > avail )
-                {
-                    len = avail;
-                }
-                System.arraycopy( data, pos, b, off, len );
-                pos += len;
-                return len;
-            }
-
-            @Override
-            public void readFully( byte[] b ) throws IOException
-            {
-                readFully( b, 0, b.length );
-            }
-
-            @Override
-            public void readFully( byte[] b, int off, int len ) throws IOException
-            {
-                if ( read( b, off, len ) < len )
-                {
-                    throw new EOFException();
-                }
-            }
-
-            @Override
-            public int read( ByteBuffer buf )
-            {
-                if ( pos >= data.length )
-                {
-                    return -1;
-                }
-                int avail = data.length - pos;
-                int toRead = Math.min( buf.remaining(), avail );
-                if ( toRead <= 0 )
-                {
-                    return 0;
-                }
-
-                buf.put( data, pos, toRead );
-                pos += toRead;
-                return toRead;
-            }
-
-            @Override
-            public void readFully( ByteBuffer buf ) throws IOException
-            {
-                int expected = buf.remaining();
-                if ( expected <= 0 )
-                {
-                    return;
-                }
-
-                int avail = data.length - pos;
-                if ( expected > avail )
-                {
-                    throw new EOFException( "Not enough bytes remaining to fill the supplied buffer." );
-                }
-
-                buf.put( data, pos, expected );
-                pos += expected;
-            }
-        }
-    }
-
-    /**
-     * A Parquet reader that does not depend on a Hadoop file system.
-     */
-
-    private static class HadoopFreeParquetBuilder extends org.apache.parquet.hadoop.ParquetReader.Builder<Group>
-    {
-        protected HadoopFreeParquetBuilder( InputFile file )
-        {
-            super( file );
-        }
-
-        @Override
-        protected ReadSupport<Group> getReadSupport()
-        {
-            return new GroupReadSupport();
-        }
     }
 }
 

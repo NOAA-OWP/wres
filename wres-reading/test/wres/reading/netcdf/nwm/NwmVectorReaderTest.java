@@ -45,7 +45,7 @@ import wres.statistics.generated.GeometryTuple;
 class NwmVectorReaderTest
 {
     /**
-     * TODO: implement this test fully, writing a small vector source to an in-memory file system and then reading it.
+     * TODO: implement this test fully, writing a small vector source to an in-memory file system and then read it.
      * This test will pass currently if using the correct path to the source identified below, which originates from 
      * system test scenario600. For now, this test is ignored.
      */

@@ -1,16 +1,17 @@
 package wres.reading.parquet;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -32,48 +33,63 @@ import wres.statistics.MessageUtilities;
 
 class ParquetReaderTest
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( ParquetReaderTest.class );
+
     @Test
-    void testReadParquetFile() throws IOException, URISyntaxException
+    void testReadParquetFile() throws IOException
     {
+        // Unfortunately, writing to an in-memory file system will not work when using DuckDB, which requires a native
+        // file path.
+
+        Path parquetPath = Files.createTempFile( "wres_test_", ".parquet" );
+        LOGGER.debug( "Wrote a temporary Parquet file to {}.", parquetPath );
+
+        // Write the test bytes
+        byte[] parquetBytes = this.getTestParquetBytes();
+        Files.write( parquetPath, parquetBytes );
+
         DataSource dataSource = DataSource.builder()
                                           .context( DatasetBuilder.builder()
                                                                   .build() )
                                           .source( SourceBuilder.builder()
                                                                 .build() )
                                           .links( Collections.emptyList() )
-                                          .uri( new URI( "file:///foo.bar" ) )
+                                          .uri( parquetPath.toUri() )
                                           .disposition( DataSource.DataDisposition.PARQUET )
                                           .build();
 
-        byte[] parquetBytes = this.getTestParquetBytes();
-        try ( InputStream byteArrayInputStream = new ByteArrayInputStream( parquetBytes ) )
+        ParquetReader reader = ParquetReader.of();
+        List<TimeSeries<Double>> actual = reader.read( dataSource )
+                                                .map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                .toList();
+
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Collections.emptyMap(),
+                                       null,
+                                       "streamflow",
+                                       Feature.of( MessageUtilities.getGeometry( "50147800" ) ),
+                                       "m3/s" );
+
+        TimeSeries<Double> expectedOne =
+                new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
+                                                .addEvent( Event.of( Instant.parse( "2015-10-01T01:00:00Z" ),
+                                                                     0.43953895568847656 ) )
+                                                .addEvent( Event.of( Instant.parse( "2015-10-01T02:00:00Z" ),
+                                                                     0.8975731730461121 ) )
+                                                .addEvent( Event.of( Instant.parse( "2015-10-01T03:00:00Z" ),
+                                                                     1.2245831489562988 ) )
+                                                .build();
+
+        List<TimeSeries<Double>> expected = List.of( expectedOne );
+
+        assertEquals( expected, actual );
+
+        // Clean up
+        if ( Files.exists( parquetPath ) )
         {
-            ParquetReader reader = ParquetReader.of();
-            List<TimeSeries<Double>> actual = reader.read( dataSource,
-                                                           byteArrayInputStream )
-                                                    .map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                    .toList();
-
-            TimeSeriesMetadata expectedMetadata =
-                    TimeSeriesMetadata.of( Collections.emptyMap(),
-                                           null,
-                                           "streamflow",
-                                           Feature.of( MessageUtilities.getGeometry( "50147800" ) ),
-                                           "m3/s" );
-
-            TimeSeries<Double> expectedOne =
-                    new TimeSeries.Builder<Double>().setMetadata( expectedMetadata )
-                                                    .addEvent( Event.of( Instant.parse( "2015-10-01T01:00:00Z" ),
-                                                                         0.43953895568847656 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2015-10-01T02:00:00Z" ),
-                                                                         0.8975731730461121 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2015-10-01T03:00:00Z" ),
-                                                                         1.2245831489562988 ) )
-                                                    .build();
-
-            List<TimeSeries<Double>> expected = List.of( expectedOne );
-
-            assertEquals( expected, actual );
+            LOGGER.debug( "Deleted the temporary parquet file at {}.", parquetPath );
+            Files.delete( parquetPath );
         }
     }
 

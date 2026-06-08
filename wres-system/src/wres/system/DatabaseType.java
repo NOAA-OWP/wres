@@ -24,7 +24,10 @@ public enum DatabaseType
     MARIADB( "org.mariadb.jdbc.MariaDbDataSource", "org.mariadb.jdbc.Driver", true, true, false ),
 
     /** Code changes and testing are needed to support SQLite. */
-    SQLITE( "org.sqlite.SQLiteDataSource", "org.sqlite.JDBC", true, false, false );
+    SQLITE( "org.sqlite.SQLiteDataSource", "org.sqlite.JDBC", true, false, false ),
+
+    /** Code changes and testing are needed to support DuckDB. */
+    DUCKDB( "org.duckdb.DuckDBDataSource", "org.duckdb.DuckDBDriver", true, true, true );
 
     /**
      * Liquibase changes or "clean" or "remove orphans" should use
