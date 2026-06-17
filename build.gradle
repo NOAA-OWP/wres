@@ -1435,13 +1435,7 @@ project(':wres-tasker') {
         implementation 'org.apache.tika:tika-core:3.2.3'
 
         // To persist job metadata while keeping it relatively fast
-        implementation('org.redisson:redisson:3.52.0') {
-            // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-            exclude group: 'io.netty'
-        }
-
-        // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.13.Final'
+        implementation 'org.redisson:redisson:3.52.0'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:5.3.2'
@@ -1597,12 +1591,7 @@ project(':wres-eventsbroker') {
 
             // Because of CVE-2024-34447, CVE-2024-29857, CVE-2024-30171, CVE-2024-30172.
             exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
-
-            // Because of CVE-2024-47535.
-            exclude group: 'io.netty', module: 'io.netty'
         }
-
-        implementation group: 'io.netty', name: 'netty-all', version: '4.2.13.Final'
 
         // Include later dependency version
         runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.84'
@@ -1628,10 +1617,7 @@ project(':wres-eventsbroker') {
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client to test interaction with the embedded broker
-        testRuntimeOnly('org.apache.qpid:qpid-jms-client:2.9.0') {
-            // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-            exclude group: 'io.netty'
-        }
+        testRuntimeOnly 'org.apache.qpid:qpid-jms-client:2.9.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.1'
@@ -1664,10 +1650,7 @@ project(':wres-events') {
         api group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client
-        runtimeOnly('org.apache.qpid:qpid-jms-client:2.9.0') {
-            // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-            exclude group: 'io.netty'
-        }
+        runtimeOnly 'org.apache.qpid:qpid-jms-client:2.9.0'
 
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.20.0'
@@ -1976,10 +1959,7 @@ dependencies {
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation('org.redisson:redisson:3.52.0') {
-        // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        exclude group: 'io.netty'
-    }
+    implementation 'org.redisson:redisson:3.52.0'
 
     // Aggressively remove a vulnerable dep brought in by redisson above
     implementation('com.fasterxml.jackson.core:jackson-databind') {
