@@ -1,6 +1,18 @@
 ![commitChecks](https://github.com/NOAA-OWP/wres/actions/workflows/commitChecks.yml/badge.svg)
 
-# Water Resources Evaluation Service (WRES)
+
+<table width="100%" cellspacing="0" cellpadding="10">
+  <tr>
+    <td width="250" align="center" valign="middle">
+      <!-- <img width="250" height="249" alt="wres_logo" src="https://github.com/user-attachments/assets/b6eca13d-b770-4aa4-974a-bceee0b6af6c" /> -->
+        <img width="250" height="249" alt="Image" src="https://github.com/user-attachments/assets/edba662f-fa44-468f-8a9f-f7747562eddf" />
+    </td>
+    <td valign="middle">
+      <h1>Water Resources Evaluation Service (WRES)</h1>
+      <p><i>Official GitHub Repository</i></p>
+    </td>
+  </tr>
+</table>
 
 The Water Resources Evaluation Service (WRES) is a comprehensive service for evaluating the quality of model predictions, such as hydrometeorological forecasts. The WRES encapsulates a data-to-statistics evaluation pipeline, including reading data from web services or files of various formats, rescaling data, changing measurement units, filtering data, pairing predictions and observations, allocating pairs to pools based on pooling criteria (e.g., common forecast lead times), computing statistics and writing statistics to various formats. It can support different shapes and sizes of evaluations, ranging from a few geographic features (e.g., using an in-memory data model for quick performance), or evaluations containing many thousands of geographic features (e.g., using a database, such as PostgreSQL) or even gridded datasets.
 
