@@ -987,7 +987,7 @@ public class UsgsOgcReader implements TimeSeriesReader
         urlParameters.put( "skipGeometry", "true" );
 
         urlParameters.put( "limit", Integer.toString( DEFAULT_PAGE_SIZE ) );
-        urlParameters.put( "properties", "id,time_series_id,monitoring_location_id,statistic_id,time,"
+        urlParameters.put( "properties", "time_series_id,monitoring_location_id,statistic_id,time,"
                                          + "value,unit_of_measure" );
         urlParameters.put( "parameter_code", parameterCodes );
         urlParameters.put( "monitoring_location_id", featureName );
