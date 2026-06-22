@@ -25,7 +25,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +42,7 @@ import wres.config.components.Dataset;
 import wres.config.components.DatasetOrientation;
 import wres.config.components.EvaluationDeclaration;
 import wres.config.components.Source;
+import wres.config.components.Variable;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.reading.DataSource;
 import wres.reading.ReaderUtilities;
@@ -443,7 +447,7 @@ public class SourceLoader
         // The key is the distinct source, and the paired value is the context in
         // which the source appears and the set of additional links to create, if any.
         // Note that all project declaration overrides hashCode and equals (~ key in a HashMap)
-        Map<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> sources = new HashMap<>();
+        Map<QualifiedSource, Pair<OrientedDataSource, List<DatasetOrientation>>> sources = new HashMap<>();
 
         // Must have one or more left sources to load and link
         SourceLoader.mutateSourcesToLoadAndLink( sources,
@@ -484,7 +488,7 @@ public class SourceLoader
         Set<DataSource> returnMe = new HashSet<>();
 
         // Expand any file sources that represent directories and filter any that are not required
-        for ( Map.Entry<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> nextSource : sources.entrySet() )
+        for ( Map.Entry<QualifiedSource, Pair<OrientedDataSource, List<DatasetOrientation>>> nextSource : sources.entrySet() )
         {
             // Allow GC of new empty sets by letting the links ref empty set.
             List<DatasetOrientation> links = Collections.emptyList();
@@ -504,7 +508,10 @@ public class SourceLoader
             DatasetOrientation covariateFeatureOrientation = dataSource.covariateFeatureorientation();
 
             // Evaluate the path, which is null for a source that is not file-like
-            Path path = SourceLoader.evaluatePath( nextSource.getKey() );
+            Source sourceToEvaluate = nextSource.getKey()
+                                                .source();
+
+            Path path = SourceLoader.evaluatePath( sourceToEvaluate );
 
             // If there is a file-like source, test for a directory and decompose it as required
             if ( Objects.nonNull( path ) )
@@ -512,7 +519,7 @@ public class SourceLoader
                 // Currently unknown disposition, to be unpacked/determined
                 DataSource source = DataSource.builder()
                                               .disposition( DataDisposition.UNKNOWN )
-                                              .source( nextSource.getKey() )
+                                              .source( sourceToEvaluate )
                                               .context( dataset )
                                               .links( links )
                                               .uri( path.toUri() )
@@ -527,30 +534,28 @@ public class SourceLoader
             else
             {
                 // Create a source with unknown disposition
-                DataSource sourceToEvaluate = DataSource.builder()
-                                                        .disposition( DataDisposition.UNKNOWN )
-                                                        .source( nextSource.getKey() )
-                                                        .context( dataset )
-                                                        .links( links )
-                                                        .uri( nextSource.getKey()
-                                                                        .uri() )
-                                                        .datasetOrientation( orientation )
-                                                        .covariateFeatureOrientation( covariateFeatureOrientation )
-                                                        .build();
+                DataSource webSourceToEvaluate = DataSource.builder()
+                                                           .disposition( DataDisposition.UNKNOWN )
+                                                           .source( sourceToEvaluate )
+                                                           .context( dataset )
+                                                           .links( links )
+                                                           .uri( sourceToEvaluate.uri() )
+                                                           .datasetOrientation( orientation )
+                                                           .covariateFeatureOrientation( covariateFeatureOrientation )
+                                                           .build();
 
                 // Determine the disposition, which cannot use content type detection for a web source because the API
                 // sits at a higher level of abstraction than the response format type and the API must be determined,
                 // ideally by user declaration of the source interface, else by hints provided in the URI
-                DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
+                DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( webSourceToEvaluate );
 
                 // Adjust the source to include the disposition
                 DataSource evaluatedSource = DataSource.builder()
                                                        .disposition( disposition )
-                                                       .source( nextSource.getKey() )
+                                                       .source( sourceToEvaluate )
                                                        .context( dataset )
                                                        .links( links )
-                                                       .uri( nextSource.getKey()
-                                                                       .uri() )
+                                                       .uri( sourceToEvaluate.uri() )
                                                        .datasetOrientation( orientation )
                                                        .covariateFeatureOrientation( covariateFeatureOrientation )
                                                        .build();
@@ -838,7 +843,7 @@ public class SourceLoader
      * @throws NullPointerException if any input is null
      */
 
-    private static void mutateSourcesToLoadAndLink( Map<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> sources,
+    private static void mutateSourcesToLoadAndLink( Map<QualifiedSource, Pair<OrientedDataSource, List<DatasetOrientation>>> sources,
                                                     EvaluationDeclaration declaration,
                                                     Dataset dataset,
                                                     DatasetOrientation orientation,
@@ -857,10 +862,17 @@ public class SourceLoader
             // the source to appear together (e.g. both left and right),
             // but that validation needs to happen way before now, so proceed in all cases
 
-            // Only create a link if the source is already in the load list/map
-            if ( sources.containsKey( source ) )
+            // Only create a link if the source should be linked
+            QualifiedSource qualifiedSource = new QualifiedSource( source, dataset.variable() );
+            if ( SourceLoader.shouldLinkSourceRatherThanLoad( qualifiedSource, sources ) )
             {
-                sources.get( source )
+                LOGGER.info( "The following source dataset has already been loaded and will not be loaded again. "
+                              + "Instead, it has been linked to an existing, loaded, dataset. At least, the datasets "
+                              + "shared the same URI. At most, they shared the same URI and other qualifiers (e.g., "
+                              + "variable name when requesting data from a web service). The linked data is: {}",
+                              qualifiedSource );
+
+                sources.get( qualifiedSource )
                        .getRight()
                        .add( orientation );
             }
@@ -872,9 +884,38 @@ public class SourceLoader
                                                                             covariateFeatureOrientation );
                 Pair<OrientedDataSource, List<DatasetOrientation>> sourcePair
                         = Pair.of( orientedSource, new ArrayList<>() );
-                sources.put( source, sourcePair );
+                sources.put( qualifiedSource, sourcePair );
             }
         }
+    }
+
+    /**
+     * Returns whether a source should be linked ({@code true}) or loaded ({@code false}). A source should be linked if
+     * it has already been loaded, unless the source points to a generic web address. In that case, it should only be
+     * linked if the targeted web-request points to the same time-series dataset, notably the same variable, otherwise
+     * two variables from the same underlying web source will be linked. This is not applicable for a local file source
+     * because all data from a file source is loaded, whereas web requests are targeted to specific variables etc., so
+     * there is a many-to-one relationship between the dataset and the URI.
+     *
+     * @param source the source to inspect
+     * @param sources the map of data sources that have already been loaded
+     * @return whether the source should be linked or loaded
+     */
+
+    private static boolean shouldLinkSourceRatherThanLoad( QualifiedSource source,
+                                                           Map<QualifiedSource, Pair<OrientedDataSource, List<DatasetOrientation>>> sources )
+    {
+        // This is a file source. If the same unqualified source (i.e., file) has been loaded before, do not load again
+        if ( !ReaderUtilities.isWebSource( source.source()
+                                                 .uri() ) )
+        {
+            return sources.keySet()
+                          .stream()
+                          .anyMatch( q -> q.source.equals( source.source() ) );
+        }
+
+        // This is a web source, so use the qualification because web sources are targeted (e.g., to specific variables)
+        return sources.containsKey( source );
     }
 
     /**
@@ -1026,5 +1067,28 @@ public class SourceLoader
     private record OrientedDataSource( Dataset dataset,
                                        DatasetOrientation orientation,
                                        DatasetOrientation covariateFeatureorientation ) {}
+
+    /**
+     * A source qualified with additional information needed to discriminate it when there is a many-to-one relationship
+     * between the URI and the required time-series datasets. For example, when a web service has a generic URI, the
+     * variable is part of the web-service request for a specific dataset.
+     *
+     * @param source the data source
+     * @param variable the variable
+     */
+    private record QualifiedSource( Source source,
+                                    Variable variable )
+    {
+
+        @NotNull
+        @Override
+        public String toString()
+        {
+            return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                    .append( "Source", source )
+                    .append( "Variable", variable )
+                    .toString();
+        }
+    }
 
 }
