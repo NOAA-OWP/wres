@@ -47,7 +47,7 @@ services:
     networks:
       wres_net:
   persister:
-    image: "${DOCKER_REGISTRY}/wres/wres-redis:20260518-3c9f251"
+    image: "${DOCKER_REGISTRY}/wres/wres-redis:20260624-f47d4be"
     init: true
     restart: always
     userns_mode: keep-id
@@ -66,7 +66,7 @@ services:
   tasker:
     ports:
       - "8443:8443"
-    image: "${DOCKER_REGISTRY}/wres/wres-tasker:20260518-0d5df87aa"
+    image: "${DOCKER_REGISTRY}/wres/wres-tasker:20260618-b9d4b5413"
     init: true
     restart: always
     depends_on:
@@ -104,7 +104,7 @@ services:
       - "5671:5671"
       - "15671:15671"
       - "15691:15691"
-    image: "${DOCKER_REGISTRY}/wres/wres-broker:20260518-3c9f251"
+    image: "${DOCKER_REGISTRY}/wres/wres-broker:20260624-f47d4be"
     init: true
     restart: always
     volumes:
@@ -136,7 +136,7 @@ services:
     healthcheck:
       start_period: 5m
   worker:
-    image: "${DOCKER_REGISTRY}/wres/wres-worker:20260518-0d5df87aa"
+    image: "${DOCKER_REGISTRY}/wres/wres-worker:20260624-f47d4be73"
     init: true
     restart: always
     depends_on:
@@ -189,7 +189,7 @@ services:
       - 5673
     ports:
       - 15673:15673
-    image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20260518-3c9f251"
+    image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20260624-f47d4be"
     init: true
     restart: always
     volumes:
@@ -218,7 +218,7 @@ services:
     depends_on:
       eventsbroker:
         condition: service_started
-    image: "${DOCKER_REGISTRY}/wres/wres-graphics:20260518-89dbe0c2c"
+    image: "${DOCKER_REGISTRY}/wres/wres-graphics:20260617-c84442b15"
     init: true
     restart: always
     volumes:
@@ -245,7 +245,7 @@ services:
     depends_on:
       eventsbroker:
         condition: service_started
-    image: "${DOCKER_REGISTRY}/wres/wres-writing:20260518-89dbe0c2c"
+    image: "${DOCKER_REGISTRY}/wres/wres-writing:20260617-c84442b15"
     init: true
     restart: always
     volumes:
