@@ -576,6 +576,55 @@ final class TimeSeriesSlicerTest
     }
 
     @Test
+    void testDecomposeWithLabelsAndUnequalTraceLengthsProducesTwoTraces()
+    {
+        // Create an ensemble time-series with four members
+        Instant baseInstant = T2086_05_01T00_00_00Z;
+
+        Labels labels = Labels.of( "a", "b" );
+        Labels shortLabels = Labels.of( "a" );
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
+        TimeSeries<Ensemble> ensemble =
+                new TimeSeries.Builder<Ensemble>()
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                             Ensemble.of( new double[] { 1, 2 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                             Ensemble.of( new double[] { 3, 4 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                             Ensemble.of( new double[] { 5 },
+                                                          shortLabels ) ) )
+                        .setMetadata( metadata )
+                        .build();
+
+        List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
+
+        List<TimeSeries<Double>> expected = new ArrayList<>();
+
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 3.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 5.0 ) )
+                        .setMetadata( metadata )
+                        .build();
+
+        expected.add( one );
+
+        TimeSeries<Double> two =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 4.0 ) )
+                        .setMetadata( metadata )
+                        .build();
+
+        expected.add( two );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDecomposeAndThenComposeWithoutLabelsProducesTheSameSeries()
     {
         // Create an ensemble time-series with four members

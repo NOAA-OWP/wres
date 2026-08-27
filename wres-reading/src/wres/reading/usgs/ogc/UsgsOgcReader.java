@@ -51,6 +51,7 @@ import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
 import wres.config.components.EvaluationDeclaration;
 import wres.config.components.Source;
+import wres.config.components.UriParameter;
 import wres.config.components.Variable;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.http.WebClient;
@@ -936,9 +937,9 @@ public class UsgsOgcReader implements TimeSeriesReader
             }
         }
 
-        Map<String, String> urlParameters = this.getUrlParameters( range,
-                                                                   featureName,
-                                                                   dataSource );
+        List<UriParameter> urlParameters = this.getUrlParameters( range,
+                                                                  featureName,
+                                                                  dataSource );
         return ReaderUtilities.getUriWithParameters( baseUri,
                                                      urlParameters );
     }
@@ -952,9 +953,9 @@ public class UsgsOgcReader implements TimeSeriesReader
      * @throws NullPointerException When arg or value enclosed inside arg is null
      */
 
-    private Map<String, String> getUrlParameters( Pair<Instant, Instant> range,
-                                                  String featureName,
-                                                  DataSource dataSource )
+    private List<UriParameter> getUrlParameters( Pair<Instant, Instant> range,
+                                                 String featureName,
+                                                 DataSource dataSource )
     {
         LOGGER.trace( "Called getUrlParameters with {}, {}, {}",
                       range,
@@ -976,33 +977,33 @@ public class UsgsOgcReader implements TimeSeriesReader
         // For some reason, 1 to 999 milliseconds are not enough.
         Instant startDateTime = range.getLeft()
                                      .plusSeconds( 1 );
-        Map<String, String> urlParameters = new HashMap<>( dataSource.source()
-                                                                     .parameters() );
+        List<UriParameter> urlParameters = new ArrayList<>( dataSource.source()
+                                                                      .parameters() );
 
         String parameterCodes = this.getParameterCodes( dataSource.getVariable() );
-        urlParameters.put( "f", "json" );
-        urlParameters.put( "lang", "en-US" );
+        urlParameters.add( new UriParameter( "f", "json" ) );
+        urlParameters.add( new UriParameter( "lang", "en-US" ) );
 
         // For efficiency, acquire the location metadata from the monitoring locations endpoint
-        urlParameters.put( "skipGeometry", "true" );
+        urlParameters.add( new UriParameter( "skipGeometry", "true" ) );
 
-        urlParameters.put( "limit", Integer.toString( DEFAULT_PAGE_SIZE ) );
-        urlParameters.put( "properties", "time_series_id,monitoring_location_id,statistic_id,time,"
-                                         + "value,unit_of_measure" );
-        urlParameters.put( "parameter_code", parameterCodes );
-        urlParameters.put( "monitoring_location_id", featureName );
+        urlParameters.add( new UriParameter( "limit", Integer.toString( DEFAULT_PAGE_SIZE ) ) );
+        urlParameters.add( new UriParameter( "properties", "time_series_id,monitoring_location_id,statistic_id,time,"
+                                                           + "value,unit_of_measure" ) );
+        urlParameters.add( new UriParameter( "parameter_code", parameterCodes ) );
+        urlParameters.add( new UriParameter( "monitoring_location_id", featureName ) );
 
         String time = startDateTime + "/" + range.getRight();
-        urlParameters.put( "time", time );
+        urlParameters.add( new UriParameter( "time", time ) );
 
         if ( this.hasApiKey() )
         {
             LOGGER.debug( "Discovered a user-supplied API key for the {}, which will be added to the request "
                           + "using the 'api_key' parameter.", USGS );
-            urlParameters.put( API_KEY_NAME, API_KEY );
+            urlParameters.add( new UriParameter( API_KEY_NAME, API_KEY ) );
         }
 
-        return Collections.unmodifiableMap( urlParameters );
+        return Collections.unmodifiableList( urlParameters );
     }
 
     /**

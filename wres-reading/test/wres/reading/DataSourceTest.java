@@ -186,7 +186,8 @@ class DataSourceTest
     }
 
     @Test
-    void testDetectFormatIdentifiesJsonWrdsNwm() throws IOException
+    @Deprecated( forRemoval = true, since = "7.6" )
+    void testDetectFormatIdentifiesJsonWrdsNwmLegacy() throws IOException
     {
         String formatString = """
                 {
@@ -201,6 +202,39 @@ class DataSourceTest
                         "total_request_time": 22.629672050476074
                     },
                     "_documentation": "https://wrds.nwm/docs/nwm2.1/v2.0/swagger/""";
+
+        try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "fake.json" );
+
+            assertEquals( DataDisposition.JSON_WRDS_NWM_LEGACY, DataSource.detectFormat( stream, fakeUri ) );
+        }
+    }
+
+    @Test
+    void testDetectFormatIdentifiesJsonWrdsNwm() throws IOException
+    {
+        String formatString = """
+                [
+                  {
+                    "nwm_feature_id": 5907079,
+                    "configuration": "medium_range",
+                    "reference_datetime": "2026-07-08T18:00:00Z",
+                    "data_type": "streamflow",
+                    "units": "CMS",
+                    "forecast": [
+                      {
+                        "member_id": 1,
+                        "timeseries": [
+                          {
+                            "valid_datetime": "2026-07-08T19:00:00Z",
+                            "value": 18.1
+                          },
+                          {
+                            "valid_datetime": "2026-07-08T20:00:00Z",
+                            "value": 18.05
+                          },
+                """;
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {

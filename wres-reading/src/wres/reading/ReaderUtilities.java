@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,7 +34,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -48,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import wres.config.components.UriParameter;
 import wres.http.RetryPolicy;
 
 import javax.net.ssl.SSLContext;
@@ -216,21 +215,15 @@ public class ReaderUtilities
     }
 
     /**
-     * Transform a map of traces into a {@link TimeSeries} of {@link Ensemble} values (flip it) but
-     * also validate the density and valid datetimes of the ensemble prior.
-     * @param metadata The metadata of the timeseries.
-     * @param traces The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
-     * @param uri a uri to help with messaging
+     * Transform a map of traces into a {@link TimeSeries} of {@link Ensemble} values (flip it).
+     *
+     * @param metadata The metadata of the timeseries
+     * @param traces The raw data to build a TimeSeries
      * @return The complete TimeSeries
      * @throws IllegalArgumentException When fewer than two traces given.
-     * @throws PreReadException When ragged (non-dense) data given.
      */
-
     public static TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
-                                                          SortedMap<String, SortedMap<Instant, Double>> traces,
-                                                          int lineNumber,
-                                                          URI uri )
+                                                          SortedMap<String, SortedMap<Instant, Double>> traces )
     {
         int traceCount = traces.size();
 
@@ -241,80 +234,47 @@ public class ReaderUtilities
                           traces );
         }
 
-        Map<Instant, double[]> reshapedValues = new HashMap<>();
-        Map.Entry<String, SortedMap<Instant, Double>> previousTrace = null;
-        int i = 0;
-
-        String append = "";
-
-        if ( Objects.nonNull( uri ) )
+        // 1. Gather all unique timestamps to define our timeline
+        SortedSet<Instant> allInstants = new TreeSet<>();
+        for ( SortedMap<Instant, Double> traceData : traces.values() )
         {
-            append = " from " + uri;
-
-            if ( lineNumber > -1 )
-            {
-                append = " with data at or before "
-                         + "line number "
-                         + lineNumber;
-            }
-        }
-
-        for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
-        {
-            SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
-                                                                   .keySet() );
-
-            if ( Objects.nonNull( previousTrace ) )
-            {
-                SortedSet<Instant> previousInstants = new TreeSet<>( previousTrace.getValue()
-                                                                                  .keySet() );
-                if ( !theseInstants.equals( previousInstants ) )
-                {
-                    throw new ReadException( "Could not build an ensemble time-series"
-                                             + append
-                                             + " because the trace named "
-                                             + trace.getKey()
-                                             + " had these valid datetimes"
-                                             + ": "
-                                             + theseInstants
-                                             + " but a previous trace named "
-                                             + previousTrace.getKey()
-                                             + " had different ones: "
-                                             + previousInstants
-                                             + " which is not allowed. All"
-                                             + " traces must be dense and "
-                                             + "have matching valid datetimes." );
-                }
-            }
-
-            for ( Map.Entry<Instant, Double> event : trace.getValue()
-                                                          .entrySet() )
-            {
-                Instant validDateTime = event.getKey();
-                reshapedValues.putIfAbsent( validDateTime, new double[traceCount] );
-                double[] values = reshapedValues.get( validDateTime );
-                values[i] = event.getValue();
-            }
-
-            previousTrace = trace;
-            i++;
+            allInstants.addAll( traceData.keySet() );
         }
 
         wres.datamodel.time.TimeSeries.Builder<Ensemble> builder =
                 new wres.datamodel.time.TimeSeries.Builder<>();
-
-        // Because the iteration is over a sorted map, assuming same order here.
-        SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
-        String[] traceNames = new String[traceNamesSorted.size()];
-        traceNamesSorted.toArray( traceNames );
-        Labels labels = Labels.of( traceNames );
-
         builder.setMetadata( metadata );
 
-        for ( Map.Entry<Instant, double[]> events : reshapedValues.entrySet() )
+        // Allocate temporary structures once to reuse across iterations
+        double[] tempValues = new double[traceCount];
+        String[] tempNames = new String[traceCount];
+
+        for ( Instant instant : allInstants )
         {
-            Ensemble ensembleSlice = Ensemble.of( events.getValue(), labels );
-            Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
+            int memberCount = 0;
+
+            // Search the input map directly for this instant
+            for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
+            {
+                if ( trace.getValue()
+                          .containsKey( instant ) )
+                {
+                    double value = trace.getValue()
+                                        .get( instant );
+                    tempValues[memberCount] = value;
+                    tempNames[memberCount] = trace.getKey();
+                    memberCount++;
+                }
+            }
+
+            double[] finalValues = new double[memberCount];
+            String[] finalNames = new String[memberCount];
+            System.arraycopy( tempValues, 0, finalValues, 0, memberCount );
+            System.arraycopy( tempNames, 0, finalNames, 0, memberCount );
+
+            Labels labels = Labels.of( finalNames );
+            Ensemble ensembleSlice = Ensemble.of( finalValues, labels );
+            Event<Ensemble> ensembleEvent = Event.of( instant, ensembleSlice );
             builder.addEvent( ensembleEvent );
         }
 
@@ -593,7 +553,32 @@ public class ReaderUtilities
         // Fallback for unspecified interface.
         return uri.getPath()
                   .toLowerCase()
-                  .contains( "nwm" );
+                  .contains( "nwm/v" );
+    }
+
+    /**
+     * @param source the data source
+     * @return whether the source is a WRDS NWM legacy source
+     * @throws NullPointerException if the source is null
+     */
+
+    @Deprecated( forRemoval = true, since = "v7.6" )
+    public static boolean isWrdsNwmLegacySource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
+                                                   .sourceInterface();
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand == SourceInterface.WRDS_NWM;
+        }
+
+        // Fallback for unspecified interface.
+        return uri.getPath()
+                  .toLowerCase()
+                  .contains( "api/nwm/" );
     }
 
     /**
@@ -901,24 +886,23 @@ public class ReaderUtilities
      * Adds the parameters to a URI in their natural order.
      *
      * @param uri the uri to build upon
-     * @param urlParameters the parameters to add to the uri
+     * @param uriParameters the parameters to add to the uri
      * @return the uri with the urlParameters added, in repeatable/sorted order.
      * @throws NullPointerException when any argument is null.
      */
 
-    public static URI getUriWithParameters( URI uri, Map<String, String> urlParameters )
+    public static URI getUriWithParameters( URI uri, List<UriParameter> uriParameters )
     {
-        LOGGER.debug( "Adding these parameters: {} to this URL: {}", urlParameters, uri );
+        LOGGER.debug( "Adding these parameters: {} to this URL: {}", uriParameters, uri );
 
         Objects.requireNonNull( uri );
-        Objects.requireNonNull( urlParameters );
+        Objects.requireNonNull( uriParameters );
 
         URIBuilder uriBuilder = new URIBuilder( uri );
-        SortedMap<String, String> sortedUrlParameters = new TreeMap<>( urlParameters );
 
-        for ( Map.Entry<String, String> parameter : sortedUrlParameters.entrySet() )
+        for ( UriParameter parameter : uriParameters )
         {
-            uriBuilder.setParameter( parameter.getKey(), parameter.getValue() );
+            uriBuilder.setParameter( parameter.key(), parameter.value() );
         }
 
         try
@@ -934,7 +918,7 @@ public class ReaderUtilities
             throw new IllegalArgumentException( "Could not create URI from "
                                                 + sanitizedUriString
                                                 + " and "
-                                                + urlParameters,
+                                                + uriParameters,
                                                 e );
         }
     }

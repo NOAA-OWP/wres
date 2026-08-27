@@ -493,12 +493,25 @@ definitions:
           default: true
       interface:
         "$ref": "#/definitions/SourceInterfaceEnum"
-      # Parameters form a dictionary with any pair of strings allowed
+      # Parameters form a standard mapping/dictionary or, optionally, a multi-
+      # dictionary with repetition of keys allowed for different values
       parameters:
-        type: object
-        additionalProperties:
-          type: string
-        minItems: 1
+        oneOf:
+          # Standard dictionary
+          - type: object
+            additionalProperties:
+              type: string
+            minProperties: 1
+          # Multi-dictionary
+          - type: array
+            minItems: 1
+            uniqueItems: true
+            items:
+              type: object
+              additionalProperties:
+                type: string
+              minProperties: 1
+              maxProperties: 1
       missing_value:
         anyOf:
           - type: array

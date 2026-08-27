@@ -1,5 +1,6 @@
 package wres.config.serializers;
 
+import java.util.List;
 import java.util.Objects;
 
 import tools.jackson.core.JsonGenerator;
@@ -8,6 +9,7 @@ import tools.jackson.databind.SerializationContext;
 
 import wres.config.components.Source;
 import wres.config.components.SourceBuilder;
+import wres.config.components.UriParameter;
 
 /**
  * Serializes a {@link Source}.
@@ -41,7 +43,6 @@ public class SourceSerializer extends ValueSerializer<Source>
      * @param source the source
      * @param writer the writer
      */
-
     private void writeSource( Source source, JsonGenerator writer )
     {
         writer.writeStartObject();
@@ -59,7 +60,7 @@ public class SourceSerializer extends ValueSerializer<Source>
         if ( Objects.nonNull( source.parameters() )
              && !source.parameters().isEmpty() )
         {
-            writer.writePOJOProperty( "parameters", source.parameters() );
+            this.writeParametersProperty( source.parameters(), writer );
         }
 
         if ( Objects.nonNull( source.pattern() ) )
@@ -87,5 +88,47 @@ public class SourceSerializer extends ValueSerializer<Source>
         }
 
         writer.writeEndObject();
+    }
+
+    /**
+     * Writes parameters either as a standard dictionary or a multi-dictionary list.
+     */
+    private void writeParametersProperty( List<UriParameter> parameters, JsonGenerator writer )
+    {
+        writer.writeName( "parameters" );
+
+        if ( this.hasDuplicateKeys( parameters ) )
+        {
+            // Multi-dictionary format
+            writer.writeStartArray();
+            for ( UriParameter param : parameters )
+            {
+                writer.writeStartObject();
+                writer.writeStringProperty( param.key(), param.value() );
+                writer.writeEndObject();
+            }
+            writer.writeEndArray();
+        }
+        else
+        {
+            // Standard dictionary
+            writer.writeStartObject();
+            for ( UriParameter param : parameters )
+            {
+                writer.writeStringProperty( param.key(), param.value() );
+            }
+            writer.writeEndObject();
+        }
+    }
+
+    /**
+     * Checks if the list of parameters contains any duplicate keys.
+     */
+    private boolean hasDuplicateKeys( List<UriParameter> parameters )
+    {
+        return parameters.stream()
+                         .map( UriParameter::key )
+                         .distinct()
+                         .count() != parameters.size();
     }
 }

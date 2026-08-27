@@ -5719,6 +5719,9 @@ public class DeclarationValidator
                 oneOf.add( event );
             }
 
+            List<EvaluationStatusEvent> wrdsEvents = DeclarationValidator.wrdsNwmSourceIsValid( source );
+            oneOf.addAll( wrdsEvents );
+
             index++;
         }
 
@@ -5749,6 +5752,44 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> interfaceEvents
                 = DeclarationValidator.interfacesAreConsistentWithTheDataType( sources, type, orientation );
         events.addAll( interfaceEvents );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Cheks that a WRDS NWM source is properly declared.
+     * @param source the source
+     * @return the status events encountered
+     */
+
+    private static List<EvaluationStatusEvent> wrdsNwmSourceIsValid( Source source )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Check that a WRDS NWM source has a configuration parameter, which is required
+        if ( source.sourceInterface() == SourceInterface.WRDS_NWM
+             && DeclarationValidator.isWebSource( source )
+             && source.parameters()
+                      .stream()
+                      .noneMatch( c -> c.key()
+                                        .equalsIgnoreCase( "configuration" ) ) )
+
+
+        {
+            EvaluationStatusEvent event =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "Discovered a data 'source' with an 'interface' of '"
+                                                           + SourceInterface.WRDS_NWM
+                                                           + "', which requires a 'configuration' parameter to "
+                                                           + "identify the forecast model configuration to read, "
+                                                           + "but no 'configuration' parameter was found. Please "
+                                                           + "add a 'configuration' parameter and associated value "
+                                                           + "to the 'parameters' associated with this data source "
+                                                           + "and try again (e.g., configuration: medium_range)." )
+                                         .build();
+            events.add( event );
+        }
 
         return Collections.unmodifiableList( events );
     }
@@ -5881,8 +5922,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
         Set<DataType> types = sourceInterface.getDataTypes();
         if ( Objects.isNull( type )
-             && ( sourceInterface == SourceInterface.WRDS_AHPS
-                  || sourceInterface == SourceInterface.WRDS_NWM ) )
+             && ( sourceInterface == SourceInterface.WRDS_AHPS ) )
         {
             EvaluationStatusEvent event =
                     EvaluationStatusEvent.newBuilder()

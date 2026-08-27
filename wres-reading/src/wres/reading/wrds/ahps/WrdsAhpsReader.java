@@ -6,10 +6,8 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -38,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.DeclarationUtilities;
 import wres.config.components.EvaluationDeclaration;
+import wres.config.components.UriParameter;
 import wres.http.WebClientUtils;
 import wres.reading.PreReadException;
 import wres.reading.DataSource;
@@ -429,7 +428,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     private URI getUriForChunk( URI baseUri,
                                 Pair<Instant, Instant> range,
                                 String nwsLocationId,
-                                Map<String, String> additionalParameters,
+                                List<UriParameter> additionalParameters,
                                 boolean observed )
     {
         String basePath = baseUri.getPath();
@@ -448,9 +447,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
             basePath = basePath + "nws_lid/";
         }
 
-        Map<String, String> wrdsParameters = this.createWrdsAhpsUrlParameters( range,
-                                                                               additionalParameters,
-                                                                               observed );
+        List<UriParameter> wrdsParameters = this.createWrdsAhpsUrlParameters( range,
+                                                                              additionalParameters,
+                                                                              observed );
         String pathWithLocation = basePath
                                   + nwsLocationId;
         URIBuilder uriBuilder = new URIBuilder( baseUri );
@@ -483,18 +482,18 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * @return the key/value parameters
      */
 
-    private Map<String, String> createWrdsAhpsUrlParameters( Pair<Instant, Instant> dateRange,
-                                                             Map<String, String> additionalParameters,
-                                                             boolean observed )
+    private List<UriParameter> createWrdsAhpsUrlParameters( Pair<Instant, Instant> dateRange,
+                                                            List<UriParameter> additionalParameters,
+                                                            boolean observed )
     {
-        Map<String, String> urlParameters = new HashMap<>( 2 );
+        List<UriParameter> urlParameters = new ArrayList<>( 2 );
 
         // Set the proj field, allowing for a user to override it with a URL
         // parameter, which is handled next.
-        urlParameters.put( "proj", ReaderUtilities.DEFAULT_WRDS_PROJ );
+        urlParameters.add( new UriParameter( "proj", ReaderUtilities.DEFAULT_WRDS_PROJ ) );
 
         // Caller-supplied additional parameters are lower precedence, put first
-        urlParameters.putAll( additionalParameters );
+        urlParameters.addAll( additionalParameters );
 
         String timeTag = "issuedTime";
         if ( observed )
@@ -502,15 +501,15 @@ public class WrdsAhpsReader implements TimeSeriesReader
             timeTag = "validTime";
         }
 
-        urlParameters.put( timeTag,
-                           "[" + dateRange.getLeft()
-                                          .toString()
-                           + ","
-                           + dateRange.getRight()
-                                      .toString()
-                           + "]" );
+        urlParameters.add( new UriParameter( timeTag,
+                                             "[" + dateRange.getLeft()
+                                                            .toString()
+                                             + ","
+                                             + dateRange.getRight()
+                                                        .toString()
+                                             + "]" ) );
 
-        return Collections.unmodifiableMap( urlParameters );
+        return Collections.unmodifiableList( urlParameters );
     }
 
     /**

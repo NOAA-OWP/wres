@@ -3183,7 +3183,7 @@ public class DeclarationInterpolator
     /**
      * Determines whether the specified {@link Dataset} is a special case for data type interpolation, notably whether
      * the data source involves reading from a web service that serves multiple data types for which the type must be
-     * declared as part of the service call. See GitHub #384.
+     * declared as part of the service call if there is no service-specific API parameter required. See GitHub #384.
      *
      * @see #interpolateDataTypeForSpecialCase(EvaluationDeclarationBuilder, DatasetBuilder, DatasetOrientation, SourceInterface)
      * @param dataset the dataset
@@ -3196,8 +3196,7 @@ public class DeclarationInterpolator
         return Objects.isNull( dataset.type() )
                && dataset.sources()
                          .stream()
-                         .anyMatch( s -> s.sourceInterface() == SourceInterface.WRDS_AHPS
-                                         || s.sourceInterface() == SourceInterface.WRDS_NWM );
+                         .anyMatch( s -> s.sourceInterface() == SourceInterface.WRDS_AHPS );
     }
 
     /**

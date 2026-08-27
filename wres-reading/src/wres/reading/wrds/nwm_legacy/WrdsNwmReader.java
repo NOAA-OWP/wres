@@ -1,10 +1,14 @@
-package wres.reading.wrds.nwm;
+package wres.reading.wrds.nwm_legacy;
+
+import static java.time.DayOfWeek.SUNDAY;
+import static java.time.temporal.TemporalAdjusters.next;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
@@ -37,26 +42,23 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.databind.ObjectMapper;
 
-import static java.time.DayOfWeek.SUNDAY;
-import static java.time.temporal.TemporalAdjusters.next;
+import tools.jackson.databind.ObjectMapper;
 
 import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
+import wres.config.components.DataType;
 import wres.config.components.EvaluationDeclaration;
-import wres.config.components.SourceInterface;
 import wres.config.components.TimeInterval;
 import wres.config.components.UriParameter;
-import wres.http.WebClient;
 import wres.http.WebClientUtils;
-import wres.reading.DataSource;
 import wres.reading.PreReadException;
+import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.reading.wrds.nwm_legacy.NwmRootDocumentWithError;
+import wres.http.WebClient;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
@@ -67,6 +69,7 @@ import wres.system.SystemSettings;
  *
  * @author James Brown
  */
+@Deprecated( forRemoval = true, since = "v7.6" )
 public class WrdsNwmReader implements TimeSeriesReader
 {
     /** The underlying format reader for JSON-formatted data from the NWM service. */
@@ -430,37 +433,9 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     private void validateSource( DataSource dataSource )
     {
-        SourceInterface sourceInterface = dataSource.source()
-                                                    .sourceInterface();
-
-        if ( Objects.isNull( sourceInterface ) )
+        if ( !( ReaderUtilities.isWrdsNwmSource( dataSource ) ) )
         {
-            throw new ReadException( "Expected a WRDS NWM data source, but found a data source with a missing source "
-                                     + "interface: "
-                                     + dataSource
-                                     + ". Please add a valid NWM source interface." );
-        }
-
-        if ( sourceInterface != SourceInterface.WRDS_NWM )
-        {
-            throw new ReadException( "Expected a WRDS NWM data source, but found a dataset with an unexpected source "
-                                     + "interface: "
-                                     + dataSource
-                                     + ". Please declare a source interface of "
-                                     + SourceInterface.WRDS_NWM
-                                     + " to read from a WRDS NWM source." );
-        }
-
-        if ( dataSource.source()
-                       .parameters()
-                       .stream()
-                       .noneMatch( c -> c.key()
-                                         .equalsIgnoreCase( "configuration" ) ) )
-        {
-            throw new ReadException( "When reading a WRDS NWM data source, expected a URI parameter for the forecast "
-                                     + "model 'configuration' to use, but found no declared 'configuration' parameter. "
-                                     + "Please add a 'configuration' parameter to the 'parameters' associated with the "
-                                     + "WRDS NWM data 'source' and try again." );
+            throw new ReadException( "Expected a WRDS NWM data source, but got: " + dataSource + "." );
         }
 
         if ( DeclarationUtilities.isForecast( dataSource.context() )
@@ -471,9 +446,7 @@ public class WrdsNwmReader implements TimeSeriesReader
             throw new ReadException( "Encountered a WRDS NWM forecast data source, which cannot be read without "
                                      + "'reference_dates'. If this is not a forecast data source, please clarify the "
                                      + "data 'type' and try again. Otherwise, please declare 'reference_dates' and try "
-                                     + "again. The data source is: "
-                                     + dataSource
-                                     + "." );
+                                     + "again. The data source is: " + dataSource + "." );
         }
     }
 
@@ -487,7 +460,7 @@ public class WrdsNwmReader implements TimeSeriesReader
     }
 
     /**
-     * Break dates into weeks starting at T00Z Sunday and ending T00Z the next Sunday.
+     * Break up dates into weeks starting at T00Z Sunday and ending T00Z the next Sunday.
      *
      * <p>The purpose of chunking by weeks is re-use between evaluations. Suppose evaluation A evaluates forecasts
      * issued December 12 through December 28. Then evaluation B evaluates forecasts issued December 13 through
@@ -580,7 +553,7 @@ public class WrdsNwmReader implements TimeSeriesReader
      * Gets a URI for given date range and feature.
      *
      * <p>Expecting a wrds URI like this:
-     * <a href="http://redacted/api/v1/forecasts/streamflow/ahps">http://redacted/nwm/v1/streamflow/forecast/nwm_feature_id/</a></p>
+     * <a href="http://redacted/api/v1/forecasts/streamflow/ahps">http://redacted/api/v1/forecasts/streamflow/ahps</a></p>
      * @param baseUri the base URI
      * @param dataSource the data source
      * @param range the range of dates (from left to right)
@@ -610,7 +583,11 @@ public class WrdsNwmReader implements TimeSeriesReader
             basePath = basePath + SLASH;
         }
 
+        boolean isEnsemble = dataSource.context()
+                                       .type() == DataType.ENSEMBLE_FORECASTS;
+
         List<UriParameter> wrdsParameters = this.createWrdsNwmUrlParameters( range,
+                                                                             isEnsemble,
                                                                              dataSource.source()
                                                                                        .parameters() );
         StringJoiner joiner = new StringJoiner( "," );
@@ -624,9 +601,8 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         LOGGER.debug( "Adding these features to the URI: {}.", featureNamesCsv );
 
-        String pathWithLocation = basePath
-                                  + variableName
-                                  + "/forecast/nwm_feature_id/"
+        String pathWithLocation = basePath + variableName
+                                  + "/nwm_feature_id/"
                                   + featureNamesCsv
                                   + SLASH;
 
@@ -670,20 +646,57 @@ public class WrdsNwmReader implements TimeSeriesReader
      */
 
     private List<UriParameter> createWrdsNwmUrlParameters( Pair<Instant, Instant> range,
+                                                           boolean isEnsemble,
                                                            List<UriParameter> additionalParameters )
     {
         List<UriParameter> urlParameters = new ArrayList<>( 3 );
+
+        // Start with a WRES guess here, but allow this one to be overridden by
+        // caller-supplied additional parameters. See #76880
+        if ( isEnsemble )
+        {
+            urlParameters.add( new UriParameter( "forecast_type", "ensemble" ) );
+        }
+        else
+        {
+            urlParameters.add( new UriParameter( "forecast_type", "deterministic" ) );
+        }
+
+        // Set the default WRDS proj, but allow a user to override it
+        // through URL parameter processed below.
+        urlParameters.add( new UriParameter( "proj", ReaderUtilities.DEFAULT_WRDS_PROJ ) );
 
         // Caller-supplied additional parameters are lower precedence, put first
         // This will override the parameter added above.
         urlParameters.addAll( additionalParameters );
 
-        urlParameters.add( new UriParameter( "min_reference_datetime", range.getLeft()
-                                                                            .toString() ) );
-        urlParameters.add( new UriParameter( "max_reference_datetime", range.getRight()
-                                                                            .toString() ) );
+        Pair<String, String> wrdsFormattedDates = WrdsNwmReader.toBasicISO8601String( range.getLeft(),
+                                                                                      range.getRight() );
+        urlParameters.add( new UriParameter( "reference_time",
+                                             "(" + wrdsFormattedDates.getLeft()
+                                             + ","
+                                             + wrdsFormattedDates.getRight()
+                                             + "]" ) );
 
         return Collections.unmodifiableList( urlParameters );
+    }
+
+    /**
+     * The WRDS NWM API uses the basic ISO-8601 format for the date range.
+     * @param left the instant
+     * @param right the right instant
+     * @return the ISO-8601 instant string
+     */
+    private static Pair<String, String> toBasicISO8601String( Instant left, Instant right )
+    {
+        String dateFormat = "yyyyMMdd'T'HH'Z'";
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( dateFormat )
+                                                       .withZone( ReaderUtilities.UTC );
+        String leftString = formatter.format( left );
+        String rightString = formatter.format( right );
+
+        return Pair.of( leftString, rightString );
     }
 
     /**

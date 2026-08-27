@@ -1,0 +1,238 @@
+[
+  {
+    "nwm_feature_id": 5907079,
+    "configuration": "medium_range",
+    "reference_datetime": "2020-07-08T18:00:00Z",
+    "data_type": "streamflow",
+    "units": "CMS",
+    "forecast": [
+      {
+        "member_id": 1,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T19:00:00Z",
+            "value": 1.0
+          },
+          {
+            "valid_datetime": "2020-07-08T20:00:00Z",
+            "value": 2.0
+          },
+          {
+            "valid_datetime": "2020-07-08T21:00:00Z",
+            "value": 3.0
+          },
+          {
+            "valid_datetime": "2020-07-08T22:00:00Z",
+            "value": 4.0
+          },
+          {
+            "valid_datetime": "2020-07-08T23:00:00Z",
+            "value": 5.0
+          }        ]
+      },
+      {
+        "member_id": 2,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T19:00:00Z",
+            "value": 11.0
+          },
+          {
+            "valid_datetime": "2020-07-08T20:00:00Z",
+            "value": 12.0
+          },
+          {
+            "valid_datetime": "2020-07-08T21:00:00Z",
+            "value": 13.0
+          }
+        ]
+      },
+      {
+        "member_id": 3,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T19:00:00Z",
+            "value": 21.0
+          },
+          {
+            "valid_datetime": "2020-07-08T20:00:00Z",
+            "value": 22.0
+          },
+          {
+            "valid_datetime": "2020-07-08T21:00:00Z",
+            "value": 23.0
+          }
+        ]
+      },
+      {
+        "member_id": 4,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T19:00:00Z",
+            "value": 31.0
+          },
+          {
+            "valid_datetime": "2020-07-08T20:00:00Z",
+            "value": 32.0
+          },
+          {
+            "valid_datetime": "2020-07-08T21:00:00Z",
+            "value": 33.0
+          }
+        ]
+      },
+      {
+        "member_id": 5,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T19:00:00Z",
+            "value": 41.0
+          },
+          {
+            "valid_datetime": "2020-07-08T20:00:00Z",
+            "value": 42.0
+          },
+          {
+            "valid_datetime": "2020-07-08T21:00:00Z",
+            "value": 43.0
+          }
+        ]
+      },
+      {
+        "member_id": 6,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T19:00:00Z",
+            "value": 51.0
+          },
+          {
+            "valid_datetime": "2020-07-08T20:00:00Z",
+            "value": 52.0
+          },
+          {
+            "valid_datetime": "2020-07-08T21:00:00Z",
+            "value": 53.0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nwm_feature_id": 5907079,
+    "configuration": "medium_range",
+    "reference_datetime": "2020-07-08T12:00:00Z",
+    "data_type": "streamflow",
+    "units": "CMS",
+    "forecast": [
+      {
+        "member_id": 1,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T13:00:00Z",
+            "value": 101.0
+          },
+          {
+            "valid_datetime": "2020-07-08T14:00:00Z",
+            "value": 102.0
+          },
+          {
+            "valid_datetime": "2020-07-08T15:00:00Z",
+            "value": 103.0
+          },
+          {
+            "valid_datetime": "2020-07-08T16:00:00Z",
+            "value": 104.0
+          },
+          {
+            "valid_datetime": "2020-07-08T17:00:00Z",
+            "value": 5.0
+          }        ]
+      },
+      {
+        "member_id": 2,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T13:00:00Z",
+            "value": 111.0
+          },
+          {
+            "valid_datetime": "2020-07-08T14:00:00Z",
+            "value": 112.0
+          },
+          {
+            "valid_datetime": "2020-07-08T15:00:00Z",
+            "value": 113.0
+          }
+        ]
+      },
+      {
+        "member_id": 3,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T13:00:00Z",
+            "value": 121.0
+          },
+          {
+            "valid_datetime": "2020-07-08T14:00:00Z",
+            "value": 122.0
+          },
+          {
+            "valid_datetime": "2020-07-08T15:00:00Z",
+            "value": 123.0
+          }
+        ]
+      },
+      {
+        "member_id": 4,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T13:00:00Z",
+            "value": 131.0
+          },
+          {
+            "valid_datetime": "2020-07-08T14:00:00Z",
+            "value": 132.0
+          },
+          {
+            "valid_datetime": "2020-07-08T15:00:00Z",
+            "value": 133.0
+          }
+        ]
+      },
+      {
+        "member_id": 5,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T13:00:00Z",
+            "value": 141.0
+          },
+          {
+            "valid_datetime": "2020-07-08T14:00:00Z",
+            "value": 142.0
+          },
+          {
+            "valid_datetime": "2020-07-08T15:00:00Z",
+            "value": 143.0
+          }
+        ]
+      },
+      {
+        "member_id": 6,
+        "timeseries": [
+          {
+            "valid_datetime": "2020-07-08T13:00:00Z",
+            "value": 151.0
+          },
+          {
+            "valid_datetime": "2020-07-08T14:00:00Z",
+            "value": 152.0
+          },
+          {
+            "valid_datetime": "2020-07-08T15:00:00Z",
+            "value": 153.0
+          }
+        ]
+      }
+    ]
+  }
+]

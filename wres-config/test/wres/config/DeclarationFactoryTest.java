@@ -93,6 +93,7 @@ import wres.config.components.ThresholdType;
 import wres.config.components.TimeInterval;
 import wres.config.components.TimePools;
 import wres.config.components.UnitAlias;
+import wres.config.components.UriParameter;
 import wres.config.components.Values;
 import wres.config.components.Variable;
 import wres.config.components.VariableBuilder;
@@ -488,7 +489,8 @@ class DeclarationFactoryTest
         Source yetAnotherObservedSource = SourceBuilder.builder()
                                                        .uri( yetAnotherObservedUri )
                                                        .sourceInterface( SourceInterface.USGS_NWIS )
-                                                       .parameters( Map.of( "foo", "bar", "baz", "qux" ) )
+                                                       .parameters( List.of( new UriParameter( "foo", "bar" ),
+                                                                             new UriParameter( "baz", "qux" ) ) )
                                                        .build();
 
         List<Source> observedSources =
@@ -531,6 +533,54 @@ class DeclarationFactoryTest
                                                       .sources( predictedSources )
                                                       .type( DataType.ENSEMBLE_FORECASTS )
                                                       .timeScale( outerTimeScalePredicted )
+                                                      .build();
+
+        assertAll( () -> assertEquals( observedDatasetInner, actual.left() ),
+                   () -> assertEquals( predictedDatasetInner, actual.right() )
+        );
+    }
+
+    @Test
+    void testDeserializeWithLongSourcesAndRepeatedUriParameters() throws IOException
+    {
+        String yaml = """
+                observed:
+                  sources:
+                    - uri: https://foo.bar
+                      interface: usgs nwis
+                      parameters:
+                        - foo: bar
+                        - baz: qux
+                        - foo: quux
+                predicted: forecasts_with_NWS_feature_authority.csv
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        URI observedUri = URI.create( "https://foo.bar" );
+
+        Source observedSource = SourceBuilder.builder()
+                                                       .uri( observedUri )
+                                                       .sourceInterface( SourceInterface.USGS_NWIS )
+                                                       .parameters( List.of( new UriParameter( "foo", "bar" ),
+                                                                             new UriParameter( "baz", "qux" ),
+                                                                             new UriParameter( "foo", "quux" ) ) )
+                                                       .build();
+
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedDatasetInner = DatasetBuilder.builder()
+                                                     .sources( observedSources )
+                                                     .build();
+
+        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
+
+
+        List<Source> predictedSources = List.of( predictedSource );
+        Dataset predictedDatasetInner = DatasetBuilder.builder()
+                                                      .sources( predictedSources )
                                                       .build();
 
         assertAll( () -> assertEquals( observedDatasetInner, actual.left() ),
@@ -3475,7 +3525,7 @@ class DeclarationFactoryTest
         Source yetAnotherObservedSource = SourceBuilder.builder()
                                                        .uri( yetAnotherObservedUri )
                                                        .sourceInterface( SourceInterface.USGS_NWIS )
-                                                       .parameters( Map.of( "foo", "bar" ) )
+                                                       .parameters( List.of( new UriParameter( "foo", "bar" ) ) )
                                                        .build();
 
         List<Source> observedSources =

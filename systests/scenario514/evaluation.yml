@@ -7,7 +7,7 @@ observed:
   label: USGS
 predicted:
   sources:
-    - smalldata/KCDM7_20180904_multivariate.json
+    - smalldata/wrds_json/ahps/KCDM7_20180904_multivariate.json
   variable: 
     name: QR
     label: streamflow
