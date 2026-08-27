@@ -21,6 +21,7 @@ import wres.reading.wrds.hefs.WrdsHefsReader;
 import wres.reading.wrds.nwm.WrdsNwmReader;
 import wres.reading.wrds.ahps.WrdsAhpsJsonReader;
 import wres.reading.wrds.nwm.WrdsNwmJsonReader;
+import wres.reading.DataSource.DataDisposition;
 import wres.system.SystemSettings;
 
 /**
@@ -51,8 +52,13 @@ public class TimeSeriesReaderFactory
     /** WRDS AHPS JSON reader. */
     private static final WrdsAhpsJsonReader WRDS_AHPS_JSON_READER = WrdsAhpsJsonReader.of();
 
-    /** WRDS NWM JSON reader. */
+    /** WRDS NWM JSON legacy format reader. */
     private static final WrdsNwmJsonReader WRDS_NWM_JSON_READER = WrdsNwmJsonReader.of();
+
+    /** WRDS NWM JSON legacy format reader. */
+    @Deprecated( forRemoval = true, since = "7.6" )
+    private static final wres.reading.wrds.nwm_legacy.WrdsNwmJsonReader WRDS_NWM_JSON_READER_LEGACY =
+            wres.reading.wrds.nwm_legacy.WrdsNwmJsonReader.of();
 
     /** WRDS HEFS JSON reader. */
     private static final WrdsHefsJsonReader WRDS_HEFS_JSON_READER = WrdsHefsJsonReader.of();
@@ -109,107 +115,36 @@ public class TimeSeriesReaderFactory
             }
             case JSON_WATERML ->
             {
-                // A WaterML source from USGS NWIS?
-                if ( ReaderUtilities.isNwisIvSource( dataSource ) )
-                {
-                    LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
-                                  dataSource );
-                    TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
-                                                                              declaration,
-                                                                              dataSource );
-
-                    return NwisIvReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
-                }
-                // A reader for USGS-formatted WaterML, but not from a NWIS instance
-                LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
-                              + "source other than NWIS.",
-                              dataSource );
-                return NWIS_IV_RESPONSE_READER;
+                return this.getJsonWaterMlReader( dataSource );
             }
             case GEOJSON ->
             {
-                // A GeoJSON source from USGS?
-                if ( ReaderUtilities.isUsgsOgcSource( dataSource ) )
-                {
-                    LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
-                                  dataSource );
-
-                    // Set the default chunking strategy
-                    TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
-                                                                              declaration,
-                                                                              dataSource );
-
-                    return UsgsOgcReader.of( this.getDeclaration(),
-                                             this.systemSettings,
-                                             timeChunker );
-                }
-
-                throw new IllegalArgumentException( "Detected a GeoJson formatted response, but not from a recognized "
-                                                    + "USGS web service. Since the API is unknown, the response cannot "
-                                                    + "be read." );
+                return this.getGeoJsonReader( dataSource );
             }
             case JSON_WRDS_AHPS ->
             {
-                // A web source? If so, assume a WRDS instance.
-                if ( ReaderUtilities.isWebSource( dataSource ) )
-                {
-                    // Adopt a time-chunking strategy that depends on data type
-                    TimeChunker timeChunker;
-                    if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
-                    {
-                        timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
-                                                                      declaration,
-                                                                      dataSource );
-                    }
-                    else
-                    {
-                        timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
-                                                                      declaration,
-                                                                      dataSource );
-                    }
-
-                    LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
-                                  dataSource );
-                    return WrdsAhpsReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
-                }
-                // A reader for WRDS-formatted JSON from AHPS, but not from a WRDS instance
-                LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
-                              + "AHPS time-series from a source other than WRDS.",
-                              dataSource );
-                return WRDS_AHPS_JSON_READER;
+                return this.getJsonWrdsAhpsReader( dataSource );
             }
             case JSON_WRDS_NWM ->
             {
-                // A web source? If so, assume a WRDS instance.
-                if ( ReaderUtilities.isWebSource( dataSource ) )
-                {
-                    return WrdsNwmReader.of( this.getDeclaration(), this.systemSettings );
-                }
-                // A reader for WRDS-formatted JSON from the NWM, but not from a WRDS instance
-                LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
-                              + "NWM time-series from a source other than WRDS.",
-                              dataSource );
-                return WRDS_NWM_JSON_READER;
+                return this.getJsonWrdsNwmReader( dataSource );
             }
-            case JSON_WRDS_HEFS ->
+            case JSON_WRDS_NWM_LEGACY ->
             {
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
-                    LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
-                                  dataSource );
-
-                    TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
-                                                                              declaration,
-                                                                              dataSource );
-
-                    return WrdsHefsReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+                    return wres.reading.wrds.nwm_legacy.WrdsNwmReader.of( this.getDeclaration(), this.systemSettings );
                 }
-                // A reader for WRDS-formatted JSON from HEFS, but not from a WRDS instance
-                LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
-                              + "HEFS time-series from a source other than WRDS.",
+                // A reader for WRDS-formatted JSON from the NWM, but not from a WRDS instance
+                LOGGER.debug( "Discovered a data source {}, which was identified as legacy WRDS-formatted JSON "
+                              + "containing NWM time-series from a source other than legacy WRDS.",
                               dataSource );
-                return WRDS_HEFS_JSON_READER;
+                return WRDS_NWM_JSON_READER_LEGACY;
+            }
+            case JSON_WRDS_HEFS ->
+            {
+                return this.getJsonWrdsHefsReader( dataSource );
             }
             case TARBALL ->
             {
@@ -239,6 +174,150 @@ public class TimeSeriesReaderFactory
                                                            + dataSource
                                                            + "." );
         }
+    }
+
+    /**
+     * Returns a concrete reader for a {@link DataDisposition#JSON_WATERML} data source.
+     *
+     * @param dataSource the data source, required
+     * @return a reader
+     */
+
+    public TimeSeriesReader getJsonWaterMlReader( DataSource dataSource )
+    {
+        // A WaterML source from USGS NWIS?
+        if ( ReaderUtilities.isNwisIvSource( dataSource ) )
+        {
+            LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
+                          dataSource );
+            TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                      declaration,
+                                                                      dataSource );
+
+            return NwisIvReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+        }
+        // A reader for USGS-formatted WaterML, but not from a NWIS instance
+        LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
+                      + "source other than NWIS.",
+                      dataSource );
+        return NWIS_IV_RESPONSE_READER;
+    }
+
+    /**
+     * Returns a concrete reader for a {@link DataDisposition#GEOJSON} data source.
+     *
+     * @param dataSource the data source, required
+     * @return a reader
+     */
+
+    public TimeSeriesReader getGeoJsonReader( DataSource dataSource )
+    {
+        // A GeoJSON source from USGS?
+        if ( ReaderUtilities.isUsgsOgcSource( dataSource ) )
+        {
+            LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
+                          dataSource );
+
+            // Set the default chunking strategy
+            TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                                      declaration,
+                                                                      dataSource );
+
+            return UsgsOgcReader.of( this.getDeclaration(),
+                                     this.systemSettings,
+                                     timeChunker );
+        }
+
+        throw new IllegalArgumentException( "Detected a GeoJson formatted response, but not from a recognized "
+                                            + "USGS web service. Since the API is unknown, the response cannot "
+                                            + "be read." );
+    }
+
+    /**
+     * Returns a concrete reader for a {@link DataDisposition#JSON_WRDS_NWM} data source.
+     *
+     * @param dataSource the data source, required
+     * @return a reader
+     */
+
+    public TimeSeriesReader getJsonWrdsNwmReader( DataSource dataSource )
+    {
+        // A web source? If so, assume a WRDS instance.
+        if ( ReaderUtilities.isWebSource( dataSource ) )
+        {
+            return WrdsNwmReader.of( this.getDeclaration(), this.systemSettings );
+        }
+        // A reader for WRDS-formatted JSON from the NWM, but not from a WRDS instance
+        LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
+                      + "NWM time-series from a source other than WRDS.",
+                      dataSource );
+        return WRDS_NWM_JSON_READER;
+    }
+
+    /**
+     * Returns a concrete reader for a {@link DataDisposition#JSON_WRDS_HEFS} data source.
+     *
+     * @param dataSource the data source, required
+     * @return a reader
+     */
+
+    public TimeSeriesReader getJsonWrdsHefsReader( DataSource dataSource )
+    {
+        // A web source? If so, assume a WRDS instance.
+        if ( ReaderUtilities.isWebSource( dataSource ) )
+        {
+            LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
+                          dataSource );
+
+            TimeChunker timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                                      declaration,
+                                                                      dataSource );
+
+            return WrdsHefsReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+        }
+        // A reader for WRDS-formatted JSON from HEFS, but not from a WRDS instance
+        LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
+                      + "HEFS time-series from a source other than WRDS.",
+                      dataSource );
+        return WRDS_HEFS_JSON_READER;
+    }
+
+    /**
+     * Returns a concrete reader for a {@link DataDisposition#JSON_WRDS_AHPS} data source.
+     *
+     * @param dataSource the data source, required
+     * @return a reader
+     */
+
+    public TimeSeriesReader getJsonWrdsAhpsReader( DataSource dataSource )
+    {
+        // A web source? If so, assume a WRDS instance.
+        if ( ReaderUtilities.isWebSource( dataSource ) )
+        {
+            // Adopt a time-chunking strategy that depends on data type
+            TimeChunker timeChunker;
+            if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
+            {
+                timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.YEAR_RANGES,
+                                                              declaration,
+                                                              dataSource );
+            }
+            else
+            {
+                timeChunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.SIMPLE_RANGE,
+                                                              declaration,
+                                                              dataSource );
+            }
+
+            LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
+                          dataSource );
+            return WrdsAhpsReader.of( this.getDeclaration(), this.systemSettings, timeChunker );
+        }
+        // A reader for WRDS-formatted JSON from AHPS, but not from a WRDS instance
+        LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
+                      + "AHPS time-series from a source other than WRDS.",
+                      dataSource );
+        return WRDS_AHPS_JSON_READER;
     }
 
     /**

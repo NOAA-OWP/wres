@@ -933,7 +933,8 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( timeSeries );
 
-        if ( timeSeries.getEvents().isEmpty() )
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
         {
             return Collections.emptyMap();
         }
@@ -943,12 +944,15 @@ public final class TimeSeriesSlicer
         // A map of ensemble members per valid time organized by label or index
         Map<Object, SortedSet<Event<Double>>> membersByTime = new TreeMap<>();
 
-        // Check that all events have the same number of members
         for ( Event<Ensemble> next : timeSeries.getEvents() )
         {
+            Ensemble ensemble = next.getValue();
+
             // No labels, so check for a constant number of ensemble members
-            if ( Objects.nonNull( traceCount ) && next.getValue()
-                                                      .size() != traceCount )
+            if ( Objects.nonNull( traceCount )
+                 && !ensemble.hasLabels()
+                 && next.getValue()
+                        .size() != traceCount )
             {
                 throw new UnsupportedOperationException( "Cannot determine the ensemble traces from the input "
                                                          + "time-series because the number of ensemble members "
@@ -957,7 +961,6 @@ public final class TimeSeriesSlicer
                                                          + "to the ensemble information.)" );
             }
 
-            Ensemble ensemble = next.getValue();
             traceCount = ensemble.size();
 
             double[] members = ensemble.getMembers();

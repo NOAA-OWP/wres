@@ -93,6 +93,9 @@ public record DataSource( @NonNull DataDisposition disposition,
         NETCDF_VECTOR,
         /** The data has been detected as a json, wrds/nwm stream. */
         JSON_WRDS_NWM,
+        /** The data has been detected as a json, wrds/nwm legacy format stream. */
+        @Deprecated( forRemoval = true, since = "7.6" )
+        JSON_WRDS_NWM_LEGACY,
         /** The data has been detected as a json, wrds/ahps stream. */
         JSON_WRDS_AHPS,
         /** The data has been detected as a json, wrds/hefs stream. */
@@ -460,6 +463,11 @@ public record DataSource( @NonNull DataDisposition disposition,
             }
             else if ( start.contains( "wrds" )
                       && start.contains( "nwm" ) )
+            {
+                innerDisposition = DataDisposition.JSON_WRDS_NWM_LEGACY;
+            }
+            else if ( start.contains( "nwm_feature_id" )
+                      && start.contains( "configuration" ) )
             {
                 innerDisposition = DataDisposition.JSON_WRDS_NWM;
             }

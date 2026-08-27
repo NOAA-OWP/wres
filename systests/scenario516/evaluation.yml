@@ -1,0 +1,29 @@
+observed:
+  sources:
+  - interface: usgs nwis
+    uri: https://nwis.waterservices.usgs.gov/nwis/iv
+  variable: '00060'
+predicted:
+  sources:
+  - interface: wrds nwm
+    uri: smalldata/wrds_json/nwm/example_json_response_new_api_1.json
+  variable: streamflow
+unit: cms
+valid_dates:
+  minimum: '2020-07-08T13:00:00Z'
+  maximum: '2020-07-08T23:00:00Z'
+reference_dates:
+  minimum: '2020-07-08T11:59:59Z'
+  maximum: '2020-07-08T18:00:00Z'
+lead_times:
+  minimum: 0
+  maximum: 5
+  unit: hours
+features:
+- observed: '01631000'
+  predicted: '5907079'
+metrics:
+- bias fraction
+- sample size
+output_formats:
+- pairs

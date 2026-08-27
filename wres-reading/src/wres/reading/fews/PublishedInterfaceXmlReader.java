@@ -1141,9 +1141,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         else
         {
             ensembleSeries = ReaderUtilities.transformEnsemble( timeSeriesMetadata,
-                                                                ensembleValues,
-                                                                lineNumber,
-                                                                dataSource.uri() );
+                                                                ensembleValues );
 
             // Validate
             ReaderUtilities.validateAgainstEmptyTimeSeries( ensembleSeries, dataSource.uri() );

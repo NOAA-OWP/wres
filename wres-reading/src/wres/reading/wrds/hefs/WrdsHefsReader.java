@@ -6,10 +6,8 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -35,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.DeclarationUtilities;
 import wres.config.components.EvaluationDeclaration;
 import wres.config.DeclarationException;
+import wres.config.components.UriParameter;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
@@ -401,13 +400,13 @@ public class WrdsHefsReader implements TimeSeriesReader
             basePath = basePath + SLASH;
         }
 
-        Map<String, String> additionalParameters = dataSource.source()
-                                                             .parameters();
-        Map<String, String> wrdsParameters = this.createWrdsHefsUrlParameters( nwsLocationId,
-                                                                               dataSource.getVariable()
-                                                                                         .name(),
-                                                                               range,
-                                                                               additionalParameters );
+        List<UriParameter> additionalParameters = dataSource.source()
+                                                            .parameters();
+        List<UriParameter> wrdsParameters = this.createWrdsHefsUrlParameters( nwsLocationId,
+                                                                              dataSource.getVariable()
+                                                                                        .name(),
+                                                                              range,
+                                                                              additionalParameters );
         URIBuilder uriBuilder = new URIBuilder( baseUri );
         uriBuilder.setPath( basePath );
 
@@ -439,22 +438,22 @@ public class WrdsHefsReader implements TimeSeriesReader
      * @return the key/value parameters
      */
 
-    private Map<String, String> createWrdsHefsUrlParameters( String nwsLocationId,
-                                                             String parameterId,
-                                                             Pair<Instant, Instant> dateRange,
-                                                             Map<String, String> additionalParameters )
+    private List<UriParameter> createWrdsHefsUrlParameters( String nwsLocationId,
+                                                            String parameterId,
+                                                            Pair<Instant, Instant> dateRange,
+                                                            List<UriParameter> additionalParameters )
     {
-        Map<String, String> urlParameters = new HashMap<>( 2 );
+        List<UriParameter> urlParameters = new ArrayList<>( 2 );
 
         // Caller-supplied additional parameters are lower precedence, put first
-        urlParameters.putAll( additionalParameters );
-        urlParameters.put( "location_id", nwsLocationId );
-        urlParameters.put( "parameter_id", parameterId );
+        urlParameters.addAll( additionalParameters );
+        urlParameters.add( new UriParameter( "location_id", nwsLocationId ) );
+        urlParameters.add( new UriParameter( "parameter_id", parameterId ) );
 
         LOGGER.debug( "Currently, the WRDS HEFS service does not support chunking by date range. The following date "
                       + "range was supplied, but will be ignored: {}", dateRange );
 
-        return Collections.unmodifiableMap( urlParameters );
+        return Collections.unmodifiableList( urlParameters );
     }
 
     /**

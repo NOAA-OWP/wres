@@ -607,6 +607,11 @@ public class SourceLoader
                 LOGGER.debug( "Identified a source as a JSON WRDS NWM source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_NWM;
             }
+            else if ( ReaderUtilities.isWrdsNwmLegacySource( dataSource ) )
+            {
+                LOGGER.debug( "Identified a source as a JSON WRDS NWM legacy source: {}.", dataSource );
+                return DataDisposition.JSON_WRDS_NWM_LEGACY;
+            }
             // Hosted NWM data, not via a WRDS API
             else if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
             {

@@ -4,10 +4,10 @@ observed:
   variable: DISCHARGE
 predicted:
   sources:
-    - smalldata/wrds_json/25510317T12_FAKE2_forecast.json
-    - smalldata/wrds_json/25510318T00_FAKE2_forecast.json
-    - smalldata/wrds_json/25510318T12_FAKE2_forecast.json
-    - smalldata/wrds_json/25510319T00_FAKE2_forecast.json
+    - smalldata/wrds_json/ahps/25510317T12_FAKE2_forecast.json
+    - smalldata/wrds_json/ahps/25510318T00_FAKE2_forecast.json
+    - smalldata/wrds_json/ahps/25510318T12_FAKE2_forecast.json
+    - smalldata/wrds_json/ahps/25510319T00_FAKE2_forecast.json
   variable: QR
 features:
   - {observed: 'FAKE2', predicted: 'FAKE2'}
