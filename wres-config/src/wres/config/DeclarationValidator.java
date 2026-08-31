@@ -5767,31 +5767,62 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Check that a WRDS NWM source has a configuration parameter, which is required
-        if ( source.sourceInterface() == SourceInterface.WRDS_NWM
-             && DeclarationValidator.isWebSource( source )
-             && source.parameters()
-                      .stream()
-                      .noneMatch( c -> c.key()
-                                        .equalsIgnoreCase( "configuration" ) ) )
-
-
+        if ( source.sourceInterface() == SourceInterface.WRDS_NWM )
         {
-            EvaluationStatusEvent event =
-                    EvaluationStatusEvent.newBuilder()
-                                         .setStatusLevel( StatusLevel.ERROR )
-                                         .setEventMessage( "Discovered a data 'source' with an 'interface' of '"
-                                                           + SourceInterface.WRDS_NWM
-                                                           + "', which requires a 'configuration' parameter to "
-                                                           + "identify the forecast model configuration to read, "
-                                                           + "but no 'configuration' parameter was found. Please "
-                                                           + "add a 'configuration' parameter and associated value "
-                                                           + "to the 'parameters' associated with this data source "
-                                                           + "and try again (e.g., configuration: medium_range)." )
-                                         .build();
-            events.add( event );
+            // Warn if it looks like a legacy WRDS NWM web source
+            if ( DeclarationValidator.isLegacyWrdsNwmSource( source ) )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( "Discovered a data 'source' with an 'interface' of '"
+                                                               + SourceInterface.WRDS_NWM
+                                                               + "' whose URL is consistent with a legacy WRDS web "
+                                                               + "service. Access to this service may be removed "
+                                                               + "without warning. Please update your declaration to "
+                                                               + "use the latest WRDS NWM web service URL." )
+                                             .build();
+                events.add( event );
+            }
+            // Error if it is another (i.e., assumed non-legacy) web source and there is no configuration parameter
+            else if ( DeclarationValidator.isWebSource( source )
+                      && source.parameters()
+                               .stream()
+                               .noneMatch( c -> c.key()
+                                                 .equalsIgnoreCase( "configuration" ) ) )
+
+
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( "Discovered a data 'source' with an 'interface' of '"
+                                                               + SourceInterface.WRDS_NWM
+                                                               + "', which requires a 'configuration' parameter to "
+                                                               + "identify the forecast model configuration to read, "
+                                                               + "but no 'configuration' parameter was found. Please "
+                                                               + "add a 'configuration' parameter and associated value "
+                                                               + "to the 'parameters' associated with this data source "
+                                                               + "and try again (e.g., configuration: medium_range)." )
+                                             .build();
+                events.add( event );
+            }
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param source the data source
+     * @return whether the URI path is consistent with a legacy WRDS NWM web source
+     */
+
+    private static boolean isLegacyWrdsNwmSource( Source source )
+    {
+        return DeclarationValidator.isWebSource( source )
+               && source.uri()
+                        .getPath()
+                        .contains( "api/nwm" );
     }
 
     /**

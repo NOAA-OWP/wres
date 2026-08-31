@@ -578,7 +578,7 @@ public class ReaderUtilities
         // Fallback for unspecified interface.
         return uri.getPath()
                   .toLowerCase()
-                  .contains( "api/nwm/" );
+                  .contains( "api/nwm" );
     }
 
     /**
