@@ -113,7 +113,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
         Objects.requireNonNull( inputStream );
 
         // Validate the disposition of the data source
-        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WRDS_NWM );
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WRDS_NWM_LEGACY );
 
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
