@@ -54,7 +54,7 @@ class WrdsNwmJsonReaderTest
                                         .build();
 
         this.fakeSource = DataSource.builder()
-                                    .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                    .disposition( DataSource.DataDisposition.JSON_WRDS_NWM_LEGACY )
                                     .source( fakeDeclarationSource )
                                     .context( dataset )
                                     .links( Collections.emptyList() )
