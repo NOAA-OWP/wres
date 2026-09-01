@@ -560,6 +560,7 @@ public class ReaderUtilities
      * @param source the data source
      * @return whether the source is a WRDS NWM legacy source
      * @throws NullPointerException if the source is null
+     * @deprecated
      */
 
     @Deprecated( forRemoval = true, since = "v7.6" )
@@ -570,15 +571,19 @@ public class ReaderUtilities
         URI uri = source.uri();
         SourceInterface interfaceShortHand = source.source()
                                                    .sourceInterface();
+
+        boolean pathIsWrdsLike = uri.getPath()
+                                    .toLowerCase()
+                                    .contains( "api/nwm" );
+
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand == SourceInterface.WRDS_NWM;
+            return interfaceShortHand == SourceInterface.WRDS_NWM
+                   && pathIsWrdsLike;
         }
 
         // Fallback for unspecified interface.
-        return uri.getPath()
-                  .toLowerCase()
-                  .contains( "api/nwm" );
+        return pathIsWrdsLike;
     }
 
     /**

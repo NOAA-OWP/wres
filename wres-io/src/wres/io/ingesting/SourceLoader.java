@@ -602,15 +602,15 @@ public class SourceLoader
                 LOGGER.debug( "Identified a source as a JSON WRDS HEFS source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_HEFS;
             }
-            else if ( ReaderUtilities.isWrdsNwmSource( dataSource ) )
-            {
-                LOGGER.debug( "Identified a source as a JSON WRDS NWM source: {}.", dataSource );
-                return DataDisposition.JSON_WRDS_NWM;
-            }
             else if ( ReaderUtilities.isWrdsNwmLegacySource( dataSource ) )
             {
                 LOGGER.debug( "Identified a source as a JSON WRDS NWM legacy source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_NWM_LEGACY;
+            }
+            else if ( ReaderUtilities.isWrdsNwmSource( dataSource ) )
+            {
+                LOGGER.debug( "Identified a source as a JSON WRDS NWM source: {}.", dataSource );
+                return DataDisposition.JSON_WRDS_NWM;
             }
             // Hosted NWM data, not via a WRDS API
             else if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
@@ -872,10 +872,10 @@ public class SourceLoader
             if ( SourceLoader.shouldLinkSourceRatherThanLoad( qualifiedSource, sources ) )
             {
                 LOGGER.info( "The following source dataset has already been loaded and will not be loaded again. "
-                              + "Instead, it has been linked to an existing, loaded, dataset. At least, the datasets "
-                              + "shared the same URI. At most, they shared the same URI and other qualifiers (e.g., "
-                              + "variable name when requesting data from a web service). The linked data is: {}",
-                              qualifiedSource );
+                             + "Instead, it has been linked to an existing, loaded, dataset. At least, the datasets "
+                             + "shared the same URI. At most, they shared the same URI and other qualifiers (e.g., "
+                             + "variable name when requesting data from a web service). The linked data is: {}",
+                             qualifiedSource );
 
                 sources.get( qualifiedSource )
                        .getRight()
