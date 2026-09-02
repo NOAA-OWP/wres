@@ -1681,7 +1681,8 @@ public class PoolFactory
                                             List<String> finalExclusive )
     {
         // Nothing to filter
-        if ( Objects.isNull( finalInclusive ) && Objects.isNull( finalExclusive ) )
+        if ( Objects.isNull( finalInclusive )
+             && Objects.isNull( finalExclusive ) )
         {
             return ensemble;
         }
@@ -1711,10 +1712,15 @@ public class PoolFactory
                  && valuesToUse.isEmpty() )
             {
                 throw new IllegalArgumentException( "When attempting to filter ensemble members, discovered some "
-                                                    + "inclusive filters, but no members matches these filters, "
-                                                    + "which is not allowed. The filters were: "
+                                                    + "inclusive filters, but no members matched these filters, "
+                                                    + "which is not allowed. The filtered members included: "
                                                     + finalInclusive
-                                                    + "." );
+                                                    + ". The available members were: "
+                                                    + Arrays.toString( labels )
+                                                    + ". For lenient filtering, declare an exclusive filter "
+                                                    + "('exclude: true') that uses the complement of (i.e., "
+                                                    + "everything except for) the members in: "
+                                                    + finalInclusive );
             }
 
             // Labels are cached centrally

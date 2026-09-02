@@ -123,7 +123,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // Is the evaluation still alive? If not, do not proceed.
         if ( this.evaluation.isFailed() )
         {
-            throw new WresProcessingException( "While processong a pool, discovered that a messaging client has marked "
+            throw new WresProcessingException( "While processing a pool, discovered that a messaging client has marked "
                                                + "evaluation "
                                                + this.evaluation.getEvaluationId()
                                                + " as failed without the possibility of recovery. Processing of the "
@@ -141,7 +141,16 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         // Get the pool
-        Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
+        Pool<TimeSeries<Pair<L, R>>> pool;
+        try
+        {
+            pool = this.poolSupplier.get();
+        }
+        catch ( RuntimeException e )
+        {
+            throw new WresProcessingException( "Encountered an error while processing the following pool: "
+                                               + this.poolRequest, e );
+        }
 
         // Render any potentially expensive state eligible for gc
         this.poolSupplier = null;
