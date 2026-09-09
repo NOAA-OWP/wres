@@ -395,7 +395,7 @@ class WrdsNwmReaderTest
                                   .withQueryParam( "min_reference_datetime",
                                                    WireMock.equalTo( "2022-01-02T00:00:00Z" ) )
                                   .withQueryParam( "max_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-09T00:00:00Z" ) )
+                                                   WireMock.equalTo( "2022-01-08T23:59:59Z" ) )
                                   .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) )
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
@@ -406,7 +406,7 @@ class WrdsNwmReaderTest
                                   .withQueryParam( "min_reference_datetime",
                                                    WireMock.equalTo( "2022-01-09T00:00:00Z" ) )
                                   .withQueryParam( "max_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-16T00:00:00Z" ) )
+                                                   WireMock.equalTo( "2022-01-15T23:59:59Z" ) )
                                   .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) )
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
@@ -496,7 +496,7 @@ class WrdsNwmReaderTest
                                  .withQueryParam( "min_reference_datetime",
                                                   WireMock.equalTo( "2022-01-02T00:00:00Z" ) )
                                  .withQueryParam( "max_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-09T00:00:00Z" ) )
+                                                  WireMock.equalTo( "2022-01-08T23:59:59Z" ) )
                                  .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) ) );
 
         WIREMOCK.verify( WireMock.exactly( 1 ),
@@ -504,7 +504,7 @@ class WrdsNwmReaderTest
                                  .withQueryParam( "min_reference_datetime",
                                                   WireMock.equalTo( "2022-01-09T00:00:00Z" ) )
                                  .withQueryParam( "max_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-16T00:00:00Z" ) )
+                                                  WireMock.equalTo( "2022-01-15T23:59:59Z" ) )
                                  .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) ) );
 
         WIREMOCK.verify( WireMock.exactly( 1 ),
