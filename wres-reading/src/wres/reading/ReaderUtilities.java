@@ -60,6 +60,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.time.DayOfWeek.SUNDAY;
+
 import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
 import wres.config.components.DatasetOrientation;
@@ -668,6 +670,7 @@ public class ReaderUtilities
         {
             case SIMPLE_RANGE ->
                     () -> Collections.unmodifiableSortedSet( new TreeSet<>( Collections.singleton( ( simpleRange ) ) ) );
+            case WEEK_RANGES -> () -> ReaderUtilities.getWeekRanges( declaration, dataSource );
             case YEAR_RANGES -> () -> ReaderUtilities.getYearRanges( simpleRange.getLeft(), simpleRange.getRight() );
         };
     }
@@ -1787,6 +1790,94 @@ public class ReaderUtilities
         LOGGER.debug( "Created year ranges: {}.", yearRanges );
 
         return Collections.unmodifiableSortedSet( yearRanges );
+    }
+
+    /**
+     * Break dates into weeks starting at T00Z Sunday and ending T00Z the next Sunday.
+     *
+     * <p>The purpose of chunking by weeks is re-use between evaluations. Suppose evaluation A evaluates forecasts
+     * issued December 12 through December 28. Then evaluation B evaluates forecasts issued December 13 through
+     * December 29. Rather than each evaluation ingesting the data every time the dates change, if we chunk by week, we
+     * can avoid the re-ingest of data from say, December 16 through December 22, and if we extend the chunk to each
+     * Sunday, there will be three sources, none re-ingested.
+     *
+     * <p>Issued dates must be specified when using an API source to avoid ambiguities and to avoid infinite data
+     * requests.
+     *
+     * @param declaration the project declaration, required
+     * @param dataSource the data source, required
+     * @return a set of week ranges
+     */
+
+    private static SortedSet<Pair<Instant, Instant>> getWeekRanges( EvaluationDeclaration declaration,
+                                                                    DataSource dataSource )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.context() );
+
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
+
+        TimeInterval dates = declaration.validDates();
+
+        if ( isForecast )
+        {
+            dates = declaration.referenceDates();
+        }
+
+        SortedSet<Pair<Instant, Instant>> weekRanges = new TreeSet<>();
+        ZonedDateTime earliest = dates.minimum()
+                                      .atZone( ReaderUtilities.UTC )
+                                      .with( TemporalAdjusters.previousOrSame( SUNDAY ) )
+                                      .withHour( 0 )
+                                      .withMinute( 0 )
+                                      .withSecond( 0 )
+                                      .withNano( 0 );
+
+        LOGGER.debug( "Given {} calculated {} for earliest.",
+                      dates.minimum(),
+                      earliest );
+
+        // Intentionally keep this raw, un-Sunday-ified.
+        ZonedDateTime latest = dates.maximum()
+                                    .atZone( ReaderUtilities.UTC );
+
+        LOGGER.debug( "Given {} calculated {} for latest.",
+                      dates.maximum(),
+                      latest );
+
+        ZonedDateTime left = earliest;
+        ZonedDateTime right = left.with( TemporalAdjusters.next( SUNDAY ) );
+
+        ZonedDateTime nowDate = ZonedDateTime.now( ReaderUtilities.UTC );
+
+        while ( left.isBefore( latest ) )
+        {
+            // Because we chunk a week at a time, and because these will not
+            // be retrieved again if already present, we need to ensure the
+            // right hand date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created range {}", range );
+            weekRanges.add( range );
+            left = left.with( TemporalAdjusters.next( SUNDAY ) );
+            right = right.with( TemporalAdjusters.next( SUNDAY ) );
+        }
+
+        LOGGER.debug( "Calculated ranges {}", weekRanges );
+
+        return Collections.unmodifiableSortedSet( weekRanges );
     }
 
     /**

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -1859,6 +1860,141 @@ class ReaderUtilitiesTest
                                Instant.parse( "2023-02-21T00:00:00Z" ) ) );
         expected.add( Pair.of( Instant.parse( "2023-02-21T00:00:00Z" ),
                                Instant.parse( "2023-03-01T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesThreeFixedWeekTimeChunks()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-02-19T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.WEEK_RANGES,
+                                                              declaration,
+                                                              dataSource );
+
+        Set<Pair<Instant, Instant>> actual = chunker.get();
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-01-29T00:00:00Z" ),
+                               Instant.parse( "2023-02-05T00:00:00Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-05T00:00:00Z" ),
+                               Instant.parse( "2023-02-12T00:00:00Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-12T00:00:00Z" ),
+                               Instant.parse( "2023-02-19T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesThreeFixedWeekNonOverlappingTimeChunks()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-02-19T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( TimeChunker.ChunkingStrategy.WEEK_RANGES,
+                                                              declaration,
+                                                              dataSource );
+
+        Set<Pair<Instant, Instant>> actual = chunker.getNonOverlapping( ChronoUnit.SECONDS );
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-01-29T00:00:00Z" ),
+                               Instant.parse( "2023-02-04T23:59:59Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-05T00:00:00Z" ),
+                               Instant.parse( "2023-02-11T23:59:59Z" ) ) );
+        expected.add( Pair.of( Instant.parse( "2023-02-12T00:00:00Z" ),
+                               Instant.parse( "2023-02-19T00:00:00Z" ) ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeChunkerProducesFixedWeekIntervalSpansLessThanOneChunk()
+    {
+        Source source = SourceBuilder.builder()
+                                     .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( Instant.parse( "2023-02-01T00:00:00Z" ) )
+                                                   .maximum( Instant.parse( "2023-02-07T00:00:00Z" ) )
+                                                   .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .validDates( interval )
+                                                                        .build();
+
+        DataSource dataSource = DataSource.builder()
+                                          .disposition( DataSource.DataDisposition.XML_PI_TIMESERIES )
+                                          .source( source )
+                                          .context( dataset )
+                                          .links( List.of() )
+                                          .uri( URI.create( "http://foo.bar" ) )
+                                          .datasetOrientation( DatasetOrientation.LEFT )
+                                          .build();
+
+        TimeChunker chunker = ReaderUtilities.getTimeChunker( declaration, dataSource, Duration.ofDays( 10 ) );
+
+        Set<Pair<Instant, Instant>> actual = chunker.get();
+
+        Set<Pair<Instant, Instant>> expected = new TreeSet<>();
+        expected.add( Pair.of( Instant.parse( "2023-02-01T00:00:00Z" ),
+                               Instant.parse( "2023-02-07T00:00:00Z" ) ) );
 
         assertEquals( expected, actual );
     }
