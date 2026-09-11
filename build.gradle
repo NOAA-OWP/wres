@@ -298,8 +298,8 @@ project(':wres-system') {
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:4.0.9'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
-        annotationProcessor 'org.projectlombok:lombok:1.18.42'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.48'
+        annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
         // Database drivers need to be on the runtime classpath in order to
         // acquire connections initially. See #103431
@@ -682,16 +682,16 @@ project(':wres-reading') {
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
 
-        implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.5.0'
+        implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.6.0'
 
         runtimeOnly 'org.liquibase:liquibase-core:4.33.0'
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
         api 'com.fasterxml.jackson.core:jackson-annotations:2.22'
-        api 'tools.jackson.core:jackson-databind:3.1.2'
-        api 'tools.jackson.core:jackson-core:3.1.2'
-        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.2")
+        api 'tools.jackson.core:jackson-databind:3.2.2'
+        api 'tools.jackson.core:jackson-core:3.2.2'
+        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.2.2")
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.5'
         api 'org.apache.commons:commons-lang3:3.20.0'
@@ -713,8 +713,8 @@ project(':wres-reading') {
         }
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
-        annotationProcessor 'org.projectlombok:lombok:1.18.42'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.48'
+        annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
         testImplementation 'org.mockito:mockito-core:5.20.0'
@@ -1095,11 +1095,11 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation(platform("tools.jackson:jackson-bom:3.1.2"))
+        implementation(platform("tools.jackson:jackson-bom:3.2.2"))
         api 'com.fasterxml.jackson.core:jackson-annotations:2.22'
-        api 'tools.jackson.core:jackson-databind:3.1.2'
-        api 'tools.jackson.core:jackson-core:3.1.2'
-        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.1.2")
+        api 'tools.jackson.core:jackson-databind:3.2.2'
+        api 'tools.jackson.core:jackson-core:3.2.2'
+        implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.2.2")
 
         implementation('com.hubspot.jackson:jackson3-datatype-protobuf:1.0.0') {
             // Exclude old modules to eliminate several CVEs
@@ -1112,7 +1112,7 @@ project(':wres-config') {
         }
         // Include later dependency versions for the excluded dependencies above
         api 'com.google.protobuf:protobuf-java:3.25.9'
-        implementation 'tools.jackson.core:jackson-core:3.1.2'
+        implementation 'tools.jackson.core:jackson-core:3.2.2'
 
         // To validate WKT strings as geometries
         api group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -1448,10 +1448,10 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.12'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation(platform("tools.jackson:jackson-bom:3.1.2"))
+        implementation(platform("tools.jackson:jackson-bom:3.2.2"))
         api 'com.fasterxml.jackson.core:jackson-annotations:2.22'
-        api 'tools.jackson.core:jackson-databind:3.1.2'
-        api 'tools.jackson.core:jackson-core:3.1.2'
+        api 'tools.jackson.core:jackson-databind:3.2.2'
+        api 'tools.jackson.core:jackson-core:3.2.2'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.20.0'
@@ -1490,7 +1490,7 @@ project(':wres-tasker') {
         }
 
         // Removed above, delete when QPID catches up
-        testImplementation 'tools.jackson.core:jackson-core:3.1.2'
+        testImplementation 'tools.jackson.core:jackson-core:3.2.2'
 
         // Provides support for both 0-8 and 0-9-1
         testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.1.0'
@@ -1594,7 +1594,7 @@ project(':wres-eventsbroker') {
         }
 
         // Include later dependency version
-        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.85'
+        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.85.2'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
         runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.57.0') {
@@ -1691,8 +1691,8 @@ project(':wres-http') {
         implementation 'org.apache.commons:commons-lang3:3.20.0'
 
         // Builders, getters etc.
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.42'
-        annotationProcessor 'org.projectlombok:lombok:1.18.42'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.48'
+        annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.3'
