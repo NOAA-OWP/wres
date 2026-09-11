@@ -15,7 +15,6 @@ import java.util.Set;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -52,7 +51,7 @@ import wres.config.components.Variable;
  * @param covariateFeatureOrientation  The covariate feature orientation, if defined
  */
 
-@Builder( toBuilder = true, builderClassName = "Builder" )
+@lombok.Builder( toBuilder = true, builderClassName = "Builder" )
 public record DataSource( @NonNull DataDisposition disposition,
                           @NonNull Dataset context,
                           @NonNull Source source,
