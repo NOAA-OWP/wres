@@ -15,7 +15,6 @@ import java.util.Set;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -52,7 +51,7 @@ import wres.config.components.Variable;
  * @param covariateFeatureOrientation  The covariate feature orientation, if defined
  */
 
-@Builder( toBuilder = true, builderClassName = "Builder" )
+@lombok.Builder( toBuilder = true, builderClassName = "Builder" )
 public record DataSource( @NonNull DataDisposition disposition,
                           @NonNull Dataset context,
                           @NonNull Source source,
@@ -93,6 +92,9 @@ public record DataSource( @NonNull DataDisposition disposition,
         NETCDF_VECTOR,
         /** The data has been detected as a json, wrds/nwm stream. */
         JSON_WRDS_NWM,
+        /** The data has been detected as a json, wrds/nwm legacy format stream. */
+        @Deprecated( forRemoval = true, since = "7.6" )
+        JSON_WRDS_NWM_LEGACY,
         /** The data has been detected as a json, wrds/ahps stream. */
         JSON_WRDS_AHPS,
         /** The data has been detected as a json, wrds/hefs stream. */
@@ -460,6 +462,11 @@ public record DataSource( @NonNull DataDisposition disposition,
             }
             else if ( start.contains( "wrds" )
                       && start.contains( "nwm" ) )
+            {
+                innerDisposition = DataDisposition.JSON_WRDS_NWM_LEGACY;
+            }
+            else if ( start.contains( "nwm_feature_id" )
+                      && start.contains( "configuration" ) )
             {
                 innerDisposition = DataDisposition.JSON_WRDS_NWM;
             }

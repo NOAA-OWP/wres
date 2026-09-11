@@ -1,4 +1,8 @@
-package wres.reading.wrds.nwm;
+package wres.reading.wrds.nwm_legacy;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.time.Instant;
@@ -19,10 +23,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import wres.config.components.DataType;
 import wres.config.components.Dataset;
 import wres.config.components.DatasetBuilder;
@@ -36,16 +36,14 @@ import wres.config.components.SourceBuilder;
 import wres.config.components.SourceInterface;
 import wres.config.components.TimeInterval;
 import wres.config.components.TimeIntervalBuilder;
-import wres.config.components.UriParameter;
 import wres.config.components.VariableBuilder;
-import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.reading.DataSource;
-import wres.reading.ReadException;
 import wres.reading.TimeSeriesTuple;
+import wres.reading.ReadException;
 import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
@@ -69,143 +67,146 @@ class WrdsNwmReaderTest
                                                                        .build();
 
     /** Feature considered. */
-    private static final String NWM_FEATURE_ID = "5907079";
+    private static final int NWM_FEATURE_ID = 8588002;
 
     /** Path used by GET for analysis. */
-    private static final String ANALYSIS_PATH = "/nwm/v1/streamflow/analysis_assim/nwm_feature_id/"
+    private static final String ANALYSIS_PATH = "/api/v1/nwm/ops/analysis_assim/streamflow/nwm_feature_id/"
                                                 + NWM_FEATURE_ID
                                                 + "/";
 
     /** Parameters added to path. */
-    private static final String ANALYSIS_PARAMS = "?min_reference_datetime=2026-07-08T22:00:00Z"
-                                                  + "&max_reference_datetime=2026-07-08T23:00:00Z";
+    private static final String ANALYSIS_PARAMS = "?reference_time=2020-01-12T00:00:00Z";
 
     /** Analysis response from GET. */
-    private static final String ANALYSIS_RESPONSE = """
-            [
-              {
-                "nwm_feature_id": 5907079,
-                "configuration": "analysis_assim",
-                "reference_datetime": "2026-07-08T23:00:00Z",
-                "data_type": "streamflow",
-                "units": "CMS",
-                "forecast": [
-                  {
-                    "member_id": 1,
-                    "timeseries": [
-                      {
-                        "valid_datetime": "2026-07-08T23:00:00Z",
-                        "value": 21.12
-                      },
-                      {
-                        "valid_datetime": "2026-07-08T22:00:00Z",
-                        "value": 21.8
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "nwm_feature_id": 5907079,
-                "configuration": "analysis_assim",
-                "reference_datetime": "2026-07-08T22:00:00Z",
-                "data_type": "streamflow",
-                "units": "CMS",
-                "forecast": [
-                  {
-                    "member_id": 1,
-                    "timeseries": [
-                      {
-                        "valid_datetime": "2026-07-08T22:00:00Z",
-                        "value": 22.17
-                      },
-                      {
-                        "valid_datetime": "2026-07-08T21:00:00Z",
-                        "value": 22.14
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-            """;
+    private static final String ANALYSIS_RESPONSE = "{\n"
+                                                    + "  \"_documentation\": \"https://somewhere/docs/v1/nwm/swagger/\",\n"
+                                                    + "  \"_metrics\": {\n"
+                                                    + "    \"location_api_call\": 0.08287358283996582,\n"
+                                                    + "    \"forming_location_data\": 0.0002918243408203125,\n"
+                                                    + "    \"usgs_feature_id_count\": 1,\n"
+                                                    + "    \"other_feature_id_count\": 0,\n"
+                                                    + "    \"validate_thredds_vars\": 1.2268075942993164,\n"
+                                                    + "    \"thredds_call\": 0.1791837215423584,\n"
+                                                    + "    \"thredds_data_forming\": 0.0000045299530029296875,\n"
+                                                    + "    \"response_forming\": 0.000018358230590820312,\n"
+                                                    + "    \"total_request_time\": 1.85443115234375\n"
+                                                    + "  },\n"
+                                                    + "  \"_warnings\": [],\n"
+                                                    + "  \"variable\": {\n"
+                                                    + "    \"name\": \"streamflow\",\n"
+                                                    + "    \"unit\": \"meter^3 / sec\"\n"
+                                                    + "  },\n"
+                                                    + "  \"forecasts\": [\n"
+                                                    + "    {\n"
+                                                    + "      \"reference_time\": \"2020-01-12T00:00:00Z\",\n"
+                                                    + "      \"features\": [\n"
+                                                    + "        {\n"
+                                                    + "          \"location\": {\n"
+                                                    + "            \"names\": {\n"
+                                                    + "              \"nws_lid\": \"\",\n"
+                                                    + "              \"usgs_site_code\": \"07049000\",\n"
+                                                    + "              \"nwm_feature_id\": \""
+                                                    + NWM_FEATURE_ID
+                                                    + "\",\n"
+                                                    + "              \"name\": \"War Eagle Creek near Hindsville  AR\"\n"
+                                                    + "            },\n"
+                                                    + "            \"coordinates\": {\n"
+                                                    + "              \"latitude\": \"36.2\",\n"
+                                                    + "              \"longitude\": \"-93.855\"\n"
+                                                    + "            }\n"
+                                                    + "          },\n"
+                                                    + "          \"members\": [\n"
+                                                    + "            {\n"
+                                                    + "              \"identifier\": \"1\",\n"
+                                                    + "              \"data_points\": [\n"
+                                                    + "                {\n"
+                                                    + "                  \"time\": \"20200112T03:00:00Z\",\n"
+                                                    + "                  \"value\": \"270.9899939429015\"\n"
+                                                    + "                },\n"
+                                                    + "                {\n"
+                                                    + "                  \"time\": \"20200112T02:00:00Z\",\n"
+                                                    + "                  \"value\": \"334.139992531389\"\n"
+                                                    + "                },\n"
+                                                    + "                {\n"
+                                                    + "                  \"time\": \"20200112T01:00:00Z\",\n"
+                                                    + "                  \"value\": \"382.27999145537615\"\n"
+                                                    + "                }\n"
+                                                    + "              ]\n"
+                                                    + "            }\n"
+                                                    + "          ]\n"
+                                                    + "        }\n"
+                                                    + "      ]\n"
+                                                    + "    }\n"
+                                                    + "  ]\n"
+                                                    + "}\n";
 
     /** Path used by GET for forecasts. */
-    private static final String FORECAST_PATH = "/nwm/v1/streamflow/forecast/nwm_feature_id/"
+    private static final String FORECAST_PATH = "/api/v1/nwm/ops/short_range/streamflow/nwm_feature_id/"
                                                 + NWM_FEATURE_ID
                                                 + "/";
 
     /** Forecast response from GET. */
-    private static final String FORECAST_RESPONSE = """
-            [
-              {
-                "nwm_feature_id": 5907079,
-                "configuration": "short_range",
-                "reference_datetime": "2026-07-08T23:00:00Z",
-                "data_type": "streamflow",
-                "units": "CMS",
-                "forecast": [
-                  {
-                    "member_id": 1,
-                    "timeseries": [
-                      {
-                        "valid_datetime": "2026-07-09T00:00:00Z",
-                        "value": 1.0
-                      },
-                      {
-                        "valid_datetime": "2026-07-09T01:00:00Z",
-                        "value": 2.0
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "nwm_feature_id": 5907079,
-                "configuration": "short_range",
-                "reference_datetime": "2026-07-08T22:00:00Z",
-                "data_type": "streamflow",
-                "units": "CMS",
-                "forecast": [
-                  {
-                    "member_id": 1,
-                    "timeseries": [
-                      {
-                        "valid_datetime": "2026-07-08T23:00:00Z",
-                        "value": 3.0
-                      },
-                      {
-                        "valid_datetime": "2026-07-09T00:00:00Z",
-                        "value": 4.0
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "nwm_feature_id": 5907079,
-                "configuration": "short_range",
-                "reference_datetime": "2026-07-08T21:00:00Z",
-                "data_type": "streamflow",
-                "units": "CMS",
-                "forecast": [
-                  {
-                    "member_id": 1,
-                    "timeseries": [
-                      {
-                        "valid_datetime": "2026-07-08T22:00:00Z",
-                        "value": 5.0
-                      },
-                      {
-                        "valid_datetime": "2026-07-08T23:00:00Z",
-                        "value": 6.0
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-            """;
+    private static final String FORECAST_RESPONSE = "{\n"
+                                                    + "  \"_documentation\": \"https://somewhere/docs/v1/nwm/swagger/\",\n"
+                                                    + "  \"_metrics\": {\n"
+                                                    + "    \"location_api_call\": 0.08287358283996582,\n"
+                                                    + "    \"forming_location_data\": 0.0002918243408203125,\n"
+                                                    + "    \"usgs_feature_id_count\": 1,\n"
+                                                    + "    \"other_feature_id_count\": 0,\n"
+                                                    + "    \"validate_thredds_vars\": 1.2268075942993164,\n"
+                                                    + "    \"thredds_call\": 0.1791837215423584,\n"
+                                                    + "    \"thredds_data_forming\": 0.0000045299530029296875,\n"
+                                                    + "    \"response_forming\": 0.000018358230590820312,\n"
+                                                    + "    \"total_request_time\": 1.85443115234375\n"
+                                                    + "  },\n"
+                                                    + "  \"_warnings\": [],\n"
+                                                    + "  \"variable\": {\n"
+                                                    + "    \"name\": \"streamflow\",\n"
+                                                    + "    \"unit\": \"meter^3 / sec\"\n"
+                                                    + "  },\n"
+                                                    + "  \"forecasts\": [\n"
+                                                    + "    {\n"
+                                                    + "      \"reference_time\": \"2020-01-12T00:00:00Z\",\n"
+                                                    + "      \"features\": [\n"
+                                                    + "        {\n"
+                                                    + "          \"location\": {\n"
+                                                    + "            \"names\": {\n"
+                                                    + "              \"nws_lid\": \"\",\n"
+                                                    + "              \"usgs_site_code\": \"07049000\",\n"
+                                                    + "              \"nwm_feature_id\": \""
+                                                    + NWM_FEATURE_ID
+                                                    + "\",\n"
+                                                    + "              \"name\": \"War Eagle Creek near Hindsville  AR\"\n"
+                                                    + "            },\n"
+                                                    + "            \"coordinates\": {\n"
+                                                    + "              \"latitude\": \"36.2\",\n"
+                                                    + "              \"longitude\": \"-93.855\"\n"
+                                                    + "            }\n"
+                                                    + "          },\n"
+                                                    + "          \"members\": [\n"
+                                                    + "            {\n"
+                                                    + "              \"identifier\": \"1\",\n"
+                                                    + "              \"data_points\": [\n"
+                                                    + "                {\n"
+                                                    + "                  \"time\": \"20200112T03:00:00Z\",\n"
+                                                    + "                  \"value\": \"270.9899939429015\"\n"
+                                                    + "                },\n"
+                                                    + "                {\n"
+                                                    + "                  \"time\": \"20200112T02:00:00Z\",\n"
+                                                    + "                  \"value\": \"334.139992531389\"\n"
+                                                    + "                },\n"
+                                                    + "                {\n"
+                                                    + "                  \"time\": \"20200112T01:00:00Z\",\n"
+                                                    + "                  \"value\": \"382.27999145537615\"\n"
+                                                    + "                }\n"
+                                                    + "              ]\n"
+                                                    + "            }\n"
+                                                    + "          ]\n"
+                                                    + "        }\n"
+                                                    + "      ]\n"
+                                                    + "    }\n"
+                                                    + "  ]\n"
+                                                    + "}\n";
 
     @Test
     void testReadReturnsOneAnalysisTimeSeries()
@@ -230,7 +231,7 @@ class WrdsNwmReaderTest
                                         .build();
 
         DataSource fakeSource = DataSource.builder()
-                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM_LEGACY )
                                           .source( fakeDeclarationSource )
                                           .context( dataset )
                                           .links( Collections.emptyList() )
@@ -251,37 +252,28 @@ class WrdsNwmReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .toList();
 
-            Feature feature = Feature.of( MessageUtilities.getGeometry( "5907079" ) );
+            Geometry geometry = MessageUtilities.getGeometry( Integer.toString( NWM_FEATURE_ID ),
+                                                              null,
+                                                              null,
+                                                              null );
 
-            TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
-                                                                            Instant.parse( "2026-07-08T23:00:00Z" ) ),
-                                                                    TimeScaleOuter.of(),
-                                                                    "streamflow",
-                                                                    feature,
-                                                                    "CMS" );
-            TimeSeries<Double> expectedSeriesOne =
-                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2026-07-08T23:00:00Z" ),
-                                                                         21.12 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2026-07-08T22:00:00Z" ),
-                                                                         21.8 ) )
-                                                    .setMetadata( metadataOne )
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                                                         Instant.parse( "2020-01-12T00:00:00Z" ) ),
+                                                                 null,
+                                                                 "streamflow",
+                                                                 Feature.of( geometry ),
+                                                                 "meter^3 / sec" );
+            TimeSeries<Double> expectedSeries =
+                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),
+                                                                         382.27999145537615 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-12T02:00:00Z" ),
+                                                                         334.139992531389 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-12T03:00:00Z" ),
+                                                                         270.9899939429015 ) )
+                                                    .setMetadata( metadata )
                                                     .build();
 
-            TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
-                                                                            Instant.parse( "2026-07-08T22:00:00Z" ) ),
-                                                                    TimeScaleOuter.of(),
-                                                                    "streamflow",
-                                                                    feature,
-                                                                    "CMS" );
-            TimeSeries<Double> expectedSeriesTwo =
-                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2026-07-08T22:00:00Z" ),
-                                                                         22.17 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2026-07-08T21:00:00Z" ),
-                                                                         22.14 ) )
-                                                    .setMetadata( metadataTwo )
-                                                    .build();
-
-            List<TimeSeries<Double>> expected = List.of( expectedSeriesOne, expectedSeriesTwo );
+            List<TimeSeries<Double>> expected = List.of( expectedSeries );
 
             assertEquals( expected, actual );
         }
@@ -329,7 +321,7 @@ class WrdsNwmReaderTest
                                         .build();
 
         DataSource fakeSource = DataSource.builder()
-                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM_LEGACY )
                                           .source( fakeDeclarationSource )
                                           .context( dataset )
                                           .links( Collections.emptyList() )
@@ -350,37 +342,28 @@ class WrdsNwmReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .toList();
 
-            Feature feature = Feature.of( MessageUtilities.getGeometry( "5907079" ) );
+            Geometry geometry = MessageUtilities.getGeometry( Integer.toString( NWM_FEATURE_ID ),
+                                                              null,
+                                                              null,
+                                                              null );
 
-            TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
-                                                                            Instant.parse( "2026-07-08T23:00:00Z" ) ),
-                                                                    TimeScaleOuter.of(),
-                                                                    "streamflow",
-                                                                    feature,
-                                                                    "CMS" );
-            TimeSeries<Double> expectedSeriesOne =
-                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2026-07-08T23:00:00Z" ),
-                                                                         21.12 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2026-07-08T22:00:00Z" ),
-                                                                         21.8 ) )
-                                                    .setMetadata( metadataOne )
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                                                         Instant.parse( "2020-01-12T00:00:00Z" ) ),
+                                                                 null,
+                                                                 "streamflow",
+                                                                 Feature.of( geometry ),
+                                                                 "meter^3 / sec" );
+            TimeSeries<Double> expectedSeries =
+                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),
+                                                                         382.27999145537615 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-12T02:00:00Z" ),
+                                                                         334.139992531389 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-12T03:00:00Z" ),
+                                                                         270.9899939429015 ) )
+                                                    .setMetadata( metadata )
                                                     .build();
 
-            TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
-                                                                            Instant.parse( "2026-07-08T22:00:00Z" ) ),
-                                                                    TimeScaleOuter.of(),
-                                                                    "streamflow",
-                                                                    feature,
-                                                                    "CMS" );
-            TimeSeries<Double> expectedSeriesTwo =
-                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2026-07-08T22:00:00Z" ),
-                                                                         22.17 ) )
-                                                    .addEvent( Event.of( Instant.parse( "2026-07-08T21:00:00Z" ),
-                                                                         22.14 ) )
-                                                    .setMetadata( metadataTwo )
-                                                    .build();
-
-            List<TimeSeries<Double>> expected = List.of( expectedSeriesOne, expectedSeriesTwo );
+            List<TimeSeries<Double>> expected = List.of( expectedSeries );
 
             assertEquals( expected, actual );
         }
@@ -392,33 +375,30 @@ class WrdsNwmReaderTest
         // Create the chunk parameters. Note the fiddly interval notation on the date ranges
         // First chunk
         WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
-                                  .withQueryParam( "min_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-02T00:00:00Z" ) )
-                                  .withQueryParam( "max_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-08T23:59:59Z" ) )
-                                  .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "reference_time",
+                                                   WireMock.equalTo( "(20220102T00Z,20220109T00Z]" ) )
+                                  .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) )
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
                                                        .withBody( FORECAST_RESPONSE ) ) );
 
         // Second chunk
         WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
-                                  .withQueryParam( "min_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-09T00:00:00Z" ) )
-                                  .withQueryParam( "max_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-15T23:59:59Z" ) )
-                                  .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "reference_time",
+                                                   WireMock.equalTo( "(20220109T00Z,20220116T00Z]" ) )
+                                  .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) )
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
                                                        .withBody( FORECAST_RESPONSE ) ) );
 
         // Third chunk
         WIREMOCK.stubFor( WireMock.get( WireMock.urlPathEqualTo( FORECAST_PATH ) )
-                                  .withQueryParam( "min_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-16T00:00:00Z" ) )
-                                  .withQueryParam( "max_reference_datetime",
-                                                   WireMock.equalTo( "2022-01-23T00:00:00Z" ) )
-                                  .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) )
+                                  .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                  .withQueryParam( "reference_time",
+                                                   WireMock.equalTo( "(20220116T00Z,20220123T00Z]" ) )
+                                  .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) )
                                   .willReturn( WireMock.aResponse()
                                                        .withStatus( 200 )
                                                        .withBody( FORECAST_RESPONSE ) ) );
@@ -426,13 +406,11 @@ class WrdsNwmReaderTest
         // Need to use a short URL, as would be declared, since chunking goes through URL creation
         URI fakeUri = URI.create( "http://localhost:"
                                   + WIREMOCK.getPort()
-                                  + "/nwm/v1/" );
+                                  + "/api/v1/nwm/ops/short_range/" );
 
         Source fakeDeclarationSource = SourceBuilder.builder()
                                                     .uri( fakeUri )
                                                     .sourceInterface( SourceInterface.WRDS_NWM )
-                                                    .parameters( List.of( new UriParameter( "configuration",
-                                                                                            "short_range" ) ) )
                                                     .build();
 
         Dataset dataset = DatasetBuilder.builder()
@@ -444,7 +422,7 @@ class WrdsNwmReaderTest
                                         .build();
 
         DataSource fakeSource = DataSource.builder()
-                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM_LEGACY )
                                           .source( fakeDeclarationSource )
                                           .context( dataset )
                                           .links( Collections.emptyList() )
@@ -460,7 +438,7 @@ class WrdsNwmReaderTest
         Set<GeometryTuple> geometries
                 = Set.of( GeometryTuple.newBuilder()
                                        .setRight( Geometry.newBuilder()
-                                                          .setName( NWM_FEATURE_ID ) )
+                                                          .setName( Integer.toString( NWM_FEATURE_ID ) ) )
                                        .build() );
         Features features = FeaturesBuilder.builder()
                                            .geometries( geometries )
@@ -483,8 +461,8 @@ class WrdsNwmReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .toList();
 
-            // Three chunks of three forecasts expected = 9 forecasts
-            assertEquals( 9, actual.size() );
+            // Three chunks expected
+            assertEquals( 3, actual.size() );
         }
 
         // Three requests made
@@ -493,27 +471,24 @@ class WrdsNwmReaderTest
 
         WIREMOCK.verify( WireMock.exactly( 1 ),
                          WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) )
-                                 .withQueryParam( "min_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-02T00:00:00Z" ) )
-                                 .withQueryParam( "max_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-08T23:59:59Z" ) )
-                                 .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) ) );
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "reference_time",
+                                                  WireMock.equalTo( "(20220102T00Z,20220109T00Z]" ) )
+                                 .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) ) );
 
         WIREMOCK.verify( WireMock.exactly( 1 ),
                          WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) )
-                                 .withQueryParam( "min_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-09T00:00:00Z" ) )
-                                 .withQueryParam( "max_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-15T23:59:59Z" ) )
-                                 .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) ) );
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "reference_time",
+                                                  WireMock.equalTo( "(20220109T00Z,20220116T00Z]" ) )
+                                 .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) ) );
 
         WIREMOCK.verify( WireMock.exactly( 1 ),
                          WireMock.getRequestedFor( WireMock.urlPathEqualTo( FORECAST_PATH ) )
-                                 .withQueryParam( "min_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-16T00:00:00Z" ) )
-                                 .withQueryParam( "max_reference_datetime",
-                                                  WireMock.equalTo( "2022-01-23T00:00:00Z" ) )
-                                 .withQueryParam( "configuration", WireMock.equalTo( "short_range" ) ) );
+                                 .withQueryParam( "proj", WireMock.equalTo( "UNKNOWN_PROJECT_USING_WRES" ) )
+                                 .withQueryParam( "reference_time",
+                                                  WireMock.equalTo( "(20220116T00Z,20220123T00Z]" ) )
+                                 .withQueryParam( "forecast_type", WireMock.equalTo( "deterministic" ) ) );
     }
 
     /**
@@ -528,8 +503,6 @@ class WrdsNwmReaderTest
         Source fakeDeclarationSource = SourceBuilder.builder()
                                                     .uri( fakeUri )
                                                     .sourceInterface( SourceInterface.WRDS_NWM )
-                                                    .parameters( List.of( new UriParameter( "configuration",
-                                                                                            "short_range" ) ) )
                                                     .build();
 
         Dataset dataset = DatasetBuilder.builder()
@@ -541,7 +514,7 @@ class WrdsNwmReaderTest
                                         .build();
 
         DataSource fakeSource = DataSource.builder()
-                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM_LEGACY )
                                           .source( fakeDeclarationSource )
                                           .context( dataset )
                                           .links( Collections.emptyList() )
@@ -557,7 +530,7 @@ class WrdsNwmReaderTest
         Set<GeometryTuple> geometries
                 = Set.of( GeometryTuple.newBuilder()
                                        .setRight( Geometry.newBuilder()
-                                                          .setName( NWM_FEATURE_ID ) )
+                                                          .setName( Integer.toString( NWM_FEATURE_ID ) ) )
                                        .build(),
                           GeometryTuple.newBuilder()
                                        .setRight( Geometry.newBuilder()
@@ -598,8 +571,6 @@ class WrdsNwmReaderTest
         Source fakeDeclarationSource = SourceBuilder.builder()
                                                     .uri( fakeUri )
                                                     .sourceInterface( SourceInterface.WRDS_NWM )
-                                                    .parameters( List.of( new UriParameter( "configuration",
-                                                                                            "short_range" ) ) )
                                                     .build();
 
         Dataset dataset = DatasetBuilder.builder()
@@ -611,7 +582,7 @@ class WrdsNwmReaderTest
                                         .build();
 
         DataSource fakeSource = DataSource.builder()
-                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM )
+                                          .disposition( DataSource.DataDisposition.JSON_WRDS_NWM_LEGACY )
                                           .source( fakeDeclarationSource )
                                           .context( dataset )
                                           .links( Collections.emptyList() )
@@ -627,7 +598,7 @@ class WrdsNwmReaderTest
         Set<GeometryTuple> geometries
                 = Set.of( GeometryTuple.newBuilder()
                                        .setRight( Geometry.newBuilder()
-                                                          .setName( NWM_FEATURE_ID ) )
+                                                          .setName( Integer.toString( NWM_FEATURE_ID ) ) )
                                        .build(),
                           GeometryTuple.newBuilder()
                                        .setRight( Geometry.newBuilder()

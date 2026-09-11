@@ -1,4 +1,4 @@
-package wres.reading.wrds.nwm;
+package wres.reading.wrds.nwm_legacy;
 
 import java.time.Instant;
 

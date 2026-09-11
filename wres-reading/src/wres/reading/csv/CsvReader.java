@@ -408,9 +408,7 @@ public class CsvReader implements TimeSeriesReader
         else
         {
             TimeSeries<Ensemble> timeSeries = ReaderUtilities.transformEnsemble( timeSeriesMetadata,
-                                                                                 traceValues,
-                                                                                 lineNumber,
-                                                                                 dataSource.uri() );
+                                                                                 traceValues );
 
             // Validate
             ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.uri() );

@@ -1,18 +1,22 @@
-package wres.reading.wrds.nwm;
+package wres.reading.wrds.nwm_legacy;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A NWM feature.
  */
 
+@Getter
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmFeature
 {
+    /** The location. */
     private final NwmLocation location;
+    /** The members. */
     private final NwmMember[] members;
 
     /**
@@ -28,22 +32,6 @@ public class NwmFeature
     {
         this.location = location;
         this.members = members;
-    }
-
-    /**
-     * @return the location
-     */
-    public NwmLocation getLocation()
-    {
-        return this.location;
-    }
-
-    /**
-     * @return the members
-     */
-    public NwmMember[] getMembers()
-    {
-        return this.members;
     }
 
     @Override

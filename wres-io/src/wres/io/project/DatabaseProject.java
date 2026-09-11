@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1389,15 +1387,11 @@ public class DatabaseProject implements Project
 
                         if ( !dataExists )
                         {
-                            ToStringBuilder builder =
-                                    new ToStringBuilder( ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation",
-                                                                                                    orientation )
-                                                                                           .append( "name",
-                                                                                                    name )
-                                                                                           .append( "exclude",
-                                                                                                    filter.exclude() );
-
-                            failed.add( builder.toString() );
+                            StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+                            joiner.add( "orientation: " + orientation )
+                                  .add( "name: " + name )
+                                  .add( "exclude: " + filter.exclude() );
+                            failed.add( joiner.toString() );
                         }
                     }
                 }

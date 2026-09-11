@@ -5,10 +5,8 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -34,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
 import wres.config.components.EvaluationDeclaration;
+import wres.config.components.UriParameter;
 import wres.config.components.Variable;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
@@ -400,9 +399,9 @@ public class NwisIvReader implements TimeSeriesReader
                          baseUri );
         }
 
-        Map<String, String> urlParameters = this.getUrlParameters( range,
-                                                                   featureNames,
-                                                                   dataSource );
+        List<UriParameter> urlParameters = this.getUrlParameters( range,
+                                                                  featureNames,
+                                                                  dataSource );
         return ReaderUtilities.getUriWithParameters( baseUri,
                                                      urlParameters );
     }
@@ -416,9 +415,9 @@ public class NwisIvReader implements TimeSeriesReader
      * @throws NullPointerException When arg or value enclosed inside arg is null
      */
 
-    private Map<String, String> getUrlParameters( Pair<Instant, Instant> range,
-                                                  String[] siteCodes,
-                                                  DataSource dataSource )
+    private List<UriParameter> getUrlParameters( Pair<Instant, Instant> range,
+                                                 String[] siteCodes,
+                                                 DataSource dataSource )
     {
         LOGGER.trace( "Called getUrlParameters with {}, {}, {}",
                       range,
@@ -447,17 +446,17 @@ public class NwisIvReader implements TimeSeriesReader
         // For some reason, 1 to 999 milliseconds are not enough.
         Instant startDateTime = range.getLeft()
                                      .plusSeconds( 1 );
-        Map<String, String> urlParameters = new HashMap<>( dataSource.source()
-                                                                     .parameters() );
+        List<UriParameter> urlParameters = new ArrayList<>( dataSource.source()
+                                                                      .parameters() );
 
         String parameterCodes = this.getParameterCodes( dataSource.getVariable() );
-        urlParameters.put( "format", "json" );
-        urlParameters.put( "parameterCd", parameterCodes );
-        urlParameters.put( "startDT", startDateTime.toString() );
-        urlParameters.put( "endDT", range.getRight().toString() );
-        urlParameters.put( "sites", siteJoiner.toString() );
+        urlParameters.add( new UriParameter( "format", "json" ) );
+        urlParameters.add( new UriParameter( "parameterCd", parameterCodes ) );
+        urlParameters.add( new UriParameter( "startDT", startDateTime.toString() ) );
+        urlParameters.add( new UriParameter( "endDT", range.getRight().toString() ) );
+        urlParameters.add( new UriParameter( "sites", siteJoiner.toString() ) );
 
-        return Collections.unmodifiableMap( urlParameters );
+        return Collections.unmodifiableList( urlParameters );
     }
 
     /**

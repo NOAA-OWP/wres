@@ -1,4 +1,4 @@
-package wres.reading.wrds.nwm;
+package wres.reading.wrds.nwm_legacy;
 
 import org.junit.Assert;
 import org.junit.Test;

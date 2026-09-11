@@ -1,4 +1,4 @@
-package wres.reading.wrds.nwm;
+package wres.reading.wrds.nwm_legacy;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

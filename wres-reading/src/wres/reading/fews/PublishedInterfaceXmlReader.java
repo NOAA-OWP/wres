@@ -103,7 +103,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
         catch ( IOException e )
         {
-            throw new ReadException( "Failed to read a CSV source.", e );
+            throw new ReadException( "Failed to read a PI-XML source.", e );
         }
     }
 
@@ -1141,9 +1141,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         else
         {
             ensembleSeries = ReaderUtilities.transformEnsemble( timeSeriesMetadata,
-                                                                ensembleValues,
-                                                                lineNumber,
-                                                                dataSource.uri() );
+                                                                ensembleValues );
 
             // Validate
             ReaderUtilities.validateAgainstEmptyTimeSeries( ensembleSeries, dataSource.uri() );

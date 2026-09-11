@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.List;
 import java.util.Map;
@@ -19,8 +20,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.jcip.annotations.Immutable;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -557,26 +556,36 @@ public class InMemoryProject implements Project
         EnsembleFilter filter = dataset.ensembleFilter();
         if ( Objects.nonNull( filter ) )
         {
+            // Find the unique member labels from the time-series available
+            Stream<TimeSeries<Ensemble>> series = timeSeriesStore.getEnsembleSeries( orientation );
+            Set<String> labels = series.flatMap( s -> s.getEvents()
+                                                       .stream() )
+                                       .flatMap( e -> Arrays.stream( e.getValue()
+                                                                      .getLabels()
+                                                                      .getLabels() ) )
+                                       .collect( Collectors.toSet() );
+
             for ( String name : filter.members() )
             {
-                Stream<TimeSeries<Ensemble>> series = timeSeriesStore.getEnsembleSeries( orientation );
-                boolean dataExists = series.flatMap( next -> next.getEvents()
-                                                                 .stream() )
-                                           .map( next -> next.getValue()
-                                                             .getLabels() )
-                                           .flatMap( labels -> Arrays.stream( labels.getLabels() ) )
-                                           .anyMatch( name::equals );
+                boolean dataExists;
+                if ( filter.exclude() )
+                {
+                    dataExists = labels.stream()
+                                       .anyMatch( a -> !name.equals( a ) );
+                }
+                else
+                {
+                    dataExists = labels.stream()
+                                       .anyMatch( name::equals );
+                }
 
                 if ( !dataExists )
                 {
-                    ToStringBuilder builder =
-                            new ToStringBuilder( ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation",
-                                                                                            orientation )
-                                                                                   .append( "name", name )
-                                                                                   .append( "exclude",
-                                                                                            filter.exclude() );
-
-                    failed.add( builder.toString() );
+                    StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
+                    joiner.add( "orientation: " + orientation )
+                          .add( "name: " + name )
+                          .add( "exclude: " + filter.exclude() );
+                    failed.add( joiner.toString() );
                 }
             }
         }

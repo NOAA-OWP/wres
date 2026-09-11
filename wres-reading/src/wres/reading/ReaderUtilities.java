@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,7 +34,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -48,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import wres.config.components.UriParameter;
 import wres.http.RetryPolicy;
 
 import javax.net.ssl.SSLContext;
@@ -60,6 +59,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.time.DayOfWeek.SUNDAY;
 
 import wres.config.DeclarationException;
 import wres.config.DeclarationUtilities;
@@ -216,21 +217,15 @@ public class ReaderUtilities
     }
 
     /**
-     * Transform a map of traces into a {@link TimeSeries} of {@link Ensemble} values (flip it) but
-     * also validate the density and valid datetimes of the ensemble prior.
-     * @param metadata The metadata of the timeseries.
-     * @param traces The raw data to build a TimeSeries.
-     * @param lineNumber The approximate location in the source.
-     * @param uri a uri to help with messaging
+     * Transform a map of traces into a {@link TimeSeries} of {@link Ensemble} values (flip it).
+     *
+     * @param metadata The metadata of the timeseries
+     * @param traces The raw data to build a TimeSeries
      * @return The complete TimeSeries
      * @throws IllegalArgumentException When fewer than two traces given.
-     * @throws PreReadException When ragged (non-dense) data given.
      */
-
     public static TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
-                                                          SortedMap<String, SortedMap<Instant, Double>> traces,
-                                                          int lineNumber,
-                                                          URI uri )
+                                                          SortedMap<String, SortedMap<Instant, Double>> traces )
     {
         int traceCount = traces.size();
 
@@ -241,80 +236,47 @@ public class ReaderUtilities
                           traces );
         }
 
-        Map<Instant, double[]> reshapedValues = new HashMap<>();
-        Map.Entry<String, SortedMap<Instant, Double>> previousTrace = null;
-        int i = 0;
-
-        String append = "";
-
-        if ( Objects.nonNull( uri ) )
+        // 1. Gather all unique timestamps to define our timeline
+        SortedSet<Instant> allInstants = new TreeSet<>();
+        for ( SortedMap<Instant, Double> traceData : traces.values() )
         {
-            append = " from " + uri;
-
-            if ( lineNumber > -1 )
-            {
-                append = " with data at or before "
-                         + "line number "
-                         + lineNumber;
-            }
-        }
-
-        for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
-        {
-            SortedSet<Instant> theseInstants = new TreeSet<>( trace.getValue()
-                                                                   .keySet() );
-
-            if ( Objects.nonNull( previousTrace ) )
-            {
-                SortedSet<Instant> previousInstants = new TreeSet<>( previousTrace.getValue()
-                                                                                  .keySet() );
-                if ( !theseInstants.equals( previousInstants ) )
-                {
-                    throw new ReadException( "Could not build an ensemble time-series"
-                                             + append
-                                             + " because the trace named "
-                                             + trace.getKey()
-                                             + " had these valid datetimes"
-                                             + ": "
-                                             + theseInstants
-                                             + " but a previous trace named "
-                                             + previousTrace.getKey()
-                                             + " had different ones: "
-                                             + previousInstants
-                                             + " which is not allowed. All"
-                                             + " traces must be dense and "
-                                             + "have matching valid datetimes." );
-                }
-            }
-
-            for ( Map.Entry<Instant, Double> event : trace.getValue()
-                                                          .entrySet() )
-            {
-                Instant validDateTime = event.getKey();
-                reshapedValues.putIfAbsent( validDateTime, new double[traceCount] );
-                double[] values = reshapedValues.get( validDateTime );
-                values[i] = event.getValue();
-            }
-
-            previousTrace = trace;
-            i++;
+            allInstants.addAll( traceData.keySet() );
         }
 
         wres.datamodel.time.TimeSeries.Builder<Ensemble> builder =
                 new wres.datamodel.time.TimeSeries.Builder<>();
-
-        // Because the iteration is over a sorted map, assuming same order here.
-        SortedSet<String> traceNamesSorted = new TreeSet<>( traces.keySet() );
-        String[] traceNames = new String[traceNamesSorted.size()];
-        traceNamesSorted.toArray( traceNames );
-        Labels labels = Labels.of( traceNames );
-
         builder.setMetadata( metadata );
 
-        for ( Map.Entry<Instant, double[]> events : reshapedValues.entrySet() )
+        // Allocate temporary structures once to reuse across iterations
+        double[] tempValues = new double[traceCount];
+        String[] tempNames = new String[traceCount];
+
+        for ( Instant instant : allInstants )
         {
-            Ensemble ensembleSlice = Ensemble.of( events.getValue(), labels );
-            Event<Ensemble> ensembleEvent = Event.of( events.getKey(), ensembleSlice );
+            int memberCount = 0;
+
+            // Search the input map directly for this instant
+            for ( Map.Entry<String, SortedMap<Instant, Double>> trace : traces.entrySet() )
+            {
+                if ( trace.getValue()
+                          .containsKey( instant ) )
+                {
+                    double value = trace.getValue()
+                                        .get( instant );
+                    tempValues[memberCount] = value;
+                    tempNames[memberCount] = trace.getKey();
+                    memberCount++;
+                }
+            }
+
+            double[] finalValues = new double[memberCount];
+            String[] finalNames = new String[memberCount];
+            System.arraycopy( tempValues, 0, finalValues, 0, memberCount );
+            System.arraycopy( tempNames, 0, finalNames, 0, memberCount );
+
+            Labels labels = Labels.of( finalNames );
+            Ensemble ensembleSlice = Ensemble.of( finalValues, labels );
+            Event<Ensemble> ensembleEvent = Event.of( instant, ensembleSlice );
             builder.addEvent( ensembleEvent );
         }
 
@@ -593,7 +555,37 @@ public class ReaderUtilities
         // Fallback for unspecified interface.
         return uri.getPath()
                   .toLowerCase()
-                  .contains( "nwm" );
+                  .contains( "nwm/v" );
+    }
+
+    /**
+     * @param source the data source
+     * @return whether the source is a WRDS NWM legacy source
+     * @throws NullPointerException if the source is null
+     * @deprecated
+     */
+
+    @Deprecated( forRemoval = true, since = "v7.6" )
+    public static boolean isWrdsNwmLegacySource( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        URI uri = source.uri();
+        SourceInterface interfaceShortHand = source.source()
+                                                   .sourceInterface();
+
+        boolean pathIsWrdsLike = uri.getPath()
+                                    .toLowerCase()
+                                    .contains( "api/nwm" );
+
+        if ( Objects.nonNull( interfaceShortHand ) )
+        {
+            return interfaceShortHand == SourceInterface.WRDS_NWM
+                   && pathIsWrdsLike;
+        }
+
+        // Fallback for unspecified interface.
+        return pathIsWrdsLike;
     }
 
     /**
@@ -678,6 +670,7 @@ public class ReaderUtilities
         {
             case SIMPLE_RANGE ->
                     () -> Collections.unmodifiableSortedSet( new TreeSet<>( Collections.singleton( ( simpleRange ) ) ) );
+            case WEEK_RANGES -> () -> ReaderUtilities.getWeekRanges( declaration, dataSource );
             case YEAR_RANGES -> () -> ReaderUtilities.getYearRanges( simpleRange.getLeft(), simpleRange.getRight() );
         };
     }
@@ -901,24 +894,23 @@ public class ReaderUtilities
      * Adds the parameters to a URI in their natural order.
      *
      * @param uri the uri to build upon
-     * @param urlParameters the parameters to add to the uri
+     * @param uriParameters the parameters to add to the uri
      * @return the uri with the urlParameters added, in repeatable/sorted order.
      * @throws NullPointerException when any argument is null.
      */
 
-    public static URI getUriWithParameters( URI uri, Map<String, String> urlParameters )
+    public static URI getUriWithParameters( URI uri, List<UriParameter> uriParameters )
     {
-        LOGGER.debug( "Adding these parameters: {} to this URL: {}", urlParameters, uri );
+        LOGGER.debug( "Adding these parameters: {} to this URL: {}", uriParameters, uri );
 
         Objects.requireNonNull( uri );
-        Objects.requireNonNull( urlParameters );
+        Objects.requireNonNull( uriParameters );
 
         URIBuilder uriBuilder = new URIBuilder( uri );
-        SortedMap<String, String> sortedUrlParameters = new TreeMap<>( urlParameters );
 
-        for ( Map.Entry<String, String> parameter : sortedUrlParameters.entrySet() )
+        for ( UriParameter parameter : uriParameters )
         {
-            uriBuilder.setParameter( parameter.getKey(), parameter.getValue() );
+            uriBuilder.setParameter( parameter.key(), parameter.value() );
         }
 
         try
@@ -934,7 +926,7 @@ public class ReaderUtilities
             throw new IllegalArgumentException( "Could not create URI from "
                                                 + sanitizedUriString
                                                 + " and "
-                                                + urlParameters,
+                                                + uriParameters,
                                                 e );
         }
     }
@@ -1798,6 +1790,94 @@ public class ReaderUtilities
         LOGGER.debug( "Created year ranges: {}.", yearRanges );
 
         return Collections.unmodifiableSortedSet( yearRanges );
+    }
+
+    /**
+     * Break dates into weeks starting at T00Z Sunday and ending T00Z the next Sunday.
+     *
+     * <p>The purpose of chunking by weeks is re-use between evaluations. Suppose evaluation A evaluates forecasts
+     * issued December 12 through December 28. Then evaluation B evaluates forecasts issued December 13 through
+     * December 29. Rather than each evaluation ingesting the data every time the dates change, if we chunk by week, we
+     * can avoid the re-ingest of data from say, December 16 through December 22, and if we extend the chunk to each
+     * Sunday, there will be three sources, none re-ingested.
+     *
+     * <p>Issued dates must be specified when using an API source to avoid ambiguities and to avoid infinite data
+     * requests.
+     *
+     * @param declaration the project declaration, required
+     * @param dataSource the data source, required
+     * @return a set of week ranges
+     */
+
+    private static SortedSet<Pair<Instant, Instant>> getWeekRanges( EvaluationDeclaration declaration,
+                                                                    DataSource dataSource )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( dataSource.context() );
+
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.context() );
+
+        TimeInterval dates = declaration.validDates();
+
+        if ( isForecast )
+        {
+            dates = declaration.referenceDates();
+        }
+
+        SortedSet<Pair<Instant, Instant>> weekRanges = new TreeSet<>();
+        ZonedDateTime earliest = dates.minimum()
+                                      .atZone( ReaderUtilities.UTC )
+                                      .with( TemporalAdjusters.previousOrSame( SUNDAY ) )
+                                      .withHour( 0 )
+                                      .withMinute( 0 )
+                                      .withSecond( 0 )
+                                      .withNano( 0 );
+
+        LOGGER.debug( "Given {} calculated {} for earliest.",
+                      dates.minimum(),
+                      earliest );
+
+        // Intentionally keep this raw, un-Sunday-ified.
+        ZonedDateTime latest = dates.maximum()
+                                    .atZone( ReaderUtilities.UTC );
+
+        LOGGER.debug( "Given {} calculated {} for latest.",
+                      dates.maximum(),
+                      latest );
+
+        ZonedDateTime left = earliest;
+        ZonedDateTime right = left.with( TemporalAdjusters.next( SUNDAY ) );
+
+        ZonedDateTime nowDate = ZonedDateTime.now( ReaderUtilities.UTC );
+
+        while ( left.isBefore( latest ) )
+        {
+            // Because we chunk a week at a time, and because these will not
+            // be retrieved again if already present, we need to ensure the
+            // right hand date does not exceed "now".
+            if ( right.isAfter( nowDate ) )
+            {
+                if ( latest.isAfter( nowDate ) )
+                {
+                    right = nowDate;
+                }
+                else
+                {
+                    right = latest;
+                }
+            }
+
+            Pair<Instant, Instant> range = Pair.of( left.toInstant(), right.toInstant() );
+            LOGGER.debug( "Created range {}", range );
+            weekRanges.add( range );
+            left = left.with( TemporalAdjusters.next( SUNDAY ) );
+            right = right.with( TemporalAdjusters.next( SUNDAY ) );
+        }
+
+        LOGGER.debug( "Calculated ranges {}", weekRanges );
+
+        return Collections.unmodifiableSortedSet( weekRanges );
     }
 
     /**

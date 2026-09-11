@@ -278,7 +278,7 @@ class ProjectUtilities
     }
 
     /**
-     * Checks that the declared and ingested variable names are consistent hen both are available.
+     * Checks that the declared and ingested variable names are consistent when both are available.
      *
      * @param declaration the declaration
      * @param left the possible names for left variables, according to ingest and where available

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.reading.PreReadException;
 import wres.reading.ReaderUtilities;
-import wres.reading.wrds.nwm.NwmRootDocument;
+import wres.reading.wrds.nwm_legacy.NwmRootDocument;
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 

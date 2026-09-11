@@ -690,6 +690,101 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testWrdsNwmSourceWithoutConfigurationParameterResultsInError()
+    {
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .build();
+        Source anotherSource = SourceBuilder.builder()
+                                            .sourceInterface( SourceInterface.WRDS_NWM )
+                                            .uri( URI.create( "http://foo.bar" ) )
+                                            .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.SINGLE_VALUED_FORECASTS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( anotherSource ) )
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "which requires a 'configuration' parameter to "
+                                                               + "identify the forecast model configuration",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testWrdsNwmSourceWithLegacyUriResultsInWarning()
+    {
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .build();
+        Source anotherSource = SourceBuilder.builder()
+                                            .sourceInterface( SourceInterface.WRDS_NWM )
+                                            .uri( URI.create( "http://foo_host/api/nwm3.0/v3.0/bar" ) )
+                                            .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.SINGLE_VALUED_FORECASTS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( anotherSource ) )
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "whose URL is consistent with a legacy WRDS "
+                                                               + "web service. Access to this service may be removed "
+                                                               + "without warning",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    @Deprecated( since = "v7.6", forRemoval = true )
+    void testWrdsNwmSourceWithoutConfigurationParameterAndWithLegacyUriOmitsValidationError()
+    {
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .build();
+        Source anotherSource = SourceBuilder.builder()
+                                            .sourceInterface( SourceInterface.WRDS_NWM )
+                                            .uri( URI.create( "http://foo_host/api/nwm3.0/v3.0/bar" ) )
+                                            .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.SINGLE_VALUED_FORECASTS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( anotherSource ) )
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events, "which requires a 'configuration' parameter to "
+                                                                + "identify the forecast model configuration",
+                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testTypesAreConsistentWithEnsembleDeclarationResultsinError()
     {
         Source source = SourceBuilder.builder()
@@ -2011,13 +2106,14 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testWrdsServicesWithoutDataTypeProducesWarnings()
+    void testWrdsServicesWithoutDataTypeProducesWarning()
     {
         Dataset left = DatasetBuilder.builder()
                                      .sources( List.of( SourceBuilder.builder()
                                                                      .sourceInterface( SourceInterface.WRDS_AHPS )
                                                                      .build() ) )
                                      .build();
+        // No longer a warning for WRDS NWM. See GitHUb #815
         Dataset right = DatasetBuilder.builder()
                                       .sources( List.of( SourceBuilder.builder()
                                                                       .sourceInterface( SourceInterface.WRDS_NWM )
@@ -2035,10 +2131,6 @@ class DeclarationValidatorTest
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "discovered an interface of "
                                                                         + "'wrds ahps', which admits the data types",
-                                                                        StatusLevel.WARN ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "discovered an interface of "
-                                                                        + "'wrds nwm', which admits the data types",
                                                                         StatusLevel.WARN ) ) );
     }
 
