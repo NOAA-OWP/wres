@@ -35,7 +35,7 @@ buildscript {
         // Remove vulnerable transitive deps in plugins. Use the subproject exclude to exclude vulnerable deps in the
         // application itself, otherwise the module-specific exclude annotation
         constraints {
-            classpath('com.fasterxml.jackson.core:jackson-core:2.21.1') {
+            classpath('com.fasterxml.jackson.core:jackson-core:2.22.2') {
                 because('Security vulnerabilities in older versions.')
             }
             classpath('org.codehaus.groovy:groovy-all') {
@@ -267,7 +267,7 @@ subprojects {
     // exclude annotation
     dependencies {
         constraints {
-            implementation('com.fasterxml.jackson.core:jackson-core:2.21.1') {
+            implementation('com.fasterxml.jackson.core:jackson-core:2.22.2') {
                 because('Security vulnerabilities in older versions.')
             }
         }
