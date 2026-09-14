@@ -1477,8 +1477,8 @@ project(':wres-tasker') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // To generate fake certificates and keys for testing
-        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.85'
-        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.86.2'
 
         // To test against an embedded AMQP broker
         testImplementation('org.apache.qpid:qpid-broker-core:10.1.0') {
@@ -1594,7 +1594,7 @@ project(':wres-eventsbroker') {
         }
 
         // Include later dependency version
-        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.85.2'
+        runtimeOnly group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.86.2'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
         runtimeOnly('org.apache.activemq:artemis-amqp-protocol:2.57.0') {
