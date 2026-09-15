@@ -1435,7 +1435,7 @@ project(':wres-tasker') {
         implementation 'org.apache.tika:tika-core:3.3.2'
 
         // To persist job metadata while keeping it relatively fast
-        implementation 'org.redisson:redisson:3.52.0'
+        implementation 'org.redisson:redisson:4.7.0'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:5.5.0'
