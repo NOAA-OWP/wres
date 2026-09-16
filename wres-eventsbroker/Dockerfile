@@ -4,7 +4,7 @@
 
 FROM alpine:3.20.3 AS builder
 
-ARG BROKER_VERSION=2.52.0
+ARG BROKER_VERSION=2.57.0
 
 WORKDIR /workspace
 
@@ -28,10 +28,10 @@ RUN apk --no-cache add tar && \
 # Final image
 #############
 
-FROM registry.access.redhat.com/ubi8/ubi:8.10-1776748720
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1789366240
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.19.0.10-1.el8 \
+    java-17-openjdk-headless-1:17.0.20.1.1-1.1.el8 \
     procps-ng-3.3.15-14.el8 \
     iproute-6.2.0-6.el8_10 \
     libaio \
@@ -48,7 +48,7 @@ ENV ANONYMOUS_LOGIN=false
 
 # Broker creation arguments. 
 # The --relax-jolokia is a shorthand for the jolokia-access.xml to allow connections on all network interfaces (0.0.0.0)
-ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --relax-jolokia --silent
+ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --relax-jolokia --silent --user dummy --password dummy
 
 # Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
 #ARG BROKER_USER=wres_eventsbroker

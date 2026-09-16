@@ -1,4 +1,4 @@
-FROM rabbitmq:3.13.7-management-alpine
+FROM rabbitmq:4.3.5-management-alpine
 
 # Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
 # Instead, very manually create user and group:
