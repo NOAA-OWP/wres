@@ -270,10 +270,11 @@ subprojects {
             implementation('com.fasterxml.jackson.core:jackson-core:2.22.2') {
                 because('Security vulnerabilities in older versions.')
             }
-            implementation('io.netty:netty-handler:4.2.18.Final') {
-                because('Security vulnerabilities in older versions.')
-            }
         }
+
+        // Import the Netty BOM so its recommended versions apply
+        // to every io.netty:* module resolved in this subproject's graph.
+        implementation platform('io.netty:netty-bom:4.2.18.Final')
     }
 }
 
@@ -1964,13 +1965,14 @@ dependencies {
     // To persist job metadata while keeping it relatively fast
     implementation 'org.redisson:redisson:4.7.0'
 
-    // Aggressively remove a vulnerable dep brought in by redisson above
+    // Aggressively remove vulnerable deps brought in by redisson above: jackson and netty
     implementation('com.fasterxml.jackson.core:jackson-databind') {
         version {
             // "Strictly at least 2.21.0"
             strictly '[2.21.0, )'
         }
     }
+    implementation platform('io.netty:netty-bom:4.2.18.Final')
 
     implementation('edu.ucar:cdm-core:5.10.0') {
         // Because we use slf4j, not jcl:
