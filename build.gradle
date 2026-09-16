@@ -1964,12 +1964,18 @@ dependencies {
     // To persist job metadata while keeping it relatively fast
     implementation 'org.redisson:redisson:4.7.0'
 
-    // Aggressively remove a vulnerable dep brought in by redisson above
+    // Aggressively remove vulnerable deps brought in by redisson above
     implementation('com.fasterxml.jackson.core:jackson-databind') {
         version {
             // "Strictly at least 2.21.0"
             strictly '[2.21.0, )'
         }
+    }
+    implementation('io.netty:netty-handler') {
+        version {
+            strictly '[4.2.18.Final, )'
+        }
+        because 'Forces netty-handler to at least 4.2.18.Final to fix CVE-2026-62243'
     }
 
     implementation('edu.ucar:cdm-core:5.10.0') {
