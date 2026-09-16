@@ -1959,7 +1959,7 @@ dependencies {
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation 'org.redisson:redisson:3.52.0'
+    implementation 'org.redisson:redisson:4.7.0'
 
     // Aggressively remove a vulnerable dep brought in by redisson above
     implementation('com.fasterxml.jackson.core:jackson-databind') {
