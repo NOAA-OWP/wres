@@ -9,9 +9,9 @@ ARG BROKER_VERSION=2.57.0
 WORKDIR /workspace
 
 # Download Artemis tgz and checksum
-ADD https://archive.apache.org/dist/artemis/artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz \
+ADD https://apache.org/dist/artemis/artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz \
     apache-artemis-${BROKER_VERSION}-bin.tar.gz
-ADD https://archive.apache.org/dist/artemis/artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512 \
+ADD https://apache.org/dist/artemis/artemis/${BROKER_VERSION}/apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512 \
     apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512
 
 # Assert checksum
@@ -48,7 +48,7 @@ ENV ANONYMOUS_LOGIN=false
 
 # Broker creation arguments. 
 # The --relax-jolokia is a shorthand for the jolokia-access.xml to allow connections on all network interfaces (0.0.0.0)
-ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --relax-jolokia --silent --user dummy --password dummy
+ENV BROKER_CREATE_ARGS --http-host 0.0.0.0 --http-port=${BROKER_HTTP_PORT} --relax-jolokia --silent
 
 # Uncomment the following lines if you want to build docker images with the container not being the docker Daemon
 #ARG BROKER_USER=wres_eventsbroker
@@ -69,6 +69,19 @@ COPY --from=builder /workspace/out ${BROKER_HOME}
 # Copy configuration
 COPY nonsrc/ ${BROKER_CONFIG}
 
+# Create the broker layout using dummy user/password arguments. See GitHub #843.
+RUN ${BROKER_HOME}/artemis/bin/artemis create ${BROKER_CREATE_ARGS} --user dummy --password dummy ${BROKER_INSTANCE}
+
+# Copy the broker configuration
+RUN cp -r ${BROKER_CONFIG}/. ${BROKER_INSTANCE}/etc/
+
+# Overwrite the logging configuration, which uses a non-default naming for the logging properties file
+# The reason for the non-default name is to avoid conflicts when running the application outside of 
+# docker and using an embedded broker, since the logging is redirected via slf4j using a 
+# logging.properties redirect
+RUN cp ${BROKER_INSTANCE}/etc/artemis.logging.properties ${BROKER_INSTANCE}/etc/logging.properties && \
+    rm ${BROKER_INSTANCE}/etc/artemis.logging.properties
+
 # Use an entrypoint script
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
@@ -87,4 +100,3 @@ ENTRYPOINT [ "/docker-entrypoint.sh" ]
 EXPOSE ${BROKER_AMQP_PORT} ${BROKER_HTTP_PORT}
 
 HEALTHCHECK CMD curl -f localhost:${BROKER_HTTP_PORT} || exit 1
-
