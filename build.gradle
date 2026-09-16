@@ -270,6 +270,9 @@ subprojects {
             implementation('com.fasterxml.jackson.core:jackson-core:2.22.2') {
                 because('Security vulnerabilities in older versions.')
             }
+            implementation('io.netty:netty-handler:4.2.18.Final') {
+                because('Security vulnerabilities in older versions.')
+            }
         }
     }
 }
