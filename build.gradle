@@ -104,7 +104,7 @@ plugins {
     id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.55"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
-    id 'org.beryx.jlink' version '3.2.1'
+    id 'org.beryx.jlink' version '4.1.1'
 
     // Integrated code coverage report
     id 'jacoco-report-aggregation'
