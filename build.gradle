@@ -606,7 +606,7 @@ project(':wres-writing') {
         implementation 'com.google.guava:guava:33.7.1-jre'
 
         // To accurately detect mime types of files.
-        runtimeOnly 'org.apache.tika:tika-core:3.3.2'
+        runtimeOnly 'org.apache.tika:tika-core:4.0.0'
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -615,7 +615,7 @@ project(':wres-writing') {
         implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.slf4j:slf4j-api:2.0.19'
         testRuntimeOnly 'org.apache.commons:commons-lang3:3.20.0'
-        testImplementation 'org.apache.tika:tika-core:3.3.2'
+        testImplementation 'org.apache.tika:tika-core:4.0.0'
         testImplementation 'org.mockito:mockito-core:5.23.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.19'
         implementation 'org.apache.commons:commons-lang3:3.20.0'
@@ -677,7 +677,7 @@ project(':wres-reading') {
         implementation 'org.apache.httpcomponents:httpclient:4.5.14'
 
         // To accurately detect mime types of files.
-        api 'org.apache.tika:tika-core:3.3.2'
+        api 'org.apache.tika:tika-core:4.0.0'
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
@@ -1137,7 +1137,7 @@ project(':wres-config') {
         compileOnly 'io.soabase.record-builder:record-builder-core:53'
 
         // To accurately detect mime types of files.
-        api 'org.apache.tika:tika-core:3.3.2'
+        api 'org.apache.tika:tika-core:4.0.0'
 
         api 'org.yaml:snakeyaml:2.7'
 
@@ -1436,7 +1436,7 @@ project(':wres-tasker') {
         }
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:3.3.2'
+        implementation 'org.apache.tika:tika-core:4.0.0'
 
         // To persist job metadata while keeping it relatively fast
         implementation 'org.redisson:redisson:4.7.0'
