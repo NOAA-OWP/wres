@@ -35,7 +35,7 @@ buildscript {
         // Remove vulnerable transitive deps in plugins. Use the subproject exclude to exclude vulnerable deps in the
         // application itself, otherwise the module-specific exclude annotation
         constraints {
-            classpath('com.fasterxml.jackson.core:jackson-core:2.22.2') {
+            classpath('com.fasterxml.jackson.core:jackson-core:2.22.3') {
                 because('Security vulnerabilities in older versions.')
             }
             classpath('org.codehaus.groovy:groovy-all') {
@@ -95,7 +95,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.54.0'
 
     // Run python scripts
-    id 'com.pswidersk.python-plugin' version '3.2.26'
+    id 'com.pswidersk.python-plugin' version '3.2.28'
 
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
@@ -267,7 +267,7 @@ subprojects {
     // exclude annotation
     dependencies {
         constraints {
-            implementation('com.fasterxml.jackson.core:jackson-core:2.22.2') {
+            implementation('com.fasterxml.jackson.core:jackson-core:2.22.3') {
                 because('Security vulnerabilities in older versions.')
             }
         }
@@ -365,7 +365,7 @@ project(':wres-datamodel') {
         }
 
         api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -386,7 +386,7 @@ project(':wres-datamodel') {
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.3'
@@ -452,7 +452,7 @@ project(':wres-io') {
         implementation 'com.zaxxer:HikariCP:7.1.0'
 
         // To cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -493,7 +493,7 @@ project(':wres-io') {
         api 'org.apache.commons:commons-lang3:3.20.0'
         api 'org.slf4j:slf4j-api:2.0.19'
         implementation 'com.google.protobuf:protobuf-java:3.25.9'
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
     }
 
     test {
@@ -616,11 +616,11 @@ project(':wres-writing') {
         implementation 'org.slf4j:slf4j-api:2.0.19'
         testRuntimeOnly 'org.apache.commons:commons-lang3:3.20.0'
         testImplementation 'org.apache.tika:tika-core:3.3.2'
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
         testRuntimeOnly 'org.slf4j:slf4j-api:2.0.19'
         implementation 'org.apache.commons:commons-lang3:3.20.0'
         implementation 'org.slf4j:slf4j-api:2.0.19'
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
@@ -703,7 +703,7 @@ project(':wres-reading') {
         implementation 'org.eclipse.collections:eclipse-collections-api:13.0.0'
         implementation 'org.slf4j:slf4j-api:2.0.19'
 
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.1.0'
@@ -711,7 +711,7 @@ project(':wres-reading') {
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // For caches
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -721,7 +721,7 @@ project(':wres-reading') {
         annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
         testImplementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // For mocking web service interaction
         testImplementation('org.wiremock:wiremock:4.0.0-beta.39')
@@ -801,7 +801,7 @@ project(':wres-metrics') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.3'
@@ -1142,7 +1142,7 @@ project(':wres-config') {
         api 'org.yaml:snakeyaml:2.7'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.3'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:6.1.3'
@@ -1252,7 +1252,7 @@ project(':wres-worker') {
         }
 
         implementation 'com.google.protobuf:protobuf-java:3.25.9'
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // For mocking web service interaction
         testImplementation('org.wiremock:wiremock:4.0.0-beta.39')
@@ -1430,7 +1430,7 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.12'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1645,7 +1645,7 @@ project(':wres-events') {
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1672,7 +1672,7 @@ project(':wres-events') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // To create an embedded broker for unit testing
         testImplementation project(':wres-eventsbroker')
@@ -1703,7 +1703,7 @@ project(':wres-http') {
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.1.3'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-        testImplementation 'org.mockito:mockito-core:5.23.0'
+        testImplementation 'org.mockito:mockito-core:5.24.0'
 
         // For mocking web service interaction
         testImplementation('org.wiremock:wiremock:4.0.0-beta.39')
@@ -1957,7 +1957,7 @@ dependencies {
     // Jetty server
     implementation 'org.eclipse.jetty:jetty-server:12.1.13'
 
-    implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
@@ -2021,7 +2021,7 @@ dependencies {
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:6.1.3'
 
-    testImplementation 'org.mockito:mockito-core:5.23.0'
+    testImplementation 'org.mockito:mockito-core:5.24.0'
 }
 
 test {
