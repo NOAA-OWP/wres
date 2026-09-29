@@ -1485,7 +1485,7 @@ project(':wres-tasker') {
         testImplementation 'org.bouncycastle:bcprov-jdk18on:1.86'
 
         // To test against an embedded AMQP broker
-        testImplementation('org.apache.qpid:qpid-broker-core:10.1.0') {
+        testImplementation('org.apache.qpid:qpid-broker-core:10.1.1') {
             // TODO: remove when QPID catches up
             // Because of CVE-2025-52999.
             exclude group: 'tools.jackson.core'
@@ -1497,8 +1497,8 @@ project(':wres-tasker') {
         testImplementation 'tools.jackson.core:jackson-core:3.2.2'
 
         // Provides support for both 0-8 and 0-9-1
-        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.1.0'
-        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-memory-store:10.1.0'
+        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:10.1.1'
+        testRuntimeOnly 'org.apache.qpid:qpid-broker-plugins-memory-store:10.1.1'
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.2'
 
         // To generate swagger's openapi.json at build time.
