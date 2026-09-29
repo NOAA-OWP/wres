@@ -95,7 +95,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.54.0'
 
     // Run python scripts
-    id 'com.pswidersk.python-plugin' version '3.2.26'
+    id 'com.pswidersk.python-plugin' version '3.2.28'
 
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
@@ -365,7 +365,7 @@ project(':wres-datamodel') {
         }
 
         api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -452,7 +452,7 @@ project(':wres-io') {
         implementation 'com.zaxxer:HikariCP:7.1.0'
 
         // To cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -711,7 +711,7 @@ project(':wres-reading') {
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // For caches
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1430,7 +1430,7 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.12'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1645,7 +1645,7 @@ project(':wres-events') {
         api group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1957,7 +1957,7 @@ dependencies {
     // Jetty server
     implementation 'org.eclipse.jetty:jetty-server:12.1.13'
 
-    implementation('com.github.ben-manes.caffeine:caffeine:3.2.4') {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
