@@ -95,7 +95,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.54.0'
 
     // Run python scripts
-    id 'com.pswidersk.python-plugin' version '3.2.26'
+    id 'com.pswidersk.python-plugin' version '3.2.28'
 
     // Markdown to html
     id 'org.kordamp.gradle.markdown' version '2.2.0'
