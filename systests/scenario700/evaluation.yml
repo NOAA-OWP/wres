@@ -1,6 +1,6 @@
 observed:
   sources:
-    - https://nwis.waterservices.usgs.gov/nwis/iv
+    - https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous
   variable:
     name: '00060'
     label: streamflow

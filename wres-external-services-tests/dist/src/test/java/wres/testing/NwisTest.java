@@ -29,9 +29,9 @@ public class NwisTest
                       .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
                       .build();
     private static final URI NWIS_URI_ONE = URI.create(
-            "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-07T23:59:59Z" );
+            "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?f=json&monitoring_location_id=USGS-09165000&parameter_code=00060&time=2018-10-01T00:00:00Z/2018-10-07T23:59:59Z&limit=5" );
     private static final URI NWIS_URI_TWO = URI.create(
-            "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=01631000&parameterCd=00060&startDT=2020-03-01T00:00:00Z&endDT=2020-04-30T23:59:59Z" );
+            "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items?f=json&monitoring_location_id=USGS-01631000&parameter_code=00060&time=2020-03-01T00:00:00Z/2020-04-30T23:59:59Z&limit=5" );
 
     @Test
     void canGetMinimalResponseFromNwisWithWebClient() throws IOException
