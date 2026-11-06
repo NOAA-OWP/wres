@@ -1,6 +1,6 @@
 observed:
   sources:
-    - uri: https://nwis.waterservices.usgs.gov/nwis/iv
+    - uri: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous
       interface: usgs nwis
   variable:
     name: '00060'

@@ -1,7 +1,7 @@
 observed:
   sources:
   - interface: usgs nwis
-    uri: https://nwis.waterservices.usgs.gov/nwis/iv
+    uri: https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous
   variable: '00060'
 predicted:
   sources:
