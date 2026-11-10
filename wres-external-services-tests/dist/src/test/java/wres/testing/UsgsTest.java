@@ -57,8 +57,7 @@ public class UsgsTest
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
                                          "Expected HTTP 2XX response." ),
-                       () -> assertTrue( document.getValue()
-                                                 .getFeatures()
+                       () -> assertTrue( document.getFeatures()
                                                  .length > 0,
                                          "Expected at least one TimeSeries" )
             );
