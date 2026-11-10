@@ -693,8 +693,8 @@ project(':wres-reading') {
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '13.0.0'
 
         api 'com.fasterxml.jackson.core:jackson-annotations:2.22'
-        api 'tools.jackson.core:jackson-databind:3.2.2'
-        api 'tools.jackson.core:jackson-core:3.2.2'
+        api 'tools.jackson.core:jackson-databind:3.2.3'
+        api 'tools.jackson.core:jackson-core:3.2.3'
         implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.2.3")
 
         api 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.5'
@@ -1099,10 +1099,10 @@ project(':wres-config') {
         }
 
         // For YAML (de)serialization.
-        implementation(platform("tools.jackson:jackson-bom:3.2.2"))
+        implementation(platform("tools.jackson:jackson-bom:3.2.3"))
         api 'com.fasterxml.jackson.core:jackson-annotations:2.22'
-        api 'tools.jackson.core:jackson-databind:3.2.2'
-        api 'tools.jackson.core:jackson-core:3.2.2'
+        api 'tools.jackson.core:jackson-databind:3.2.3'
+        api 'tools.jackson.core:jackson-core:3.2.3'
         implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.2.3")
 
         implementation('com.hubspot.jackson:jackson3-datatype-protobuf:1.0.0') {
@@ -1452,7 +1452,7 @@ project(':wres-tasker') {
         implementation 'org.glassfish.jersey.core:jersey-common:3.1.12'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation(platform("tools.jackson:jackson-bom:3.2.2"))
+        implementation(platform("tools.jackson:jackson-bom:3.2.3"))
         api 'com.fasterxml.jackson.core:jackson-annotations:2.22'
         api 'tools.jackson.core:jackson-databind:3.2.3'
         api 'tools.jackson.core:jackson-core:3.2.3'
