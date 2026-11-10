@@ -1427,7 +1427,7 @@ project(':wres-tasker') {
         implementation 'org.eclipse.jetty:jetty-http:12.1.13'
 
         // To handle multipart post
-        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.12'
+        implementation 'org.glassfish.jersey.media:jersey-media-multipart:4.0.2'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
         implementation('com.github.ben-manes.caffeine:caffeine:3.3.0') {
