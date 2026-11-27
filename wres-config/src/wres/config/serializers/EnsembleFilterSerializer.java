@@ -18,9 +18,12 @@ public class EnsembleFilterSerializer extends ValueSerializer<EnsembleFilter>
         // If the exclude option is not default, write that too
         if ( filter.exclude() )
         {
-            writer.writePOJOProperty( "members", filter.members()
-                                                       .toArray() );
+            writer.writeStartObject();
+            writer.writeName( "members" );
+            writer.writePOJO( filter.members()
+                                    .toArray() );
             writer.writeBooleanProperty( "exclude", true );
+            writer.writeEndObject();
         }
         // Otherwise, write a simple array of labels
         else

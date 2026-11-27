@@ -357,7 +357,7 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Starts an evaluation and returns the ID of the evaluation created.
-     * @param projectDeclaration the evaluation declaration we are exectuing
+     * @param projectDeclaration the evaluation declaration we are executing
      * @param host the database host if a user wants to specify
      * @param name the database name if a user wants to specify
      * @param port the database port if a user wants to specify
@@ -403,7 +403,7 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Closes an evaluation that was Opened (Wont interupt ongoing evaluations)
+     * Closes an evaluation that was Opened (will not interrupt ongoing evaluations)
      * @return Good Response
      */
     @POST

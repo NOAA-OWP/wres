@@ -560,12 +560,12 @@ class DeclarationFactoryTest
         URI observedUri = URI.create( "https://foo.bar" );
 
         Source observedSource = SourceBuilder.builder()
-                                                       .uri( observedUri )
-                                                       .sourceInterface( SourceInterface.USGS_NWIS )
-                                                       .parameters( List.of( new UriParameter( "foo", "bar" ),
-                                                                             new UriParameter( "baz", "qux" ),
-                                                                             new UriParameter( "foo", "quux" ) ) )
-                                                       .build();
+                                             .uri( observedUri )
+                                             .sourceInterface( SourceInterface.USGS_NWIS )
+                                             .parameters( List.of( new UriParameter( "foo", "bar" ),
+                                                                   new UriParameter( "baz", "qux" ),
+                                                                   new UriParameter( "foo", "quux" ) ) )
+                                             .build();
 
         List<Source> observedSources = List.of( observedSource );
         Dataset observedDatasetInner = DatasetBuilder.builder()
@@ -4143,6 +4143,86 @@ class DeclarationFactoryTest
                                                                        .left( this.observedDataset )
                                                                        .right( this.predictedDataset )
                                                                        .values( values )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithEnsembleFilterExcludeFalse()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                  ensemble_filter:
+                    - "2"
+                    - "3"
+                    - "4"
+                    - "5"
+                    - "6"
+                """;
+
+        // Deterministic order
+        Set<String> deterministic = new LinkedHashSet<>();
+
+        deterministic.add(  "2" );
+        deterministic.add(  "3" );
+        deterministic.add(  "4" );
+        deterministic.add(  "5" );
+        deterministic.add(  "6" );
+
+        EnsembleFilter filter = new EnsembleFilter( deterministic, false );
+        Dataset predictedWithFilter = DatasetBuilder.builder( this.predictedDataset )
+                                                    .ensembleFilter( filter )
+                                                    .build();
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( predictedWithFilter )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithEnsembleFilterExcludeTrue()
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                  ensemble_filter:
+                    members:
+                      - "2"
+                      - "3"
+                      - "4"
+                      - "5"
+                      - "6"
+                    exclude: true
+                """;
+
+        // Deterministic order
+        Set<String> deterministic = new LinkedHashSet<>();
+
+        deterministic.add(  "2" );
+        deterministic.add(  "3" );
+        deterministic.add(  "4" );
+        deterministic.add(  "5" );
+        deterministic.add(  "6" );
+
+        EnsembleFilter filter = new EnsembleFilter( deterministic, true );
+        Dataset predictedWithFilter = DatasetBuilder.builder( this.predictedDataset )
+                                                    .ensembleFilter( filter )
+                                                    .build();
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( predictedWithFilter )
                                                                        .build();
 
         String actual = DeclarationFactory.from( evaluation );
